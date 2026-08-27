@@ -2,6 +2,7 @@ import type { PotluckData } from "../lib/widgets";
 
 export type PotluckProps = {
   data: PotluckData;
+  onClaim?: (itemId: string) => void;
 };
 
 const toneClasses: Record<string, { accent: string; soft: string; fill: string; muted: string }> = {
@@ -12,7 +13,7 @@ const toneClasses: Record<string, { accent: string; soft: string; fill: string; 
   violet: { accent: "text-crew", soft: "bg-crew/10", fill: "bg-crew", muted: "text-crew/80" },
 };
 
-export function Potluck({ data }: PotluckProps) {
+export function Potluck({ data, onClaim }: PotluckProps) {
   const tone = toneClasses[data.tone ?? "mint"] ?? toneClasses.mint;
   const coveredCount = data.items.filter(
     (item) => Boolean(item.claimedBy || item.claimedName),
@@ -67,7 +68,7 @@ export function Potluck({ data }: PotluckProps) {
             {data.items.map((item) => {
               const claimed = Boolean(item.claimedBy || item.claimedName);
               return (
-                <li
+                <button type="button" onClick={() => onClaim?.(item.id)}
                   key={item.id}
                   className={`flex min-w-0 items-center gap-2 rounded-pill px-2.5 py-2 ${claimed ? tone.soft : "bg-ink/5"}`}
                 >
@@ -90,7 +91,7 @@ export function Potluck({ data }: PotluckProps) {
                   <span className={`shrink-0 rounded-pill bg-sticker px-2 py-1 text-[10px] font-extrabold text-white`}>
                     {claimed ? "covered" : "open"}
                   </span>
-                </li>
+                </button>
               );
             })}
           </ul>

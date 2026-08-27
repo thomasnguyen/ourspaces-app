@@ -1,7 +1,9 @@
+import { useState, type FormEvent } from "react";
 import type { DailyQData } from "../lib/widgets";
 
 type DailyQuestionProps = {
   data: DailyQData;
+  onAnswer?: (text: string) => void;
 };
 
 const toneClasses: Record<string, { card: string; muted: string }> = {
@@ -22,7 +24,8 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-export function DailyQuestion({ data }: DailyQuestionProps) {
+export function DailyQuestion({ data, onAnswer }: DailyQuestionProps) {
+  const [draft, setDraft] = useState("");
   const tone = toneClasses[data.tone ?? "butter"] ?? toneClasses.butter;
   const answers = data.answers ?? [];
   const waitingOn = data.waitingOn ?? [];
@@ -121,6 +124,10 @@ export function DailyQuestion({ data }: DailyQuestionProps) {
           <span>{answers.length === 0 ? "your turn" : `${answers.length} answered · everyone's in`}</span>
         )}
       </div>
+      {onAnswer && <form className="mt-3 flex gap-2" onSubmit={(event: FormEvent) => { event.preventDefault(); if (!draft.trim()) return; onAnswer(draft.trim()); setDraft(""); }}>
+        <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="your answer…" className="min-w-0 flex-1 rounded-pill bg-sticker px-3 py-2 text-xs font-bold text-white outline-none placeholder:text-muted" />
+        <button type="submit" className="rounded-pill bg-sticker px-3 py-2 text-xs font-extrabold text-lime">add</button>
+      </form>}
     </article>
   );
 }
