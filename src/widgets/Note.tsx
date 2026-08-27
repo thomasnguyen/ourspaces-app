@@ -26,7 +26,7 @@ export default function Note({ data }: NoteProps) {
   if (isCrew) {
     return (
       <article
-        className={`relative flex h-full min-h-0 flex-col justify-between overflow-hidden rounded-card p-5 shadow-[5px_5px_0_var(--color-sticker)] ${surface}`}
+        className={`relative flex h-full min-h-0 flex-col justify-between overflow-hidden rounded-card p-5 shadow-[5px_5px_0_var(--color-sticker)] ${promoted ? "note-pop" : ""} ${surface}`}
         style={style}
       >
         <span className="absolute right-4 top-4 -rotate-3 rounded-pill bg-sticker px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-white">
@@ -49,7 +49,7 @@ export default function Note({ data }: NoteProps) {
   if (isWarm) {
     return (
       <article
-        className={`relative flex h-full min-h-0 flex-col justify-between overflow-hidden rounded-card p-5 shadow-[5px_5px_0_var(--color-sticker)] ${surface}`}
+        className={`relative flex h-full min-h-0 flex-col justify-between overflow-hidden rounded-card p-5 shadow-[5px_5px_0_var(--color-sticker)] ${promoted ? "note-pop" : ""} ${surface}`}
         style={style}
       >
         <span
@@ -73,7 +73,7 @@ export default function Note({ data }: NoteProps) {
 
   return (
     <article
-      className={`flex h-full min-h-0 flex-col justify-between overflow-hidden rounded-card p-5 shadow-[5px_5px_0_var(--color-sticker)] ${surface}`}
+      className={`flex h-full min-h-0 flex-col justify-between overflow-hidden rounded-card p-5 shadow-[5px_5px_0_var(--color-sticker)] ${promoted ? "note-pop" : ""} ${surface}`}
       style={style}
     >
       <div>
