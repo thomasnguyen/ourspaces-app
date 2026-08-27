@@ -1,16 +1,38 @@
-# OurSpaces hackathon build log
+# Hackathon log
 
-**Builder:** OpenAI Codex · **Backend:** Convex · **Live:** https://necessary-cobra-892.convex.site
+- **Project:** OurSpaces
+- **Event:** Convex All Gas Hackathon
+- **What it does:** Turns a friend group's chat into a live shared canvas of widgets (countdown, polls, potluck, notes) that stays in sync for everyone.
+- **Live app:** https://necessary-cobra-892.convex.site
+- **Repo:** https://github.com/thomasnguyen/ourspaces-app
+- **Frontend:** Convex static hosting
+- **Convex deployment:** https://necessary-cobra-892.convex.cloud
+- **Components:** @convex-dev/static-hosting
+- **Convex features:** schema, tables, indexes, queries, mutations, realtime queries
+- **Auth:** none
+- **AI models:** none
+- **Started:** 2026-08-27T05:09:13Z
+- **Last updated:** 2026-08-27T05:30:15Z
 
-## 2026-08-26 22:29 PDT — Convex canvas overnight
+## Log
 
-- `aa13bde` — Added the live canvas schema: spaces, members, widgets, messages, votes, and presence.
-- `8b7d99d` — Added typed widget data for notes, polls, countdowns, potlucks, daily questions, and frames.
-- `6e7b213` — Added reactive space, widget, and poll-result functions.
-- `ce7f719` — Seeded the lived-in `the crew` space and Maya's birthday frame.
-- `0febd47` / `0c22827` — Built the app shell and interactive, native-scroll canvas with widget renderers.
-- Deployed the backend and static site to Convex production. Verified the public canvas loads with seeded widgets and no browser console errors.
+### 2026-08-27 - 074a936
+Scaffolded the Vite + React + TypeScript app with Tailwind v4 design tokens and the Convex client provider, and checked in the product spec, data model plan, design system, and agent instructions (`src/main.tsx`, `src/index.css`, `docs/`, `AGENTS.md`). Built with OpenAI Codex.
 
-## Next demo beat
+### 2026-08-27 - aa13bde
+Added the reactive data model: spaces, members, widgets, messages, votes, and presence tables with indexes by space, space+user, and widget. Convex features: schema, tables, indexes (`convex/schema.ts`).
 
-Open the live URL in two windows and drag the birthday frame or any widget: its final position is stored in Convex and streams to every connected canvas.
+### 2026-08-27 - 8b7d99d
+Added typed widget data shapes for notes, polls, countdowns, potlucks, daily questions, and frames (`src/lib/widgets.ts`).
+
+### 2026-08-27 - 6e7b213
+Added space and widget functions: list and create spaces; list, create, move, resize, bring-to-front, and update widgets; poll results. Convex features: queries, mutations (`convex/spaces.ts`, `convex/widgets.ts`, `convex/votes.ts`).
+
+### 2026-08-27 - ce7f719
+Seeded the lived-in "the crew" space with six members, evergreen widgets, and a "Maya's bday" frame holding a countdown, cake poll, and potluck. Convex features: internal mutation (`convex/seed.ts`).
+
+### 2026-08-27 - 0c22827
+Built the app shell and the top-left-anchored canvas that renders widgets by type from a live query. Convex features: realtime queries via `useQuery` (`src/App.tsx`, `src/components/Canvas.tsx`, `src/widgets/`).
+
+### 2026-08-27 - fa9688e
+Added pointer-based drag and resize that commits positions to Convex mutations, with frames moving their contained widgets; registered the static hosting component and deployed the site and backend to production (`src/components/Canvas.tsx`, `convex/convex.config.ts`). Registered component: @convex-dev/static-hosting.
