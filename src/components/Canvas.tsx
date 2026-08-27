@@ -76,7 +76,7 @@ export function Canvas({ spaceId }: { spaceId: Id<"spaces"> }) {
       {widgets.map((widget) => {
         const position = renderedPosition(widget);
         const activeResize = resize?.id === widget._id ? resize : null;
-        return <div key={widget._id} onPointerDown={(event) => startDrag(event, widget)} className="absolute touch-none select-none" style={{ left: position.x, top: position.y, width: activeResize?.w ?? widget.w, height: activeResize?.h ?? widget.h, zIndex: widget.z }}>
+        return <div key={widget._id} onPointerDown={(event) => startDrag(event, widget)} className={`absolute touch-none select-none cursor-grab ${drag?.group.some((item) => item._id === widget._id) ? "cursor-grabbing" : ""}`} style={{ left: position.x, top: position.y, width: activeResize?.w ?? widget.w, height: activeResize?.h ?? widget.h, zIndex: widget.z }}>
           <WidgetCard widget={widget} />
           {widget.type !== "frame" && <button data-resize aria-label="Resize widget" className="absolute bottom-1 right-1 h-5 w-5 cursor-se-resize rounded-full border-2 border-base bg-lime" onPointerDown={(event) => { event.stopPropagation(); const position = point(event); event.currentTarget.setPointerCapture(event.pointerId); setResize({ id: widget._id, startX: position.x, startY: position.y, w: widget.w, h: widget.h }); }} />}
         </div>;
