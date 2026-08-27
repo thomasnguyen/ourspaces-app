@@ -61,6 +61,7 @@ export default defineSchema({
     authorEmoji: v.optional(v.string()),
     authorAvatarUrl: v.optional(v.string()),
     promotable: v.optional(v.boolean()),
+    promotedWidgetId: v.optional(v.id("widgets")),
   }).index("by_widget", ["widgetId"])
     .index("by_space", ["spaceId"])
     .index("by_space_widget", ["spaceId", "widgetId"]),
