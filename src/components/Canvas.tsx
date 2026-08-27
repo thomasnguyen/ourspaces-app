@@ -4,16 +4,21 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { api } from "../../convex/_generated/api";
 import type { Widget } from "../lib/widgets";
 import { WidgetCard } from "../widgets/WidgetCard";
+import type { Identity } from "../lib/identity";
+import { PresenceCursors } from "./PresenceCursors";
 
 type Drag = { id: Id<"widgets">; startX: number; startY: number; x: number; y: number; group: Widget[] };
 type Resize = { id: Id<"widgets">; startX: number; startY: number; w: number; h: number };
 
-export function Canvas({ spaceId }: { spaceId: Id<"spaces"> }) {
+export function Canvas({ spaceId, identity }: { spaceId: Id<"spaces">; identity: Identity }) {
   const widgets = (useQuery(api.widgets.listWidgets, { spaceId }) ?? []) as Widget[];
   const moveWidget = useMutation(api.widgets.moveWidget);
   const resizeWidget = useMutation(api.widgets.resizeWidget);
   const bringToFront = useMutation(api.widgets.bringToFront);
+  const updatePresence = useMutation(api.presence.updatePresence);
+  const cursors = useQuery(api.presence.listPresence, { spaceId }) ?? [];
   const boardRef = useRef<HTMLDivElement>(null);
+  const lastPresence = useRef(0);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [resize, setResize] = useState<Resize | null>(null);
   const farthestX = Math.max(2400, ...widgets.map((widget) => widget.x + widget.w + 260));
@@ -36,8 +41,12 @@ export function Canvas({ spaceId }: { spaceId: Id<"spaces"> }) {
   };
 
   const onMove = (event: PointerEvent<HTMLDivElement>) => {
+    const position = point(event);
+    if (Date.now() - lastPresence.current > 60) {
+      lastPresence.current = Date.now();
+      void updatePresence({ spaceId, userId: identity.userId, name: identity.name, color: identity.color, x: position.x, y: position.y });
+    }
     if (drag) {
-      const position = point(event);
       setDrag({ ...drag, x: Math.max(0, drag.x + position.x - drag.startX), y: Math.max(0, drag.y + position.y - drag.startY), startX: position.x, startY: position.y });
     }
     if (resize) {
@@ -77,10 +86,11 @@ export function Canvas({ spaceId }: { spaceId: Id<"spaces"> }) {
         const position = renderedPosition(widget);
         const activeResize = resize?.id === widget._id ? resize : null;
         return <div key={widget._id} onPointerDown={(event) => startDrag(event, widget)} className={`absolute touch-none select-none cursor-grab ${drag?.group.some((item) => item._id === widget._id) ? "cursor-grabbing" : ""}`} style={{ left: position.x, top: position.y, width: activeResize?.w ?? widget.w, height: activeResize?.h ?? widget.h, zIndex: widget.z }}>
-          <WidgetCard widget={widget} />
+          <WidgetCard widget={widget} identity={identity} />
           {widget.type !== "frame" && <button data-resize aria-label="Resize widget" className="absolute bottom-1 right-1 h-5 w-5 cursor-se-resize rounded-full border-2 border-base bg-lime" onPointerDown={(event) => { event.stopPropagation(); const position = point(event); event.currentTarget.setPointerCapture(event.pointerId); setResize({ id: widget._id, startX: position.x, startY: position.y, w: widget.w, h: widget.h }); }} />}
         </div>;
       })}
+      <PresenceCursors cursors={cursors} meId={identity.userId} />
     </div>
   </div>;
 }

@@ -38,6 +38,7 @@ export type DailyQData = {
 };
 
 export type FrameData = { title: string };
+export type ChatData = { title?: string };
 
 export type WidgetByType = {
   countdown: CountdownData;
@@ -46,6 +47,7 @@ export type WidgetByType = {
   note: NoteData;
   dailyQuestion: DailyQData;
   frame: FrameData;
+  chat: ChatData;
 };
 
 export type WidgetType = keyof WidgetByType;
