@@ -8,7 +8,7 @@ remembers for everyone — live.
 Built for the [Convex All Gas Hackathon](https://www.convex.dev/hackathons/all-gas)
 by Thomas Nguyen (build) and Holly (design).
 
-**Live:** _coming soon_ · **Build log:** `hackathon.md`
+**Live:** [necessary-cobra-892.convex.site](https://necessary-cobra-892.convex.site) · **Build log:** `hackathon.md`
 
 ## Stack
 
