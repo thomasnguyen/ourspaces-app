@@ -3,7 +3,7 @@
 Everyday app for friend groups: a group chat becomes a live shared canvas.
 Convex hackathon entry; deadline Sep 22 2026. Spec: `docs/ourspaces-prd-v0.6.md`.
 Data model: `docs/data-model-plan.md`. Design: `DESIGN.md`, `docs/tokens.md`.
-Plan and cut order: `docs/PLAN.md`.
+Plan and cut order: `.private/PLAN.md` (local only).
 
 ## Rules
 
