@@ -8,7 +8,10 @@
  * @module
  */
 
+import type * as agentmail from "../agentmail.js";
 import type * as crons from "../crons.js";
+import type * as firecrawl from "../firecrawl.js";
+import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as presence from "../presence.js";
 import type * as seed from "../seed.js";
@@ -24,7 +27,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  agentmail: typeof agentmail;
   crons: typeof crons;
+  firecrawl: typeof firecrawl;
+  http: typeof http;
   messages: typeof messages;
   presence: typeof presence;
   seed: typeof seed;
@@ -62,4 +68,6 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   staticHosting: import("@convex-dev/static-hosting/_generated/component.js").ComponentApi<"staticHosting">;
+  agentmail: import("@agentmail/convex/_generated/component.js").ComponentApi<"agentmail">;
+  firecrawl: import("@firecrawl/firecrawl-convex/_generated/component.js").ComponentApi<"firecrawl">;
 };

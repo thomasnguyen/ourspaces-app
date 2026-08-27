@@ -21,7 +21,24 @@ export default defineSchema({
     canvasW: v.optional(v.number()),
     canvasH: v.optional(v.number()),
     tagline: v.optional(v.string()),
-  }).index("by_name", ["name"]).index("by_slug", ["slug"]),
+    inboxId: v.optional(v.string()), // AgentMail inbox — the space's own email
+    inboxAddress: v.optional(v.string()),
+  })
+    .index("by_name", ["name"])
+    .index("by_slug", ["slug"])
+    .index("by_inbox", ["inboxId"]),
+
+  // Every email the space sends or receives — feeds the activity log widget.
+  emailEvents: defineTable({
+    spaceId: v.id("spaces"),
+    direction: v.union(v.literal("in"), v.literal("out")),
+    from: v.string(),
+    to: v.string(),
+    subject: v.string(),
+    summary: v.string(),
+    widgetId: v.optional(v.id("widgets")),
+    createdAt: v.number(),
+  }).index("by_space", ["spaceId"]),
 
   members: defineTable({
     spaceId: v.id("spaces"),
