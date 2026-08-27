@@ -42,8 +42,10 @@ export const schema = defineSchema({
     authorName: v.string(),
     authorColor: v.string(),
     authorAvatarUrl: v.optional(v.string()),
+    promotedWidgetId: v.optional(v.id("widgets")),
   })
     .index("by_space", ["spaceId"])
+    .index("by_space_widget", ["spaceId", "widgetId"])
     .index("by_widget", ["widgetId"]),
   votes: defineTable({
     widgetId: v.id("widgets"),
@@ -61,7 +63,11 @@ export const schema = defineSchema({
     name: v.string(),
     color: v.string(),
     avatarUrl: v.optional(v.string()),
-  }).index("by_space", ["spaceId"]),
+  })
+    .index("by_space", ["spaceId"])
+    .index("by_space_user", ["spaceId", "userId"])
+    .index("by_space_updated_at", ["spaceId", "updatedAt"])
+    .index("by_updated_at", ["updatedAt"]),
 });
 
 export default schema;

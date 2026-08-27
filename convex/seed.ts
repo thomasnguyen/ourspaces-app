@@ -12,7 +12,20 @@ export const seedCrew = internalMutation({
   returns: v.union(v.id("spaces"), v.null()),
   handler: async (ctx) => {
     const existing = await ctx.db.query("spaces").withIndex("by_name", (q) => q.eq("name", "the crew")).unique();
-    if (existing) return null;
+    if (existing) {
+      const chat = await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", existing._id)).take(200);
+      let chatId = chat.find((widget) => widget.type === "chat")?._id;
+      if (!chatId) {
+        chatId = await ctx.db.insert("widgets", { spaceId: existing._id, type: "chat", x: 70, y: 960, w: 420, h: 520, z: 4, data: { title: "everyone" }, createdBy: "seed:maya", createdAt: Date.now() });
+      }
+      const messages = await ctx.db.query("messages").withIndex("by_space_widget", (q) => q.eq("spaceId", existing._id).eq("widgetId", chatId!)).take(200);
+      if (!messages.length) {
+        for (const [userId, authorName, authorColor, text] of [
+          ["seed:maya", "Maya", "crew", "ok wait cake poll is open"], ["seed:jules", "Jules", "couple", "claiming balloons !!"], ["seed:sam", "Sam", "fam", "let's do 6pm at our place"],
+        ] as const) await ctx.db.insert("messages", { spaceId: existing._id, widgetId: chatId, userId, authorName, authorColor, text, createdAt: Date.now() });
+      }
+      return existing._id;
+    }
 
     const now = Date.now();
     const spaceId = await ctx.db.insert("spaces", {
@@ -56,6 +69,10 @@ export const seedCrew = internalMutation({
         { id: "drinks", label: "something bubbly" }, { id: "candles", label: "candles" },
       ],
     });
+    const chatId = await addWidget("chat", 70, 960, 420, 520, 4, { title: "everyone" });
+    for (const [userId, authorName, authorColor, text] of [
+      ["seed:maya", "Maya", "crew", "ok wait cake poll is open"], ["seed:jules", "Jules", "couple", "claiming balloons !!"], ["seed:sam", "Sam", "fam", "let's do 6pm at our place"],
+    ] as const) await ctx.db.insert("messages", { spaceId, widgetId: chatId, userId, authorName, authorColor, text, createdAt: now });
     for (const [widgetId, userId, optionId] of [
       [summerPollId, "seed:maya", "tahoe"], [summerPollId, "seed:jules", "mexico"], [summerPollId, "seed:sam", "tahoe"],
       [cakePollId, "seed:maya", "matcha"], [cakePollId, "seed:jules", "matcha"], [cakePollId, "seed:sam", "chocolate"], [cakePollId, "seed:kenji", "matcha"], [cakePollId, "seed:rio", "tres-leches"],
