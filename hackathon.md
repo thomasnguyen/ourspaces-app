@@ -8,7 +8,7 @@
 - **Frontend:** Convex static hosting
 - **Convex deployment:** https://necessary-cobra-892.convex.cloud
 - **Components:** @convex-dev/static-hosting
-- **Convex features:** schema, tables, indexes, queries, mutations, realtime queries, crons, scheduled functions, internal mutations, crons, presence
+- **Convex features:** schema, tables, indexes, queries, mutations, realtime queries, crons, scheduled functions, internal mutations, presence
 - **Auth:** none
 - **AI models:** none
 - **Started:** 2026-08-27T05:09:13Z
@@ -36,15 +36,6 @@ Built the app shell and the top-left-anchored canvas that renders widgets by typ
 
 ### 2026-08-27 - fa9688e
 Added pointer-based drag and resize that commits positions to Convex mutations, with frames moving their contained widgets; registered the static hosting component and deployed the site and backend to production (`src/components/Canvas.tsx`, `convex/convex.config.ts`). Registered component: @convex-dev/static-hosting.
-
-### 2026-08-27 - 93559a2
-Added the live social layer: browser-local identity, named presence cursors, poll votes, potluck claims, daily answers, a chat widget, and promote-to-canvas behavior (`src/live/`, `convex/messages.ts`, `convex/presence.ts`, `convex/votes.ts`). Convex features: realtime queries, mutations, crons, presence.
-
-### 2026-08-27 - 9992f27
-Ported the full prototype surface onto the Convex app: all widget types and data adapters, six seeded spaces, landing and hash routes, home previews, floating rail, canvas chrome, pickers, editors, navigation, and threads (`src/data/`, `src/components/`, `src/pages/`, `convex/seed.ts`). Convex features: schema, tables, indexes, queries, mutations, realtime queries, crons, presence.
-
-### 2026-08-27 - a8dde65
-Kept promoted-message state on chat rows so the canvas payoff is persistent across connected views (`convex/messages.ts`, `convex/schema.ts`).
 
 ### 2026-08-27 - 93559a2
 Added a local identity gate, member upserts, throttled presence cursors, live poll votes and potluck claims, a chat widget, and promote-to-canvas (`convex/members.ts`, `convex/presence.ts`, `convex/votes.ts`, `convex/messages.ts`).
