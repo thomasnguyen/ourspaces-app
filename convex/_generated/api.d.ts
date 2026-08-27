@@ -8,8 +8,12 @@
  * @module
  */
 
+import type * as crons from "../crons.js";
+import type * as messages from "../messages.js";
+import type * as presence from "../presence.js";
 import type * as seed from "../seed.js";
 import type * as spaces from "../spaces.js";
+import type * as stats from "../stats.js";
 import type * as votes from "../votes.js";
 import type * as widgets from "../widgets.js";
 
@@ -20,8 +24,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  crons: typeof crons;
+  messages: typeof messages;
+  presence: typeof presence;
   seed: typeof seed;
   spaces: typeof spaces;
+  stats: typeof stats;
   votes: typeof votes;
   widgets: typeof widgets;
 }>;
