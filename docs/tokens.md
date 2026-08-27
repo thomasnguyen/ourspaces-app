@@ -1,0 +1,22 @@
+# Design tokens (from the pre-hack prototype `src/index.css`)
+
+```css
+@theme {
+  --color-paper: #211922;
+  --color-paper-deep: #171119;
+  --color-card: #fffaf7;
+  --color-ink: #111114;
+  --color-muted: #5f5055;
+  --color-sticker: #0b0b0e;
+  --color-lime: #c9ff3d;
+  --color-rail: #111114;
+  --color-crew: #7853ff;
+  --color-couple: #e9369d;
+  --color-fam: #3f70ff;
+  --color-trip: #ff7c42;
+  --color-league: #13b8a6;
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --radius-pill: 9999px;
+}
+```
