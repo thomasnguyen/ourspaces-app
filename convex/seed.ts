@@ -1,82 +1,138 @@
-import { internalMutation } from "./_generated/server";
-import { v } from "convex/values";
+import { internalMutation, type MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { SPACES_BY_ID } from "../src/data/spaces";
+import { getGlobalThread, getThreadsForSpace } from "../src/data/chat";
 
-const daysFromNow = (days: number) => {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
-};
+function seedUserId(slug: string, name: string) {
+  return `seed:${slug}:${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+}
 
-export const seedCrew = internalMutation({
-  args: {},
-  returns: v.union(v.id("spaces"), v.null()),
-  handler: async (ctx) => {
-    const existing = await ctx.db.query("spaces").withIndex("by_name", (q) => q.eq("name", "the crew")).unique();
-    if (existing) {
-      const chat = await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", existing._id)).take(200);
-      let chatId = chat.find((widget) => widget.type === "chat")?._id;
-      if (!chatId) {
-        chatId = await ctx.db.insert("widgets", { spaceId: existing._id, type: "chat", x: 70, y: 960, w: 420, h: 520, z: 4, data: { title: "everyone" }, createdBy: "seed:maya", createdAt: Date.now() });
-      }
-      const messages = await ctx.db.query("messages").withIndex("by_space_widget", (q) => q.eq("spaceId", existing._id).eq("widgetId", chatId!)).take(200);
-      if (!messages.length) {
-        for (const [userId, authorName, authorColor, text] of [
-          ["seed:maya", "Maya", "crew", "ok wait cake poll is open"], ["seed:jules", "Jules", "couple", "claiming balloons !!"], ["seed:sam", "Sam", "fam", "let's do 6pm at our place"],
-        ] as const) await ctx.db.insert("messages", { spaceId: existing._id, widgetId: chatId, userId, authorName, authorColor, text, createdAt: Date.now() });
-      }
-      return existing._id;
-    }
+function convexSafe(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(convexSafe);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, child]) => [
+      /^[\x20-\x7E]+$/.test(key)
+        ? key
+        : `__unicode_${Array.from(key).map((char) => char.codePointAt(0)?.toString(16)).join("_")}`,
+      convexSafe(child),
+    ]),
+  );
+}
 
-    const now = Date.now();
+async function seedAll(ctx: MutationCtx) {
+  const now = Date.now();
+  const widgetIds = new Map<string, string>();
+  const spaceIds = new Map<string, Id<"spaces">>();
+
+  for (const meta of Object.values(SPACES_BY_ID)) {
+    const slug = meta.id;
+    const size = meta.canvasSize ?? (slug === "league"
+      ? { width: 1060, height: 780 }
+      : slug === "buildclub"
+        ? { width: 1520, height: 920 }
+        : { width: 1640, height: 1080 });
     const spaceId = await ctx.db.insert("spaces", {
-      name: "the crew", type: "ongoing", icon: "✦", color: "crew", createdAt: now, lastActivityAt: now,
+      name: meta.name,
+      type: meta.kind,
+      icon: meta.icon,
+      color: meta.color,
+      slug,
+      tagline: meta.tagline,
+      canvasW: size.width,
+      canvasH: size.height,
+      createdAt: now,
+      lastActivityAt: now,
     });
-    const people = [
-      ["maya", "Maya", "crew"], ["jules", "Jules", "couple"], ["sam", "Sam", "fam"],
-      ["rio", "Rio", "trip"], ["kenji", "Kenji", "league"], ["ash", "Ash", "lime"],
-    ];
-    for (const [id, name, color] of people) {
-      await ctx.db.insert("members", { spaceId, userId: `seed:${id}`, name, color, lastSeen: now });
-    }
-    const addWidget = async (type: string, x: number, y: number, w: number, h: number, z: number, data: unknown) =>
-      await ctx.db.insert("widgets", { spaceId, type, x, y, w, h, z, data, createdBy: "seed:maya", createdAt: now });
+    spaceIds.set(slug, spaceId);
 
-    await addWidget("note", 70, 100, 280, 180, 3, {
-      text: "remember when Rio got locked out in socks", authorName: "Ash", kicker: "inside joke hall of fame", tone: "warm", rotation: -2,
-    });
-    const summerPollId = await addWidget("poll", 70, 320, 330, 260, 3, {
-      question: "where are we going this summer?", tone: "sky", options: [
-        { id: "tahoe", label: "Tahoe" }, { id: "mexico", label: "Mexico City" }, { id: "coast", label: "the coast" },
-      ],
-    });
-    await addWidget("dailyQuestion", 70, 630, 360, 260, 3, {
-      question: "what would your walk-on song be?", tone: "blush", streak: 4,
-      answers: [{ name: "Maya", text: "Dancing Queen, loudly." }, { name: "Kenji", text: "Anything with a bass line." }], waitingOn: ["Jules", "Rio", "Ash"],
-    });
-    const frameId = await addWidget("frame", 500, 80, 860, 620, 0, { title: "Maya's bday" });
-    void frameId;
-    await addWidget("countdown", 540, 150, 220, 260, 2, {
-      targetDate: daysFromNow(5), startDate: daysFromNow(-2), event: "Maya's bday 🎂", tone: "violet", hyped: ["Maya", "Jules", "Sam", "Kenji"],
-    });
-    const cakePollId = await addWidget("poll", 790, 150, 320, 260, 3, {
-      question: "cake flavor?", tone: "butter", options: [
-        { id: "matcha", label: "matcha" }, { id: "chocolate", label: "chocolate" }, { id: "tres-leches", label: "tres leches" },
-      ],
-    });
-    await addWidget("potluck", 540, 450, 570, 180, 3, {
-      title: "birthday potluck", tone: "mint", items: [
-        { id: "snacks", label: "snacks + chips", claimedBy: "seed:jules", claimedName: "Jules" },
-        { id: "drinks", label: "something bubbly" }, { id: "candles", label: "candles" },
-      ],
-    });
-    const chatId = await addWidget("chat", 70, 960, 420, 520, 4, { title: "everyone" });
-    for (const [userId, authorName, authorColor, text] of [
-      ["seed:maya", "Maya", "crew", "ok wait cake poll is open"], ["seed:jules", "Jules", "couple", "claiming balloons !!"], ["seed:sam", "Sam", "fam", "let's do 6pm at our place"],
-    ] as const) await ctx.db.insert("messages", { spaceId, widgetId: chatId, userId, authorName, authorColor, text, createdAt: now });
-    for (const [widgetId, userId, optionId] of [
-      [summerPollId, "seed:maya", "tahoe"], [summerPollId, "seed:jules", "mexico"], [summerPollId, "seed:sam", "tahoe"],
-      [cakePollId, "seed:maya", "matcha"], [cakePollId, "seed:jules", "matcha"], [cakePollId, "seed:sam", "chocolate"], [cakePollId, "seed:kenji", "matcha"], [cakePollId, "seed:rio", "tres-leches"],
-    ] as const) await ctx.db.insert("votes", { widgetId, userId, optionId });
-    return spaceId;
+    for (const member of meta.members) {
+      await ctx.db.insert("members", {
+        spaceId,
+        userId: seedUserId(slug, member.name),
+        name: member.name,
+        color: member.color,
+        lastSeen: now,
+      });
+    }
+
+    for (const widget of meta.widgets) {
+      const id = await ctx.db.insert("widgets", {
+        spaceId,
+        type: widget.type,
+        x: widget.x,
+        y: widget.y,
+        w: widget.w,
+        h: widget.h,
+        z: widget.z,
+        rotate: widget.rotate,
+        data: convexSafe(widget.data),
+        createdBy: seedUserId(slug, meta.members[0]?.name ?? "guest"),
+        createdAt: now,
+      });
+      widgetIds.set(`${slug}:${widget.id}`, id);
+
+      if (widget.type === "poll") {
+        for (const option of (widget.data.options as any[]) ?? []) {
+          for (const voter of option.voters ?? []) {
+            await ctx.db.insert("votes", {
+              widgetId: id,
+              userId: seedUserId(slug, voter),
+              optionId: option.id,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  for (const meta of Object.values(SPACES_BY_ID)) {
+    const spaceId = spaceIds.get(meta.id);
+    if (!spaceId) continue;
+    const global = getGlobalThread(meta.id);
+    const threads = [global, ...Object.values(getThreadsForSpace(meta.id))];
+    let offset = threads.reduce((total, thread) => total + thread.messages.length, 0);
+    for (const thread of threads) {
+      for (const [index, message] of thread.messages.entries()) {
+        const widgetId = thread.widgetId === "global"
+          ? "global"
+          : widgetIds.get(`${meta.id}:${thread.widgetId}`);
+        if (!widgetId) continue;
+        const member = meta.members.find((candidate) => candidate.name === message.from);
+        await ctx.db.insert("messages", {
+          spaceId,
+          widgetId: String(widgetId),
+          userId: seedUserId(meta.id, message.from),
+          text: message.text,
+          createdAt: now - (offset - index) * 60_000,
+          authorName: message.from,
+          authorColor: member?.color ?? "#8b8b8b",
+          promotable: message.promotable,
+        });
+      }
+      offset -= thread.messages.length;
+    }
+  }
+
+  return spaceIds.get("crew");
+}
+
+export const demo = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const existing = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", "crew")).unique();
+    if (existing) return existing._id;
+    return seedAll(ctx);
+  },
+});
+
+export const reset = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    for (const table of ["messages", "votes", "presence", "widgets", "members", "spaces"] as const) {
+      const rows = await ctx.db.query(table).collect();
+      for (const row of rows) await ctx.db.delete(row._id);
+    }
+    return seedAll(ctx);
   },
 });

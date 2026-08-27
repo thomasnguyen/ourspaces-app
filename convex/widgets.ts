@@ -1,90 +1,96 @@
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { schema } from "./schema";
 
+/** Drives the canvas — every widget in a space, rendered by type (PRD §11). */
 export const listWidgets = query({
   args: { spaceId: v.id("spaces") },
-  returns: v.array(schema.doc("widgets")),
-  handler: async (ctx, args) =>
-    await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", args.spaceId)).take(200),
+  handler: async (ctx, { spaceId }) => {
+    return await ctx.db
+      .query("widgets")
+      .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
+      .collect();
+  },
 });
 
 export const createWidget = mutation({
   args: {
-    spaceId: v.id("spaces"), type: v.string(), x: v.number(), y: v.number(), w: v.number(), h: v.number(), z: v.number(),
-    data: v.any(), createdBy: v.string(),
+    spaceId: v.id("spaces"),
+    type: v.string(),
+    x: v.number(),
+    y: v.number(),
+    w: v.number(),
+    h: v.number(),
+    z: v.number(),
+    data: v.any(),
+    createdBy: v.string(),
+    rotate: v.optional(v.number()),
   },
-  returns: v.id("widgets"),
-  handler: async (ctx, args) => await ctx.db.insert("widgets", { ...args, createdAt: Date.now() }),
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("widgets", { ...args, createdAt: Date.now() });
+  },
 });
 
+/** Committed on drop, optimistic on the client (PRD §11). */
 export const moveWidget = mutation({
-  args: { id: v.id("widgets"), x: v.number(), y: v.number() },
-  returns: v.null(),
+  args: { id: v.id("widgets"), x: v.number(), y: v.number(), z: v.optional(v.number()) },
+  handler: async (ctx, { id, x, y, z }) => {
+    await ctx.db.patch(id, z === undefined ? { x, y } : { x, y, z });
+  },
+});
+
+export const deleteWidget = mutation({
+  args: { id: v.id("widgets") },
+  handler: async (ctx, { id }) => ctx.db.delete(id),
+});
+
+export const claimItem = mutation({
+  args: {
+    widgetId: v.id("widgets"),
+    itemName: v.string(),
+    claimantName: v.string(),
+    claimantUserId: v.string(),
+  },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, { x: Math.max(0, args.x), y: Math.max(0, args.y) });
-    return null;
+    const widget = await ctx.db.get(args.widgetId);
+    if (!widget) throw new Error("Widget not found");
+    const items = Array.isArray(widget.data?.items) ? widget.data.items : [];
+    const nextItems = items.map((item: Record<string, unknown>) => {
+      if (item.name !== args.itemName) return item;
+      if (item.claimed && item.byUserId === args.claimantUserId) {
+        const { byUserId: _byUserId, by: _by, claimed: _claimed, ...rest } = item;
+        return { ...rest, claimed: false, by: undefined, byUserId: undefined };
+      }
+      return { ...item, claimed: true, by: args.claimantName, byUserId: args.claimantUserId };
+    });
+    await ctx.db.patch(widget._id, { data: { ...widget.data, items: nextItems } });
+  },
+});
+
+/** Merge only the wheel outcome so remote clients animate from the same data. */
+export const spinWheel = mutation({
+  args: {
+    widgetId: v.id("widgets"),
+    spinNonce: v.number(),
+    resultIndex: v.number(),
+    spunBy: v.string(),
+  },
+  handler: async (ctx, { widgetId, ...spin }) => {
+    const widget = await ctx.db.get(widgetId);
+    if (!widget) return;
+    await ctx.db.patch(widget._id, { data: { ...widget.data, ...spin } });
   },
 });
 
 export const resizeWidget = mutation({
   args: { id: v.id("widgets"), w: v.number(), h: v.number() },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, { w: Math.max(140, args.w), h: Math.max(100, args.h) });
-    return null;
-  },
-});
-
-export const bringToFront = mutation({
-  args: { id: v.id("widgets") },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const widget = await ctx.db.get(args.id);
-    if (!widget) return null;
-    const widgets = await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", widget.spaceId)).take(200);
-    await ctx.db.patch(args.id, { z: Math.max(...widgets.map((item) => item.z), 0) + 1 });
-    return null;
+  handler: async (ctx, { id, w, h }) => {
+    await ctx.db.patch(id, { w, h });
   },
 });
 
 export const updateWidgetData = mutation({
   args: { id: v.id("widgets"), data: v.any() },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, { data: args.data });
-    return null;
-  },
-});
-
-export const claimItem = mutation({
-  args: { widgetId: v.id("widgets"), itemId: v.string(), userId: v.string(), name: v.string() },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const widget = await ctx.db.get(args.widgetId);
-    if (!widget) return null;
-    const data = widget.data as { items?: Array<{ id: string; claimedBy?: string; claimedName?: string }> };
-    const items = (data.items ?? []).map((item) => {
-      if (item.id !== args.itemId) return item;
-      if (item.claimedBy === args.userId) {
-        const { claimedBy: _claimedBy, claimedName: _claimedName, ...openItem } = item;
-        return openItem;
-      }
-      return { ...item, claimedBy: args.userId, claimedName: args.name };
-    });
-    await ctx.db.patch(args.widgetId, { data: { ...data, items } });
-    return null;
-  },
-});
-
-export const answerDaily = mutation({
-  args: { widgetId: v.id("widgets"), name: v.string(), text: v.string() },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const widget = await ctx.db.get(args.widgetId);
-    if (!widget) return null;
-    const data = widget.data as { answers?: Array<{ name: string; text: string }> };
-    await ctx.db.patch(args.widgetId, { data: { ...data, answers: [...(data.answers ?? []), { name: args.name, text: args.text }] } });
-    return null;
+  handler: async (ctx, { id, data }) => {
+    await ctx.db.patch(id, { data });
   },
 });
