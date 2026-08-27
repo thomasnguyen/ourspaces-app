@@ -1,23 +1,35 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #211922;
-  --color-paper-deep: #171119;
-  --color-card: #fffaf7;
-  --color-ink: #111114;
-  --color-muted: #5f5055;
-  --color-sticker: #0b0b0e;
-  --color-lime: #c9ff3d;
-  --color-rail: #111114;
-  --color-crew: #7853ff;
-  --color-couple: #e9369d;
-  --color-fam: #3f70ff;
-  --color-trip: #ff7c42;
+  --color-base: #0b0b0d;
+  --color-rail: #151517;
+  --color-sticker: #0a0a0b;
+  --color-ink: #ffffff;
+  --color-muted: #a7a5ad;
+  --color-lime: #c6f750;
+  --color-crew: #7c5cff;
+  --color-couple: #e63da8;
+  --color-fam: #3d6eff;
+  --color-trip: #ff7a3d;
   --color-league: #13b8a6;
-  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-warm: #ff7a3d;
+  --color-sky: #3d6eff;
+  --color-blush: #e63da8;
+  --color-butter: #c6f750;
+  --color-mint: #13b8a6;
+  --color-violet: #7c5cff;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --radius-pill: 9999px;
+  --radius-tile: 15px;
+  --radius-card: 26px;
 }
 
 html, body, #root { height: 100%; }
-body { background: var(--color-base); color: white; font-family: var(--font-sans, "Plus Jakarta Sans", sans-serif); }
+body { margin: 0; background: var(--color-base); color: var(--color-ink); font-family: var(--font-sans); }
+
+* { box-sizing: border-box; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 1ms !important; animation-duration: 1ms !important; }
+}
