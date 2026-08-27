@@ -56,3 +56,35 @@ export const updateWidgetData = mutation({
     return null;
   },
 });
+
+export const claimItem = mutation({
+  args: { widgetId: v.id("widgets"), itemId: v.string(), userId: v.string(), name: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const widget = await ctx.db.get(args.widgetId);
+    if (!widget) return null;
+    const data = widget.data as { items?: Array<{ id: string; claimedBy?: string; claimedName?: string }> };
+    const items = (data.items ?? []).map((item) => {
+      if (item.id !== args.itemId) return item;
+      if (item.claimedBy === args.userId) {
+        const { claimedBy: _claimedBy, claimedName: _claimedName, ...openItem } = item;
+        return openItem;
+      }
+      return { ...item, claimedBy: args.userId, claimedName: args.name };
+    });
+    await ctx.db.patch(args.widgetId, { data: { ...data, items } });
+    return null;
+  },
+});
+
+export const answerDaily = mutation({
+  args: { widgetId: v.id("widgets"), name: v.string(), text: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const widget = await ctx.db.get(args.widgetId);
+    if (!widget) return null;
+    const data = widget.data as { answers?: Array<{ name: string; text: string }> };
+    await ctx.db.patch(args.widgetId, { data: { ...data, answers: [...(data.answers ?? []), { name: args.name, text: args.text }] } });
+    return null;
+  },
+});

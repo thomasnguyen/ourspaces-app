@@ -1,12 +1,23 @@
 import { v } from "convex/values";
-import { query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
+
+export const vote = mutation({
+  args: { widgetId: v.id("widgets"), userId: v.string(), optionId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const current = await ctx.db.query("votes").withIndex("by_widget_user", (q) => q.eq("widgetId", args.widgetId).eq("userId", args.userId)).unique();
+    if (current) await ctx.db.patch(current._id, { optionId: args.optionId });
+    else await ctx.db.insert("votes", args);
+    return null;
+  },
+});
 
 export const pollResults = query({
-  args: { widgetId: v.id("widgets") },
-  returns: v.record(v.string(), v.object({ count: v.number(), voterNames: v.array(v.string()) })),
+  args: { widgetId: v.id("widgets"), userId: v.optional(v.string()) },
+  returns: v.object({ results: v.record(v.string(), v.object({ count: v.number(), voterNames: v.array(v.string()) })), currentOptionId: v.union(v.string(), v.null()) }),
   handler: async (ctx, args) => {
     const widget = await ctx.db.get(args.widgetId);
-    if (!widget) return {};
+    if (!widget) return { results: {}, currentOptionId: null };
     const votes = await ctx.db.query("votes").withIndex("by_widget", (q) => q.eq("widgetId", args.widgetId)).take(200);
     const results: Record<string, { count: number; voterNames: string[] }> = {};
     for (const vote of votes) {
@@ -19,6 +30,9 @@ export const pollResults = query({
       if (member) result.voterNames.push(member.name);
       results[vote.optionId] = result;
     }
-    return results;
+    const currentVote = args.userId
+      ? await ctx.db.query("votes").withIndex("by_widget_user", (q) => q.eq("widgetId", args.widgetId).eq("userId", args.userId!)).unique()
+      : null;
+    return { results, currentOptionId: currentVote?.optionId ?? null };
   },
 });

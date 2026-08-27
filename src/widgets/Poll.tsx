@@ -5,6 +5,8 @@ type PollResults = Record<string, { count: number; voterNames: string[] }>;
 export type PollProps = {
   data: PollData;
   results?: PollResults;
+  currentOptionId?: string | null;
+  onVote?: (optionId: string) => void;
 };
 
 const toneClasses: Record<string, { card: string; muted: string; fill: string }> = {
@@ -45,7 +47,7 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-export function Poll({ data, results = {} }: PollProps) {
+export function Poll({ data, results = {}, currentOptionId, onVote }: PollProps) {
   const tone = toneClasses[data.tone ?? "blush"] ?? toneClasses.blush;
   const totalVotes = data.options.reduce(
     (total, option) => total + (results[option.id]?.count ?? 0),
@@ -78,10 +80,10 @@ export function Poll({ data, results = {} }: PollProps) {
 
           return (
             <li key={option.id} className="min-h-0 flex-1">
-              <div
+              <button type="button" onClick={() => onVote?.(option.id)}
                 className={`relative flex h-full min-h-12 items-center gap-2 overflow-hidden rounded-pill bg-black/10 px-3 py-2 ${
                   leading ? "ring-2 ring-current" : ""
-                }`}
+                } ${currentOptionId === option.id ? "ring-2 ring-lime" : ""}`}
               >
                 <span
                   className={`absolute inset-y-0 left-0 ${tone.fill} transition-[width] duration-300`}
@@ -115,7 +117,7 @@ export function Poll({ data, results = {} }: PollProps) {
                     {votes}
                   </span>
                 )}
-              </div>
+              </button>
             </li>
           );
         })}
