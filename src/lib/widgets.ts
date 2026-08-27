@@ -49,7 +49,7 @@ export type WidgetByType = {
 };
 
 export type WidgetType = keyof WidgetByType;
-export type Widget<T extends WidgetType = WidgetType> = Omit<Doc<"widgets">, "type" | "data"> & {
+export type Widget<T extends WidgetType = WidgetType> = T extends WidgetType ? Omit<Doc<"widgets">, "type" | "data"> & {
   type: T;
   data: WidgetByType[T];
-};
+} : never;
