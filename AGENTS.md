@@ -7,10 +7,17 @@ Plan and cut order: `.private/PLAN.md` (local only).
 
 ## Rules
 
-- **No tests. Ever.** `npm run build` (typecheck) is the check. Visual/live work
-  is verified in the browser.
+- **No tests. Ever.** This is a hackathon — no unit tests or any automated
+  tests; don't waste time or tokens on them. `npm run build` (typecheck) is the
+  check. Visual/live work is verified in the browser.
 - **Demo path over edge cases.** Happy path + empty state. No defensive code,
   refactors, a11y audits, i18n, or abstractions "for later."
+- **Hacked-together is fine.** No one will read this code — B/C-grade quality is
+  good enough. Don't polish or over-optimize for "production". The one exception:
+  keep TypeScript types decent, since they make vibe coding work.
+- **This is 100% vibe-coded.** The human never edits code directly. Add or
+  update docs (`AGENTS.md`, `docs/`, `hackathon.md`) whenever it would help the
+  next chat session pick up where you left off.
 - **Convex does the sync.** Widgets, votes, messages, presence are reactive
   queries. Never hand-roll state sync. Use components (presence, workflow,
   AgentMail, Firecrawl), crons, scheduled functions, HTTP actions, file storage,
@@ -24,7 +31,9 @@ Plan and cut order: `.private/PLAN.md` (local only).
 - **LLM copy in-product is plain and direct.**
 - **Commit per working step** with a normal conventional message. Run
   `/hackathon` at the end of a session to update `hackathon.md`.
-- **Replies to the human: ≤3 short bullets.** Lead with the result.
+- **Replies to the human: ≤3 short bullets.** Lead with the result. They're
+  often on a phone — only the important parts; they'll dive in as needed.
+  **Bold** anything that needs their input and mark it, e.g. **(question)**.
 - Secrets only in `.env.local` / Convex env vars. Never commit keys.
 
 ## Commands

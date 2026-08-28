@@ -1,3 +1,6 @@
+**Read `AGENTS.md` first** — it has the project rules (hackathon mode, no
+tests, reply style, design constraints).
+
 <!-- convex-ai-start -->
 
 This project uses [Convex](https://convex.dev) as its backend.
