@@ -1,12 +1,16 @@
 # OurSpaces, product requirements document
 
-*Convex hackathon build · v0.6, the build spec*
+*Convex hackathon build · v0.7, the build spec (filename kept from v0.6; v0.7 adds the positioning layer, the montage cold open, the paint widget, and the props-vs-features scope note)*
 
 **Objective: win the hackathon.** Every decision below answers one question. Does it make the 3 minute video land harder? If it won't show up on camera in those three minutes, it's low priority.
 
 **Technical decisions: least friction wins.** When the choice is *how* to build something, a library, an auth method, a data shape, take whatever reaches a working demo fastest, not what's most correct, scalable, or future-proof. Anonymous auth over real accounts. The platform default over a custom abstraction. Inline state over a new table. The moment a decision turns into research, pick the boring option and keep moving. We're optimizing a 3 minute video, not a codebase anyone has to maintain.
 
 **One-liner:** group chats forget. spaces remember.
+
+**Rallying cry (the emotional layer):** *make social media fun again.* The MySpace/GeoCities nostalgia isn't about feeds — it's about **owning a page you could decorate**. Nobody parses "social media" as a category anymore; it just means "the fun internet." The two lines stack: the rallying cry is the vibe and the hook, the one-liner is the job-to-be-done, and personalization — every space wearing its own loud color and its own clutter — is the *proof* of the claim, shown rather than said.
+
+**Why group chats die (and what answers each):** nothing to talk about → daily question / topics. Nothing to do together → paint, playlist sticker, party mode. Nothing accumulates → photo wall, promoted notes, the archive. This is the pitch as a story, not a feature list.
 
 ---
 
@@ -19,6 +23,8 @@ Think Discord meets Figma, but for your people instead of your work.
 ## 2. Problem
 
 A group chat is a tyranny of the timeline. The date, the decision, the poll result, who's bringing dessert, all of it scrolls away and gets re-litigated every week. There's no shared place where the important stuff lives. Spatial tools like Figma and Miro solve persistence and co-presence, but they're built for work, not for friends.
+
+There's a second, emotional problem underneath: the web used to be *ours* — decorated, weird, personal — and it flattened into identical gray feeds. The nostalgia people carry for MySpace and GeoCities isn't for the feed; it's for ownership. That's the wound the cold open pokes and the product answers.
 
 ## 3. Thesis
 
@@ -84,7 +90,7 @@ Ranked by hackathon value, which is demo wow plus Convex relevance plus buildabi
 **Tiers (cut from the bottom):**
 
 - **Must-have:** canvas, presence, draggable and resizable widgets, poll, potluck, countdown, templates, **and promote-to-canvas.** Promote ranks #8 but it's the demo's climax and the one moment that proves the thesis on camera, so it earns must-have despite the rank. The chat widget under it can stay bare-bones, just enough messages to promote one.
-- **Nice-to-have:** a fuller chat widget, media widget, the **frame** (the visual tier is nearly free, so build it, move-together containment is the cuttable part).
+- **Nice-to-have:** a fuller chat widget, media widget, the **paint widget** (carries the couple-space cameo, the purest realtime flex on camera; if cut, the cameo falls back to countdown + daily question + photo wall), the **frame** (the visual tier is nearly free, so build it, move-together containment is the cuttable part).
 - **Only if time:** video chat, music or radio, games, live sports.
 - **AI layer (see §11.1):** Smart Promote is the **P1** AI feature — it rides on must-have promote, and if a Claude call ever fails the message still lands as a plain note. Catch-me-up is **P2** (nice-to-have); the AI daily-question is **P3** (first AI feature to cut). Core ships with or without these.
 
@@ -93,6 +99,8 @@ Auth stays anonymous. No settings, search, or notifications. None of it shows in
 ## 8. Widgets
 
 Each one has to feel alive, with state that moves on its own or across users.
+The full per-space inventory (what each demo space has today and what it still
+needs) lives in `docs/spaces-and-widgets.md`.
 
 - **Countdown.** Ticks to the event. Self-live.
 - **Poll.** Vote, bars fill, counts update live across users.
@@ -100,7 +108,10 @@ Each one has to feel alive, with state that moves on its own or across users.
 - **Chat.** Message stream, each message promotable to a note.
 - **Note.** Freeform sticky, the canonical "promoted" artifact.
 - **Frame** *(container, not live).* A titled boundary that groups widgets into a zone. The birthday cluster (countdown, poll, potluck) lives in a "Maya's bday" frame, evergreen widgets sit loose around it. Gives an event its own area on the one canvas with no navigation. Build the **visual tier first**, a labeled rounded rect rendered behind the widgets. Grouping is purely visual and the camera read is 90% there. **Move-together** (drag the frame, contents follow, where "inside" means widget bounds within frame bounds) is the nicer upgrade and the cuttable part. If cut, the demo doesn't notice.
+- **Paint** *(the couple-space beat).* A small shared pixel/color canvas two people doodle on together — both cursors painting the same cells in real time. The purest possible Convex-realtime flex, and the long-distance answer to "something to *do* together." Keep it tiny: a fixed grid, a handful of colors, one `updateWidgetData`-style mutation per stroke. No brushes, no layers, no undo.
 - **Live sports** *(P3 stretch).* A score that updates on its own, the most visually alive thing on screen, and on-brand for a friend group.
+
+**Props, not features (set dressing).** The playlist (a Spotify embed styled as a sticker — never a real player, licensing and sync are a tarpit), photo wall, link shelf, joke registry, quote, and media widgets exist to make canvases read *lived-in*, per §6. The camera pans past them; it never stops for them. Same rule for party coordination: countdown + poll + potluck reframed as "party mode" is the answer — don't build a new coordination system. Real engineering effort goes only to the demo-beat widgets: daily question, paint, and the Firecrawl link card.
 
 ## 9. Platforms
 
@@ -264,17 +275,20 @@ Ranked to how this hackathon scores, heaviest first: **polish → novelty → Co
 
 ## 13. Demo, shot-by-shot script (3:00 or less)
 
-One product, three templates. Hero = **the crew**. Beat = **article club**.
-Story hook = **the couple** (Thomas + Holly's own space). Holly presents.
+One product, three skins — the same canvas wearing three crews' colors *is* the
+personalization claim, shown not said. Hero = **the crew**. Beat = **article
+club** (the dev group). Story hook = **the couple** (Thomas + Holly's own
+space). Holly presents.
 
-- **0:00 to 0:10 · cold open.** Two windows side by side in the crew space. Vote in A, bars move in B. Caption: "everything here is live, and shared."
-- **0:10 to 0:25 · the hook.** Holly: "Group chats forget. We built this for us first." 5s cameo of the couple space (countdown to next visit, daily question, photo wall). Then Home grid: crew, couple, article club — all alive.
-- **0:25 to 0:55 · the crew plans Maya's bday.** Claim a potluck item, ghost votes land, named cursors roam, drag a card. "Louder multiplayer."
+- **0:00 to 0:08 · nostalgia montage.** Rapid ~0.5s flash cuts of the old web: a GeoCities page with a tiled background, an "UNDER CONSTRUCTION" GIF, a glitter cursor trail, a Winamp skin, a MySpace Top 8, a hit counter — slightly degraded so it reads "old web" instantly. Hard cut to the present: one sterile gray infinite feed. Hold the silence a beat — the stillness after the chaos is the joke. Line lands over the gray frame: **"the web used to be ours. then it got boring."** (Assets: gifcities.org — the Internet Archive's searchable GeoCities GIF index — plus Wayback Machine page captures. An hour of asset-hunting, not a build task.)
+- **0:08 to 0:20 · smash cut, alive.** Full-color crew space, two windows side by side, cursors flying. Vote in A, bars move in B. Caption: "everything here is live, and shared."
+- **0:20 to 0:30 · the hook.** Holly: "Group chats forget. We built this for us first." 5s cameo of the couple space — countdown to next visit, daily question, and the two of them **painting the same pixel canvas from two windows**. Then Home grid: crew, couple, article club — all alive, each in its own loud color.
+- **0:30 to 0:55 · the crew plans Maya's bday.** Claim a potluck item, ghost votes land, named cursors roam, drag a card. "Louder multiplayer."
 - **0:55 to 1:20 · promote.** "let's do 6pm at our place" → drag onto canvas → AI lands it as a note on both screens. Let it breathe.
 - **1:20 to 2:05 · the space follows up (AgentMail + OpenAI + Convex).** Date locks → "Space is drafting" card: *emailing 4 people who said yes*. Holly hits Send. Phone on camera buzzes with a personal email ("you're on guac"). Grandma replies "can't make it" — her RSVP flips live on both screens. "It emails the right people, and listens back."
 - **2:05 to 2:35 · article club (Firecrawl + OpenAI).** Drop a link in the club space → summary card + two questions appear → someone answers in window B. "Any link becomes something to talk about."
 - **2:35 to 2:50 · prove it's real.** Convex dashboard, tables updating live. Live URL on screen.
-- **2:50 to 3:00 · close.** "Turn your group chat into a place. It remembers for everyone — live." Name. Out.
+- **2:50 to 3:00 · close.** "Turn your group chat into a place. It remembers for everyone — live." Beat, then the callback: "the fun web is back." Name. Out.
 
 ## 14. Build order
 

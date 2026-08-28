@@ -16,4 +16,6 @@ Objects don’t all look the same. A poster next to a cutout next to a sticky no
 
 When things move (later), they should feel like you picked them up. Slight lift. Tiny tilt. A shadow that means weight. Not bounce. Not glow. Just tactile.
 
+The lineage is the old web — MySpace, GeoCities, a page you decorated because it was yours. But not retro pastiche: no pixel fonts, no fake CRT, no under-construction GIFs in the product itself (those live in the demo's cold-open montage, not the app). The nostalgia is for *ownership*, and it's answered with materials — paper, stickers, loud color — not skeuomorphs of 1999.
+
 The whole thing should read as: this belongs to a group of people, and they’ve been here.

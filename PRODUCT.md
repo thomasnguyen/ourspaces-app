@@ -9,8 +9,9 @@ brand
 
 ## Users
 
-Friend groups — close crews, couples, families, trip squads, rec-league teams —
-mostly Gen Z and young adults who already live in a group chat. The context is
+Friend groups — close crews, long-distance couples, families, trip squads,
+rec-league teams, and interest crews (a dev group swapping links, an article
+club) — mostly Gen Z and young adults who already live in a group chat. The context is
 social, not professional: they're planning or living through an occasion (a
 birthday, a trip, a weekly hang) together, on phones and laptops, often at the
 same time. The job to be done: stop losing the plans, polls, and inside jokes to
@@ -32,6 +33,24 @@ your work.
 
 The tagline is the whole thesis: **group chats forget. spaces remember.**
 Persistence + presence is the pitch.
+
+Layered on top is the rallying cry: **make social media fun again.** The
+MySpace/GeoCities nostalgia isn't for feeds — it's for *owning a page you could
+decorate*. The rallying cry is the vibe and the hook, the tagline is the job,
+and personalization (every space wearing its own loud color and clutter) is the
+proof, shown rather than said. The demo opens on this: a flash-cut montage of
+the old web, a hard cut to one sterile gray feed, and the line "the web used to
+be ours. then it got boring."
+
+The second story is **group chats that don't die** — each feature answers one of
+the three reasons chats go quiet. Nothing to talk about → daily question /
+topics. Nothing to do together → the collab paint canvas, the playlist sticker,
+party mode. Nothing accumulates → photo wall, promoted notes, the archive.
+
+The three demo verticals are the same canvas wearing three skins — friend group
+(hero), long-distance couple (paint canvas, the realtime flex), dev group
+(Firecrawl link cards, Hacker News as a bedroom wall) — which is itself the
+personalization claim on camera.
 
 This is a **Convex hackathon MVP**. Success is singular: **win the hackathon with
 a demo that lands in 3 minutes.** Every decision answers one question — does it
@@ -86,7 +105,10 @@ consistent component vocabulary), but the default lane is loud.
    gesture and the demo's climax.
 5. **Lived-in over empty.** The hero space looks like real people use it: an
    inside-joke note, a half-answered poll, a daily question. Populate before you
-   polish.
+   polish. Corollary — **props, not features**: the playlist (Spotify embed
+   styled as a sticker, never a real player), photo wall, and link shelf exist
+   as set dressing the camera pans past; real engineering goes only to
+   demo-beat widgets (daily question, paint, Firecrawl link card).
 6. **If it won't show on camera in 3 minutes, it's low priority.** Optimize
    relentlessly for the demo.
 
