@@ -18,6 +18,17 @@ Plan and cut order: `.private/PLAN.md` (local only).
 - **This is 100% vibe-coded.** The human never edits code directly. Add or
   update docs (`AGENTS.md`, `docs/`, `hackathon.md`) whenever it would help the
   next chat session pick up where you left off.
+- **Don't ask permission.** For reversible changes, just do it and report after.
+  Only stop for destructive/irreversible actions or genuine scope changes.
+- **Run `npm run build` before ending a turn.** It's the only check.
+- **Read `docs/code-map.md` before searching the codebase.** Update it when you
+  add, move, or split files or major `App.tsx` sections.
+- **End of session: update `docs/todos.md`** (works now / broken / next up /
+  decisions made in chat). `hackathon.md` stays the backward-looking log
+  (`/hackathon` skill).
+- **Splitting `App.tsx` / `index.css` is allowed and encouraged** when a section
+  gets hairy — extract to `src/components` or `src/lib`, keep it hacky, update
+  the code map.
 - **Convex does the sync.** Widgets, votes, messages, presence are reactive
   queries. Never hand-roll state sync. Use components (presence, workflow,
   AgentMail, Firecrawl), crons, scheduled functions, HTTP actions, file storage,
@@ -31,9 +42,9 @@ Plan and cut order: `.private/PLAN.md` (local only).
 - **LLM copy in-product is plain and direct.**
 - **Commit per working step** with a normal conventional message. Run
   `/hackathon` at the end of a session to update `hackathon.md`.
-- **Replies to the human: ≤3 short bullets.** Lead with the result. They're
-  often on a phone — only the important parts; they'll dive in as needed.
-  **Bold** anything that needs their input and mark it, e.g. **(question)**.
+- **Replies to the human: ≤3 bullets, no paragraphs, no preamble.** Lead with
+  the result. They're on a phone — only what matters; they'll dive in as
+  needed. **Bold** anything needing their input, tagged **(question)**.
 - Secrets only in `.env.local` / Convex env vars. Never commit keys.
 
 ## Commands
