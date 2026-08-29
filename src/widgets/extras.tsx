@@ -913,6 +913,24 @@ export function PhotoWallWidget({ widget, style }: { widget: Widget; style: Styl
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const cover = photos[0];
   const peeks = photos.slice(1, 3);
+  const fullSrcs = photos
+    .slice(0, 6)
+    .map((photo) => photo.src)
+    .filter((src): src is string => Boolean(src))
+    .join("|");
+
+  /* Warm the cache for the memory room's full-res photos while the widget
+     idles on the canvas — so the spread animation never waits on a fetch. */
+  useEffect(() => {
+    if (!fullSrcs) return;
+    const timeout = window.setTimeout(() => {
+      fullSrcs.split("|").forEach((src) => {
+        const image = new Image();
+        image.src = src;
+      });
+    }, 1200);
+    return () => window.clearTimeout(timeout);
+  }, [fullSrcs]);
 
   const toggleFavorite = (caption: string) => {
     setFavorites((current) => ({ ...current, [caption]: !current[caption] }));

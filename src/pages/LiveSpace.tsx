@@ -399,9 +399,16 @@ export function LiveSpacePage({
     }
     return map;
   }, [allMessages, photoGalleryWidget]);
+  /* Stable callbacks for the memoized gallery — routed through refs so
+     presence/chat re-renders don't hand it fresh function identities. */
+  const galleryWidgetIdRef = useRef<string | null>(null);
+  galleryWidgetIdRef.current = photoGalleryWidget?.id ?? null;
+  const gallerySendRef = useRef(handlers.onSend);
+  gallerySendRef.current = handlers.onSend;
   const addPhotoToWall = useCallback(
     async (file: File, caption: string) => {
-      if (!photoGalleryWidget) return;
+      const widgetId = galleryWidgetIdRef.current;
+      if (!widgetId) return;
       const uploadUrl = await generatePhotoUploadUrl();
       const response = await fetch(uploadUrl, {
         method: "POST",
@@ -411,14 +418,22 @@ export function LiveSpacePage({
       if (!response.ok) throw new Error("photo upload failed");
       const { storageId } = (await response.json()) as { storageId: string };
       await pinPhoto({
-        widgetId: photoGalleryWidget.id as Id<"widgets">,
+        widgetId: widgetId as Id<"widgets">,
         storageId: storageId as Id<"_storage">,
         caption,
         by: identity.name,
       });
     },
-    [generatePhotoUploadUrl, identity.name, photoGalleryWidget, pinPhoto],
+    [generatePhotoUploadUrl, identity.name, pinPhoto],
   );
+  const sendPhotoComment = useCallback((photoId: string, text: string) => {
+    const widgetId = galleryWidgetIdRef.current;
+    if (widgetId) gallerySendRef.current(`${widgetId}::photo:${photoId}`, text);
+  }, []);
+  const closePhotoGallery = useCallback(() => {
+    setPhotoGallery(null);
+    setManagedWidgetId("");
+  }, []);
   const globalMessages = useMemo(
     () => (allMessages ?? [])
       .filter((message) => message.widgetId === "global")
@@ -899,7 +914,9 @@ export function LiveSpacePage({
           )
         : undefined;
       playSound("tap");
-      setManagedWidgetId(widget.id);
+      /* No managed toolbar behind the modal — it was invisible work at open
+         and a stray toolbar if the close path ever missed clearing it. */
+      setManagedWidgetId("");
       setEditingWidgetId("");
       setSelectedWidgetId("");
       setPickerOpen(false);
@@ -1352,14 +1369,9 @@ export function LiveSpacePage({
           origin={photoGallery?.origin}
           printOrigins={photoGallery?.printOrigins}
           comments={photoGalleryComments}
-          onComment={(photoId, text) =>
-            handlers.onSend(`${photoGalleryWidget.id}::photo:${photoId}`, text)
-          }
+          onComment={sendPhotoComment}
           onAddPhoto={addPhotoToWall}
-          onClose={() => {
-            setPhotoGallery(null);
-            setManagedWidgetId("");
-          }}
+          onClose={closePhotoGallery}
         />
       )}
       {activeThreadWidget && (
