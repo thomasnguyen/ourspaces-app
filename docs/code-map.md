@@ -140,3 +140,11 @@ Source scans live in `.context/art-candidates/` (Wikimedia, PD). Example:
 driver (`driver.mjs`, playwright-core + cached Chromium) for screenshotting
 the app in mock mode. `shot <route>` · `dock` (web post reading circle) ·
 `eval <file>`. See its SKILL.md for the port/mock-flag gotchas.
+
+`.claude/skills/eye-candy/` — `/eye-candy` skill: the hackathon override layer
+on `impeccable`. No accessibility findings (ARIA, screen readers, keyboard nav,
+WCAG ratios, alt text, touch targets); per-command overrides for `audit`,
+`critique`, `polish`, `harden`, `craft`, `adapt`; freed budget goes to motion,
+identity color, liveness. Restated in `PRODUCT.md` § Accessibility & Inclusion
+(impeccable prints that file every run) and `AGENTS.md`. Matching detector
+suppressions in `.impeccable/config.json`.

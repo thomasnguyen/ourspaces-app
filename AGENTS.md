@@ -12,6 +12,12 @@ Plan and cut order: `.private/PLAN.md` (local only).
   check. Visual/live work is verified in the browser.
 - **Demo path over edge cases.** Happy path + empty state. No defensive code,
   refactors, a11y audits, i18n, or abstractions "for later."
+- **Design work goes through `/eye-candy`.** Before any `/impeccable` command or
+  freeform UI work, read `.claude/skills/eye-candy/SKILL.md`. It's the override
+  layer on impeccable: no accessibility findings (ARIA, screen readers, keyboard
+  nav, WCAG ratios, alt text, touch targets), effort goes to motion, identity
+  color, liveness, and the promote climax instead. Same rule is restated in
+  `PRODUCT.md` § Accessibility & Inclusion, which impeccable prints every run.
 - **Hacked-together is fine.** No one will read this code — B/C-grade quality is
   good enough. Don't polish or over-optimize for "production". The one exception:
   keep TypeScript types decent, since they make vibe coding work.
