@@ -12897,6 +12897,230 @@
 
 }
 
+/* —— Scrappy paper notes ———————————————————————————————————————————————
+ * Notes are physical scraps now: real fibers, rough-cut edges, a second
+ * colored sheet peeking out, and one piece of masking tape holding it down. */
+.widget-paper-note {
+  --note-accent: var(--color-crew);
+  --note-backing: var(--color-couple);
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  color: var(--color-ink);
+  filter: drop-shadow(
+    3px 5px 1px color-mix(in srgb, var(--color-sticker) 24%, transparent)
+  );
+  transition:
+    translate 190ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 190ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.widget-paper-note.note-paper-warm {
+  --note-accent: var(--color-trip);
+  --note-backing: var(--color-couple);
+}
+
+.widget-paper-note.note-paper-crew {
+  --note-accent: var(--color-couple);
+  --note-backing: var(--color-crew);
+}
+
+.widget-paper-note.note-paper-white {
+  --note-accent: var(--color-crew);
+  --note-backing: var(--color-trip);
+}
+
+.note-paper-backing,
+.note-paper-sheet {
+  position: absolute;
+}
+
+.note-paper-backing {
+  z-index: -1;
+  inset: 7px -4px -5px 5px;
+  background: var(--note-backing);
+  mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
+  -webkit-mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
+}
+
+.note-paper-sheet {
+  z-index: 0;
+  inset: 0;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: space-between;
+  background-color: transparent;
+  background-image: url("/assets/textures/note-torn-paper.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  padding: 21px 20px 15px;
+}
+
+.note-paper-sheet::after {
+  position: absolute;
+  z-index: -1;
+  right: 12px;
+  bottom: 8px;
+  width: 36%;
+  height: 1px;
+  background: var(--color-muted);
+  content: "";
+  opacity: 0.1;
+  rotate: -6deg;
+}
+
+.note-paper-fold {
+  position: absolute;
+  z-index: -1;
+  top: 43%;
+  left: 12%;
+  width: 54%;
+  height: 1px;
+  background: var(--color-muted);
+  opacity: 0.08;
+  rotate: 7deg;
+}
+
+.note-paper-tape {
+  position: absolute;
+  z-index: 3;
+  top: -7px;
+  left: 50%;
+  width: 70px;
+  height: 20px;
+  background-color: var(--color-card);
+  background-image: url("/assets/textures/note-paper.jpg");
+  background-position: center;
+  background-size: 260px 260px;
+  box-shadow: 0 2px 1px
+    color-mix(in srgb, var(--color-sticker) 15%, transparent);
+  clip-path: polygon(
+    0 13%,
+    8% 0,
+    18% 9%,
+    29% 1%,
+    41% 8%,
+    53% 0,
+    65% 8%,
+    77% 1%,
+    88% 9%,
+    100% 2%,
+    98% 88%,
+    90% 100%,
+    79% 91%,
+    67% 100%,
+    55% 92%,
+    43% 100%,
+    31% 91%,
+    18% 100%,
+    8% 91%,
+    1% 98%
+  );
+  opacity: 0.88;
+  rotate: 3deg;
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.note-paper-doodle {
+  position: absolute;
+  z-index: 2;
+  top: 15px;
+  right: 15px;
+  color: var(--note-accent);
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  rotate: 10deg;
+  pointer-events: none;
+}
+
+.widget-paper-note .note-kicker,
+.widget-paper-note p,
+.widget-paper-note .note-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.widget-paper-note .note-kicker {
+  width: max-content;
+  max-width: calc(100% - 42px);
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: var(--color-card);
+  padding: 4px 8px;
+  font-size: 8.5px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.widget-paper-note p {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  align-items: center;
+  max-width: 23ch;
+  margin: 3px 0 5px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.widget-paper-note .note-author {
+  color: var(--color-muted);
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.widget-paper-note .note-remember {
+  box-shadow: 2px 2px 0 var(--note-accent);
+}
+
+.widget-paper-note .note-remember:hover {
+  translate: -1px -2px;
+}
+
+.widget-paper-note.is-remembered .note-paper-backing {
+  background: var(--color-lime);
+}
+
+.widget-paper-note.is-promoted {
+  animation: note-promoted-in 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.widget-group:hover .widget-paper-note {
+  filter: drop-shadow(
+    5px 8px 1px color-mix(in srgb, var(--note-backing) 36%, transparent)
+  );
+}
+
+.widget-group.is-thread-selected .widget-shell.widget-paper-note,
+.widget-group.is-managed .widget-shell.widget-paper-note,
+.widget-group.is-dragging .widget-shell.widget-paper-note {
+  box-shadow: none;
+  filter: drop-shadow(
+    4px 6px 1px color-mix(in srgb, var(--note-backing) 34%, transparent)
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget-paper-note.is-promoted {
+    animation: none;
+  }
+
+  .widget-paper-note {
+    transition: none;
+  }
+}
+
 /* —— Crew hero hierarchy pass ——————————————————————————————————————————
  * Keep the scrapbook materials, but give the live demo path one unmistakable
  * focal cluster. Everything here is desktop + crew scoped by design. */

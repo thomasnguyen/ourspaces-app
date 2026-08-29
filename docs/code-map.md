@@ -60,6 +60,12 @@ itinerary, quote, weather, sports…)
 1300+ lines) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes.ts` ·
 `templates.ts` (`WIDGET_CATALOG`) · `stickers.ts` · `avatars.ts` · `crew.ts`
 
+## public/
+
+**assets/textures/** — generated real-paper surfaces for `NoteWidget`:
+`note-paper.jpg` (fibers/tape) + `note-torn-paper.png` (transparent restrained
+bottom tear).
+
 ## convex/
 
 `schema.ts` (spaces, members, widgets, messages, votes, presence; frames are

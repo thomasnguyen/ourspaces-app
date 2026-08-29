@@ -843,8 +843,10 @@ function WidgetCardComponent({
       style={{
         ...groupStyle(widget, enterDelay, remoteGesture),
         zIndex:
-          remoteGesture?.z ??
-          (managed || dragging || widgetFocused ? 55 : recapCited ? 54 : widget.z),
+          widget.type === "sticker"
+            ? (managed || dragging ? 100001 : 100000)
+            : remoteGesture?.z ??
+              (managed || dragging || widgetFocused ? 55 : recapCited ? 54 : widget.z),
       }}
       ref={syncInert}
       data-widget-id={widget.id}
