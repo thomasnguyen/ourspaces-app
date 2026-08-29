@@ -41,10 +41,10 @@ Backward-looking history lives in `hackathon.md`.
   contents). Drag-from-anywhere still works; empty cards still open manage.
   Verified headless: cover→dock, read→new tab, paper drag moves the card.
 - Couple space now has a full-screen `cozyColor` paint-by-number room: the
-  compact card opens an edge-to-edge portal, 28 numbered regions snap color
-  inside the line art, a generated finished postcard provides the color target,
-  and each fill syncs reactively through Convex between windows. Existing seeded
-  dev rooms still backfill the widget/layout on first couple-room load.
+  compact card opens an edge-to-edge portal, a bottom game dock selects one
+  number at a time, 45 matching regions appear directly on the line art, and
+  two shared palette presets recolor every completed region live through Convex.
+  Existing seeded dev rooms still backfill the widget/layout on first load.
 
 ## Broken / known issues
 
@@ -104,3 +104,7 @@ Backward-looking history lives in `hackathon.md`.
   freehand canvas zoom. Fixed seed points flood-fill enclosed line-art regions;
   each region is one optional `regionId` paint row, so another window sees every
   completed number arrive reactively without rewriting the widget document.
+- 2026-08-28: The reference interaction wins over the gallery treatment: one
+  selected color reveals only its matching numbers, a compact bottom dock shows
+  remaining counts, and the shared `electric`/`sunset` preset is stored as a
+  special paint row so both collaborators see the same palette instantly.

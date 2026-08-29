@@ -43,8 +43,9 @@ are not.
 
 **widgets/** — `core.tsx` (sticker, frame, countdown, poll, note…) ·
 `extras.tsx` (rsvp, dailyQ, availability, Firecrawl link card, link shelf, playlist, expense,
-itinerary, quote, weather, sports…) · `CozyColorWidget.tsx` (generated coloring
-postcard + brush/palette UI; accepts mock-local or Convex-backed strokes)
+itinerary, quote, weather, sports…) · `CozyColorWidget.tsx` (full-screen
+paint-by-number game, two live palette presets, generated postcard; accepts
+mock-local or Convex-backed region fills)
 
 **live/** — `useSpaceData.ts` / `useLiveSpace.ts` / `useLiveHandlers.ts`
 (gesture claim/accept/reject) / `useLivePoll.ts` / `usePresence.ts` ·
