@@ -312,7 +312,7 @@ function WidgetCardComponent({
     widgetId: string,
     stroke: Omit<CozyColorStroke, "id" | "createdAt">,
   ) => Promise<unknown> | void;
-  onPaintClear?: (widgetId: string) => Promise<unknown> | void;
+  onPaintClear?: (widgetId: string, regionPrefix?: string) => Promise<unknown> | void;
 }) {
   const dragState = useRef<{
     pointerId: number;
@@ -744,7 +744,7 @@ function WidgetCardComponent({
           strokes={paintStrokes}
           identity={paintIdentity}
           onStroke={onPaintStroke ? (stroke) => onPaintStroke(widget.id, stroke) : undefined}
-          onClear={onPaintClear ? () => onPaintClear(widget.id) : undefined}
+          onClear={onPaintClear ? (regionPrefix?: string) => onPaintClear(widget.id, regionPrefix) : undefined}
         />
       );
       break;

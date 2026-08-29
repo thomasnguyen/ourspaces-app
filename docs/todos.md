@@ -45,7 +45,17 @@ Backward-looking history lives in `hackathon.md`.
   number at a time, and two shared palette presets recolor every completed
   region live through Convex. Existing seeded dev rooms still backfill the
   widget/layout on first load.
-- The board is now a **generated vector scene** ("same moon, both windows"):
+- The room is now a **three-postcard gallery**: traced Van Gogh "the starry
+  night" (78 regions, default) + Hokusai "the great wave" (58 regions) + the
+  generated scene. A shelf (top-right of the board) switches postcards with
+  per-board live progress; fills are stored with `<boardId>:`-prefixed
+  regionIds (scene stays unprefixed for back-compat, zero schema change).
+  Traced boards show a muted ghost of the painting under the blank regions and
+  their two shared presets are **classic** (real painting palette) and **neon**
+  (token remix, luminance-ranked). Reset clears only the current board
+  (`paint.clear` gained optional `regionPrefix`; pushed to dev). Verified
+  headless: paint starry to 35%, complete wave, neon flip, per-board counts.
+- The board is a **generated vector scene** ("same moon, both windows"):
   `scripts/generate-cozy-art.mjs` computes 50 closed SVG regions (moon +
   halo-ring donuts, snow-capped peaks, twin lit-window houses, two birds, a
   river carrying the moon shimmer) → `src/widgets/cozyColorArt.ts` +
@@ -123,3 +133,12 @@ Backward-looking history lives in `hackathon.md`.
   React tree into WidgetCard's drag pointer-capture, which eats SVG clicks),
   and mock-mode `onStroke` resolves null so local strokes are only dropped
   when a real Convex row id comes back.
+- 2026-08-28 (later still): "Better artwork" = **traced public-domain
+  masterpieces**, not clip art. Free SVG sites only had icon-tier scenes or
+  36k–50k-path photo traces; instead `scripts/trace-artwork.mjs` retraces the
+  original painting scans under our control (~60–80 tappable regions). The
+  paintings are PD (Van Gogh d.1890, Hokusai d.1849; Wikimedia scans of PD 2D
+  art are PD). Board palettes are per-artwork; the shared preset pair means
+  classic/neon on traced boards and night pop/sunset on the scene. paintMarks
+  `take(240)` still covers all three boards because addStroke dedupes per
+  regionId (186 region rows max + preset rows).
