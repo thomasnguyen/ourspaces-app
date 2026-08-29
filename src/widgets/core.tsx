@@ -329,6 +329,29 @@ function PollWidgetComponent({
             const extraVoters = voters.length - shownVoters.length;
             const leading = totalVotes > 0 && votes === leadingVotes && votes > 0;
 
+            // rendered twice: ink layer + a fill-clipped copy, so the label
+            // flips to fill ink exactly where the flat color bar ends
+            const rowInner = (
+              <>
+                <span className="poll-check" />
+                <span className="poll-option-label">{option.label}</span>
+                {selected && <span className="poll-you-tag">you</span>}
+                {shownVoters.length > 0 && (
+                  <span className="poll-row-faces" aria-hidden="true">
+                    {shownVoters.map((name) => (
+                      <MemberFace key={name} name={name} size="xs" />
+                    ))}
+                    {extraVoters > 0 && <span className="poll-row-more">+{extraVoters}</span>}
+                  </span>
+                )}
+                {totalVotes > 0 && (
+                  <span className="poll-votes" key={votes}>
+                    {votes}
+                  </span>
+                )}
+              </>
+            );
+
             return (
               <li
                 key={option.id}
@@ -337,33 +360,15 @@ function PollWidgetComponent({
                 <button
                   type="button"
                   className="poll-row"
+                  style={{ "--poll-pct": `${totalVotes > 0 ? percent : 0}%` } as Style}
                   onClick={() => onVote?.(option.id)}
                   aria-label={`Vote for ${option.label}`}
                   aria-pressed={selected}
                 >
-                  {totalVotes > 0 && (
-                    <span
-                      className="poll-row-fill"
-                      aria-hidden="true"
-                      style={{ width: `${percent}%` }}
-                    />
-                  )}
-                  <span className="poll-check" />
-                  <span className="poll-option-label">{option.label}</span>
-                  {selected && <span className="poll-you-tag">you</span>}
-                  {shownVoters.length > 0 && (
-                    <span className="poll-row-faces" aria-hidden="true">
-                      {shownVoters.map((name) => (
-                        <MemberFace key={name} name={name} size="xs" />
-                      ))}
-                      {extraVoters > 0 && <span className="poll-row-more">+{extraVoters}</span>}
-                    </span>
-                  )}
-                  {totalVotes > 0 && (
-                    <span className="poll-votes" key={votes}>
-                      {votes}
-                    </span>
-                  )}
+                  <span className="poll-row-base">{rowInner}</span>
+                  <span className="poll-row-fill" aria-hidden="true">
+                    {rowInner}
+                  </span>
                 </button>
               </li>
             );
@@ -379,7 +384,9 @@ function PollWidgetComponent({
                   <MemberFace key={name} name={name} size="xs" />
                 ))}
               </span>
-              {totalVotes} voted · waiting on {waitingOn.join(" + ")}
+              <span className="poll-footer-text">
+                <strong>{totalVotes} voted</strong> · waiting on {waitingOn.join(" + ")}
+              </span>
             </div>
           )
         )}
