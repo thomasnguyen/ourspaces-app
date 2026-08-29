@@ -1173,8 +1173,8 @@ export const TRIP_WIDGETS: Widget[] = [
     type: "linkCard",
     x: 704,
     y: 420,
-    w: 420,
-    h: 340,
+    w: 380,
+    h: 310,
     z: 4,
     rotate: 1,
     data: {
