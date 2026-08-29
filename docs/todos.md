@@ -68,4 +68,9 @@ Backward-looking history lives in `hackathon.md`.
   each client starts audio with a tap.
 - 2026-08-28: `linkCard` is the Firecrawl demo widget; `linkShelf` stays static
   set dressing. The card uses a real page image when available and a generated
-  crisp collage fallback blurred locally behind a translucent document sheet.
+  crisp collage fallback.
+- 2026-08-28: Web post is a **paper clipping, not glass** — the frosted
+  reading sheet was replaced with a solid `--color-card` printout using the
+  notes' torn-paper texture, masking tape, a solid dated tab, and a
+  `--space-accent` source chip. Glassmorphism is banned by PRODUCT.md; don't
+  reintroduce backdrop-filter here.
