@@ -7,6 +7,14 @@ Backward-looking history lives in `hackathon.md`.
 
 - Full app deployed live: https://necessary-cobra-892.convex.site (Convex
   static hosting + prod backend, all spaces seeded).
+- Countdown widget redesigned as a tear-off desk calendar: perforated top row
+  (one page stub per day — torn days leave gaps on the dotted line, today's
+  page pulses; replaces the old bottom day-strip), chunky flat offset shadow
+  under the big number (`--cd-num-shadow`, digit-count-aware sizing via
+  `data-len`), and the `+ 09h 08m 04s` text line is now three black sticker
+  chips whose seconds digit rolls every tick (`ClockCell` in
+  `src/widgets/core.tsx`). Sparkles twinkle out of phase; all four tones +
+  reduced-motion covered; verified via `.context/shot-countdown*.mjs`.
 - Canvas with every widget type, drag/resize/frames, per-widget threads,
   presence cursors + gestures, polls/votes, recap, invite links.
 - Note widgets now use restrained real-paper scraps with one torn bottom edge
