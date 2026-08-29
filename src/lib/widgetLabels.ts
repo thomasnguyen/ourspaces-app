@@ -55,6 +55,8 @@ export function widgetLabel(widget: Widget): string {
       return String(widget.data.title ?? "spin wheel");
     case "dualClock":
       return String(widget.data.title ?? "two clocks");
+    case "cozyColor":
+      return String(widget.data.title ?? "color together");
     default:
       return widget.type;
   }

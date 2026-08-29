@@ -91,6 +91,27 @@ export default defineSchema({
     .index("by_widget", ["widgetId"])
     .index("by_widget_user", ["widgetId", "userId"]), // one vote per user
 
+  paintMarks: defineTable({
+    spaceId: v.id("spaces"),
+    widgetId: v.id("widgets"),
+    userId: v.string(),
+    authorName: v.string(),
+    authorColor: v.string(),
+    tone: v.union(
+      v.literal("berry"),
+      v.literal("orange"),
+      v.literal("blue"),
+      v.literal("violet"),
+      v.literal("teal"),
+      v.literal("lime"),
+    ),
+    size: v.number(),
+    points: v.array(v.object({ x: v.number(), y: v.number() })),
+    createdAt: v.number(),
+  })
+    .index("by_space", ["spaceId"])
+    .index("by_space_and_widget", ["spaceId", "widgetId"]),
+
   presence: defineTable({
     spaceId: v.id("spaces"),
     userId: v.string(),

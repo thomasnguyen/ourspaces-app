@@ -42,6 +42,7 @@ import { freshWidgetData, getWidgetBlueprint, WIDGET_SIZES } from "../lib/widget
 import { widgetLabel } from "../lib/widgetLabels";
 import { widgetSupportsThread } from "../lib/widgetThreads";
 import { RSVP_CHOICES, type RsvpStatus } from "../widgets/extras";
+import type { CozyColorStroke } from "../widgets/CozyColorWidget";
 import type { CanvasLayout, LivePeer } from "../live/presenceTypes";
 import { normalSpaceHash } from "../lib/routes";
 
@@ -220,6 +221,9 @@ export function LiveSpacePage({
   const [moreRight, setMoreRight] = useState(false);
 
   const join = useMutation(api.spaces.joinDemoSpace);
+  const addPaintStroke = useMutation(api.paint.addStroke);
+  const clearPaint = useMutation(api.paint.clear);
+  const ensureCozyColorWidget = useMutation(api.paint.ensureCozyColorWidget);
   const roomEntered = entered && !isInviteEntry;
   const closeClaim = useCallback(() => {
     setClaimOpen(false);
@@ -253,10 +257,60 @@ export function LiveSpacePage({
   const liveCursors = presence.peers;
   const allMessages = useQuery(api.messages.listBySpace, space ? { spaceId: space._id } : "skip");
   const liveCounts = useQuery(api.stats.getLiveCounts);
+  const paintRows = useQuery(api.paint.listBySpace, space ? { spaceId: space._id } : "skip");
   const sparkQuestions = useAction(api.questions.sparkQuestions);
   /** Which web post conversation starter the thread dock is answering. */
   const [activeQuestionId, setActiveQuestionId] = useState("");
   const handlers = useLiveHandlers(space?._id, identity, presence, widgets);
+  const paintStrokesByWidget = useMemo(() => {
+    const grouped: Record<string, CozyColorStroke[]> = {};
+    for (const row of paintRows ?? []) {
+      const widgetId = String(row.widgetId);
+      const stroke: CozyColorStroke = {
+        id: String(row._id),
+        userId: row.userId,
+        authorName: row.authorName,
+        authorColor: row.authorColor,
+        tone: row.tone,
+        size: row.size,
+        points: row.points,
+        createdAt: row.createdAt,
+      };
+      grouped[widgetId] = [...(grouped[widgetId] ?? []), stroke];
+    }
+    return grouped;
+  }, [paintRows]);
+  const paintStroke = useCallback(
+    async (widgetId: string, stroke: Omit<CozyColorStroke, "id" | "createdAt">) => {
+      if (!space) return null;
+      return await addPaintStroke({
+        spaceId: space._id,
+        widgetId: widgetId as Id<"widgets">,
+        ...stroke,
+      });
+    },
+    [addPaintStroke, space],
+  );
+  const clearPaintWidget = useCallback(
+    async (widgetId: string) => {
+      if (!space) return 0;
+      return await clearPaint({
+        spaceId: space._id,
+        widgetId: widgetId as Id<"widgets">,
+      });
+    },
+    [clearPaint, space],
+  );
+  const ensuredPaintSpaces = useRef(new Set<string>());
+  useEffect(() => {
+    if (slug !== "couple" || !space || widgets.some((widget) => widget.type === "cozyColor")) {
+      return;
+    }
+    const spaceId = String(space._id);
+    if (ensuredPaintSpaces.current.has(spaceId)) return;
+    ensuredPaintSpaces.current.add(spaceId);
+    void ensureCozyColorWidget({ spaceId: space._id, createdBy: identity.userId });
+  }, [ensureCozyColorWidget, identity.userId, slug, space, widgets]);
   const poll = widgets.find((widget) => widget.type === "poll") ?? emptyWidget;
   const livePoll = useLivePoll(poll, identity.userId, members);
   const pollSelections = useMemo(
@@ -1183,6 +1237,10 @@ export function LiveSpacePage({
                 onPollVote={handlers.onVote}
                 onWheelSpin={handlers.onWheelSpin}
                 onPlaylistTune={handlers.onPlaylistTune}
+                paintStrokesByWidget={paintStrokesByWidget}
+                paintIdentity={identity}
+                onPaintStroke={paintStroke}
+                onPaintClear={clearPaintWidget}
                 pollSelections={pollSelections}
                 onRsvp={respondToRsvp}
                 rsvpSelections={rsvpSelections}

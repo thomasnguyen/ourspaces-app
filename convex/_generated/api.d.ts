@@ -13,6 +13,7 @@ import type * as crons from "../crons.js";
 import type * as firecrawl from "../firecrawl.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
+import type * as paint from "../paint.js";
 import type * as presence from "../presence.js";
 import type * as questions from "../questions.js";
 import type * as seed from "../seed.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   firecrawl: typeof firecrawl;
   http: typeof http;
   messages: typeof messages;
+  paint: typeof paint;
   presence: typeof presence;
   questions: typeof questions;
   seed: typeof seed;

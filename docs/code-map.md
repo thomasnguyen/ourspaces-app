@@ -43,7 +43,8 @@ are not.
 
 **widgets/** — `core.tsx` (sticker, frame, countdown, poll, note…) ·
 `extras.tsx` (rsvp, dailyQ, availability, Firecrawl link card, link shelf, playlist, expense,
-itinerary, quote, weather, sports…)
+itinerary, quote, weather, sports…) · `CozyColorWidget.tsx` (generated coloring
+postcard + brush/palette UI; accepts mock-local or Convex-backed strokes)
 
 **live/** — `useSpaceData.ts` / `useLiveSpace.ts` / `useLiveHandlers.ts`
 (gesture claim/accept/reject) / `useLivePoll.ts` / `usePresence.ts` ·
@@ -72,6 +73,9 @@ bottom tear).
 **assets/link-card-fallback.jpg** — generated crop-safe paper collage used when
 a Firecrawl link card has no page image.
 
+**assets/cozy-color-same-moon.png** — generated monochrome airport-lounge
+coloring postcard used by the couple space's collaborative paint widget.
+
 ## convex/
 
 `schema.ts` (spaces, members, widgets, messages, votes, presence; frames are
@@ -81,6 +85,7 @@ widgets) · `spaces.ts` · `widgets.ts` (CRUD/move/resize) · `messages.ts`
 `http.ts` + `agentmail.ts` (webhook `/api/agentmail/webhook`, per-space inbox) ·
 `firecrawl.ts` (`scrapeLink` action) · `questions.ts` (`sparkQuestions`: OpenAI →
 2 conversation starters on a link card, canned fallback without a key) ·
+`paint.ts` (reactive coloring strokes + couple-room widget backfill) ·
 `convex.config.ts` (components, env)
 
 ## src/index.css (~14k lines, hand-written, banner comments)
@@ -89,8 +94,8 @@ Tokens `@theme` (lines 4–21) → base (~1–1000) → space entrance (~1048) �
 per-widget sections (~1670–6300) → chrome: picker ~6305, threads ~7047,
 navigator ~7357, chat drawer ~8313, action dock ~9744, recap ~9951 → pages:
 block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
-(~11482+), ending with the Firecrawl web-post treatment. New CSS goes in a new
-banner section at the end.
+(~11482+), ending with the cozy-color treatment. New CSS goes in a new banner
+section at the end.
 
 ## Agent tooling
 

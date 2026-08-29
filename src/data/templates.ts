@@ -26,6 +26,7 @@ export const WIDGET_CATALOG: WidgetTemplate[] = [
   { type: "backendLive", label: "live backend", emoji: "⚡" },
   { type: "wheel", label: "spin wheel", emoji: "🎡" },
   { type: "dualClock", label: "two clocks", emoji: "🕰", pickerHidden: true },
+  { type: "cozyColor", label: "color together", emoji: "🎨" },
 ];
 
 export const SPACE_TEMPLATES: SpaceTemplate[] = [
@@ -62,12 +63,13 @@ export const SPACE_TEMPLATES: SpaceTemplate[] = [
     name: "couple",
     color: "#e9369d",
     icon: "♥",
-    description: "countdown, photos, chat, playlist",
+    description: "countdown, photos, radio, color together",
     widgets: [
       { type: "countdown", label: "countdown", emoji: "⏳" },
       { type: "media", label: "photo", emoji: "📷" },
       { type: "chat", label: "chat", emoji: "💭" },
       { type: "playlist", label: "playlist", emoji: "🎵" },
+      { type: "cozyColor", label: "color together", emoji: "🎨" },
     ],
   },
   {
