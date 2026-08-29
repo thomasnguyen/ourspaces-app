@@ -181,9 +181,9 @@ export const CREW_WIDGETS: Widget[] = [
     id: "countdown",
     type: "countdown",
     x: 376,
-    y: 100,
+    y: 86,
     w: 170,
-    h: 230,
+    h: 250,
     z: 2,
     data: {
       event: "maya's bday 🎂",
@@ -865,7 +865,7 @@ export const COUPLE_WIDGETS: Widget[] = [
     x: 48,
     y: 52,
     w: 180,
-    h: 230,
+    h: 250,
     z: 2,
     rotate: -2,
     data: {
@@ -879,9 +879,9 @@ export const COUPLE_WIDGETS: Widget[] = [
     id: "us-sfo",
     type: "countdown",
     x: 48,
-    y: 306,
+    y: 316,
     w: 180,
-    h: 230,
+    h: 250,
     z: 2,
     rotate: 2,
     data: {
@@ -1105,7 +1105,7 @@ export const TRIP_WIDGETS: Widget[] = [
     x: 48,
     y: 54,
     w: 190,
-    h: 230,
+    h: 250,
     z: 2,
     rotate: -2,
     data: {
