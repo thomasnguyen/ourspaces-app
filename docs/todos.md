@@ -35,6 +35,11 @@ Backward-looking history lives in `hackathon.md`.
   list to the active chip, and a lone starter renders as a static question row
   (no tab affordance). Verified headless in the mock trip space — decision:
   one thread panel with chips beats separate cards per starter.
+- Web post click model (`22bb732`): clicking the cover art zooms into the
+  reading circle (like the photo wall, `zoom-in` cursor); only the paper
+  clipping / read pill is the article link (`.link-card-read`, display:
+  contents). Drag-from-anywhere still works; empty cards still open manage.
+  Verified headless: cover→dock, read→new tab, paper drag moves the card.
 
 ## Broken / known issues
 
