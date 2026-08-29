@@ -253,6 +253,8 @@ function WidgetCardComponent({
   onPlaylistTune,
   paintStrokes,
   paintIdentity,
+  paintPeers,
+  onPaintCursor,
   onPaintStroke,
   onPaintClear,
 }: {
@@ -313,6 +315,17 @@ function WidgetCardComponent({
     stroke: Omit<CozyColorStroke, "id" | "createdAt">,
   ) => Promise<unknown> | void;
   onPaintClear?: (widgetId: string, regionPrefix?: string) => Promise<unknown> | void;
+  paintPeers?: {
+    userId?: string;
+    name: string;
+    color: string;
+    emoji?: string;
+    avatarUrl?: string;
+    x: number;
+    y: number;
+    zone?: string;
+  }[];
+  onPaintCursor?: (x: number, y: number, zone?: string) => void;
 }) {
   const dragState = useRef<{
     pointerId: number;
@@ -745,6 +758,8 @@ function WidgetCardComponent({
           identity={paintIdentity}
           onStroke={onPaintStroke ? (stroke) => onPaintStroke(widget.id, stroke) : undefined}
           onClear={onPaintClear ? (regionPrefix?: string) => onPaintClear(widget.id, regionPrefix) : undefined}
+          peers={paintPeers}
+          onCursor={onPaintCursor}
         />
       );
       break;

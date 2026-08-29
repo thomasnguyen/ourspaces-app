@@ -42,6 +42,17 @@ export type CozyColorIdentity = {
   avatarUrl?: string;
 };
 
+export type CozyColorPeer = {
+  userId?: string;
+  name: string;
+  color: string;
+  emoji?: string;
+  avatarUrl?: string;
+  x: number;
+  y: number;
+  zone?: string;
+};
+
 /** legacy wire field — convex validates tone against these six literals */
 const WIRE_TONES: CozyColorTone[] = ["berry", "orange", "blue", "violet", "teal", "lime"];
 
@@ -147,6 +158,8 @@ export function CozyColorWidget({
   identity,
   onStroke,
   onClear,
+  peers,
+  onCursor,
 }: {
   widget: Widget;
   style: CSSProperties;
@@ -154,6 +167,8 @@ export function CozyColorWidget({
   identity?: CozyColorIdentity;
   onStroke?: (stroke: Omit<CozyColorStroke, "id" | "createdAt">) => Promise<unknown> | void;
   onClear?: (regionPrefix?: string) => Promise<unknown> | void;
+  peers?: CozyColorPeer[];
+  onCursor?: (x: number, y: number, zone?: string) => void;
 }) {
   const [roomOpen, setRoomOpen] = useState(false);
   const [boardId, setBoardId] = useState(COZY_BOARDS[0].id);
@@ -213,6 +228,22 @@ export function CozyColorWidget({
     }
     return [...entries.values()].slice(-3);
   }, [identity, shownStrokes]);
+
+  const zoneKey = `cozy:${board.id}`;
+  const roomPeers = useMemo(
+    () =>
+      (peers ?? []).filter(
+        (peer) => peer.zone === zoneKey && peer.userId !== identity?.userId,
+      ),
+    [identity?.userId, peers, zoneKey],
+  );
+
+  // tell the space where we are: cursors only meet on the same postcard
+  useEffect(() => {
+    if (!roomOpen) return;
+    onCursor?.(0.5, 0.6, zoneKey);
+    return () => onCursor?.(0, 0, undefined);
+  }, [onCursor, roomOpen, zoneKey]);
 
   useEffect(() => {
     if (!roomOpen) return;
@@ -381,6 +412,15 @@ export function CozyColorWidget({
             aspectRatio: `${board.w} / ${board.h}`,
             maxWidth: `calc((100dvh - 210px) * ${(board.w / board.h).toFixed(4)})`,
           }}
+          onPointerMove={(event) => {
+            if (!onCursor) return;
+            const rect = event.currentTarget.getBoundingClientRect();
+            onCursor(
+              Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
+              Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)),
+              zoneKey,
+            );
+          }}
         >
           <ArtBoard
             board={board}
@@ -409,6 +449,24 @@ export function CozyColorWidget({
               </button>
             ))}
           </nav>
+          <div className="cozy-cursor-layer" aria-hidden="true">
+            {roomPeers.map((peer) => (
+              <div
+                key={peer.userId ?? peer.name}
+                className="cozy-cursor"
+                style={{
+                  left: `${peer.x * 100}%`,
+                  top: `${peer.y * 100}%`,
+                  "--peer-color": peer.color,
+                } as CSSProperties}
+              >
+                <svg viewBox="0 0 24 24" width="22" height="22">
+                  <path d="M3 2 L10.6 20.2 L13.1 12.6 L20.8 10.3 Z" />
+                </svg>
+                <span>{peer.name}</span>
+              </div>
+            ))}
+          </div>
           <div className="cozy-color-progress"><i style={{ width: `${progress}%` }} /><span>{progress}% cozy</span></div>
         </section>
 

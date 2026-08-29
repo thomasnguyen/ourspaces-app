@@ -15,6 +15,7 @@ const identityArgs = {
   avatarUrl: v.optional(v.string()),
   x: v.number(),
   y: v.number(),
+  zone: v.optional(v.string()),
 };
 
 const gestureIdentityArgs = {
@@ -47,6 +48,7 @@ type PresenceIdentity = {
   avatarUrl?: string;
   x: number;
   y: number;
+  zone?: string;
 };
 
 async function findPresence(
@@ -75,6 +77,7 @@ async function upsertPresence(
       avatarUrl: identity.avatarUrl,
       x: identity.x,
       y: identity.y,
+      zone: identity.zone,
       updatedAt,
     });
     return existing._id;

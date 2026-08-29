@@ -32,6 +32,9 @@ export type PresenceController = {
   updateGesture: (gesture: GestureInput) => void;
   finishGesture: (gesture: GestureInput) => Promise<boolean>;
   cancelGesture: (sessionId: string) => Promise<boolean>;
+  /** report a cursor inside a full-screen zone (e.g. the coloring room) with
+   *  0..1 coords; pass no zone to fall back to the canvas cursor */
+  reportZone: (x: number, y: number, zone?: string) => void;
 };
 
 export function usePresence(
@@ -52,6 +55,8 @@ export function usePresence(
   );
   const [expiryTick, setExpiryTick] = useState(0);
   const point = useRef({ x: 0, y: 0 });
+  const zonePoint = useRef({ x: 0, y: 0 });
+  const zoneName = useRef<string | undefined>(undefined);
   const hasPoint = useRef(false);
   const lastHeartbeatSent = useRef(0);
   const lastGestureSent = useRef(0);
@@ -98,7 +103,8 @@ export function usePresence(
     void heartbeatMutation({
       spaceId: spaceId as never,
       ...identity,
-      ...point.current,
+      ...(zoneName.current ? zonePoint.current : point.current),
+      zone: zoneName.current,
     });
   }, [clearHeartbeatTimer, heartbeatMutation, identity, spaceId]);
 
@@ -171,6 +177,7 @@ export function usePresence(
     if (!surface || !spaceId) return;
 
     const updatePoint = (event: PointerEvent) => {
+      zoneName.current = undefined; // back on the canvas
       const layer = canvasLayerRef.current;
       if (!layer) return;
       const rect = layer.getBoundingClientRect();
@@ -385,6 +392,21 @@ export function usePresence(
     ],
   );
 
+  const reportZone = useCallback(
+    (x: number, y: number, zone?: string) => {
+      if (!spaceId) return;
+      if (zone) {
+        zonePoint.current = { x, y };
+        zoneName.current = zone;
+        hasPoint.current = true;
+      } else {
+        zoneName.current = undefined;
+      }
+      queueHeartbeat();
+    },
+    [queueHeartbeat, spaceId],
+  );
+
   const peers = useMemo<LivePeer[]>(() => {
     const now = Date.now();
     return (rows ?? [])
@@ -409,6 +431,7 @@ export function usePresence(
           avatarUrl: row.avatarUrl,
           x: row.x,
           y: row.y,
+          zone: row.zone,
           updatedAt: row.updatedAt,
           gesture,
         };
@@ -422,6 +445,7 @@ export function usePresence(
     updateGesture,
     finishGesture,
     cancelGesture,
+    reportZone,
   };
 }
 

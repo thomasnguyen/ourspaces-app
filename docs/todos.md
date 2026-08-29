@@ -45,6 +45,14 @@ Backward-looking history lives in `hackathon.md`.
   number at a time, and two shared palette presets recolor every completed
   region live through Convex. Existing seeded dev rooms still backfill the
   widget/layout on first load.
+- The coloring room is **verified live multiplayer with in-room cursors**:
+  presence rows gained an optional `zone` ("cozy:<boardId>", x/y normalized
+  0..1 over the board); the room reports pointer moves through
+  `presence.reportZone`, renders same-postcard peers as colored arrow cursors
+  with name pills, and the canvas filters zone'd peers out. Proven with two
+  fresh browser sessions on the dev deployment: cursors visible both ways and
+  fills propagating (4→7 on the receiving window) — plus a third live
+  participant's earlier fills/preset coexisting fine.
 - The room is now a **three-postcard gallery**: traced Van Gogh "the starry
   night" (78 regions, default) + Hokusai "the great wave" (58 regions) + the
   generated scene. A shelf (top-right of the board) switches postcards with

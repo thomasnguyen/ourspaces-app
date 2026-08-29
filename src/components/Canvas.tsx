@@ -30,6 +30,7 @@ type CanvasCursor = {
   avatarUrl?: string;
   x: number;
   y: number;
+  zone?: string;
   gesture?: LiveGesture;
 };
 
@@ -101,6 +102,7 @@ export function Canvas({
   paintIdentity,
   onPaintStroke,
   onPaintClear,
+  onPaintCursor,
   arrivalPeerId,
 }: {
   spaceId: string;
@@ -167,6 +169,7 @@ export function Canvas({
     stroke: Omit<CozyColorStroke, "id" | "createdAt">,
   ) => Promise<unknown> | void;
   onPaintClear?: (widgetId: string, regionPrefix?: string) => Promise<unknown> | void;
+  onPaintCursor?: (x: number, y: number, zone?: string) => void;
   arrivalPeerId?: string;
 }) {
   const space = getSpace(spaceId);
@@ -303,6 +306,8 @@ export function Canvas({
         paintIdentity={paintIdentity}
         onPaintStroke={onPaintStroke}
         onPaintClear={onPaintClear}
+        paintPeers={cursors}
+        onPaintCursor={onPaintCursor}
         onRsvp={onRsvp}
         onDailyAnswer={onDailyAnswer}
         onDailyReact={onDailyReact}
@@ -390,7 +395,7 @@ export function Canvas({
       )}
       {widgetCards}
 
-      {cursors.map((cursor) => (
+      {cursors.filter((cursor) => !cursor.zone).map((cursor) => (
         <LiveCursor
           key={`${spaceId}-${cursor.userId ?? cursor.name}`}
           name={cursor.name}
