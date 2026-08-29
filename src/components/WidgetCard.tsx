@@ -38,6 +38,7 @@ import {
   ExpenseSplitWidget,
   ItineraryWidget,
   JokeRegistryWidget,
+  LinkCardWidget,
   LinkShelfWidget,
   MessageWallWidget,
   PhotoWallWidget,
@@ -669,6 +670,9 @@ function WidgetCardComponent({
       break;
     case "linkShelf":
       content = <LinkShelfWidget widget={widget} style={inner} />;
+      break;
+    case "linkCard":
+      content = <LinkCardWidget widget={widget} style={inner} />;
       break;
     case "playlist":
       content = (

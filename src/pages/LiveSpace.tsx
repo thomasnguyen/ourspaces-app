@@ -995,7 +995,7 @@ export function LiveSpacePage({
     });
   }, []);
 
-  const addWidget = (type: WidgetType) => {
+  const addWidget = async (type: WidgetType) => {
     const blueprint = getWidgetBlueprint(type);
     if (!blueprint || !space) return;
     const size = WIDGET_SIZES[type] ?? { w: blueprint.w, h: blueprint.h };
@@ -1007,10 +1007,14 @@ export function LiveSpacePage({
       w: size.w,
       h: size.h,
       z: 1000,
-      data: freshWidgetData(type, blueprint.data),
+      data: freshWidgetData(type, type === "linkCard" ? {} : blueprint.data),
     };
-    handlers.onCreate(widget);
+    const createdId = await handlers.onCreate(widget);
     setPickerOpen(false);
+    if (type === "linkCard" && createdId) {
+      setManagedWidgetId(String(createdId));
+      setEditingWidgetId(String(createdId));
+    }
   };
 
   const hasBoard = status === "ready" || status === "cached" || status === "empty";
@@ -1266,6 +1270,7 @@ export function LiveSpacePage({
           if (layout) handlers.onResize(widgetId, layout.w, layout.h);
           setEditingWidgetId("");
         }}
+        onResolveLink={handlers.onResolveLink}
         onDelete={(widgetId) => {
           const widget = widgets.find((item) => item.id === widgetId);
           if (widget) handlers.onDelete(widget);

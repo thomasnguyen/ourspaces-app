@@ -14,6 +14,7 @@ export type WidgetType =
   | "decision"
   | "availability"
   | "photoWall"
+  | "linkCard"
   | "linkShelf"
   | "playlist"
   | "jokeRegistry"
@@ -37,6 +38,16 @@ export type Widget = {
   z: number;
   rotate?: number;
   data: Record<string, unknown>;
+};
+
+export type LinkCardScrape = {
+  url: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  siteName: string;
+  author: string;
+  publishedAt: string;
 };
 
 export type SpaceMember = {

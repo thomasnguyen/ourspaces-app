@@ -13,6 +13,7 @@ export const WIDGET_CATALOG: WidgetTemplate[] = [
   { type: "photoWall", label: "photo wall", emoji: "🖼️" },
   { type: "decision", label: "decision", emoji: "✓", pickerHidden: true },
   { type: "availability", label: "availability", emoji: "📅" },
+  { type: "linkCard", label: "web post", emoji: "↗" },
   { type: "linkShelf", label: "links", emoji: "🔗" },
   { type: "playlist", label: "radio", emoji: "🎵" },
   { type: "jokeRegistry", label: "jokes", emoji: "😂" },

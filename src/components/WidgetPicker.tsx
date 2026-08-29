@@ -8,7 +8,7 @@ const QUICK_TYPES: WidgetType[] = [
   "photoWall",
   "poll",
   "countdown",
-  "linkShelf",
+  "linkCard",
   "dailyQ",
   "rsvp",
   "potluck",
@@ -66,6 +66,18 @@ function WidgetPreview({ item }: { item: WidgetTemplate }) {
             <span />
             <span />
           </span>
+        </span>
+      );
+    case "linkCard":
+      return (
+        <span className={previewClassName} aria-hidden="true">
+          <span className="preview-link-card-cover" />
+          <span className="preview-link-card-paper">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className="preview-link-card-tab">↗</span>
         </span>
       );
     case "availability":

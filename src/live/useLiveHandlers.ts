@@ -1,4 +1,4 @@
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { LiveIdentity } from "./identity";
@@ -8,7 +8,7 @@ import type {
   CanvasLayout,
   GestureClaim,
 } from "./presenceTypes";
-import type { Widget } from "../data/types";
+import type { LinkCardScrape, Widget } from "../data/types";
 import { playSound } from "../lib/sounds";
 
 type GesturePhase = "claiming" | "accepted" | "rejected";
@@ -61,6 +61,7 @@ export function useLiveHandlers(
   const create = useMutation(api.widgets.createWidget);
   const remove = useMutation(api.widgets.deleteWidget);
   const updateData = useMutation(api.widgets.updateWidgetData);
+  const scrapeLink = useAction(api.firecrawl.scrapeLink);
   const [overrides, setOverrides] = useState<Record<string, Partial<Widget>>>({});
   const [deleted, setDeleted] = useState<Widget | null>(null);
   const latest = useRef<Record<string, Partial<Widget>>>({});
@@ -358,6 +359,11 @@ export function useLiveHandlers(
     void remove({ id: widget.id as never });
   }, [remove, spaceId]);
 
+  const onResolveLink = useCallback(
+    async (url: string): Promise<LinkCardScrape> => await scrapeLink({ url }),
+    [scrapeLink],
+  );
+
   return {
     overrides,
     deleted,
@@ -396,10 +402,11 @@ export function useLiveHandlers(
     onClaim,
     onWheelSpin,
     onPlaylistTune,
-    onCreate: (widget: Omit<Widget, "id">) => {
-      if (!spaceId) return;
+    onResolveLink,
+    onCreate: async (widget: Omit<Widget, "id">) => {
+      if (!spaceId) return undefined;
       playSound("place");
-      void create({
+      return await create({
         spaceId: spaceId as never,
         ...widget,
         createdBy: identity.userId,

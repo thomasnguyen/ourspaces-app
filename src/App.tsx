@@ -1286,7 +1286,15 @@ export default function App() {
     const addedWidget = addWidgetAt(
       type,
       visibleCanvasCenter(size, canvasScaleRef.current, nudge),
+      type === "linkCard" ? freshWidgetData(type, {}) : undefined,
     );
+
+    if (addedWidget?.type === "linkCard") {
+      setManagedWidgetId(addedWidget.id);
+      setEditingWidgetId(addedWidget.id);
+      setChatOpen(false);
+      setRecapOpen(false);
+    }
 
     if (addedWidget?.type === "frame") {
       frameEditSnapshot.current = {
