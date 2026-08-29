@@ -12907,17 +12907,13 @@
   isolation: isolate;
   overflow: visible;
   color: var(--color-ink);
-  filter: drop-shadow(
-    3px 5px 1px color-mix(in srgb, var(--color-sticker) 24%, transparent)
-  );
-  transition:
-    translate 190ms cubic-bezier(0.16, 1, 0.3, 1),
-    filter 190ms cubic-bezier(0.16, 1, 0.3, 1);
+  filter: none;
+  transition: translate 190ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .widget-paper-note.note-paper-warm {
-  --note-accent: var(--color-trip);
-  --note-backing: var(--color-couple);
+  --note-accent: var(--color-couple);
+  --note-backing: var(--color-trip);
 }
 
 .widget-paper-note.note-paper-crew {
@@ -12937,10 +12933,14 @@
 
 .note-paper-backing {
   z-index: -1;
-  inset: 7px -4px -5px 5px;
+  right: -3px;
+  bottom: -3px;
+  width: 42%;
+  height: 26%;
   background: var(--note-backing);
   mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
   -webkit-mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
+  rotate: 1.5deg;
 }
 
 .note-paper-sheet {
@@ -12986,16 +12986,15 @@
 .note-paper-tape {
   position: absolute;
   z-index: 3;
-  top: -7px;
-  left: 50%;
-  width: 70px;
-  height: 20px;
+  top: 7px;
+  left: 64%;
+  width: 48px;
+  height: 14px;
   background-color: var(--color-card);
   background-image: url("/assets/textures/note-paper.jpg");
   background-position: center;
   background-size: 260px 260px;
-  box-shadow: 0 2px 1px
-    color-mix(in srgb, var(--color-sticker) 15%, transparent);
+  box-shadow: none;
   clip-path: polygon(
     0 13%,
     8% 0,
@@ -13018,8 +13017,8 @@
     8% 91%,
     1% 98%
   );
-  opacity: 0.88;
-  rotate: 3deg;
+  opacity: 0.66;
+  rotate: -2deg;
   translate: -50% 0;
   pointer-events: none;
 }
@@ -13027,14 +13026,15 @@
 .note-paper-doodle {
   position: absolute;
   z-index: 2;
-  top: 15px;
-  right: 15px;
+  top: 17px;
+  right: 18px;
   color: var(--note-accent);
   font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 700;
   line-height: 1;
-  rotate: 10deg;
+  rotate: 8deg;
+  opacity: 0.86;
   pointer-events: none;
 }
 
@@ -13049,11 +13049,10 @@
   width: max-content;
   max-width: calc(100% - 42px);
   overflow: hidden;
-  border-radius: var(--radius-pill);
-  background: var(--color-sticker);
-  color: var(--color-card);
-  padding: 4px 8px;
-  font-size: 8.5px;
+  background: transparent;
+  color: var(--note-accent);
+  padding: 0;
+  font-size: 8px;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -13081,7 +13080,9 @@
 }
 
 .widget-paper-note .note-remember {
-  box-shadow: 2px 2px 0 var(--note-accent);
+  box-shadow: none;
+  padding: 5px 8px;
+  font-size: 8px;
 }
 
 .widget-paper-note .note-remember:hover {
@@ -13097,18 +13098,14 @@
 }
 
 .widget-group:hover .widget-paper-note {
-  filter: drop-shadow(
-    5px 8px 1px color-mix(in srgb, var(--note-backing) 36%, transparent)
-  );
+  filter: none;
 }
 
 .widget-group.is-thread-selected .widget-shell.widget-paper-note,
 .widget-group.is-managed .widget-shell.widget-paper-note,
 .widget-group.is-dragging .widget-shell.widget-paper-note {
   box-shadow: none;
-  filter: drop-shadow(
-    4px 6px 1px color-mix(in srgb, var(--note-backing) 34%, transparent)
-  );
+  filter: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
