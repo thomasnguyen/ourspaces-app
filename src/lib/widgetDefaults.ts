@@ -34,6 +34,7 @@ export const WIDGET_SIZES: Partial<Record<WidgetType, { w: number; h: number }>>
   weather: { w: 230, h: 110 },
   wheel: { w: 280, h: 330 },
   dualClock: { w: 340, h: 150 },
+  cozyColor: { w: 560, h: 500 },
 };
 
 export function getWidgetBlueprint(type: WidgetType): Widget | undefined {
@@ -175,6 +176,11 @@ export function freshWidgetData(type: WidgetType, source: Widget["data"]): Widge
         title: "two places",
         left: { label: "home", tz: "America/Los_Angeles" },
         right: { label: "away", tz: "Asia/Seoul" },
+      };
+    case "cozyColor":
+      return {
+        title: "same moon, both windows",
+        src: "/assets/cozy-color-same-moon.png",
       };
     default:
       return { ...source };

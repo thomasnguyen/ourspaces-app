@@ -40,6 +40,10 @@ Backward-looking history lives in `hackathon.md`.
   clipping / read pill is the article link (`.link-card-read`, display:
   contents). Drag-from-anywhere still works; empty cards still open manage.
   Verified headless: cover→dock, read→new tab, paper drag moves the card.
+- Couple space now has a real `cozyColor` widget: generated airport-lounge
+  line art, six-color palette, three brush sizes, optimistic local strokes,
+  live artist faces, clear, and Convex-reactive stroke sync between windows.
+  Existing seeded dev rooms backfill the widget/layout on first couple-room load.
 
 ## Broken / known issues
 
@@ -53,6 +57,10 @@ Backward-looking history lives in `hackathon.md`.
   everyone. Streams are ice2/ice6/ice5 `*-128-mp3` from somafm.com.
 
 ## Next up
+
+- Open `#/space/couple` in the in-app browser and capture/tune the final board
+  composition; browser discovery was unavailable in this session, while build
+  and the dev Convex push both passed.
 
 - Re-seed live Convex (`npx convex run seed:demo` or equivalent) so
   production canvases pick up the SomaFM fields and seeded buildclub/Tahoe
@@ -91,3 +99,7 @@ Backward-looking history lives in `hackathon.md`.
   on link save and live mode swaps in OpenAI ones via
   `convex/questions.sparkQuestions` (canned fallback when `OPENAI_API_KEY`
   is unset — set it in Convex env for real generations).
+- 2026-08-28: Collaborative coloring is brush-based over generated broad-region
+  line art, not paint-by-number SVG regions. Each finished stroke is one bounded
+  Convex row, so a second window sees the color arrive reactively without
+  rewriting the widget document.

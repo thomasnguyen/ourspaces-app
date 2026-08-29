@@ -135,7 +135,7 @@ export const demo = internalMutation({
 export const reset = internalMutation({
   args: {},
   handler: async (ctx) => {
-    for (const table of ["messages", "votes", "presence", "widgets", "members", "spaces"] as const) {
+    for (const table of ["messages", "votes", "paintMarks", "presence", "widgets", "members", "spaces"] as const) {
       const rows = await ctx.db.query(table).collect();
       for (const row of rows) await ctx.db.delete(row._id);
     }

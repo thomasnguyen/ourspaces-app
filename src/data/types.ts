@@ -26,7 +26,8 @@ export type WidgetType =
   | "sports"
   | "backendLive"
   | "wheel"
-  | "dualClock";
+  | "dualClock"
+  | "cozyColor";
 
 export type Widget = {
   id: string;

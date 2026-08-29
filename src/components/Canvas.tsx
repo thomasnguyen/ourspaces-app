@@ -14,6 +14,10 @@ import { FirstRunSticky, type CanvasPoint } from "./FirstRunSticky";
 import { MemberFace } from "./MemberFace";
 import { WidgetCard } from "./WidgetCard";
 import type { RsvpStatus, PlaylistTune } from "../widgets/extras";
+import type {
+  CozyColorIdentity,
+  CozyColorStroke,
+} from "../widgets/CozyColorWidget";
 import { playSound } from "../lib/sounds";
 import { inviteUrlForSpace } from "../lib/routes";
 
@@ -93,6 +97,10 @@ export function Canvas({
   claimantId,
   onWheelSpin,
   onPlaylistTune,
+  paintStrokesByWidget = {},
+  paintIdentity,
+  onPaintStroke,
+  onPaintClear,
   arrivalPeerId,
 }: {
   spaceId: string;
@@ -152,6 +160,13 @@ export function Canvas({
   claimantId?: string;
   onWheelSpin?: (widgetId: string, spin: { spinNonce: number; resultIndex: number }) => void;
   onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
+  paintStrokesByWidget?: Record<string, CozyColorStroke[]>;
+  paintIdentity?: CozyColorIdentity;
+  onPaintStroke?: (
+    widgetId: string,
+    stroke: Omit<CozyColorStroke, "id" | "createdAt">,
+  ) => Promise<unknown> | void;
+  onPaintClear?: (widgetId: string) => Promise<unknown> | void;
   arrivalPeerId?: string;
 }) {
   const space = getSpace(spaceId);
@@ -284,6 +299,10 @@ export function Canvas({
         onPollVote={onPollVote}
         onWheelSpin={onWheelSpin}
         onPlaylistTune={onPlaylistTune}
+        paintStrokes={paintStrokesByWidget[widget.id]}
+        paintIdentity={paintIdentity}
+        onPaintStroke={onPaintStroke}
+        onPaintClear={onPaintClear}
         onRsvp={onRsvp}
         onDailyAnswer={onDailyAnswer}
         onDailyReact={onDailyReact}
@@ -317,6 +336,8 @@ export function Canvas({
       onRsvp,
       onWheelSpin,
       onPlaylistTune,
+      onPaintClear,
+      onPaintStroke,
       onWidgetDelete,
       onWidgetDragEnd,
       onWidgetDragStart,
@@ -325,6 +346,8 @@ export function Canvas({
       onWidgetMove,
       onWidgetSelect,
       pollSelections,
+      paintIdentity,
+      paintStrokesByWidget,
       promoted,
       readThreadIds,
       recapCites,

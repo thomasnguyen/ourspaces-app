@@ -14223,3 +14223,272 @@
     transition: none;
   }
 }
+
+/* ================================================================
+   COZY COLOR — a live shared coloring postcard
+   ================================================================ */
+
+.widget-cozy-color {
+  --paint-berry: var(--color-couple);
+  --paint-orange: var(--color-trip);
+  --paint-blue: var(--color-fam);
+  --paint-violet: var(--color-crew);
+  --paint-teal: var(--color-league);
+  --paint-lime: var(--color-lime);
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  overflow: hidden;
+  border-radius: 15px;
+  background: var(--color-sticker);
+  color: white;
+  padding: 13px;
+}
+
+.cozy-color-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cozy-color-heading h3 {
+  max-width: 18ch;
+  margin: 2px 0 0;
+  color: white;
+  font-size: 1.25rem;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.cozy-color-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-lime);
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cozy-color-kicker i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-lime);
+}
+
+.cozy-color-artists {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.cozy-color-artists .member-face + .member-face {
+  margin-left: -8px;
+}
+
+.cozy-color-artists > span:last-child {
+  margin-left: 7px;
+  color: white;
+  font-size: 0.66rem;
+  font-weight: 700;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.cozy-color-stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 11px;
+  background: var(--color-card);
+  cursor: crosshair;
+  isolation: isolate;
+  touch-action: none;
+}
+
+.cozy-color-stage:focus-visible {
+  outline: 3px solid var(--color-lime);
+  outline-offset: 3px;
+}
+
+.cozy-color-stage > img,
+.cozy-color-paint-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cozy-color-stage > img {
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+.cozy-color-paint-layer {
+  z-index: 1;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.cozy-color-nudge {
+  position: absolute;
+  z-index: 2;
+  right: 10px;
+  bottom: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: white;
+  padding: 7px 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  pointer-events: none;
+  animation: cozy-color-nudge-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cozy-color-nudge-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.cozy-color-tools {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.cozy-color-palette,
+.cozy-color-brushes {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cozy-color-swatch {
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    outline-color 150ms ease-out;
+}
+
+.cozy-color-swatch:hover {
+  transform: translateY(-2px);
+}
+
+.cozy-color-swatch:active {
+  transform: translateY(1px) scale(0.94);
+}
+
+.cozy-color-swatch.is-active {
+  outline: 3px solid white;
+  outline-offset: 2px;
+}
+
+.cozy-color-swatch.tone-berry {
+  background: var(--paint-berry);
+}
+
+.cozy-color-swatch.tone-orange {
+  background: var(--paint-orange);
+}
+
+.cozy-color-swatch.tone-blue {
+  background: var(--paint-blue);
+}
+
+.cozy-color-swatch.tone-violet {
+  background: var(--paint-violet);
+}
+
+.cozy-color-swatch.tone-teal {
+  background: var(--paint-teal);
+}
+
+.cozy-color-swatch.tone-lime {
+  background: var(--paint-lime);
+}
+
+.cozy-color-brushes {
+  padding-left: 8px;
+  border-left: 1px solid white;
+}
+
+.cozy-color-brushes button {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  opacity: 0.48;
+}
+
+.cozy-color-brushes button:hover,
+.cozy-color-brushes button.is-active {
+  background: var(--color-paper-deep);
+  opacity: 1;
+}
+
+.cozy-color-brushes i {
+  width: var(--brush-dot);
+  height: var(--brush-dot);
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.cozy-color-clear {
+  min-height: 30px;
+  margin-left: auto;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-paper-deep);
+  color: white;
+  padding: 6px 11px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cozy-color-clear:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+@media (max-width: 720px) {
+  .cozy-color-artists > span:last-child,
+  .cozy-color-brushes {
+    display: none;
+  }
+
+  .cozy-color-swatch {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cozy-color-nudge,
+  .cozy-color-swatch {
+    animation: none;
+    transition: none;
+  }
+}

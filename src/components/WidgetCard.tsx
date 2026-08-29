@@ -53,6 +53,11 @@ import {
   type PlaylistTune,
   type RsvpStatus,
 } from "../widgets/extras";
+import {
+  CozyColorWidget,
+  type CozyColorIdentity,
+  type CozyColorStroke,
+} from "../widgets/CozyColorWidget";
 
 /* Daily question grows with its answers — seeded height is just the floor. */
 function widgetGrows(widget: Widget) {
@@ -246,6 +251,10 @@ function WidgetCardComponent({
   claimantId,
   onWheelSpin,
   onPlaylistTune,
+  paintStrokes,
+  paintIdentity,
+  onPaintStroke,
+  onPaintClear,
 }: {
   widget: Widget;
   spaceId: string;
@@ -297,6 +306,13 @@ function WidgetCardComponent({
   claimantId?: string;
   onWheelSpin?: (widgetId: string, spin: { spinNonce: number; resultIndex: number }) => void;
   onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
+  paintStrokes?: CozyColorStroke[];
+  paintIdentity?: CozyColorIdentity;
+  onPaintStroke?: (
+    widgetId: string,
+    stroke: Omit<CozyColorStroke, "id" | "createdAt">,
+  ) => Promise<unknown> | void;
+  onPaintClear?: (widgetId: string) => Promise<unknown> | void;
 }) {
   const dragState = useRef<{
     pointerId: number;
@@ -719,6 +735,18 @@ function WidgetCardComponent({
       break;
     case "dualClock":
       content = <DualClockWidget widget={widget} style={inner} />;
+      break;
+    case "cozyColor":
+      content = (
+        <CozyColorWidget
+          widget={widget}
+          style={inner}
+          strokes={paintStrokes}
+          identity={paintIdentity}
+          onStroke={onPaintStroke ? (stroke) => onPaintStroke(widget.id, stroke) : undefined}
+          onClear={onPaintClear ? () => onPaintClear(widget.id) : undefined}
+        />
+      );
       break;
     default:
       return null;
