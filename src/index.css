@@ -14131,12 +14131,52 @@
 
 .thread-question-strip button:hover {
   background: rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.84);
+}
+
+/* Unpicked questions recede so the active one clearly owns the messages. */
+.thread-question-strip button:not(.is-active) {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .thread-question-strip button.is-active {
   background: var(--color-card);
   color: var(--color-ink);
   rotate: -0.5deg;
+}
+
+.thread-question-single {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  border-radius: 10px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  padding: 8px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  rotate: -0.5deg;
+}
+
+.thread-question-single i {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.6;
+  opacity: 0.5;
+}
+
+/* Ties the message list below to the chip that owns it. */
+.thread-question-scope {
+  padding-left: 4px;
+  color: rgba(255, 255, 255, 0.44);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .thread-question-strip button i {
