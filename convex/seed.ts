@@ -94,9 +94,15 @@ async function seedAll(ctx: MutationCtx) {
     let offset = threads.reduce((total, thread) => total + thread.messages.length, 0);
     for (const thread of threads) {
       for (const [index, message] of thread.messages.entries()) {
+        // Question threads ("<widgetId>::q:<id>") map their base widget id to
+        // the live Convex id and keep the suffix.
+        const [baseThreadId, ...threadSuffix] = thread.widgetId.split("::");
+        const mappedBase = widgetIds.get(`${meta.id}:${baseThreadId}`);
         const widgetId = thread.widgetId === "global"
           ? "global"
-          : widgetIds.get(`${meta.id}:${thread.widgetId}`);
+          : mappedBase
+            ? [mappedBase, ...threadSuffix].join("::")
+            : undefined;
         if (!widgetId) continue;
         const member = meta.members.find((candidate) => candidate.name === message.from);
         await ctx.db.insert("messages", {
@@ -134,5 +140,76 @@ export const reset = internalMutation({
       for (const row of rows) await ctx.db.delete(row._id);
     }
     return seedAll(ctx);
+  },
+});
+
+/** Non-destructive: give already-seeded link cards their conversation
+ * starters + question threads without wiping anything live. Idempotent. */
+export const backfillLinkQuestions = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    let patchedWidgets = 0;
+    let insertedMessages = 0;
+    for (const meta of Object.values(SPACES_BY_ID)) {
+      const space = await ctx.db
+        .query("spaces")
+        .withIndex("by_slug", (q) => q.eq("slug", meta.id))
+        .unique();
+      if (!space) continue;
+      const liveWidgets = await ctx.db
+        .query("widgets")
+        .withIndex("by_space", (q) => q.eq("spaceId", space._id))
+        .collect();
+      for (const seedWidget of meta.widgets) {
+        if (seedWidget.type !== "linkCard") continue;
+        const questions = seedWidget.data.questions;
+        if (!Array.isArray(questions) || questions.length === 0) continue;
+        const live = liveWidgets.find(
+          (widget) =>
+            widget.type === "linkCard" &&
+            widget.data?.url === seedWidget.data.url &&
+            widget.data?.savedBy === seedWidget.data.savedBy,
+        );
+        if (!live) continue;
+        await ctx.db.patch(live._id, {
+          data: { ...live.data, questions: convexSafe(questions) },
+        });
+        patchedWidgets += 1;
+
+        for (const thread of Object.values(getThreadsForSpace(meta.id))) {
+          const [baseThreadId] = thread.widgetId.split("::");
+          if (baseThreadId !== seedWidget.id || baseThreadId === thread.widgetId) {
+            continue;
+          }
+          const liveThreadId =
+            String(live._id) + thread.widgetId.slice(baseThreadId.length);
+          const existing = await ctx.db
+            .query("messages")
+            .withIndex("by_space_widget", (q) =>
+              q.eq("spaceId", space._id).eq("widgetId", liveThreadId),
+            )
+            .take(1);
+          if (existing.length > 0) continue;
+          for (const [index, message] of thread.messages.entries()) {
+            const member = meta.members.find(
+              (candidate) => candidate.name === message.from,
+            );
+            await ctx.db.insert("messages", {
+              spaceId: space._id,
+              widgetId: liveThreadId,
+              userId: seedUserId(meta.id, message.from),
+              text: message.text,
+              createdAt: now - (thread.messages.length - index) * 60_000,
+              authorName: message.from,
+              authorColor: member?.color ?? "#8b8b8b",
+              promotable: message.promotable,
+            });
+            insertedMessages += 1;
+          }
+        }
+      }
+    }
+    return { patchedWidgets, insertedMessages };
   },
 });
