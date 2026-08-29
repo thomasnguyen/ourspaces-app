@@ -1,5 +1,7 @@
 import {
+  memo,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -71,7 +73,9 @@ function centerOf(rect: { x: number; y: number; w: number; h: number }) {
   return { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 };
 }
 
-export function PhotoWallGallery({
+/* Memoized: presence/chat churn re-renders LiveSpace constantly — the room
+   should not reconcile mid-animation unless its own data changed. */
+export const PhotoWallGallery = memo(function PhotoWallGallery({
   widget,
   spaceName,
   origin,
@@ -126,6 +130,17 @@ export function PhotoWallGallery({
     () => Boolean(printOrigins?.some(Boolean)) && !reduceMotion(),
   );
   const heroKeyRef = useRef<string | null>(photos[0] ? photoKey(photos[0]) : null);
+  /* During the flight the grid shows the pile's already-decoded thumbnails;
+     full-res swaps in after landing so decode work never hits mid-animation. */
+  const [hiRes, setHiRes] = useState(() => !spreading);
+  const tileRectsRef = useRef<Map<string, DOMRect>>(new Map());
+  const keyList = photos.map(photoKey).join("|");
+
+  useEffect(() => {
+    if (hiRes) return;
+    const timeout = window.setTimeout(() => setHiRes(true), 1150);
+    return () => window.clearTimeout(timeout);
+  }, [hiRes]);
 
   const pileCenter = () => {
     if (!origin) {
@@ -211,28 +226,59 @@ export function PhotoWallGallery({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* A new hero print (someone pinned a photo) pops onto the table. */
+  /* Remember where every print sits after each paint, so a list change can
+     FLIP the survivors from their old spots instead of teleporting them. */
   useEffect(() => {
+    if (lightboxOpen) return;
+    const rects = tileRectsRef.current;
+    photos.forEach((photo, index) => {
+      const tile = tileRefs.current[index];
+      if (tile) rects.set(photoKey(photo), tile.getBoundingClientRect());
+    });
+  });
+
+  /* Someone pinned a photo: the new hero pops in, everyone else glides one
+     slot over from wherever they were. */
+  useLayoutEffect(() => {
     const nextKey = photos[0] ? photoKey(photos[0]) : null;
     const previousKey = heroKeyRef.current;
     heroKeyRef.current = nextKey;
     if (!nextKey || nextKey === previousKey || lightboxOpen) return;
     if (reduceMotion()) return;
-    window.requestAnimationFrame(() => {
-      const hero = tileRefs.current[0];
-      if (!hero) return;
-      hero.animate(
+    const oldRects = tileRectsRef.current;
+    photos.forEach((photo, index) => {
+      const tile = tileRefs.current[index];
+      if (!tile) return;
+      const prev = oldRects.get(photoKey(photo));
+      if (!prev) {
+        if (index !== 0) return;
+        tile.animate(
+          [
+            { transform: "scale(0.55) rotate(-7deg)", opacity: 0 },
+            { opacity: 1, offset: 0.4 },
+            { transform: "none", opacity: 1 },
+          ],
+          { duration: 460, easing: POP, fill: "backwards" },
+        );
+        return;
+      }
+      const next = tile.getBoundingClientRect();
+      const dx = prev.x - next.x;
+      const dy = prev.y - next.y;
+      const sx = prev.width / next.width;
+      const sy = prev.height / next.height;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(sx - 1) < 0.01) return;
+      tile.animate(
         [
-          { transform: "scale(0.55) rotate(-7deg)", opacity: 0 },
-          { opacity: 1, offset: 0.4 },
-          { transform: "none", opacity: 1 },
+          { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` },
+          { transform: "none" },
         ],
-        { duration: 460, easing: POP, fill: "backwards" },
+        { duration: 420, easing: GLIDE, delay: 40, fill: "backwards" },
       );
-      playSound("place");
     });
+    playSound("place");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photos[0] ? photoKey(photos[0]) : null, lightboxOpen]);
+  }, [keyList, lightboxOpen]);
 
   /* Picking a print up: it flies from its table spot into the lightbox. */
   useEffect(() => {
@@ -295,6 +341,27 @@ export function PhotoWallGallery({
     setCommentDraft("");
   }, [activeIndex]);
 
+  /* The lifted print flies with the already-decoded thumbnail (right size
+     from frame one), then sharpens to full-res once it has decoded off the
+     critical path. */
+  const [lightboxFullSrc, setLightboxFullSrc] = useState<string | null>(null);
+  useEffect(() => {
+    setLightboxFullSrc(null);
+    const fullSrc = activeIndex === null ? undefined : photos[activeIndex]?.src;
+    if (!fullSrc) return;
+    let cancelled = false;
+    const full = new Image();
+    full.src = fullSrc;
+    const swap = () => {
+      if (!cancelled) setLightboxFullSrc(fullSrc);
+    };
+    full.decode().then(swap, swap);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex]);
+
   useEffect(() => {
     if (!lightboxOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -353,7 +420,9 @@ export function PhotoWallGallery({
         },
       );
     });
-    window.setTimeout(() => dialog.close(), 380);
+    /* Close after both the gather (≤390ms) and the clip-down (380ms) finish —
+       cutting them early reads as a stutter at the end. */
+    window.setTimeout(() => dialog.close(), 410);
   };
 
   const openPhoto = (index: number) => {
@@ -528,9 +597,15 @@ export function PhotoWallGallery({
                   <div className="photo-lightbox-face is-front">
                     <span className="photo-lightbox-frame">
                       <img
-                        key={activePhoto.src ?? activePhoto.caption}
-                        src={activePhoto.src ?? FALLBACK_PHOTO}
+                        key={photoKey(activePhoto)}
+                        src={
+                          lightboxFullSrc ??
+                          activePhoto.thumbnailSrc ??
+                          activePhoto.src ??
+                          FALLBACK_PHOTO
+                        }
                         alt={activePhoto.caption}
+                        decoding="async"
                         onError={(event) => {
                           event.currentTarget.onerror = null;
                           event.currentTarget.src = FALLBACK_PHOTO;
@@ -691,9 +766,14 @@ export function PhotoWallGallery({
                       )}
                       <span className="photo-gallery-media">
                         <img
-                          src={photo.src ?? FALLBACK_PHOTO}
+                          src={
+                            hiRes
+                              ? photo.src ?? photo.thumbnailSrc ?? FALLBACK_PHOTO
+                              : photo.thumbnailSrc ?? photo.src ?? FALLBACK_PHOTO
+                          }
                           alt=""
                           loading={index > 4 ? "lazy" : undefined}
+                          decoding="async"
                           style={{ objectPosition: photo.focus ?? "center" }}
                           onError={(event) => {
                             event.currentTarget.onerror = null;
@@ -800,4 +880,4 @@ export function PhotoWallGallery({
       )}
     </dialog>
   );
-}
+});
