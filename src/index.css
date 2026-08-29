@@ -13642,12 +13642,12 @@
 .widget-group[data-widget-type="jokeRegistry"] .widget-group-body::before {
   position: absolute;
   z-index: -1;
-  bottom: -4px;
+  bottom: 0;
   height: 20px;
   mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
   -webkit-mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
   content: "";
-  left: 58%;
+  left: 44%;
   width: 28%;
   background: var(--color-couple);
   pointer-events: none;
