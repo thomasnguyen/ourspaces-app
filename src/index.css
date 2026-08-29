@@ -4661,6 +4661,7 @@
   --rsvp-deco: rgba(233, 54, 157, 0.4);
   --rsvp-shadow: rgba(83, 59, 68, 0.14);
   position: relative;
+  container-type: size;
   display: flex;
   overflow: hidden;
   flex-direction: column;
@@ -4669,6 +4670,33 @@
   box-shadow: 0 8px 0 var(--rsvp-shadow);
   color: var(--rsvp-ink);
   padding: 16px 14px 18px;
+}
+
+/* short cards (legacy 230 seeds, hand-resizes): shed the quote and the slack,
+   never the respond pill. Content box = card height minus 34px padding, so
+   208px ≈ a 242px card — the legacy 230 seed lands under, the 248 seed over. */
+@container (max-height: 208px) {
+  .rsvp-waiting-note {
+    display: none;
+  }
+
+  .rsvp-hero {
+    margin-top: 4px;
+  }
+
+  .rsvp-cluster {
+    margin-top: 6px;
+  }
+}
+
+/* the crew paper board renders this card with bigger type (see the
+   801px+ paper-bg block) — the quote needs a properly tall card there */
+@media (min-width: 801px) {
+  @container (max-height: 252px) {
+    .paper-bg[data-space-id="crew"] .rsvp-waiting-note {
+      display: none;
+    }
+  }
 }
 
 .rsvp-tone-butter {
@@ -4934,6 +4962,8 @@
 /* —— focus detail: names out, the card reads like a guest list ——
    Answering moves to the thread note; the card just tells the story. */
 .widget-rsvp.is-detail {
+  /* size containment would collapse the auto height */
+  container-type: normal;
   height: auto;
   min-height: 100%;
   padding-bottom: 28px;

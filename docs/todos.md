@@ -31,6 +31,15 @@ Backward-looking history lives in `hackathon.md`.
   faces land per-`--i` stagger, then the postmark stamps at 700ms. Crew seed
   grew 190×230 → 190×248 (y 100→92; potluck below at y 350 caps bottom at
   ~344). Eval script: `.context/shot-rsvp.mjs` (still/picking/answered).
+  Overflow guard: `.widget-rsvp` is a size container (reset to `normal` in
+  `.is-detail` — size containment collapses its `height: auto`); short cards
+  shed the quote via `@container (max-height: 208px)`, and the crew block
+  board (which renders rsvp with the ≥801px `paper-bg[data-space-id]`
+  big-type overrides — the space page main has NO `data-space-id`, so those
+  overrides only hit block boards) sheds it under 252px. Legacy 230 rows in
+  the deployed backend keep the old height until reseeded — verified via
+  `.context/measure-rsvp.mjs` (pill sits inside the card at 230 and 248) and
+  `.context/shot-rsvp-block.mjs`.
 - Poll widget redesigned as a "ballot" (`/eye-candy` pass on the washed-out
   tinted bars): vote fills are now flat full-strength tone color — the row
   content renders twice (`.poll-row-base` + `.poll-row-fill` clipped via
