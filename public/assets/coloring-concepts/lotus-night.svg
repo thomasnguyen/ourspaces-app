@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Night lotus paint-by-number concept</title>
+  <desc id="desc">A moonlit lotus pond with closed vector petals, leaves, water, and numbered regions.</desc>
+  <metadata>Lotus composition adapted from the public-domain Openclipart work “white lotus flower” by sebek: https://openclipart.org/detail/16864</metadata>
+  <style>
+    .outline { stroke: hsl(240 10% 5%); stroke-width: 7; stroke-linejoin: round; stroke-linecap: round; }
+    .thin { stroke: hsl(240 10% 5%); stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+    .number { fill: hsl(240 10% 5%); font: 700 34px system-ui, sans-serif; text-anchor: middle; dominant-baseline: middle; }
+  </style>
+  <rect width="800" height="600" rx="18" fill="hsl(230 58% 10%)"/>
+  <circle cx="660" cy="102" r="55" fill="hsl(50 100% 74%)" class="outline"/>
+  <g fill="hsl(73 100% 58%)">
+    <circle cx="80" cy="75" r="5"/><circle cx="145" cy="128" r="3"/><circle cx="242" cy="55" r="4"/>
+    <circle cx="370" cy="105" r="3"/><circle cx="520" cy="64" r="5"/><circle cx="745" cy="176" r="4"/>
+  </g>
+  <path d="M0 358C120 308 235 392 356 344C486 292 590 386 800 320V600H0Z" fill="hsl(190 78% 40%)" class="outline" data-region="water-back"/>
+  <path d="M0 430C155 360 257 458 410 412C560 366 664 443 800 392V600H0Z" fill="hsl(231 70% 35%)" class="outline" data-region="water-middle"/>
+  <path d="M0 520C135 464 250 548 380 500C520 448 675 530 800 475V600H0Z" fill="hsl(266 74% 46%)" class="outline" data-region="water-front"/>
+  <path d="M94 405C160 348 248 363 310 418C239 447 155 449 94 405Z" fill="hsl(132 78% 42%)" class="outline" data-region="leaf-left"/>
+  <path d="M485 427C555 347 684 361 748 442C654 469 568 464 485 427Z" fill="hsl(132 78% 42%)" class="outline" data-region="leaf-right"/>
+  <path d="M151 403C182 390 225 392 277 417" fill="none" class="thin"/>
+  <path d="M528 423C583 404 650 407 713 439" fill="none" class="thin"/>
+  <path d="M393 540C383 427 385 338 395 266" fill="none" stroke="hsl(174 72% 43%)" stroke-width="22" stroke-linecap="round"/>
+  <path d="M635 535C616 451 611 387 625 322" fill="none" stroke="hsl(174 72% 43%)" stroke-width="17" stroke-linecap="round"/>
+  <g class="outline">
+    <path d="M394 283C331 250 291 188 294 115C352 133 390 202 394 283Z" fill="white" data-region="petal-left-outer"/>
+    <path d="M401 282C465 247 503 186 497 112C441 134 405 205 401 282Z" fill="white" data-region="petal-right-outer"/>
+    <path d="M397 281C350 215 350 142 399 72C447 142 445 220 397 281Z" fill="hsl(316 82% 57%)" data-region="petal-center"/>
+    <path d="M361 287C293 279 247 242 223 179C290 176 349 220 361 287Z" fill="hsl(273 82% 61%)" data-region="petal-left-wide"/>
+    <path d="M434 287C501 278 551 239 574 175C503 175 445 220 434 287Z" fill="hsl(273 82% 61%)" data-region="petal-right-wide"/>
+    <path d="M337 298C274 316 217 297 170 251C233 226 309 248 337 298Z" fill="white" data-region="petal-left-low"/>
+    <path d="M458 299C522 315 584 294 626 246C557 227 488 248 458 299Z" fill="white" data-region="petal-right-low"/>
+    <path d="M396 304C349 323 295 317 251 286C301 254 353 261 396 304Z" fill="hsl(185 80% 46%)" data-region="petal-left-inner"/>
+    <path d="M398 304C446 322 500 315 543 282C491 253 438 261 398 304Z" fill="hsl(185 80% 46%)" data-region="petal-right-inner"/>
+    <path d="M398 306C355 283 342 232 361 176C406 205 422 260 398 306Z" fill="white" data-region="petal-center-left"/>
+    <path d="M399 306C441 281 454 230 432 174C389 205 374 259 399 306Z" fill="white" data-region="petal-center-right"/>
+  </g>
+  <g class="outline">
+    <path d="M624 337C582 307 578 256 616 211C651 254 654 301 624 337Z" fill="hsl(316 82% 57%)" data-region="bud-left"/>
+    <path d="M625 337C661 304 669 258 645 219C607 249 601 299 625 337Z" fill="hsl(185 80% 46%)" data-region="bud-right"/>
+  </g>
+  <text x="333" y="202" class="number">3</text>
+  <text x="462" y="199" class="number">3</text>
+  <text x="255" y="278" class="number">3</text>
+  <text x="544" y="276" class="number">3</text>
+  <text x="376" y="251" class="number">3</text>
+  <text x="421" y="250" class="number">3</text>
+</svg>

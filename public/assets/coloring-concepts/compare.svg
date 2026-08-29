@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1620 590" role="img" aria-labelledby="title desc">
+  <title id="title">Three collaborative coloring SVG concepts</title>
+  <desc id="desc">Night lotus, same moon, and window garden shown side by side.</desc>
+  <rect width="1620" height="590" fill="hsl(330 10% 7%)"/>
+  <style>
+    .label { fill: white; font: 800 26px system-ui, sans-serif; }
+    .note { fill: hsl(0 0% 70%); font: 600 15px system-ui, sans-serif; }
+  </style>
+  <image href="lotus-night.svg" x="30" y="35" width="500" height="375"/>
+  <image href="same-moon.svg" x="560" y="35" width="500" height="375"/>
+  <image href="window-garden.svg" x="1090" y="35" width="500" height="375"/>
+  <text x="30" y="455" class="label">A · night lotus</text>
+  <text x="30" y="485" class="note">public-domain petal geometry · closest to your reference</text>
+  <text x="560" y="455" class="label">B · same moon</text>
+  <text x="560" y="485" class="note">keeps the two-person travel story · rebuilt as true regions</text>
+  <text x="1090" y="455" class="label">C · window garden</text>
+  <text x="1090" y="485" class="note">coziest option · plants, pillows, moon, tiny cat</text>
+  <rect x="30" y="525" width="1560" height="2" fill="hsl(0 0% 22%)"/>
+  <text x="30" y="558" class="note">Every white shape is a closed SVG path. No tolerance-based flood fill, no white halos.</text>
+</svg>

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Same moon paint-by-number concept</title>
+  <desc id="desc">Two colorful lounge chairs and travel mugs beneath one moon, built from closed SVG regions.</desc>
+  <style>
+    .outline { stroke: hsl(240 10% 5%); stroke-width: 7; stroke-linejoin: round; stroke-linecap: round; }
+    .thin { stroke: hsl(240 10% 5%); stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+    .number { fill: hsl(240 10% 5%); font: 700 32px system-ui, sans-serif; text-anchor: middle; dominant-baseline: middle; }
+  </style>
+  <rect width="800" height="600" rx="18" fill="hsl(226 78% 18%)"/>
+  <rect x="25" y="24" width="750" height="552" rx="10" fill="hsl(45 70% 90%)" class="outline"/>
+  <path d="M54 52H746V350H54Z" fill="hsl(224 79% 42%)" class="outline" data-region="sky"/>
+  <circle cx="400" cy="140" r="76" fill="hsl(48 100% 72%)" class="outline" data-region="moon"/>
+  <circle cx="378" cy="119" r="14" fill="hsl(40 92% 61%)" class="thin"/><circle cx="431" cy="150" r="20" fill="hsl(40 92% 61%)" class="thin"/>
+  <path d="M54 300C155 263 240 316 338 285C445 251 535 318 746 274V350H54Z" fill="hsl(178 65% 31%)" class="outline" data-region="horizon"/>
+  <path d="M54 350H746V548H54Z" fill="hsl(42 88% 78%)" class="outline" data-region="floor"/>
+  <path d="M52 477L746 477M233 350L177 548M568 350L624 548M400 350V548" fill="none" class="thin"/>
+  <rect x="235" y="52" width="18" height="299" fill="hsl(42 88% 78%)" class="outline"/>
+  <rect x="546" y="52" width="18" height="299" fill="hsl(42 88% 78%)" class="outline"/>
+  <g class="outline">
+    <path d="M81 371C81 332 109 310 153 310H264C290 310 308 329 308 358V464H82Z" fill="hsl(177 64% 38%)" data-region="left-chair"/>
+    <path d="M492 358C492 329 511 310 538 310H648C691 310 719 332 719 371V464H492Z" fill="hsl(21 100% 56%)" data-region="right-chair"/>
+    <path d="M82 445H308V516H82Z" fill="hsl(264 76% 57%)" data-region="left-chair-base"/>
+    <path d="M492 445H719V516H492Z" fill="hsl(177 64% 38%)" data-region="right-chair-base"/>
+    <path d="M136 340C165 317 218 316 252 340L234 414C197 423 161 414 125 391Z" fill="white" data-region="left-pillow"/>
+    <path d="M548 338C583 315 635 317 665 341L676 392C638 415 596 420 561 409Z" fill="white" data-region="right-pillow"/>
+    <path d="M153 402C184 382 234 381 275 409C240 432 190 435 153 402Z" fill="hsl(316 82% 57%)" data-region="left-blanket"/>
+    <path d="M530 410C570 380 620 383 656 404C625 438 572 435 530 410Z" fill="hsl(316 82% 57%)" data-region="right-blanket"/>
+  </g>
+  <g class="outline">
+    <ellipse cx="400" cy="447" rx="112" ry="36" fill="hsl(264 76% 57%)" data-region="table-top"/>
+    <path d="M389 478H411V535H389Z" fill="hsl(264 76% 57%)" data-region="table-leg"/>
+    <ellipse cx="400" cy="538" rx="62" ry="18" fill="hsl(264 76% 57%)" data-region="table-foot"/>
+    <path d="M330 396H374L369 460H335Z" fill="white" data-region="left-mug"/>
+    <path d="M426 396H470L465 460H431Z" fill="white" data-region="right-mug"/>
+  </g>
+  <g class="outline">
+    <rect x="42" y="420" width="92" height="132" rx="20" fill="hsl(326 78% 55%)" data-region="left-case"/>
+    <rect x="666" y="420" width="92" height="132" rx="20" fill="hsl(218 85% 54%)" data-region="right-case"/>
+  </g>
+  <text x="188" y="365" class="number">2</text><text x="614" y="365" class="number">2</text>
+  <text x="352" y="430" class="number">2</text><text x="448" y="430" class="number">2</text>
+</svg>
