@@ -1,7 +1,18 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type FormEvent } from "react";
 import type { Widget } from "../data/types";
 import { MemberFace } from "../components/MemberFace";
 import { playSound } from "../lib/sounds";
+import {
+  DEFAULT_STATION_ID,
+  getRadioSnapshot,
+  isListeningTo,
+  playRadio,
+  prefetchTrack,
+  RADIO_STATIONS,
+  stationById,
+  stopRadio,
+  subscribeRadio,
+} from "../lib/radio";
 
 type Style = CSSProperties;
 
@@ -1040,11 +1051,27 @@ export function LinkShelfWidget({ widget, style }: { widget: Widget; style: Styl
   );
 }
 
-export function PlaylistWidget({ widget, style }: { widget: Widget; style: Style }) {
+export type PlaylistTune = { stationId: string; playing: boolean };
+
+export function PlaylistWidget({
+  widget,
+  style,
+  onTune,
+}: {
+  widget: Widget;
+  style: Style;
+  onTune?: (tune: PlaylistTune) => void;
+}) {
   const title = String(widget.data.title ?? "shared soundtrack");
-  const song = String(widget.data.song ?? "").trim();
-  const artist = String(widget.data.artist ?? "").trim();
-  const pickedBy = String(widget.data.pickedBy ?? "").trim();
+  const configured = widget.data.stationId !== "";
+  const dataStationId = configured
+    ? String(widget.data.stationId || DEFAULT_STATION_ID)
+    : "";
+  const [localStationId, setLocalStationId] = useState("");
+  const stationId = localStationId || dataStationId;
+  const station = stationId ? stationById(stationId) : null;
+  const playedBy = String(widget.data.playedBy ?? widget.data.pickedBy ?? "").trim();
+  const roomLive = Boolean(widget.data.playing);
   /* One accent per board: the countdown owns the purple; the deck is chrome. */
   const tone = String(widget.data.tone ?? "ink");
   const seededVibes = Array.isArray(widget.data.vibes)
@@ -1052,33 +1079,99 @@ export function PlaylistWidget({ widget, style }: { widget: Widget; style: Style
     : Number(widget.data.vibes ?? 0) || 0;
   const [vibed, setVibed] = useState(false);
   const vibeCount = seededVibes + (vibed ? 1 : 0);
+  const radio = useSyncExternalStore(subscribeRadio, getRadioSnapshot, getRadioSnapshot);
+  const listening = station ? isListeningTo(widget.id, station.id) : false;
+  const live = Boolean(
+    station &&
+      radio.ownerId === widget.id &&
+      radio.stationId === station.id &&
+      !radio.error &&
+      (radio.playing || radio.waiting),
+  );
+  const canJoin = Boolean(station && roomLive && !live);
+  const onAir = station ? radio.tracks[station.id] : undefined;
+  const status = !station
+    ? ""
+    : radio.error && radio.ownerId === widget.id
+      ? "couldn't start · tap again"
+      : radio.waiting && radio.ownerId === widget.id
+        ? "tuning…"
+        : onAir
+          ? `${onAir.artist} · ${onAir.title}`
+          : station.tag;
+
+  useEffect(() => {
+    setLocalStationId("");
+  }, [widget.data.stationId]);
+
+  useEffect(() => {
+    if (station) prefetchTrack(station.id);
+  }, [station]);
 
   const toggleVibe = () => {
     setVibed((current) => !current);
     playSound("tap");
   };
 
+  const togglePlay = () => {
+    if (!station) return;
+    if (live) {
+      stopRadio();
+      return;
+    }
+    playRadio(widget.id, station.id);
+    onTune?.({ stationId: station.id, playing: true });
+  };
+
+  const pickStation = (nextId: string) => {
+    if (!station || nextId === station.id) return;
+    setLocalStationId(nextId);
+    playRadio(widget.id, nextId);
+    onTune?.({ stationId: nextId, playing: true });
+  };
+
   return (
-    <section className={`widget-shell widget-playlist playlist-tone-${tone}${song && artist ? "" : " is-missing-track"}`} style={style}>
-      <span className="playlist-deco playlist-deco-one" aria-hidden="true">✦</span>
-      <span className="playlist-deco playlist-deco-two" aria-hidden="true">·</span>
+    <section
+      className={`widget-shell widget-playlist playlist-tone-${tone}${
+        station ? "" : " is-missing-track"
+      }${live ? " is-playing" : ""}${canJoin ? " is-joinable" : ""}`}
+      style={style}
+    >
+      <span className="playlist-groove" aria-hidden="true" />
+      <span className="playlist-glow" aria-hidden="true" />
       <header className="playlist-heading">
-        <span className="playlist-now"><i aria-hidden="true" /> now playing</span>
+        <span className="playlist-now">
+          <i aria-hidden="true" />
+          {live ? (listening ? "on air" : "tuning") : canJoin ? "join the room" : "room radio"}
+        </span>
         <span className="playlist-context">{title}</span>
       </header>
-      {song && artist ? (
+      {station ? (
         <>
           <div className="playlist-main">
-            <span className="playlist-art" aria-hidden="true">
-              <span className="playlist-art-disc" />
-              <span className="playlist-art-note">♫</span>
-            </span>
+            <button
+              type="button"
+              className="playlist-art"
+              onClick={togglePlay}
+              aria-label={
+                live ? `Pause ${station.name}` : canJoin ? `Join ${station.name}` : `Play ${station.name}`
+              }
+            >
+              <span className="playlist-art-disc" aria-hidden="true" />
+              <span className="playlist-art-note" aria-hidden="true">
+                {live ? "❚❚" : "▶"}
+              </span>
+            </button>
             <div className="playlist-info">
-              <strong>{song}</strong>
-              <span>{artist}</span>
+              <strong>{station.name}</strong>
+              <span>{status}</span>
               <span className="playlist-by">
-                {pickedBy && <MemberFace name={pickedBy} size="xs" />}
-                {pickedBy ? `${pickedBy} picked this` : "picked for the room"}
+                {playedBy && <MemberFace name={playedBy} size="xs" />}
+                {playedBy
+                  ? `${playedBy} put this on`
+                  : canJoin
+                    ? "someone started the radio"
+                    : "tap the disc to play"}
               </span>
             </div>
             <button
@@ -1086,12 +1179,26 @@ export function PlaylistWidget({ widget, style }: { widget: Widget; style: Style
               className={`playlist-vibe${vibed ? " is-active" : ""}`}
               onClick={toggleVibe}
               aria-pressed={vibed}
-              aria-label={`${vibed ? "Remove your vibe from" : "Vibe with"} ${song}`}
+              aria-label={`${vibed ? "Remove your vibe from" : "Vibe with"} ${station.name}`}
             >
               <span aria-hidden="true">♥</span>
               <strong>{vibeCount}</strong>
               <small>{vibed ? "you vibe" : "vibe"}</small>
             </button>
+          </div>
+          <div className="playlist-stations" role="listbox" aria-label="SomaFM stations">
+            {RADIO_STATIONS.map((option) => (
+              <button
+                type="button"
+                key={option.id}
+                role="option"
+                aria-selected={option.id === station.id}
+                className={option.id === station.id ? "is-active" : ""}
+                onClick={() => pickStation(option.id)}
+              >
+                {option.chip}
+              </button>
+            ))}
           </div>
           <div className="playlist-equalizer" aria-hidden="true">
             <span />
@@ -1099,15 +1206,15 @@ export function PlaylistWidget({ widget, style }: { widget: Widget; style: Style
             <span />
             <span />
             <span />
-            <em>shared soundtrack</em>
+            <em>{live ? "live" : "tap play"}</em>
           </div>
         </>
       ) : (
         <div className="playlist-empty">
           <span className="playlist-empty-art" aria-hidden="true">♫</span>
           <div>
-            <strong>no track picked yet</strong>
-            <p>drop in the next song the group needs.</p>
+            <strong>no station yet</strong>
+            <p>pick a station for the room.</p>
           </div>
         </div>
       )}
