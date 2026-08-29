@@ -214,9 +214,9 @@ export const CREW_WIDGETS: Widget[] = [
     id: "rsvp",
     type: "rsvp",
     x: 826,
-    y: 100,
+    y: 92,
     w: 190,
-    h: 230,
+    h: 248,
     z: 3,
     data: {
       title: "who's coming",

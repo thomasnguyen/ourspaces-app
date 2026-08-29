@@ -561,9 +561,10 @@ export function RsvpWidget({
     setPicking(false);
   };
 
-  const quietGroup = (list: RsvpResponse[], word: string, ghost: boolean) =>
+  const quietGroup = (list: RsvpResponse[], word: string, mark: string) =>
     list.length > 0 && (
-      <span className={`rsvp-quiet-group${ghost ? " is-ghost" : ""}`}>
+      <span className="rsvp-quiet-group">
+        <i className="rsvp-mark" aria-hidden="true">{mark}</i>
         {list.slice(0, 2).map((r) => (
           <MemberFace key={r.name} name={r.name} size="xs" />
         ))}
@@ -602,9 +603,10 @@ export function RsvpWidget({
             <em>in!</em>
           </div>
           <div className="rsvp-cluster">
-            {yes.map((r) => (
+            {yes.map((r, index) => (
               <span
                 key={r.name}
+                style={{ "--i": index } as CSSProperties}
                 className={`rsvp-chip${r.name === "You" ? " is-you" : ""}`}
               >
                 <MemberFace name={r.name} size="sm" />
@@ -616,10 +618,11 @@ export function RsvpWidget({
               </span>
             ))}
           </div>
+          <span className="rsvp-perf" aria-hidden="true" />
           {!focused && (maybe.length > 0 || cant.length > 0) && (
             <p className="rsvp-quiet">
-              {quietGroup(maybe, "maybe", false)}
-              {quietGroup(cant, "can't", true)}
+              {quietGroup(maybe, "maybe", "~")}
+              {quietGroup(cant, "can't", "✗")}
             </p>
           )}
           {focused &&
@@ -636,13 +639,14 @@ export function RsvpWidget({
 
       {waitingOn.length > 0 && (
         <p className="rsvp-waiting">
+          <i className="rsvp-mark" aria-hidden="true">…</i>
           {waitingOn.slice(0, 2).map((name) => (
             <MemberFace key={name} name={name} size="xs" />
           ))}
           <span>waiting on {waitingOn.join(" + ")}</span>
         </p>
       )}
-      {focused && waitingOn.length > 0 && waitingNote && (
+      {waitingOn.length > 0 && waitingNote && (
         <p className="rsvp-waiting-note">
           <span aria-hidden="true">💬</span>“{waitingNote}”
         </p>
@@ -685,11 +689,6 @@ export function RsvpWidget({
         </button>
       )}
 
-      <span className="rsvp-meter" aria-hidden="true">
-        {Array.from({ length: answered + waitingOn.length || 1 }, (_, i) => (
-          <i key={i} className={i < yes.length ? "is-in" : ""} />
-        ))}
-      </span>
     </div>
   );
 }

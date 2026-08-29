@@ -19,6 +19,18 @@ Backward-looking history lives in `hackathon.md`.
   Kicker is now data-driven (`data.kicker`, default "sign-up sheet"; crew =
   "party prep", house = "house errands"). Eval script:
   `.context/shot-potluck.mjs` (crew + house, hover/claim/all-set states).
+- RSVP widget redesigned as a "postal reply card" (`/eye-candy` pass): accent
+  went full-strength (was a 38%-alpha wash), sparkles → a dashed postage
+  stamp in the corner (`::before`/`::after`), the headcount gets a postmark
+  ring (`.rsvp-hero strong::after`) + staggered cancellation lines (offset
+  `box-shadow` copies — equal offsets read as a hamburger icon, staggered
+  ones read as stamped ink), a full-bleed perforation fold (`.rsvp-perf`)
+  splits the "in" crowd from the ✗/… ledger rows (grayscale ghost faces
+  dropped — read as disabled), the `waitingNote` quote now shows on the card
+  (was detail-only), and the redundant bottom meter strip is gone. Entrance:
+  faces land per-`--i` stagger, then the postmark stamps at 700ms. Crew seed
+  grew 190×230 → 190×248 (y 100→92; potluck below at y 350 caps bottom at
+  ~344). Eval script: `.context/shot-rsvp.mjs` (still/picking/answered).
 - Poll widget redesigned as a "ballot" (`/eye-candy` pass on the washed-out
   tinted bars): vote fills are now flat full-strength tone color — the row
   content renders twice (`.poll-row-base` + `.poll-row-fill` clipped via
