@@ -1436,7 +1436,9 @@
   .space-canvas.is-entering [data-cursor-style],
   .block-surface.is-entering .block-slot,
   .block-surface.is-entering .block-line,
-  .space-canvas.is-entering .potluck-list li {
+  .space-canvas.is-entering .potluck-list li,
+  .space-canvas.is-entering .rsvp-chip,
+  .space-canvas.is-entering .rsvp-hero strong::after {
     animation-delay: 0ms !important;
   }
 
@@ -4646,14 +4648,17 @@
 }
 
 /* ── rsvp ── */
+/* reply-card pass: RSVP is a postal object — postage stamp in the corner,
+   the headcount cancelled with a postmark ring, a perforation fold, and the
+   holdout's excuse quoted right on the card. Accent ink is full-strength. */
 .widget-rsvp {
-  /* tone system — calm card like the poll; the tone lives in fills and deco */
   --rsvp-bg: var(--color-card);
   --rsvp-ink: var(--color-ink);
   --rsvp-muted: #71405a;
-  --rsvp-accent: rgba(233, 54, 157, 0.38);
+  --rsvp-accent: #e9369d;
+  --rsvp-soft: rgba(233, 54, 157, 0.14);
   --rsvp-track: rgba(113, 64, 90, 0.12);
-  --rsvp-deco: rgba(233, 54, 157, 0.24);
+  --rsvp-deco: rgba(233, 54, 157, 0.4);
   --rsvp-shadow: rgba(83, 59, 68, 0.14);
   position: relative;
   display: flex;
@@ -4668,66 +4673,63 @@
 
 .rsvp-tone-butter {
   --rsvp-muted: #7a5714;
-  --rsvp-accent: rgba(255, 184, 0, 0.48);
+  --rsvp-accent: #ffb800;
+  --rsvp-soft: rgba(255, 184, 0, 0.18);
   --rsvp-track: rgba(122, 87, 20, 0.12);
-  --rsvp-deco: rgba(122, 87, 20, 0.24);
+  --rsvp-deco: rgba(122, 87, 20, 0.4);
 }
 
 .rsvp-tone-mint {
   --rsvp-muted: #2f6b4f;
-  --rsvp-accent: rgba(19, 184, 166, 0.42);
+  --rsvp-accent: #13b8a6;
+  --rsvp-soft: rgba(19, 184, 166, 0.14);
   --rsvp-track: rgba(47, 107, 79, 0.12);
-  --rsvp-deco: rgba(47, 107, 79, 0.24);
+  --rsvp-deco: rgba(47, 107, 79, 0.4);
 }
 
 .rsvp-tone-sky {
   --rsvp-muted: #2f568c;
-  --rsvp-accent: rgba(63, 112, 255, 0.38);
+  --rsvp-accent: #3f70ff;
+  --rsvp-soft: rgba(63, 112, 255, 0.14);
   --rsvp-track: rgba(47, 86, 140, 0.12);
-  --rsvp-deco: rgba(47, 86, 140, 0.24);
+  --rsvp-deco: rgba(47, 86, 140, 0.4);
 }
 
 .rsvp-tone-violet {
   --rsvp-bg: #7853ff;
   --rsvp-ink: white;
   --rsvp-muted: rgba(255, 255, 255, 0.78);
-  --rsvp-accent: rgba(255, 255, 255, 0.9);
+  --rsvp-accent: white;
+  --rsvp-soft: rgba(255, 255, 255, 0.22);
   --rsvp-track: rgba(255, 255, 255, 0.2);
-  --rsvp-deco: rgba(255, 255, 255, 0.32);
+  --rsvp-deco: rgba(255, 255, 255, 0.5);
   --rsvp-shadow: rgba(78, 50, 164, 0.25);
 }
 
-/* sparkle pair in the open top-right corner — same family as poll + countdown */
-.widget-rsvp::before,
-.widget-rsvp::after {
-  position: absolute;
-  background: var(--rsvp-deco);
-  clip-path: polygon(
-    50% 0%,
-    62% 38%,
-    100% 50%,
-    62% 62%,
-    50% 100%,
-    38% 62%,
-    0% 50%,
-    38% 38%
-  );
-  content: "";
-}
-
+/* postage stamp in the top-right corner — perforated frame, ✦ for the art */
 .widget-rsvp::before {
-  top: 12px;
-  right: 12px;
-  width: 20px;
-  height: 20px;
+  content: "";
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  width: 26px;
+  height: 31px;
+  border: 1.5px dashed var(--rsvp-deco);
+  border-radius: 3px;
+  rotate: 6deg;
 }
 
 .widget-rsvp::after {
-  top: 34px;
-  right: 31px;
-  width: 10px;
-  height: 10px;
-  rotate: 20deg;
+  content: "✦";
+  position: absolute;
+  top: 19px;
+  right: 17px;
+  color: var(--rsvp-deco);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  rotate: 6deg;
 }
 
 .rsvp-heading h3 {
@@ -4737,28 +4739,61 @@
   font-weight: 800;
 }
 
-/* hero headcount — the answer at a glance */
+/* hero headcount — the answer at a glance, cancelled like postage */
 .rsvp-hero {
   display: flex;
   align-items: baseline;
   gap: 5px;
-  margin-top: 6px;
+  margin-top: 8px;
+  padding-left: 6px;
   font-family: var(--font-display);
 }
 
 .rsvp-hero strong {
+  position: relative;
   display: inline-block;
   font-size: 40px;
   font-weight: 800;
   line-height: 0.9;
   letter-spacing: -0.03em;
-  animation: rsvp-count-pop 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: rsvp-count-pop var(--dur-arrive) var(--ease-pop);
+}
+
+/* the postmark ring around the count — off-center like a real cancel mark */
+.rsvp-hero strong::after {
+  content: "";
+  position: absolute;
+  inset: -4px -14px -10px -11px;
+  border: 2.5px solid var(--rsvp-accent);
+  border-radius: 50%;
+  opacity: 0.85;
+  rotate: -8deg;
+  pointer-events: none;
 }
 
 .rsvp-hero em {
   font-size: 17px;
   font-style: normal;
   font-weight: 800;
+  margin-left: 7px;
+}
+
+/* cancellation lines trailing off the postmark — staggered ends so they
+   read as stamped ink, not a menu icon */
+.rsvp-hero::after {
+  content: "";
+  width: 20px;
+  height: 1.5px;
+  margin-left: 4px;
+  align-self: center;
+  border-radius: 999px;
+  background: var(--rsvp-accent);
+  box-shadow:
+    5px -5px 0 var(--rsvp-accent),
+    -4px 5px 0 var(--rsvp-accent);
+  opacity: 0.45;
+  rotate: -12deg;
+  translate: -3px 2px;
 }
 
 @keyframes rsvp-count-pop {
@@ -4804,7 +4839,7 @@
 }
 
 .rsvp-chip.is-you .member-face {
-  animation: rsvp-face-in 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: rsvp-face-in var(--dur-arrive) var(--ease-pop) backwards;
 }
 
 .rsvp-chip.is-you b {
@@ -4833,18 +4868,34 @@
   }
 }
 
-/* maybe + can't — quiet, one line */
+/* the card's fold — a perforation running edge to edge */
+.rsvp-perf {
+  height: 0;
+  margin: 11px -14px 0;
+  border-top: 1.5px dashed var(--rsvp-track);
+}
+
+/* maybe + can't — quiet reply-card lines; humans stay in color */
 .rsvp-quiet {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 12px;
-  margin: 9px 0 0;
+  margin: 8px 0 0;
 }
 
 .rsvp-quiet-group {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.rsvp-mark {
+  min-width: 10px;
+  color: var(--rsvp-muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  text-align: center;
 }
 
 .rsvp-quiet-group .member-face + .member-face {
@@ -4858,24 +4909,22 @@
   color: var(--rsvp-muted);
 }
 
-.rsvp-quiet-group.is-ghost .member-face {
-  opacity: 0.55;
-  filter: grayscale(1);
+.rsvp-quiet-group .member-face {
+  opacity: 0.85;
 }
 
 .rsvp-waiting {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin: 8px 0 0;
+  margin: 7px 0 0;
   font-size: 10px;
   font-weight: 700;
   color: var(--rsvp-muted);
 }
 
 .rsvp-waiting .member-face {
-  opacity: 0.5;
-  filter: grayscale(1);
+  opacity: 0.75;
 }
 
 .rsvp-waiting .member-face + .member-face {
@@ -4906,7 +4955,7 @@
   align-items: center;
   gap: 5px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--rsvp-accent) 34%, transparent);
+  background: var(--rsvp-soft);
   padding: 3px 9px 3px 3px;
   rotate: 0deg;
 }
@@ -4955,21 +5004,22 @@
   font-weight: 700;
 }
 
-/* At zoom scale grayscale reads as disabled — keep the humans in color. */
 .widget-rsvp.is-detail .rsvp-waiting .member-face {
   opacity: 0.9;
-  filter: none;
 }
 
+/* the holdout's excuse, quoted on the card — lived-in over empty */
 .rsvp-waiting-note {
   display: flex;
   align-items: flex-start;
   gap: 5px;
-  margin: 5px 0 0 4px;
+  margin: 4px 0 0 4px;
   color: var(--rsvp-muted);
-  font-size: 10.5px;
+  font-size: 10px;
+  font-style: italic;
   font-weight: 600;
   line-height: 1.35;
+  margin-bottom: 6px;
 }
 
 .rsvp-waiting-note span {
@@ -5055,8 +5105,11 @@
   font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
-  animation: rsvp-choice-in 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
-  transition: translate 120ms ease-out, background 120ms ease-out, color 120ms ease-out;
+  animation: rsvp-choice-in var(--dur-base) var(--ease-pop) backwards;
+  transition:
+    translate var(--dur-instant) var(--ease-glide),
+    background var(--dur-instant) var(--ease-glide),
+    color var(--dur-instant) var(--ease-glide);
 }
 
 .rsvp-choices button:hover {
@@ -5072,24 +5125,25 @@
   }
 }
 
-/* headcount meter hugging the bottom edge — fills as yeses land */
-.rsvp-meter {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  display: flex;
-  gap: 3px;
-  height: 7px;
+/* entrance: count pops, faces land one by one, then the postmark cancels */
+.space-canvas.is-entering .rsvp-chip {
+  animation: rsvp-face-in var(--dur-arrive) var(--ease-pop) backwards;
+  animation-delay: calc(320ms + var(--i, 0) * 55ms);
 }
 
-.rsvp-meter i {
-  flex: 1;
-  background: var(--rsvp-track);
+.space-canvas.is-entering .rsvp-hero strong::after {
+  animation: rsvp-postmark-in var(--dur-arrive) var(--ease-pop) 700ms backwards;
 }
 
-.rsvp-meter i.is-in {
-  background: var(--rsvp-accent);
+@keyframes rsvp-postmark-in {
+  from {
+    opacity: 0;
+    scale: 1.6;
+  }
+  to {
+    opacity: 0.85;
+    scale: 1;
+  }
 }
 
 /* ── decision (promoted) ── */
@@ -14470,13 +14524,12 @@
 
   .paper-bg[data-space-id="crew"] .live-label,
   .paper-bg[data-space-id="crew"] .potluck-kicker,
-  .paper-bg[data-space-id="crew"] .potluck-count,
-  .paper-bg[data-space-id="crew"] .potluck-progress > span:not(.potluck-meter) {
+  .paper-bg[data-space-id="crew"] .potluck-score small {
     font-size: 10.5px;
   }
 
-  .paper-bg[data-space-id="crew"] .potluck-item-copy strong,
-  .paper-bg[data-space-id="crew"] .potluck-item-copy small {
+  .paper-bg[data-space-id="crew"] .potluck-item-name,
+  .paper-bg[data-space-id="crew"] .potluck-signature {
     font-size: 10.5px;
   }
 
