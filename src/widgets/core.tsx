@@ -415,11 +415,13 @@ export function PotluckWidget({
     byUserId?: string;
   }[];
   const tone = String(widget.data.tone ?? "mint");
+  const kicker = String(widget.data.kicker ?? "sign-up sheet");
   const [myClaims, setMyClaims] = useState<Record<string, boolean>>({});
   const claimedItems = items.filter((item) => item.claimed || myClaims[item.name]);
   const openItems = items.filter((item) => !item.claimed && !myClaims[item.name]);
   const coveredCount = claimedItems.length;
   const totalCount = items.length;
+  const allSet = totalCount > 0 && openItems.length === 0;
 
   const toggleClaim = (name: string) => {
     setMyClaims((current) => ({ ...current, [name]: !current[name] }));
@@ -427,32 +429,37 @@ export function PotluckWidget({
   };
 
   return (
-    <div className={`widget-shell widget-potluck potluck-tone-${tone}`} style={style}>
-      <span className="paper-clip" aria-hidden="true" />
-      <span className="potluck-sparkle potluck-sparkle-large" aria-hidden="true">✦</span>
-      <span className="potluck-sparkle potluck-sparkle-small" aria-hidden="true">✦</span>
+    <div
+      className={`widget-shell widget-potluck potluck-tone-${tone}${allSet ? " is-all-set" : ""}`}
+      style={style}
+    >
+      <span className="potluck-tape" aria-hidden="true" />
       <div className="potluck-content">
+        <span className="potluck-sparkle potluck-sparkle-large" aria-hidden="true">✦</span>
+        <span className="potluck-sparkle potluck-sparkle-small" aria-hidden="true">✦</span>
         <div className="potluck-heading">
-          <div>
-            <span className="potluck-kicker">party prep</span>
+          <div className="potluck-title">
+            <span className="potluck-kicker">{kicker}</span>
             <h3>{String(widget.data.title)}</h3>
           </div>
-          <span className="potluck-count">
-            {coveredCount} covered
-          </span>
-        </div>
-        <div className="potluck-progress" aria-live="polite">
-          <strong>{coveredCount}/{totalCount || 0}</strong>
-          <span>{openItems.length === 0 && totalCount > 0 ? "all set" : `${openItems.length} still open`}</span>
-          <span className="potluck-meter" aria-hidden="true">
-            {Array.from({ length: Math.max(1, totalCount) }, (_, index) => (
-              <i key={index} className={index < coveredCount ? "is-covered" : ""} />
-            ))}
-          </span>
+          <div className="potluck-score" aria-live="polite">
+            <span className="potluck-score-row">
+              <span className="potluck-tally" aria-hidden="true">
+                {Array.from({ length: Math.max(1, totalCount) }, (_, index) => (
+                  <i key={index} className={index < coveredCount ? "is-inked" : ""} />
+                ))}
+              </span>
+              <strong className="potluck-fraction">
+                {coveredCount}
+                <span>/{totalCount || 0}</span>
+              </strong>
+            </span>
+            <small>{allSet ? "all set" : `${openItems.length} still open`}</small>
+          </div>
         </div>
         {items.length > 0 ? (
           <ul className="potluck-list">
-            {items.map((item) => {
+            {items.map((item, index) => {
               const mine = onClaim
                 ? Boolean(claimantId && item.byUserId === claimantId)
                 : Boolean(myClaims[item.name]);
@@ -462,27 +469,34 @@ export function PotluckWidget({
               return (
                 <li
                   key={item.name}
+                  style={{ "--i": index } as CSSProperties}
                   className={`${claimed ? "is-claimed" : ""}${mine ? " is-yours" : ""}`}
                 >
-                  <span className="claim-mark" aria-hidden="true">{claimed ? "✓" : "+"}</span>
-                  <span className="potluck-item-copy">
-                    <strong>{item.name}</strong>
-                    {claimed && claimant && (
-                      <small>{mine ? "you've got it" : `by ${claimant}`}</small>
-                    )}
+                  <span className="claim-mark" aria-hidden="true">
+                    <svg viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 6.5 5 9l4.5-6.5" />
+                    </svg>
                   </span>
+                  <strong className="potluck-item-name">{item.name}</strong>
                   {claimed ? (
-                    mine ? (
-                      <button
-                        type="button"
-                        className="potluck-release"
-                        onClick={() => (onClaim ? onClaim(item.name) : toggleClaim(item.name))}
-                      >
-                        release
-                      </button>
-                    ) : (
-                      <MemberFace name={String(claimant)} size="xs" />
-                    )
+                    <>
+                      {claimant && (
+                        <em className="potluck-signature">
+                          {mine ? "you've got it" : claimant}
+                        </em>
+                      )}
+                      {mine ? (
+                        <button
+                          type="button"
+                          className="potluck-release"
+                          onClick={() => (onClaim ? onClaim(item.name) : toggleClaim(item.name))}
+                        >
+                          release
+                        </button>
+                      ) : (
+                        <MemberFace name={String(claimant)} size="xs" />
+                      )}
+                    </>
                   ) : (
                     <button
                       type="button"
@@ -501,6 +515,11 @@ export function PotluckWidget({
             <span aria-hidden="true">✦</span>
             <p>nothing on the list yet — add the first thing.</p>
           </div>
+        )}
+        {allSet && (
+          <span className="potluck-stamp" aria-hidden="true">
+            all set
+          </span>
         )}
       </div>
     </div>

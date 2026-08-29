@@ -7,6 +7,18 @@ Backward-looking history lives in `hackathon.md`.
 
 - Full app deployed live: https://necessary-cobra-892.convex.site (Convex
   static hosting + prod backend, all spaces seeded).
+- Potluck widget redesigned as a "sign-up sheet" (`/eye-candy` pass): chip
+  rows → ruled baselines with a dashed center fold, wonky hand-drawn
+  checkboxes whose ✓ draws in (`stroke-dashoffset`), claimants "sign" the
+  line in italic accent ink (clip-path wipe on your own claim), tally-mark
+  counter + big fraction top-right (replaced the redundant "N covered" pill
+  and dashboard meter bars), solid sticker-black `claim` pills, masking tape
+  (same material as `.photo-tape`) replacing the broken overflow-clipped
+  paperclip, and an ALL SET rubber stamp (pointer-events: none) that slams
+  in via `--ease-snap` when the last item is claimed — live-claim demo beat.
+  Kicker is now data-driven (`data.kicker`, default "sign-up sheet"; crew =
+  "party prep", house = "house errands"). Eval script:
+  `.context/shot-potluck.mjs` (crew + house, hover/claim/all-set states).
 - Poll widget redesigned as a "ballot" (`/eye-candy` pass on the washed-out
   tinted bars): vote fills are now flat full-strength tone color — the row
   content renders twice (`.poll-row-base` + `.poll-row-fill` clipped via

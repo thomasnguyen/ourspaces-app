@@ -241,6 +241,7 @@ export const CREW_WIDGETS: Widget[] = [
     z: 2,
     data: {
       title: "who's bringing what",
+      kicker: "party prep",
       tone: "violet",
       openCount: 2,
       items: [
@@ -1043,6 +1044,7 @@ export const HOUSE_WIDGETS: Widget[] = [
     z: 3,
     data: {
       title: "grocery run · saturday",
+      kicker: "house errands",
       tone: "mint",
       openCount: 2,
       items: [
