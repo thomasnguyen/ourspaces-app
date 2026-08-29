@@ -15,6 +15,11 @@ Backward-looking history lives in `hackathon.md`.
   chips whose seconds digit rolls every tick (`ClockCell` in
   `src/widgets/core.tsx`). Sparkles twinkle out of phase; all four tones +
   reduced-motion covered; verified via `.context/shot-countdown*.mjs`.
+  Seeded countdowns grew 230→250 tall (crew nudged to y86, us-sfo to y316) to
+  fit the taller stack; a `@container (max-height: 202px)` step hides the hype
+  row + shrinks the number on short cards so the still-230px widgets in the
+  live deployment don't clip the event pill (container queries measure the
+  CONTENT box — 202px ≈ 242px card). Live prod keeps old sizes until reseeded.
 - Canvas with every widget type, drag/resize/frames, per-widget threads,
   presence cursors + gestures, polls/votes, recap, invite links.
 - Note widgets now use restrained real-paper scraps with one torn bottom edge

@@ -1938,6 +1938,7 @@
   --cd-chip-bg: rgba(255, 255, 255, 0.16);
   --cd-dot: rgba(255, 255, 255, 0.34);
   --cd-dot-done: white;
+  container-type: size;
   display: flex;
   overflow: hidden;
   flex-direction: column;
@@ -1946,7 +1947,7 @@
   background: var(--cd-bg);
   box-shadow: 0 8px 0 var(--cd-shadow);
   color: var(--cd-ink);
-  padding: 27px 18px 20px;
+  padding: 24px 18px 16px;
 }
 
 .cd-tone-blush {
@@ -2077,7 +2078,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 5px;
+  gap: 4px;
   margin-bottom: auto;
 }
 
@@ -2170,7 +2171,7 @@
 }
 
 .countdown-unit {
-  margin-top: 8px;
+  margin-top: 5px;
   font-family: var(--font-display);
   font-size: 28px;
   font-weight: 800;
@@ -2191,7 +2192,7 @@
 .countdown-clock {
   display: flex;
   gap: 5px;
-  margin-top: 10px;
+  margin-top: 7px;
 }
 
 .cd-cell {
@@ -2262,7 +2263,29 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-top: 9px;
+  margin-top: 7px;
+}
+
+/* short cards (old seeds, hand-resized): keep the hero big, shed the hype row
+   instead of decapitating the event pill on the top edge.
+   NB: container queries measure the CONTENT box — card height minus 40px padding,
+   so 202px ≈ a 242px card. Legacy 230 seeds land under it, the 250 blueprint over. */
+@container (max-height: 202px) {
+  .countdown-number {
+    font-size: 84px;
+  }
+
+  .countdown-number[data-len="3"]:not(.is-today-word) {
+    font-size: 70px;
+  }
+
+  .countdown-number[data-len="4"]:not(.is-today-word) {
+    font-size: 54px;
+  }
+
+  .countdown-hype {
+    display: none;
+  }
 }
 
 .countdown-hype .member-face {
@@ -14134,7 +14157,7 @@
   }
 
   .paper-bg[data-space-id="crew"] .widget-countdown {
-    padding: 27px 16px 20px;
+    padding: 24px 16px 16px;
   }
 
   .paper-bg[data-space-id="crew"] .poll-content {
