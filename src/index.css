@@ -13971,23 +13971,37 @@
     translate 190ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* The article link wraps only the paper clipping; contents keeps the paper's
+   absolute layout against the card shell. */
+.link-card-read {
+  display: contents;
+  color: inherit;
+  text-decoration: none;
+  -webkit-user-drag: none;
+}
+
+/* Bare cover clicks zoom into the reading circle. */
+.widget-link-card.is-ready .link-card-cover {
+  cursor: zoom-in;
+}
+
 .link-card-open:hover .link-card-cover-image,
-.link-card-open:focus-visible .link-card-cover-image {
+.link-card-read:focus-visible .link-card-cover-image {
   transform: scale(1.075);
 }
 
 .link-card-open:hover .link-card-paper,
-.link-card-open:focus-visible .link-card-paper {
+.link-card-read:focus-visible .link-card-paper {
   transform: translateY(-2px);
 }
 
 .link-card-open:hover footer strong,
-.link-card-open:focus-visible footer strong {
+.link-card-read:focus-visible footer strong {
   rotate: -3deg;
   translate: 0 -1px;
 }
 
-.link-card-open:focus-visible {
+.link-card-read:focus-visible .link-card-paper {
   outline: 3px solid var(--color-lime);
   outline-offset: 4px;
 }

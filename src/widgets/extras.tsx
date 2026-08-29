@@ -1099,48 +1099,51 @@ export function LinkCardWidget({ widget, style }: { widget: Widget; style: Style
     setArtSrc(imageUrl || LINK_CARD_FALLBACK);
   }, [imageUrl]);
 
-  const preview = (
-    <>
-      <div className="link-card-cover" aria-hidden="true">
-        <img
-          className="link-card-cover-image"
-          src={artSrc}
-          alt=""
-          referrerPolicy="no-referrer"
-          draggable={false}
-          onError={() => setArtSrc(LINK_CARD_FALLBACK)}
-        />
-        <span className="link-card-date-tab">
-          {url ? linkCardDate(publishedAt, widget.data.savedAt) : "add a link"}
+  /* The cover is the zoom target — clicks on it bubble to the card shell,
+     which zooms into the reading circle. Only the paper clipping links out. */
+  const cover = (
+    <div className="link-card-cover" aria-hidden="true">
+      <img
+        className="link-card-cover-image"
+        src={artSrc}
+        alt=""
+        referrerPolicy="no-referrer"
+        draggable={false}
+        onError={() => setArtSrc(LINK_CARD_FALLBACK)}
+      />
+      <span className="link-card-date-tab">
+        {url ? linkCardDate(publishedAt, widget.data.savedAt) : "add a link"}
+      </span>
+      {discussionUrl ? (
+        <span
+          className="link-card-hn-tab"
+          title="open the Hacker News thread"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            window.open(discussionUrl, "_blank", "noopener");
+          }}
+        >
+          ▲ {points} · {commentCount} comments
         </span>
-        {discussionUrl ? (
-          <span
-            className="link-card-hn-tab"
-            title="open the Hacker News thread"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              window.open(discussionUrl, "_blank", "noopener");
-            }}
-          >
-            ▲ {points} · {commentCount} comments
-          </span>
-        ) : null}
-      </div>
-      <div className="link-card-paper">
-        <span className="link-card-tape" aria-hidden="true" />
-        <span className="link-card-source">
-          <i aria-hidden="true">{siteName.slice(0, 1).toLowerCase()}</i>
-          <span>{author ? `${author} · ${siteName}` : siteName}</span>
-        </span>
-        <h3>{title}</h3>
-        <p>{description}</p>
-        <footer>
-          <span>{url ? `saved by ${savedBy}` : "edit this widget to paste a URL"}</span>
-          <strong>{url ? "read ↗" : "paste ↗"}</strong>
-        </footer>
-      </div>
-    </>
+      ) : null}
+    </div>
+  );
+
+  const paper = (
+    <div className="link-card-paper">
+      <span className="link-card-tape" aria-hidden="true" />
+      <span className="link-card-source">
+        <i aria-hidden="true">{siteName.slice(0, 1).toLowerCase()}</i>
+        <span>{author ? `${author} · ${siteName}` : siteName}</span>
+      </span>
+      <h3>{title}</h3>
+      <p>{description}</p>
+      <footer>
+        <span>{url ? `saved by ${savedBy}` : "edit this widget to paste a URL"}</span>
+        <strong>{url ? "read ↗" : "paste ↗"}</strong>
+      </footer>
+    </div>
   );
 
   return (
@@ -1148,19 +1151,22 @@ export function LinkCardWidget({ widget, style }: { widget: Widget; style: Style
       className={`widget-shell widget-link-card${url ? " is-ready" : " is-empty"}`}
       style={style}
     >
-      {url ? (
-        <a
-          className="link-card-open"
-          href={linkCardHref(url)}
-          target="_blank"
-          rel="noreferrer"
-          draggable={false}
-        >
-          {preview}
-        </a>
-      ) : (
-        <div className="link-card-open">{preview}</div>
-      )}
+      <div className="link-card-open">
+        {cover}
+        {url ? (
+          <a
+            className="link-card-read"
+            href={linkCardHref(url)}
+            target="_blank"
+            rel="noreferrer"
+            draggable={false}
+          >
+            {paper}
+          </a>
+        ) : (
+          paper
+        )}
+      </div>
     </article>
   );
 }
