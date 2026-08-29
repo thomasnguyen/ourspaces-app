@@ -166,7 +166,7 @@ export function Canvas({
     widgetId: string,
     stroke: Omit<CozyColorStroke, "id" | "createdAt">,
   ) => Promise<unknown> | void;
-  onPaintClear?: (widgetId: string) => Promise<unknown> | void;
+  onPaintClear?: (widgetId: string, regionPrefix?: string) => Promise<unknown> | void;
   arrivalPeerId?: string;
 }) {
   const space = getSpace(spaceId);

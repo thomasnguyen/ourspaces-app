@@ -78,17 +78,26 @@ export const clear = mutation({
   args: {
     spaceId: v.id("spaces"),
     widgetId: v.id("widgets"),
+    /** board scope: "wave:" clears that board, "" clears legacy unprefixed
+     *  scene marks, undefined clears everything (old behavior) */
+    regionPrefix: v.optional(v.string()),
   },
   returns: v.number(),
-  handler: async (ctx, { spaceId, widgetId }) => {
+  handler: async (ctx, { spaceId, widgetId, regionPrefix }) => {
     const marks = await ctx.db
       .query("paintMarks")
       .withIndex("by_space_and_widget", (q) =>
         q.eq("spaceId", spaceId).eq("widgetId", widgetId),
       )
       .take(400);
-    for (const mark of marks) await ctx.db.delete(mark._id);
-    return marks.length;
+    const targets = marks.filter((mark) => {
+      if (regionPrefix === undefined) return true;
+      if (mark.regionId === "__preset__") return false;
+      if (regionPrefix === "") return !mark.regionId || !mark.regionId.includes(":");
+      return mark.regionId?.startsWith(regionPrefix) ?? false;
+    });
+    for (const mark of targets) await ctx.db.delete(mark._id);
+    return targets.length;
   },
 });
 

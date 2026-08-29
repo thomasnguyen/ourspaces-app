@@ -48,7 +48,11 @@ paint-by-number game on an inline SVG board: 50 closed vector regions fill via
 CSS `--paint-*` vars, numbers live in the SVG, tapping a dim number switches
 color; two live palette presets; mock-local or Convex-backed region fills) ·
 `cozyColorArt.ts` (AUTO-GENERATED region/decor path data — regenerate with
-`node scripts/generate-cozy-art.mjs`, don't hand-edit)
+`node scripts/generate-cozy-art.mjs`, don't hand-edit) ·
+`cozyColorBoards.ts` (postcard gallery adapter: unifies the generated scene +
+traced masterpieces into `CozyBoard[]`; stroke ids are prefixed `<boardId>:`
+except the legacy unprefixed scene) · `boards/starry.ts` + `boards/wave.ts`
+(AUTO-GENERATED traced-painting data from `scripts/trace-artwork.mjs`)
 
 **live/** — `useSpaceData.ts` / `useLiveSpace.ts` / `useLiveHandlers.ts`
 (gesture claim/accept/reject) / `useLivePoll.ts` / `usePresence.ts` ·
@@ -80,6 +84,10 @@ a Firecrawl link card has no page image.
 **assets/cozy-color-poster.svg** — AUTO-GENERATED finished "same moon, both
 windows" poster (door preview for `CozyColorWidget`); emitted by
 `scripts/generate-cozy-art.mjs` alongside `src/widgets/cozyColorArt.ts`.
+
+**assets/cozy-poster-starry.svg / cozy-poster-wave.svg** — AUTO-GENERATED
+finished posters for the traced masterpiece boards (door + shelf thumbs),
+emitted by `scripts/trace-artwork.mjs`.
 
 **assets/cozy-color-same-moon*.png** — legacy raster line art from the
 flood-fill era; no longer rendered (widget `data.src` is ignored).
@@ -114,6 +122,14 @@ in a new banner section at the end.
 donuts, peaks/caps, pine zigzags, sine river ribbons, mirrored houses, birds)
 and emits `src/widgets/cozyColorArt.ts` + `public/assets/cozy-color-poster.svg`.
 Edit the script, rerun it, never the outputs.
+
+`trace-artwork.mjs` — public-domain painting JPEG → paint-by-number board:
+downscale + blur merges brushstrokes, quantize (~6-7 colors), trace via
+imagetracerjs, keep only tappable regions with auto-placed number spots.
+With `--id/--title/--credit` it emits `src/widgets/boards/<id>.ts` +
+`public/assets/cozy-poster-<id>.svg`; always writes previews next to the input.
+Source scans live in `.context/art-candidates/` (Wikimedia, PD). Example:
+`node scripts/trace-artwork.mjs in.jpg out 7 560 --id=starry --title="the starry night" --credit="van gogh, 1889"`
 
 ## Agent tooling
 

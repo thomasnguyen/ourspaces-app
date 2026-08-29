@@ -10,15 +10,13 @@ import { MemberFace } from "../components/MemberFace";
 import type { Widget } from "../data/types";
 import { playSound } from "../lib/sounds";
 import {
-  ART_DECOR,
-  ART_H,
-  ART_REGIONS,
-  ART_W,
-  type ArtRegion,
-  type ArtTone,
-} from "./cozyColorArt";
+  COZY_BOARDS,
+  strokePrefix,
+  type BoardRegion,
+  type CozyBoard,
+} from "./cozyColorBoards";
 
-export type CozyColorTone = ArtTone;
+export type CozyColorTone = "berry" | "orange" | "blue" | "violet" | "teal" | "lime";
 
 export type CozyColorPoint = { x: number; y: number };
 export type CozyColorPreset = "electric" | "sunset";
@@ -44,55 +42,76 @@ export type CozyColorIdentity = {
   avatarUrl?: string;
 };
 
-const TONES: { tone: CozyColorTone; number: number; label: string }[] = [
-  { tone: "berry", number: 1, label: "pink" },
-  { tone: "orange", number: 2, label: "orange" },
-  { tone: "blue", number: 3, label: "blue" },
-  { tone: "violet", number: 4, label: "violet" },
-  { tone: "teal", number: 5, label: "teal" },
-  { tone: "lime", number: 6, label: "lime" },
-];
-const TONE_NUMBER = Object.fromEntries(TONES.map(({ tone, number }) => [tone, number])) as Record<
-  CozyColorTone,
-  number
->;
+/** legacy wire field — convex validates tone against these six literals */
+const WIRE_TONES: CozyColorTone[] = ["berry", "orange", "blue", "violet", "teal", "lime"];
 
-const REGION_IDS = new Set(ART_REGIONS.map((region) => region.id));
+function boardStrokes(board: CozyBoard, strokes: CozyColorStroke[]) {
+  const prefix = strokePrefix(board);
+  const ids = new Set(board.regions.map((region) => region.id));
+  const result = new Map<string, CozyColorStroke>();
+  for (const stroke of strokes) {
+    if (!stroke.regionId) continue;
+    if (prefix) {
+      if (!stroke.regionId.startsWith(prefix)) continue;
+      const raw = stroke.regionId.slice(prefix.length);
+      if (ids.has(raw)) result.set(raw, stroke);
+    } else {
+      if (stroke.regionId.includes(":")) continue;
+      if (ids.has(stroke.regionId)) result.set(stroke.regionId, stroke);
+    }
+  }
+  return result;
+}
 
 function ArtBoard({
+  board,
+  palette,
   filled,
-  activeTone,
+  activeColor,
   complete,
   onRegion,
 }: {
+  board: CozyBoard;
+  palette: string[];
   filled: Map<string, CozyColorStroke>;
-  activeTone: CozyColorTone;
+  activeColor: number;
   complete: boolean;
-  onRegion: (region: ArtRegion) => void;
+  onRegion: (region: BoardRegion) => void;
 }) {
+  const strokeW = board.underlay ? 1.7 : 5;
   return (
     <svg
-      className="cozy-svg"
-      viewBox={`0 0 ${ART_W} ${ART_H}`}
+      className={`cozy-svg${board.underlay ? " is-traced" : ""}`}
+      viewBox={`0 0 ${board.w} ${board.h}`}
       role="img"
-      aria-label="Paint-by-number night valley: one moon over two hills, two houses, one river"
+      aria-label={`Paint-by-number: ${board.title}`}
     >
-      <rect className="cozy-svg-bg" width={ART_W} height={ART_H} />
-      {ART_REGIONS.map((region) => {
+      <rect className="cozy-svg-bg" width={board.w} height={board.h} />
+      {board.underlay?.map((piece, index) => (
+        <path
+          key={index}
+          d={piece.d}
+          fill={board.muted?.[piece.c] ?? "#241c28"}
+          fillRule="evenodd"
+          className="cozy-svg-underlay"
+        />
+      ))}
+      {board.regions.map((region) => {
         const mark = filled.get(region.id);
-        const matched = region.tone === activeTone;
+        const matched = region.c === activeColor;
         return (
           <path
             key={region.id}
             d={region.d}
             fillRule="evenodd"
-            className={`cozy-svg-region tone-${region.tone}${mark ? " is-filled" : ""}${matched ? " is-matched" : ""}${region.id.startsWith("star") ? " cozy-svg-star" : ""}`}
+            className={`cozy-svg-region${mark ? " is-filled" : ""}${matched ? " is-matched" : ""}${region.id.startsWith("star") ? " cozy-svg-star" : ""}`}
+            style={{ "--region-paint": palette[region.c], strokeWidth: strokeW } as CSSProperties}
             onClick={() => onRegion(region)}
-            aria-label={`${region.id.replace(/-/g, " ")}, number ${TONE_NUMBER[region.tone]}`}
+            aria-label={`region ${region.id}, number ${region.c + 1}`}
           />
         );
       })}
-      {ART_DECOR.map((piece, index) => (
+      {board.decor?.map((piece, index) => (
         <path
           key={index}
           d={piece.d}
@@ -100,10 +119,10 @@ function ArtBoard({
           className={`cozy-svg-decor${complete ? " is-lit" : ""}`}
         />
       ))}
-      {ART_REGIONS.flatMap((region) =>
+      {board.regions.flatMap((region) =>
         region.labels.map((label, index) => {
           const mark = filled.get(region.id);
-          const matched = region.tone === activeTone;
+          const matched = region.c === activeColor;
           return (
             <text
               key={`${region.id}-${index}`}
@@ -112,7 +131,7 @@ function ArtBoard({
               fontSize={label.s * 1.15}
               className={`cozy-svg-number${mark ? " is-filled" : ""}${matched ? " is-matched" : ""}`}
             >
-              {TONE_NUMBER[region.tone]}
+              {region.c + 1}
             </text>
           );
         }),
@@ -134,11 +153,13 @@ export function CozyColorWidget({
   strokes?: CozyColorStroke[];
   identity?: CozyColorIdentity;
   onStroke?: (stroke: Omit<CozyColorStroke, "id" | "createdAt">) => Promise<unknown> | void;
-  onClear?: () => Promise<unknown> | void;
+  onClear?: (regionPrefix?: string) => Promise<unknown> | void;
 }) {
   const [roomOpen, setRoomOpen] = useState(false);
-  const [activeTone, setActiveTone] = useState<CozyColorTone>("berry");
+  const [boardId, setBoardId] = useState(COZY_BOARDS[0].id);
+  const [activeColor, setActiveColor] = useState(0);
   const [localStrokes, setLocalStrokes] = useState<CozyColorStroke[]>([]);
+  const board = COZY_BOARDS.find((entry) => entry.id === boardId) ?? COZY_BOARDS[0];
   const shownStrokes = useMemo(
     () => [...(strokes ?? []), ...localStrokes],
     [localStrokes, strokes],
@@ -150,25 +171,23 @@ export function CozyColorWidget({
     }
     return "electric";
   }, [shownStrokes]);
-  const filled = useMemo(() => {
-    const result = new Map<string, CozyColorStroke>();
-    for (const stroke of shownStrokes) {
-      if (stroke.regionId && REGION_IDS.has(stroke.regionId)) {
-        result.set(stroke.regionId, stroke);
-      }
-    }
-    return result;
+  const palette = board.palettes[preset];
+  const filled = useMemo(() => boardStrokes(board, shownStrokes), [board, shownStrokes]);
+  const fillsByBoard = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const entry of COZY_BOARDS) counts.set(entry.id, boardStrokes(entry, shownStrokes).size);
+    return counts;
   }, [shownStrokes]);
-  const progress = Math.round((filled.size / ART_REGIONS.length) * 100);
-  const complete = filled.size === ART_REGIONS.length;
+  const progress = Math.round((filled.size / board.regions.length) * 100);
+  const complete = filled.size === board.regions.length;
   const wasComplete = useRef(complete);
-  const remainingByTone = useMemo(() => {
-    const result = new Map<CozyColorTone, number>(TONES.map(({ tone }) => [tone, 0]));
-    for (const region of ART_REGIONS) {
-      if (!filled.has(region.id)) result.set(region.tone, (result.get(region.tone) ?? 0) + 1);
+  const remainingByColor = useMemo(() => {
+    const result = new Map<number, number>();
+    for (const region of board.regions) {
+      if (!filled.has(region.id)) result.set(region.c, (result.get(region.c) ?? 0) + 1);
     }
     return result;
-  }, [filled]);
+  }, [board, filled]);
 
   useEffect(() => {
     if (complete && !wasComplete.current) playSound("promote");
@@ -176,10 +195,10 @@ export function CozyColorWidget({
   }, [complete]);
 
   useEffect(() => {
-    if ((remainingByTone.get(activeTone) ?? 0) > 0) return;
-    const next = TONES.find(({ tone }) => (remainingByTone.get(tone) ?? 0) > 0);
-    if (next) setActiveTone(next.tone);
-  }, [activeTone, remainingByTone]);
+    if ((remainingByColor.get(activeColor) ?? 0) > 0 || filled.size === board.regions.length) return;
+    const next = palette.findIndex((_, index) => (remainingByColor.get(index) ?? 0) > 0);
+    if (next >= 0) setActiveColor(next);
+  }, [activeColor, board, filled.size, palette, remainingByColor]);
 
   const artists = useMemo(() => {
     const entries = new Map<string, CozyColorIdentity>();
@@ -209,11 +228,18 @@ export function CozyColorWidget({
     };
   }, [roomOpen]);
 
-  const fillRegion = (region: ArtRegion) => {
+  const selectBoard = (nextId: string) => {
+    if (nextId === boardId) return;
+    setBoardId(nextId);
+    setActiveColor(0);
+    playSound("tap");
+  };
+
+  const fillRegion = (region: BoardRegion) => {
     if (filled.has(region.id)) return;
-    if (region.tone !== activeTone) {
+    if (region.c !== activeColor) {
       // tapping any dim number jumps to that color
-      setActiveTone(region.tone);
+      setActiveColor(region.c);
       playSound("tap");
       return;
     }
@@ -224,10 +250,10 @@ export function CozyColorWidget({
       userId: identity?.userId ?? "local-you",
       authorName: identity?.name ?? "you",
       authorColor: identity?.color ?? "var(--color-couple)",
-      tone: region.tone,
+      tone: WIRE_TONES[region.c % WIRE_TONES.length],
       size: 0.04,
-      points: [{ x: label.x / ART_W, y: label.y / ART_H }],
-      regionId: region.id,
+      points: [{ x: label.x / board.w, y: label.y / board.h }],
+      regionId: `${strokePrefix(board)}${region.id}`,
       createdAt: Date.now(),
     };
     setLocalStrokes((existing) => [...existing, next]);
@@ -251,9 +277,11 @@ export function CozyColorWidget({
         }, 500);
       });
     }
-    if ((remainingByTone.get(region.tone) ?? 0) === 1) {
-      const nextTone = TONES.find(({ tone }) => tone !== region.tone && (remainingByTone.get(tone) ?? 0) > 0);
-      if (nextTone) window.setTimeout(() => setActiveTone(nextTone.tone), 180);
+    if ((remainingByColor.get(region.c) ?? 0) === 1) {
+      const nextColor = palette.findIndex(
+        (_, index) => index !== region.c && (remainingByColor.get(index) ?? 0) > 0,
+      );
+      if (nextColor >= 0) window.setTimeout(() => setActiveColor(nextColor), 180);
     }
   };
 
@@ -295,9 +323,15 @@ export function CozyColorWidget({
   };
 
   const clear = () => {
-    setLocalStrokes([]);
+    const prefix = strokePrefix(board);
+    setLocalStrokes((existing) =>
+      existing.filter((stroke) => {
+        if (!stroke.regionId || stroke.regionId === "__preset__") return true;
+        return prefix ? !stroke.regionId.startsWith(prefix) : stroke.regionId.includes(":");
+      }),
+    );
     playSound("tap");
-    void onClear?.();
+    void onClear?.(prefix);
   };
 
   const room = roomOpen ? createPortal(
@@ -319,7 +353,8 @@ export function CozyColorWidget({
         </button>
         <div className="cozy-color-room-title">
           <span className="cozy-color-kicker"><i /> live together</span>
-          <h2>{String(widget.data.title ?? "same moon, both windows")}</h2>
+          <h2>{board.title}</h2>
+          {board.credit ? <em className="cozy-color-credit">{board.credit}</em> : null}
         </div>
         <div className="cozy-color-room-people">
           <div className="cozy-color-artists" aria-label={`${artists.length} people coloring`}>
@@ -334,7 +369,7 @@ export function CozyColorWidget({
               />
             ))}
           </div>
-          <strong>{complete ? "finished!" : `${filled.size}/${ART_REGIONS.length}`}</strong>
+          <strong>{complete ? "finished!" : `${filled.size}/${board.regions.length}`}</strong>
         </div>
       </header>
 
@@ -342,12 +377,38 @@ export function CozyColorWidget({
         <section
           className={`cozy-color-room-board${complete ? " is-complete" : ""}`}
           aria-label={`${progress}% colored`}
+          style={{
+            aspectRatio: `${board.w} / ${board.h}`,
+            maxWidth: `calc((100dvh - 210px) * ${(board.w / board.h).toFixed(4)})`,
+          }}
         >
-          <ArtBoard filled={filled} activeTone={activeTone} complete={complete} onRegion={fillRegion} />
+          <ArtBoard
+            board={board}
+            palette={palette}
+            filled={filled}
+            activeColor={activeColor}
+            complete={complete}
+            onRegion={fillRegion}
+          />
           <div className="cozy-color-now">
-            <b className={`tone-${activeTone}`}>{TONE_NUMBER[activeTone]}</b>
+            <b style={{ background: palette[activeColor] }}>{activeColor + 1}</b>
             <span>{complete ? "you finished it together" : "tap the matching numbers"}</span>
           </div>
+          <nav className="cozy-color-shelf" aria-label="Pick a postcard">
+            {COZY_BOARDS.map((entry) => (
+              <button
+                type="button"
+                key={entry.id}
+                className={entry.id === board.id ? "is-active" : ""}
+                onClick={() => selectBoard(entry.id)}
+                aria-label={`${entry.title} — ${fillsByBoard.get(entry.id) ?? 0} of ${entry.regions.length} filled`}
+                aria-pressed={entry.id === board.id}
+              >
+                <img src={entry.poster} alt="" />
+                <span>{fillsByBoard.get(entry.id) ?? 0}/{entry.regions.length}</span>
+              </button>
+            ))}
+          </nav>
           <div className="cozy-color-progress"><i style={{ width: `${progress}%` }} /><span>{progress}% cozy</span></div>
         </section>
 
@@ -359,7 +420,7 @@ export function CozyColorWidget({
               onClick={() => choosePreset("electric")}
               aria-pressed={preset === "electric"}
             >
-              <i><span /><span /><span /></i><b>night pop</b>
+              <i><span /><span /><span /></i><b>{board.presetLabels.electric}</b>
             </button>
             <button
               type="button"
@@ -367,24 +428,25 @@ export function CozyColorWidget({
               onClick={() => choosePreset("sunset")}
               aria-pressed={preset === "sunset"}
             >
-              <i><span /><span /><span /></i><b>sunset</b>
+              <i><span /><span /><span /></i><b>{board.presetLabels.sunset}</b>
             </button>
           </div>
           <div className="cozy-color-number-pots" aria-label="Numbered colors">
-            {TONES.map(({ tone, number, label }) => (
+            {palette.map((color, index) => (
               <button
                 type="button"
-                key={tone}
-                className={`cozy-color-number-pot tone-${tone}${activeTone === tone ? " is-active" : ""}${remainingByTone.get(tone) ? "" : " is-complete"}`}
+                key={index}
+                className={`cozy-color-number-pot${activeColor === index ? " is-active" : ""}${remainingByColor.get(index) ? "" : " is-complete"}`}
+                style={{ background: color }}
                 onClick={() => {
-                  setActiveTone(tone);
+                  setActiveColor(index);
                   playSound("tap");
                 }}
-                aria-label={`Highlight number ${number}, ${label}`}
-                aria-pressed={activeTone === tone}
+                aria-label={`Highlight number ${index + 1}`}
+                aria-pressed={activeColor === index}
               >
-                <b>{remainingByTone.get(tone) ? number : "✓"}</b>
-                <span>{remainingByTone.get(tone) || "done"}</span>
+                <b>{remainingByColor.get(index) ? index + 1 : "✓"}</b>
+                <span>{remainingByColor.get(index) || "done"}</span>
               </button>
             ))}
           </div>
@@ -393,7 +455,7 @@ export function CozyColorWidget({
             className="cozy-color-game-reset"
             onClick={clear}
             disabled={!filled.size}
-            aria-label="Start this picture over"
+            aria-label="Start this postcard over"
           >
             ↻<span>reset</span>
           </button>
@@ -433,14 +495,16 @@ export function CozyColorWidget({
             playSound("tap");
           }}
         >
-          <img src="/assets/cozy-color-poster.svg" alt="Night valley poster: one moon over two little houses" />
+          <img src={board.poster} alt={`${board.title} postcard`} />
           <span className="cozy-color-door-shade" />
-          <span className="cozy-color-door-cta"><b>open coloring room</b><em>fills your whole screen →</em></span>
-          <span className="cozy-color-door-progress">{filled.size}/{ART_REGIONS.length} filled</span>
+          <span className="cozy-color-door-cta"><b>open coloring room</b><em>3 postcards · full screen →</em></span>
+          <span className="cozy-color-door-progress">{filled.size}/{board.regions.length} filled</span>
         </button>
         <footer className="cozy-color-preview-footer">
           <div className="cozy-color-mini-palette" aria-hidden="true">
-            {TONES.map(({ tone, number }) => <i key={tone} className={`tone-${tone}`}>{number}</i>)}
+            {palette.slice(0, 6).map((color, index) => (
+              <i key={index} style={{ background: color }}>{index + 1}</i>
+            ))}
           </div>
           <span>{progress ? `${progress}% done together` : "tap a number to begin"}</span>
         </footer>

@@ -294,11 +294,12 @@ export function LiveSpacePage({
     [addPaintStroke, space],
   );
   const clearPaintWidget = useCallback(
-    async (widgetId: string) => {
+    async (widgetId: string, regionPrefix?: string) => {
       if (!space) return 0;
       return await clearPaint({
         spaceId: space._id,
         widgetId: widgetId as Id<"widgets">,
+        regionPrefix,
       });
     },
     [clearPaint, space],
