@@ -14031,3 +14031,34 @@
     transition: none;
   }
 }
+
+/* —— Web post: translucent frosted reading sheet ——————————————— */
+.link-card-cover {
+  inset: 0;
+}
+
+.link-card-cover-image {
+  transform: scale(1.035);
+}
+
+.link-card-blur-crop {
+  display: none;
+}
+
+.link-card-paper {
+  background: color-mix(in srgb, var(--color-card) 68%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--color-card) 52%, transparent);
+  outline-offset: -1px;
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--color-sticker) 18%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(0.72) contrast(0.94);
+  backdrop-filter: blur(22px) saturate(0.72) contrast(0.94);
+}
+
+.widget-link-card p {
+  color: color-mix(in srgb, var(--color-ink) 88%, var(--color-muted));
+}
+
+.link-card-open:hover .link-card-cover-image,
+.link-card-open:focus-visible .link-card-cover-image {
+  transform: scale(1.075);
+}
