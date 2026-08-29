@@ -17094,3 +17094,20 @@
     transition: none;
   }
 }
+
+/* ================================================================
+   CREW POLL — GENERATED PAPER PROTOTYPE
+   One-card material test before the paper treatment spreads to the
+   rest of the birthday widgets. The tiny radius mismatch keeps the
+   silhouette feeling cut by hand without turning it into a torn note.
+   ================================================================ */
+
+.paper-bg.space-theme-blush .widget-poll,
+.paper-bg[data-space-id="crew"] .widget-poll {
+  border-radius: 13px 15px 12px 16px / 14px 12px 16px 13px;
+  background-color: var(--poll-bg);
+  background-image: url("/assets/textures/widget-paper-v1.jpg");
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: multiply;
+}
