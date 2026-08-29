@@ -30,6 +30,11 @@ Backward-looking history lives in `hackathon.md`.
   the HN thread. Ask HN text posts scrape the HN page and credit the submitter.
   Scrape payload gained `discussionUrl`/`points`/`commentCount` (empty/0 for
   normal links).
+- Reading-circle strip tightened (`3c83c6f`): inactive starter chips are
+  dimmer, a tiny “↳ takes on qN” connector under the chips ties the message
+  list to the active chip, and a lone starter renders as a static question row
+  (no tab affordance). Verified headless in the mock trip space — decision:
+  one thread panel with chips beats separate cards per starter.
 
 ## Broken / known issues
 
