@@ -558,6 +558,17 @@ export function NoteWidget({ widget, style }: { widget: Widget; style: Style }) 
   const [remembered, setRemembered] = useState(Boolean(widget.data.remembered));
   const promoted = Boolean(widget.data.promoted);
   const author = String(widget.data.author ?? "someone");
+  const paperTone = tone === "crew" || tone === "warm" ? tone : "white";
+  const kicker = promoted
+    ? "saved from chat"
+    : String(
+        widget.data.kicker ??
+          (paperTone === "crew"
+            ? "today"
+            : paperTone === "warm"
+              ? "a thing to remember"
+              : "summer maybe?"),
+      );
 
   const toggleRemembered = () => {
     setRemembered((current) => !current);
@@ -575,47 +586,23 @@ export function NoteWidget({ widget, style }: { widget: Widget; style: Style }) 
     </button>
   );
 
-  if (tone === "crew") {
-    return (
-      <div className={`widget-shell widget-poster${promoted ? " is-promoted" : ""}${remembered ? " is-remembered" : ""}`} style={style}>
-        <span className="poster-stamp">{promoted ? "saved from chat" : "today"}</span>
-        <div className="note-copy">
-          <p>{String(widget.data.text)}</p>
-          <span className="note-source">— {author}</span>
-        </div>
-        <div className="note-footer">
-          <span>answer on the wall →</span>
-          {rememberButton}
-        </div>
-      </div>
-    );
-  }
-
-  if (tone === "warm") {
-    return (
-      <div className={`widget-shell widget-sticky${promoted ? " is-promoted" : ""}${remembered ? " is-remembered" : ""}`} style={style}>
-        <span className="sticky-tape" aria-hidden="true" />
-        <span className="sticky-mark">“</span>
-        <span className="note-kicker">{promoted ? "saved from chat" : String(widget.data.kicker ?? "a thing to remember")}</span>
+  return (
+    <div
+      className={`widget-shell widget-paper-note note-paper-${paperTone}${promoted ? " is-promoted" : ""}${remembered ? " is-remembered" : ""}`}
+      style={style}
+    >
+      <span className="note-paper-backing" aria-hidden="true" />
+      <div className="note-paper-sheet">
+        <span className="note-paper-fold" aria-hidden="true" />
+        <span className="note-kicker">{kicker}</span>
         <p>{String(widget.data.text)}</p>
         <div className="note-footer">
           <span className="note-author">— {author}</span>
           {rememberButton}
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className={`widget-shell widget-torn-note${promoted ? " is-promoted" : ""}${remembered ? " is-remembered" : ""}`} style={style}>
-      <span className="note-kicker">
-        {promoted ? "saved from chat" : String(widget.data.kicker ?? "summer maybe?")}
-      </span>
-      <p>{String(widget.data.text)}</p>
-      <div className="note-footer">
-        <span className="note-author">— {author}</span>
-        {rememberButton}
-      </div>
+      <span className="note-paper-tape" aria-hidden="true" />
+      <span className="note-paper-doodle" aria-hidden="true">♡</span>
     </div>
   );
 }
