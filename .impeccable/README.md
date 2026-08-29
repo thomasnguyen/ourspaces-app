@@ -17,3 +17,18 @@ Deliberately still **on**, because these are visual failures a viewer would see:
 
 `critique/` holds `/impeccable critique` snapshots (the `polish` command reads
 the latest one as its backlog).
+
+## Sanctioned overshoot curves
+
+Impeccable bans bounce/elastic easing globally; OurSpaces overrides that
+(bounded overshoot is the brand). `config.json` whitelists exactly two curves
+against the `bounce-easing` rule:
+
+- `cubic-bezier(0.2, 0.9, 0.3, 1.18)` — **pop**, for arrivals
+- `cubic-bezier(0.34, 1.56, 0.64, 1)` — **snap**, for climax beats only
+
+Any other overshoot value still trips the rule on purpose — `index.css` has
+ad-hoc 1.35 / 1.5 / 1.6 variants that should collapse onto these two. The
+default `cubic-bezier(0.16, 1, 0.3, 1)` (**glide**) never trips it.
+
+Full motion system in `.claude/skills/eye-candy/SKILL.md`.
