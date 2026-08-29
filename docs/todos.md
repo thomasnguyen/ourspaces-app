@@ -40,10 +40,11 @@ Backward-looking history lives in `hackathon.md`.
   clipping / read pill is the article link (`.link-card-read`, display:
   contents). Drag-from-anywhere still works; empty cards still open manage.
   Verified headless: cover→dock, read→new tab, paper drag moves the card.
-- Couple space now has a real `cozyColor` widget: generated airport-lounge
-  line art, six-color palette, three brush sizes, optimistic local strokes,
-  live artist faces, clear, and Convex-reactive stroke sync between windows.
-  Existing seeded dev rooms backfill the widget/layout on first couple-room load.
+- Couple space now has a full-screen `cozyColor` paint-by-number room: the
+  compact card opens an edge-to-edge portal, 28 numbered regions snap color
+  inside the line art, a generated finished postcard provides the color target,
+  and each fill syncs reactively through Convex between windows. Existing seeded
+  dev rooms still backfill the widget/layout on first couple-room load.
 
 ## Broken / known issues
 
@@ -58,9 +59,9 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Next up
 
-- Open `#/space/couple` in the in-app browser and capture/tune the final board
-  composition; browser discovery was unavailable in this session, while build
-  and the dev Convex push both passed.
+- Open `#/space/couple`, enter the full-screen coloring room, and capture/tune
+  the numbered seed positions; in-app browser discovery remained unavailable in
+  this session, while typecheck/build and the dev Convex push passed.
 
 - Re-seed live Convex (`npx convex run seed:demo` or equivalent) so
   production canvases pick up the SomaFM fields and seeded buildclub/Tahoe
@@ -99,7 +100,7 @@ Backward-looking history lives in `hackathon.md`.
   on link save and live mode swaps in OpenAI ones via
   `convex/questions.sparkQuestions` (canned fallback when `OPENAI_API_KEY`
   is unset — set it in Convex env for real generations).
-- 2026-08-28: Collaborative coloring is brush-based over generated broad-region
-  line art, not paint-by-number SVG regions. Each finished stroke is one bounded
-  Convex row, so a second window sees the color arrive reactively without
-  rewriting the widget document.
+- 2026-08-28: Collaborative coloring is a full-screen paint-by-number room, not
+  freehand canvas zoom. Fixed seed points flood-fill enclosed line-art regions;
+  each region is one optional `regionId` paint row, so another window sees every
+  completed number arrive reactively without rewriting the widget document.

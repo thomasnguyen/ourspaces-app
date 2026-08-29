@@ -274,6 +274,7 @@ export function LiveSpacePage({
         tone: row.tone,
         size: row.size,
         points: row.points,
+        regionId: row.regionId,
         createdAt: row.createdAt,
       };
       grouped[widgetId] = [...(grouped[widgetId] ?? []), stroke];

@@ -4,8 +4,8 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type PointerEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import { MemberFace } from "../components/MemberFace";
 import type { Widget } from "../data/types";
 import { playSound } from "../lib/sounds";
@@ -28,6 +28,7 @@ export type CozyColorStroke = {
   tone: CozyColorTone;
   size: number;
   points: CozyColorPoint[];
+  regionId?: string;
   createdAt: number;
 };
 
@@ -39,13 +40,53 @@ export type CozyColorIdentity = {
   avatarUrl?: string;
 };
 
-const TONES: CozyColorTone[] = [
-  "berry",
-  "orange",
-  "blue",
-  "violet",
-  "teal",
-  "lime",
+type PaintRegion = {
+  id: string;
+  number: number;
+  tone: CozyColorTone;
+  x: number;
+  y: number;
+  label: string;
+};
+
+const TONES: { tone: CozyColorTone; number: number; label: string }[] = [
+  { tone: "berry", number: 1, label: "pink" },
+  { tone: "orange", number: 2, label: "orange" },
+  { tone: "blue", number: 3, label: "blue" },
+  { tone: "violet", number: 4, label: "violet" },
+  { tone: "teal", number: 5, label: "teal" },
+  { tone: "lime", number: 6, label: "lime" },
+];
+
+const REGIONS: PaintRegion[] = [
+  { id: "sky-left", number: 3, tone: "blue", x: 0.145, y: 0.1, label: "left sky" },
+  { id: "sky-mid-left", number: 3, tone: "blue", x: 0.34, y: 0.1, label: "middle left sky" },
+  { id: "sky-mid-right", number: 3, tone: "blue", x: 0.64, y: 0.1, label: "middle right sky" },
+  { id: "sky-right", number: 3, tone: "blue", x: 0.74, y: 0.12, label: "right sky" },
+  { id: "sky-far-right", number: 3, tone: "blue", x: 0.9, y: 0.1, label: "far right sky" },
+  { id: "moon", number: 2, tone: "orange", x: 0.5, y: 0.17, label: "moon" },
+  { id: "cloud-left", number: 5, tone: "teal", x: 0.35, y: 0.34, label: "left cloud" },
+  { id: "cloud-right", number: 5, tone: "teal", x: 0.64, y: 0.36, label: "right cloud" },
+  { id: "plant-pot", number: 4, tone: "violet", x: 0.08, y: 0.43, label: "plant pot" },
+  { id: "plant-leaf", number: 6, tone: "lime", x: 0.1, y: 0.19, label: "plant leaf" },
+  { id: "lamp", number: 1, tone: "berry", x: 0.93, y: 0.34, label: "lamp shade" },
+  { id: "left-chair", number: 5, tone: "teal", x: 0.055, y: 0.56, label: "left chair back" },
+  { id: "left-seat", number: 5, tone: "teal", x: 0.24, y: 0.7, label: "left chair seat" },
+  { id: "left-base", number: 4, tone: "violet", x: 0.27, y: 0.82, label: "left chair base" },
+  { id: "right-chair", number: 2, tone: "orange", x: 0.95, y: 0.56, label: "right chair back" },
+  { id: "right-seat", number: 2, tone: "orange", x: 0.75, y: 0.7, label: "right chair seat" },
+  { id: "right-base", number: 5, tone: "teal", x: 0.73, y: 0.82, label: "right chair base" },
+  { id: "left-pillow", number: 2, tone: "orange", x: 0.19, y: 0.58, label: "left pillow" },
+  { id: "right-pillow", number: 4, tone: "violet", x: 0.8, y: 0.58, label: "right pillow" },
+  { id: "left-blanket", number: 2, tone: "orange", x: 0.31, y: 0.64, label: "left blanket" },
+  { id: "right-blanket", number: 1, tone: "berry", x: 0.7, y: 0.64, label: "right blanket" },
+  { id: "left-mug", number: 5, tone: "teal", x: 0.45, y: 0.67, label: "left mug" },
+  { id: "right-mug", number: 2, tone: "orange", x: 0.54, y: 0.67, label: "right mug" },
+  { id: "table", number: 4, tone: "violet", x: 0.5, y: 0.71, label: "table top" },
+  { id: "left-suitcase", number: 1, tone: "berry", x: 0.11, y: 0.83, label: "left suitcase" },
+  { id: "right-suitcase", number: 3, tone: "blue", x: 0.89, y: 0.84, label: "right suitcase" },
+  { id: "floor-left", number: 2, tone: "orange", x: 0.39, y: 0.92, label: "left floor" },
+  { id: "floor-right", number: 2, tone: "orange", x: 0.61, y: 0.92, label: "right floor" },
 ];
 
 const TONE_PROPERTIES: Record<CozyColorTone, string> = {
@@ -57,41 +98,112 @@ const TONE_PROPERTIES: Record<CozyColorTone, string> = {
   lime: "--paint-lime",
 };
 
-const BRUSHES = [
-  { label: "small brush", value: 0.022 },
-  { label: "medium brush", value: 0.04 },
-  { label: "big brush", value: 0.066 },
-] as const;
+const CANVAS_WIDTH = 1152;
+const CANVAS_HEIGHT = 768;
 
-function drawStroke(
-  context: CanvasRenderingContext2D,
-  stroke: Pick<CozyColorStroke, "tone" | "size" | "points">,
-  width: number,
-  height: number,
-  color: string,
+function cssColorToRgba(value: string): [number, number, number, number] {
+  const sample = document.createElement("canvas");
+  sample.width = 1;
+  sample.height = 1;
+  const context = sample.getContext("2d");
+  if (!context) return [0, 0, 0, 255];
+  context.fillStyle = value;
+  context.fillRect(0, 0, 1, 1);
+  return [...context.getImageData(0, 0, 1, 1).data] as [number, number, number, number];
+}
+
+function floodFill(
+  image: ImageData,
+  startX: number,
+  startY: number,
+  fill: [number, number, number, number],
 ) {
-  if (!stroke.points.length) return;
-  context.beginPath();
-  context.strokeStyle = color;
-  context.fillStyle = color;
-  context.lineCap = "round";
-  context.lineJoin = "round";
-  context.lineWidth = stroke.size * Math.min(width, height);
+  const { data, width, height } = image;
+  const start = (startY * width + startX) * 4;
+  const target = [data[start], data[start + 1], data[start + 2]];
+  if (target[0] < 190 || target[1] < 190 || target[2] < 190) return;
 
-  const first = stroke.points[0];
-  const firstX = first.x * width;
-  const firstY = first.y * height;
-  if (stroke.points.length === 1) {
-    context.arc(firstX, firstY, context.lineWidth / 2, 0, Math.PI * 2);
-    context.fill();
-    return;
+  const seen = new Uint8Array(width * height);
+  const stack = [startY * width + startX];
+  while (stack.length) {
+    const pixel = stack.pop();
+    if (pixel === undefined || seen[pixel]) continue;
+    seen[pixel] = 1;
+    const offset = pixel * 4;
+    const close =
+      Math.abs(data[offset] - target[0]) < 42 &&
+      Math.abs(data[offset + 1] - target[1]) < 42 &&
+      Math.abs(data[offset + 2] - target[2]) < 42;
+    if (!close) continue;
+    data[offset] = fill[0];
+    data[offset + 1] = fill[1];
+    data[offset + 2] = fill[2];
+    data[offset + 3] = fill[3];
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    if (x > 0) stack.push(pixel - 1);
+    if (x < width - 1) stack.push(pixel + 1);
+    if (y > 0) stack.push(pixel - width);
+    if (y < height - 1) stack.push(pixel + width);
   }
+}
 
-  context.moveTo(firstX, firstY);
-  for (const point of stroke.points.slice(1)) {
-    context.lineTo(point.x * width, point.y * height);
-  }
-  context.stroke();
+function PaintCanvas({
+  src,
+  filled,
+}: {
+  src: string;
+  filled: Map<string, CozyColorStroke>;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const [imageReady, setImageReady] = useState(false);
+
+  useEffect(() => {
+    setImageReady(false);
+    const image = new Image();
+    image.src = src;
+    image.onload = () => {
+      imageRef.current = image;
+      setImageReady(true);
+    };
+    return () => {
+      image.onload = null;
+    };
+  }, [src]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const source = imageRef.current;
+    if (!canvas || !source || !imageReady) return;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return;
+    context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    context.drawImage(source, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const pixels = context.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const styles = window.getComputedStyle(canvas);
+    for (const region of REGIONS) {
+      const stroke = filled.get(region.id);
+      if (!stroke) continue;
+      floodFill(
+        pixels,
+        Math.round(region.x * CANVAS_WIDTH),
+        Math.round(region.y * CANVAS_HEIGHT),
+        cssColorToRgba(styles.getPropertyValue(TONE_PROPERTIES[stroke.tone]).trim()),
+      );
+    }
+    context.putImageData(pixels, 0, 0);
+  }, [filled, imageReady]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="cozy-color-room-canvas"
+      width={CANVAS_WIDTH}
+      height={CANVAS_HEIGHT}
+      aria-label="Shared paint-by-number airport lounge"
+    />
+  );
 }
 
 export function CozyColorWidget({
@@ -109,144 +221,28 @@ export function CozyColorWidget({
   onStroke?: (stroke: Omit<CozyColorStroke, "id" | "createdAt">) => Promise<unknown> | void;
   onClear?: () => Promise<unknown> | void;
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [tone, setTone] = useState<CozyColorTone>("berry");
-  const [brush, setBrush] = useState(0.04);
-  const [currentPoints, setCurrentPoints] = useState<CozyColorPoint[]>([]);
+  const [roomOpen, setRoomOpen] = useState(false);
+  const [activeTone, setActiveTone] = useState<CozyColorTone>("berry");
   const [localStrokes, setLocalStrokes] = useState<CozyColorStroke[]>([]);
-  const activePointer = useRef<number | null>(null);
-  const currentPointsRef = useRef<CozyColorPoint[]>([]);
   const shownStrokes = useMemo(
     () => [...(strokes ?? []), ...localStrokes],
     [localStrokes, strokes],
   );
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    const width = Math.max(1, Math.round(rect.width));
-    const height = Math.max(1, Math.round(rect.height));
-    const pixelWidth = Math.round(width * ratio);
-    const pixelHeight = Math.round(height * ratio);
-    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
-      canvas.width = pixelWidth;
-      canvas.height = pixelHeight;
-    }
-
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    context.clearRect(0, 0, width, height);
-    const computed = window.getComputedStyle(canvas);
+  const filled = useMemo(() => {
+    const result = new Map<string, CozyColorStroke>();
     for (const stroke of shownStrokes) {
-      drawStroke(
-        context,
-        stroke,
-        width,
-        height,
-        computed.getPropertyValue(TONE_PROPERTIES[stroke.tone]).trim(),
-      );
+      if (stroke.regionId) result.set(stroke.regionId, stroke);
     }
-    if (currentPoints.length) {
-      drawStroke(
-        context,
-        { tone, size: brush, points: currentPoints },
-        width,
-        height,
-        computed.getPropertyValue(TONE_PROPERTIES[tone]).trim(),
-      );
-    }
-  }, [brush, currentPoints, shownStrokes, tone]);
-
-  const pointFromEvent = (event: PointerEvent<HTMLDivElement>): CozyColorPoint => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return {
-      x: Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
-      y: Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)),
-    };
-  };
-
-  const beginStroke = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    activePointer.current = event.pointerId;
-    const firstPoint = pointFromEvent(event);
-    currentPointsRef.current = [firstPoint];
-    setCurrentPoints(currentPointsRef.current);
-  };
-
-  const moveStroke = (event: PointerEvent<HTMLDivElement>) => {
-    if (activePointer.current !== event.pointerId) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const next = pointFromEvent(event);
-    const last = currentPointsRef.current.at(-1);
-    if (last && Math.hypot(next.x - last.x, next.y - last.y) < 0.006) return;
-    currentPointsRef.current = [...currentPointsRef.current, next];
-    setCurrentPoints(currentPointsRef.current);
-  };
-
-  const finishStroke = (event: PointerEvent<HTMLDivElement>) => {
-    if (activePointer.current !== event.pointerId) return;
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    activePointer.current = null;
-    const points = currentPointsRef.current;
-    currentPointsRef.current = [];
-    setCurrentPoints([]);
-    if (!points.length) return;
-
-    const localId = `paint-${crypto.randomUUID()}`;
-    const next: CozyColorStroke = {
-      id: localId,
-      userId: identity?.userId ?? "local-you",
-      authorName: identity?.name ?? "you",
-      authorColor: identity?.color ?? "var(--color-couple)",
-      tone,
-      size: brush,
-      points,
-      createdAt: Date.now(),
-    };
-    setLocalStrokes((existing) => [...existing, next]);
-    playSound("tap");
-
-    if (onStroke) {
-      void Promise.resolve(
-        onStroke({
-          userId: next.userId,
-          authorName: next.authorName,
-          authorColor: next.authorColor,
-          tone: next.tone,
-          size: next.size,
-          points: next.points,
-        }),
-      ).then(() => {
-        window.setTimeout(() => {
-          setLocalStrokes((existing) => existing.filter((stroke) => stroke.id !== localId));
-        }, 550);
-      });
-    }
-  };
-
-  const clear = () => {
-    currentPointsRef.current = [];
-    setCurrentPoints([]);
-    setLocalStrokes([]);
-    playSound("tap");
-    void onClear?.();
-  };
+    return result;
+  }, [shownStrokes]);
+  const progress = Math.round((filled.size / REGIONS.length) * 100);
+  const source = String(widget.data.src ?? "/assets/cozy-color-same-moon.png");
 
   const artists = useMemo(() => {
     const entries = new Map<string, CozyColorIdentity>();
     if (identity) entries.set(identity.userId, identity);
     for (const stroke of shownStrokes) {
+      if (!stroke.regionId) continue;
       entries.set(stroke.userId, {
         userId: stroke.userId,
         name: stroke.authorName,
@@ -256,88 +252,191 @@ export function CozyColorWidget({
     return [...entries.values()].slice(-3);
   }, [identity, shownStrokes]);
 
-  return (
-    <section className="widget-shell widget-cozy-color" style={style}>
-      <header className="cozy-color-heading">
-        <div>
-          <span className="cozy-color-kicker"><i /> coloring together</span>
-          <h3>{String(widget.data.title ?? "same moon, both windows")}</h3>
+  useEffect(() => {
+    if (!roomOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setRoomOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [roomOpen]);
+
+  const fillRegion = (region: PaintRegion) => {
+    if (filled.has(region.id)) return;
+    setActiveTone(region.tone);
+    const localId = `paint-${crypto.randomUUID()}`;
+    const next: CozyColorStroke = {
+      id: localId,
+      userId: identity?.userId ?? "local-you",
+      authorName: identity?.name ?? "you",
+      authorColor: identity?.color ?? "var(--color-couple)",
+      tone: region.tone,
+      size: 0.04,
+      points: [{ x: region.x, y: region.y }],
+      regionId: region.id,
+      createdAt: Date.now(),
+    };
+    setLocalStrokes((existing) => [...existing, next]);
+    playSound("tap");
+    if (!onStroke) return;
+    void Promise.resolve(
+      onStroke({
+        userId: next.userId,
+        authorName: next.authorName,
+        authorColor: next.authorColor,
+        tone: next.tone,
+        size: next.size,
+        points: next.points,
+        regionId: next.regionId,
+      }),
+    ).then(() => {
+      window.setTimeout(() => {
+        setLocalStrokes((existing) => existing.filter((stroke) => stroke.id !== localId));
+      }, 500);
+    });
+  };
+
+  const clear = () => {
+    setLocalStrokes([]);
+    playSound("tap");
+    void onClear?.();
+  };
+
+  const room = roomOpen ? createPortal(
+    <div className="cozy-color-room" role="dialog" aria-modal="true" aria-label="Color together">
+      <header className="cozy-color-room-header">
+        <button type="button" className="cozy-color-room-close" onClick={() => setRoomOpen(false)}>
+          <span aria-hidden="true">←</span> back to our space
+        </button>
+        <div className="cozy-color-room-title">
+          <span className="cozy-color-kicker"><i /> live together</span>
+          <h2>{String(widget.data.title ?? "same moon, both windows")}</h2>
         </div>
-        <div className="cozy-color-artists" aria-label={`${artists.length} people coloring`}>
-          {artists.map((artist) => (
-            <MemberFace
-              key={artist.userId}
-              name={artist.name}
-              emoji={artist.emoji}
-              avatarUrl={artist.avatarUrl}
-              color={artist.color}
-              size="xs"
-            />
-          ))}
-          <span>{shownStrokes.length ? `${shownStrokes.length} strokes` : "start here"}</span>
+        <div className="cozy-color-room-people">
+          <div className="cozy-color-artists" aria-label={`${artists.length} people coloring`}>
+            {artists.map((artist) => (
+              <MemberFace
+                key={artist.userId}
+                name={artist.name}
+                emoji={artist.emoji}
+                avatarUrl={artist.avatarUrl}
+                color={artist.color}
+                size="xs"
+              />
+            ))}
+          </div>
+          <strong>{filled.size}/{REGIONS.length}</strong>
         </div>
       </header>
 
-      <div
-        className="cozy-color-stage"
-        onPointerDown={beginStroke}
-        onPointerMove={moveStroke}
-        onPointerUp={finishStroke}
-        onPointerCancel={finishStroke}
-        onClick={(event) => event.stopPropagation()}
-        role="button"
-        tabIndex={0}
-        aria-label="Color the shared airport lounge picture"
-      >
-        <img
-          src={String(widget.data.src ?? "/assets/cozy-color-same-moon.png")}
-          alt="Two airport lounge seats, travel mugs, suitcases, and one moon beyond the windows"
-          draggable={false}
-        />
-        <canvas
-          ref={canvasRef}
-          className="cozy-color-paint-layer"
-          aria-hidden="true"
-        />
-        {!shownStrokes.length && !currentPoints.length && (
-          <span className="cozy-color-nudge">drag a color onto the picture</span>
-        )}
-      </div>
+      <main className="cozy-color-room-main">
+        <section className="cozy-color-room-board" aria-label={`${progress}% colored`}>
+          <PaintCanvas src={source} filled={filled} />
+          <div className="cozy-color-region-layer">
+            {REGIONS.map((region) => {
+              const isFilled = filled.has(region.id);
+              return (
+                <button
+                  type="button"
+                  key={region.id}
+                  className={`cozy-color-region tone-${region.tone}${isFilled ? " is-filled" : ""}${activeTone === region.tone ? " is-matched" : ""}`}
+                  style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%` }}
+                  onClick={() => fillRegion(region)}
+                  disabled={isFilled}
+                  aria-label={`${isFilled ? "Colored" : "Fill"} ${region.label} with number ${region.number}`}
+                >
+                  {isFilled ? "✓" : region.number}
+                </button>
+              );
+            })}
+          </div>
+          <div className="cozy-color-progress"><i style={{ width: `${progress}%` }} /><span>{progress}% cozy</span></div>
+        </section>
 
-      <footer className="cozy-color-tools" onClick={(event) => event.stopPropagation()}>
-        <div className="cozy-color-palette" aria-label="Paint colors">
-          {TONES.map((value) => (
-            <button
-              type="button"
-              key={value}
-              className={`cozy-color-swatch tone-${value}${tone === value ? " is-active" : ""}`}
-              onClick={() => {
-                setTone(value);
-                playSound("tap");
-              }}
-              aria-label={`${value} paint`}
-              aria-pressed={tone === value}
-            />
-          ))}
-        </div>
-        <div className="cozy-color-brushes" aria-label="Brush size">
-          {BRUSHES.map((size) => (
-            <button
-              type="button"
-              key={size.value}
-              className={brush === size.value ? "is-active" : ""}
-              onClick={() => setBrush(size.value)}
-              aria-label={size.label}
-              aria-pressed={brush === size.value}
-            >
-              <i style={{ "--brush-dot": `${Math.round(size.value * 180)}px` } as CSSProperties} />
-            </button>
-          ))}
-        </div>
-        <button type="button" className="cozy-color-clear" onClick={clear} disabled={!shownStrokes.length}>
-          start over
+        <aside className="cozy-color-room-tools">
+          <div className="cozy-color-room-instruction">
+            <span>paint by number</span>
+            <h3>Pick a spot.<br />Color snaps in.</h3>
+            <p>Every tap lands live for both of you.</p>
+          </div>
+          <div className="cozy-color-number-pots" aria-label="Numbered colors">
+            {TONES.map(({ tone, number, label }) => (
+              <button
+                type="button"
+                key={tone}
+                className={`cozy-color-number-pot tone-${tone}${activeTone === tone ? " is-active" : ""}`}
+                onClick={() => {
+                  setActiveTone(tone);
+                  playSound("tap");
+                }}
+                aria-label={`Highlight number ${number}, ${label}`}
+                aria-pressed={activeTone === tone}
+              >
+                <b>{number}</b><span>{label}</span>
+              </button>
+            ))}
+          </div>
+          <figure className="cozy-color-target">
+            <img src="/assets/cozy-color-same-moon-colored.png" alt="Finished color reference" />
+            <figcaption>our color target</figcaption>
+          </figure>
+          <button type="button" className="cozy-color-clear" onClick={clear} disabled={!filled.size}>
+            start this picture over
+          </button>
+        </aside>
+      </main>
+    </div>,
+    document.body,
+  ) : null;
+
+  return (
+    <>
+      <section className="widget-shell widget-cozy-color" style={style}>
+        <header className="cozy-color-heading">
+          <div>
+            <span className="cozy-color-kicker"><i /> coloring together</span>
+            <h3>{String(widget.data.title ?? "same moon, both windows")}</h3>
+          </div>
+          <div className="cozy-color-artists" aria-label={`${artists.length} people coloring`}>
+            {artists.map((artist) => (
+              <MemberFace
+                key={artist.userId}
+                name={artist.name}
+                emoji={artist.emoji}
+                avatarUrl={artist.avatarUrl}
+                color={artist.color}
+                size="xs"
+              />
+            ))}
+          </div>
+        </header>
+        <button
+          type="button"
+          className="cozy-color-door"
+          onClick={(event) => {
+            event.stopPropagation();
+            setRoomOpen(true);
+            playSound("tap");
+          }}
+        >
+          <img src="/assets/cozy-color-same-moon-colored.png" alt="Colorful airport lounge postcard" />
+          <span className="cozy-color-door-shade" />
+          <span className="cozy-color-door-cta"><b>open coloring room</b><em>fills your whole screen →</em></span>
+          <span className="cozy-color-door-progress">{filled.size}/{REGIONS.length} filled</span>
         </button>
-      </footer>
-    </section>
+        <footer className="cozy-color-preview-footer">
+          <div className="cozy-color-mini-palette" aria-hidden="true">
+            {TONES.map(({ tone, number }) => <i key={tone} className={`tone-${tone}`}>{number}</i>)}
+          </div>
+          <span>{progress ? `${progress}% done together` : "tap a number to begin"}</span>
+        </footer>
+      </section>
+      {room}
+    </>
   );
 }

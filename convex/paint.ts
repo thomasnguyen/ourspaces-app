@@ -34,6 +34,7 @@ export const addStroke = mutation({
     tone,
     size: v.number(),
     points: v.array(v.object({ x: v.number(), y: v.number() })),
+    regionId: v.optional(v.string()),
   },
   returns: v.union(v.id("paintMarks"), v.null()),
   handler: async (ctx, args) => {
@@ -41,9 +42,29 @@ export const addStroke = mutation({
     if (!widget || widget.spaceId !== args.spaceId || widget.type !== "cozyColor") {
       return null;
     }
+    if (args.regionId) {
+      const marks = await ctx.db
+        .query("paintMarks")
+        .withIndex("by_space_and_widget", (q) =>
+          q.eq("spaceId", args.spaceId).eq("widgetId", args.widgetId),
+        )
+        .take(240);
+      const existing = marks.find((mark) => mark.regionId === args.regionId);
+      if (existing) {
+        await ctx.db.patch(existing._id, {
+          userId: args.userId,
+          authorName: args.authorName,
+          authorColor: args.authorColor,
+          tone: args.tone,
+          points: args.points.slice(0, 1),
+          createdAt: Date.now(),
+        });
+        return existing._id;
+      }
+    }
     return await ctx.db.insert("paintMarks", {
       ...args,
-      points: args.points.slice(0, 256),
+      points: args.points.slice(0, args.regionId ? 1 : 256),
       size: Math.min(0.08, Math.max(0.015, args.size)),
       createdAt: Date.now(),
     });

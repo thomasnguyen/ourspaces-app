@@ -7,6 +7,7 @@ export const THREADLESS_WIDGET_TYPES: WidgetType[] = [
   "chat",
   "messageWall",
   "dualClock",
+  "cozyColor",
 ];
 
 export function widgetSupportsThread(widget: Widget): boolean {
