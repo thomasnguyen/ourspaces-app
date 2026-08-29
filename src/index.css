@@ -15051,3 +15051,378 @@
     transition: none;
   }
 }
+
+/* ================================================================
+   COZY COLOR GAME PASS — reference-matched number play
+   ================================================================ */
+
+.widget-cozy-color[data-preset="electric"],
+.cozy-color-room[data-preset="electric"] {
+  --paint-berry: var(--color-couple);
+  --paint-orange: var(--color-trip);
+  --paint-blue: var(--color-fam);
+  --paint-violet: var(--color-crew);
+  --paint-teal: var(--color-league);
+  --paint-lime: var(--color-lime);
+}
+
+.widget-cozy-color[data-preset="sunset"],
+.cozy-color-room[data-preset="sunset"] {
+  --paint-berry: var(--color-trip);
+  --paint-orange: var(--color-couple);
+  --paint-blue: var(--color-crew);
+  --paint-violet: var(--color-fam);
+  --paint-teal: var(--color-lime);
+  --paint-lime: var(--color-league);
+}
+
+.cozy-color-room-main {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 10px 12px 96px;
+}
+
+.cozy-color-room-board {
+  width: 100%;
+  max-width: calc((100dvh - 164px) * 1.5);
+  box-shadow: 6px 6px 0 var(--paint-berry);
+}
+
+.cozy-color-region {
+  width: clamp(32px, 3.2vw, 48px);
+  height: clamp(32px, 3.2vw, 48px);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: clamp(1rem, 2vw, 1.65rem);
+  font-weight: 600;
+  line-height: 1;
+  text-shadow:
+    1px 0 var(--color-card),
+    -1px 0 var(--color-card),
+    0 1px var(--color-card),
+    0 -1px var(--color-card);
+  box-shadow: none;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 140ms ease-out,
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cozy-color-region.is-matched {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+  filter: none;
+}
+
+.cozy-color-region:not(.is-matched) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cozy-color-region.is-matched:hover {
+  transform: translate(-50%, -50%) scale(1.22);
+}
+
+.cozy-color-region.is-filled,
+.cozy-color-region.is-filled.is-matched {
+  transform: translate(-50%, -50%) scale(1.5);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cozy-color-now {
+  position: absolute;
+  z-index: 2;
+  left: 12px;
+  top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 2px solid var(--color-sticker);
+  border-radius: var(--radius-pill);
+  background: var(--color-card);
+  color: var(--color-ink);
+  padding: 4px 9px 4px 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.cozy-color-now b {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 2px solid var(--color-sticker);
+  border-radius: 50%;
+  font-size: 0.68rem;
+}
+
+.cozy-color-now .tone-berry { background: var(--paint-berry); }
+.cozy-color-now .tone-orange { background: var(--paint-orange); }
+.cozy-color-now .tone-blue { background: var(--paint-blue); }
+.cozy-color-now .tone-violet { background: var(--paint-violet); }
+.cozy-color-now .tone-teal { background: var(--paint-teal); }
+.cozy-color-now .tone-lime { background: var(--paint-lime); }
+
+.cozy-color-gamebar {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 12px;
+  display: flex;
+  width: min(900px, calc(100% - 24px));
+  min-height: 76px;
+  transform: translateX(-50%);
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  border: 3px solid var(--color-sticker);
+  border-radius: 15px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  padding: 9px 11px;
+  box-shadow: 6px 6px 0 var(--color-sticker);
+}
+
+.cozy-color-presets {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 5px;
+  padding-right: 12px;
+  border-right: 1px solid color-mix(in srgb, var(--color-ink) 20%, transparent);
+}
+
+.cozy-color-presets button {
+  display: grid;
+  min-width: 72px;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-ink);
+  padding: 6px;
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    background 150ms ease-out,
+    opacity 150ms ease-out,
+    transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cozy-color-presets button:hover,
+.cozy-color-presets button.is-active {
+  background: var(--color-paper-deep);
+  color: white;
+  opacity: 1;
+}
+
+.cozy-color-presets button:active {
+  transform: scale(0.96);
+}
+
+.cozy-color-presets button > i {
+  display: flex;
+  width: 22px;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.cozy-color-presets button > i span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.cozy-color-presets button:first-child > i span:nth-child(1) { background: var(--color-fam); }
+.cozy-color-presets button:first-child > i span:nth-child(2) { background: var(--color-couple); }
+.cozy-color-presets button:first-child > i span:nth-child(3) { background: var(--color-lime); }
+.cozy-color-presets button:last-child > i span:nth-child(1) { background: var(--color-trip); }
+.cozy-color-presets button:last-child > i span:nth-child(2) { background: var(--color-couple); }
+.cozy-color-presets button:last-child > i span:nth-child(3) { background: var(--color-crew); }
+
+.cozy-color-presets button > b {
+  font-size: 0.62rem;
+  line-height: 1.05;
+  text-align: left;
+}
+
+.cozy-color-gamebar .cozy-color-number-pots {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.cozy-color-gamebar .cozy-color-number-pot {
+  position: relative;
+  display: grid;
+  width: 50px;
+  height: 50px;
+  min-width: 0;
+  flex: 0 1 50px;
+  place-items: center;
+  border: 3px solid var(--color-sticker);
+  border-radius: 50%;
+  color: var(--color-sticker);
+  padding: 0;
+  box-shadow: 2px 3px 0 color-mix(in srgb, var(--color-sticker) 72%, transparent);
+  transition:
+    transform 170ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 150ms ease-out;
+}
+
+.cozy-color-gamebar .cozy-color-number-pot:hover,
+.cozy-color-gamebar .cozy-color-number-pot.is-active {
+  transform: translateY(-7px) scale(1.08);
+}
+
+.cozy-color-gamebar .cozy-color-number-pot.is-active {
+  outline: 3px solid white;
+  outline-offset: -7px;
+}
+
+.cozy-color-gamebar .cozy-color-number-pot.is-complete {
+  opacity: 0.38;
+}
+
+.cozy-color-gamebar .cozy-color-number-pot > b {
+  display: grid;
+  width: auto;
+  height: auto;
+  place-items: center;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+}
+
+.cozy-color-gamebar .cozy-color-number-pot > span {
+  position: absolute;
+  right: -2px;
+  bottom: -3px;
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 2px solid var(--color-sticker);
+  border-radius: var(--radius-pill);
+  background: var(--color-card);
+  color: var(--color-ink);
+  padding: 0 4px;
+  font-size: 0.5rem;
+  font-weight: 900;
+}
+
+.cozy-color-game-reset {
+  display: grid;
+  width: 47px;
+  height: 47px;
+  flex: 0 0 47px;
+  place-items: center;
+  border: 2px solid var(--color-sticker);
+  border-radius: 50%;
+  background: var(--color-paper-deep);
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.cozy-color-game-reset span {
+  display: none;
+}
+
+.cozy-color-game-reset:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+@media (max-width: 760px) {
+  .cozy-color-room-main {
+    display: flex;
+    overflow: hidden;
+    padding: 8px 8px 86px;
+  }
+
+  .cozy-color-room-board {
+    width: 100%;
+    max-width: none;
+  }
+
+  .cozy-color-region {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+
+  .cozy-color-now {
+    left: 6px;
+    top: 6px;
+  }
+
+  .cozy-color-gamebar {
+    bottom: 8px;
+    width: calc(100% - 16px);
+    min-height: 67px;
+    gap: 6px;
+    padding: 7px;
+    box-shadow: 3px 3px 0 var(--color-sticker);
+  }
+
+  .cozy-color-presets {
+    gap: 3px;
+    padding-right: 6px;
+  }
+
+  .cozy-color-presets button {
+    min-width: 30px;
+    grid-template-columns: 1fr;
+    padding: 4px;
+  }
+
+  .cozy-color-presets button > b {
+    display: none;
+  }
+
+  .cozy-color-gamebar .cozy-color-number-pots {
+    gap: 3px;
+  }
+
+  .cozy-color-gamebar .cozy-color-number-pot {
+    width: clamp(33px, 10vw, 42px);
+    height: clamp(33px, 10vw, 42px);
+    flex-basis: 42px;
+    border-width: 2px;
+  }
+
+  .cozy-color-gamebar .cozy-color-number-pot > span {
+    min-width: 15px;
+    height: 15px;
+    font-size: 0.45rem;
+  }
+
+  .cozy-color-game-reset {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cozy-color-region,
+  .cozy-color-presets button,
+  .cozy-color-gamebar .cozy-color-number-pot {
+    transition: none;
+  }
+}

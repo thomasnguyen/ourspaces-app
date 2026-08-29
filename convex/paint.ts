@@ -10,6 +10,7 @@ const tone = v.union(
   v.literal("teal"),
   v.literal("lime"),
 );
+const preset = v.union(v.literal("electric"), v.literal("sunset"));
 
 export const listBySpace = query({
   args: { spaceId: v.id("spaces") },
@@ -35,6 +36,7 @@ export const addStroke = mutation({
     size: v.number(),
     points: v.array(v.object({ x: v.number(), y: v.number() })),
     regionId: v.optional(v.string()),
+    preset: v.optional(preset),
   },
   returns: v.union(v.id("paintMarks"), v.null()),
   handler: async (ctx, args) => {
@@ -57,6 +59,7 @@ export const addStroke = mutation({
           authorColor: args.authorColor,
           tone: args.tone,
           points: args.points.slice(0, 1),
+          preset: args.preset,
           createdAt: Date.now(),
         });
         return existing._id;
