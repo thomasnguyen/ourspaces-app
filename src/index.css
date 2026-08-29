@@ -18,6 +18,15 @@
   --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --radius-pill: 9999px;
+  --ease-glide: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-pop: cubic-bezier(0.2, 0.9, 0.3, 1.18);
+  --ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-instant: 120ms;
+  --dur-quick: 160ms;
+  --dur-base: 220ms;
+  --dur-arrive: 360ms;
+  --dur-stage: 500ms;
+  --dur-hero: 900ms;
 }
 
 @layer base {
@@ -1430,7 +1439,11 @@
     animation-delay: 0ms !important;
   }
 
-  .ghost-widget {
+  .ghost-widget,
+  .space-canvas.is-entering .photo-wall-cover,
+  .space-canvas.is-entering .photo-wall-peek,
+  .space-canvas.is-entering .photo-wall-buried,
+  .space-canvas.is-entering .photo-wall-tape {
     animation-delay: 0ms !important;
     animation-duration: 0ms !important;
   }
@@ -4774,7 +4787,9 @@
 /* ── photo wall ── */
 .widget-photo-wall {
   position: relative;
+  display: flex;
   overflow: hidden;
+  flex-direction: column;
   isolation: isolate;
   box-sizing: border-box;
   border-radius: 15px;
@@ -4814,11 +4829,12 @@
 
 .photo-wall-heading {
   display: flex;
-  height: 39px;
+  height: 36px;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 
 .photo-wall-kicker {
@@ -4853,24 +4869,24 @@
 
 .photo-wall-count {
   display: flex;
-  min-height: 27px;
+  min-height: 20px;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   flex: 0 0 auto;
   border-radius: 999px;
   background: var(--photo-accent, #e9369d);
   color: var(--photo-accent-ink, #ffffff);
-  padding: 5px 8px 5px 9px;
+  padding: 4px 7px 4px 8px;
   font-size: 8px;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .photo-wall-count i {
-  font-size: 11px;
+  font-size: 10px;
   font-style: normal;
   line-height: 1;
-  transition: translate 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: translate var(--dur-quick) var(--ease-glide);
 }
 
 .widget-group-body:hover .photo-wall-count i,
@@ -4880,78 +4896,30 @@
 
 .photo-wall-preview {
   position: relative;
-  height: 132px;
+  flex: 1;
+  min-height: 0;
 }
 
+/* Every photo is a cream print on the dark tile — same paper as the big
+   polaroid widget, so the whole canvas speaks one physical language. */
 .photo-wall-cover,
 .photo-wall-peek {
   position: absolute;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   margin: 0;
-  border-radius: 7px;
-  background: #0a0a0b;
-}
-
-.photo-wall-cover {
-  inset: 0;
-  z-index: 3;
-  display: grid;
-  grid-template-rows: 1fr 30px;
-  transition:
-    width 220ms cubic-bezier(0.16, 1, 0.3, 1),
-    translate 220ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.photo-wall-preview.has-peeks .photo-wall-cover {
-  width: 69%;
-}
-
-.photo-wall-peek {
-  right: 0;
-  width: 35%;
-  border: 3px solid #fffaf7;
-  transition:
-    translate 220ms cubic-bezier(0.16, 1, 0.3, 1),
-    rotate 220ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.photo-wall-peek-1 {
-  top: 2px;
-  height: 75px;
-  rotate: 3deg;
-}
-
-.photo-wall-peek-2 {
-  right: 4px;
-  bottom: 1px;
-  height: 70px;
-  rotate: -3deg;
-}
-
-.widget-group-body:hover .photo-wall-cover,
-.widget-group-body:focus-visible .photo-wall-cover {
-  translate: -2px 0;
-}
-
-.widget-group-body:hover .photo-wall-peek-1,
-.widget-group-body:focus-visible .photo-wall-peek-1 {
-  translate: 3px -2px;
-  rotate: 5deg;
-}
-
-.widget-group-body:hover .photo-wall-peek-2,
-.widget-group-body:focus-visible .photo-wall-peek-2 {
-  translate: 2px 2px;
-  rotate: -5deg;
-}
-
-.photo-wall-cover.is-favorite {
-  box-shadow: inset 0 0 0 2px var(--photo-accent, #e9369d);
+  border-radius: 5px;
+  background: var(--color-card);
+  box-shadow: 0 4px 0 rgba(5, 3, 4, 0.4);
 }
 
 .photo-wall-frame {
+  display: block;
+  flex: 1;
   min-height: 0;
   overflow: hidden;
+  border-radius: 3px;
+  background: #0a0a0b;
 }
 
 .photo-wall-cover img,
@@ -4962,13 +4930,197 @@
   object-fit: cover;
 }
 
+.photo-wall-cover {
+  inset: 0;
+  z-index: 3;
+  padding: 5px 5px 0;
+  transition:
+    width var(--dur-base) var(--ease-glide),
+    translate var(--dur-base) var(--ease-glide);
+}
+
+.photo-wall-preview.has-peeks .photo-wall-cover {
+  width: 66%;
+}
+
+.photo-wall-tape {
+  position: absolute;
+  z-index: 4;
+  top: -6px;
+  left: 16%;
+  width: 38px;
+  height: 13px;
+  background: rgba(245, 222, 173, 0.85);
+  box-shadow: 0 1px 0 rgba(90, 65, 40, 0.14);
+  rotate: -5deg;
+}
+
+.photo-wall-peek {
+  width: 42%;
+  padding: 3px 3px 0;
+  rotate: var(--tilt, 3deg);
+  transition:
+    translate var(--dur-base) var(--ease-glide),
+    rotate var(--dur-base) var(--ease-glide);
+}
+
+.photo-wall-peek figcaption {
+  overflow: hidden;
+  height: 12px;
+  flex: 0 0 auto;
+  padding: 0 2px;
+  color: var(--color-muted);
+  font-size: 6px;
+  font-weight: 700;
+  line-height: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* One print tossed over the cover's corner, one tucked under — a real pile. */
+.photo-wall-peek-1 {
+  top: 6px;
+  right: 12px;
+  z-index: 4;
+  width: 38%;
+  height: 46%;
+}
+
+.photo-wall-peek-2 {
+  right: 5px;
+  bottom: 12px;
+  z-index: 1;
+  width: 45%;
+  height: 44%;
+}
+
+/* The tucked print's caption rides its exposed corner, not the buried edge. */
+.photo-wall-peek-2 figcaption {
+  text-align: right;
+}
+
+/* Two-photo walls get one tall side print instead of a lonely top corner.
+   It sits beside the cover, clear of the chin — no pile to excuse an overlap. */
+.photo-wall-preview:not(:has(.photo-wall-peek-2)) .photo-wall-peek-1 {
+  top: 8%;
+  right: 8px;
+  height: 68%;
+}
+
+/* A shadowed print edge poking from under the pile — the wall goes deeper. */
+.photo-wall-buried {
+  position: absolute;
+  z-index: 0;
+  top: -3px;
+  right: 12%;
+  width: 30%;
+  height: 26px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-card) 64%, #2b1d17);
+  rotate: 6deg;
+}
+
+/* Space open: the prints deal onto the wall after the tile lands. */
+.space-canvas.is-entering .photo-wall-cover {
+  --land-from: 0 -8px;
+  animation: photo-print-land var(--dur-arrive) var(--ease-pop)
+    calc(var(--enter-delay, 0ms) + 260ms) both;
+}
+
+.space-canvas.is-entering .photo-wall-peek-1 {
+  --land-from: -10px -8px;
+  animation: photo-print-land var(--dur-arrive) var(--ease-pop)
+    calc(var(--enter-delay, 0ms) + 360ms) both;
+}
+
+.space-canvas.is-entering .photo-wall-peek-2 {
+  --land-from: -8px 8px;
+  animation: photo-print-land var(--dur-arrive) var(--ease-pop)
+    calc(var(--enter-delay, 0ms) + 450ms) both;
+}
+
+.space-canvas.is-entering .photo-wall-buried {
+  animation: photo-buried-in var(--dur-base) var(--ease-glide)
+    calc(var(--enter-delay, 0ms) + 560ms) both;
+}
+
+.space-canvas.is-entering .photo-wall-tape {
+  animation: photo-tape-press var(--dur-base) var(--ease-glide)
+    calc(var(--enter-delay, 0ms) + 560ms) both;
+}
+
+@keyframes photo-print-land {
+  from {
+    opacity: 0;
+    translate: var(--land-from, 0 -8px);
+    scale: 1.1;
+    rotate: calc(var(--tilt, 0deg) * 2 + 5deg);
+  }
+  55% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+    rotate: var(--tilt, 0deg);
+  }
+}
+
+@keyframes photo-tape-press {
+  from {
+    opacity: 0;
+    scale: 1.25;
+    rotate: -11deg;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    rotate: -5deg;
+  }
+}
+
+@keyframes photo-buried-in {
+  from {
+    opacity: 0;
+    translate: -6px 6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.widget-group-body:hover .photo-wall-cover,
+.widget-group-body:focus-visible .photo-wall-cover {
+  translate: -2px -2px;
+}
+
+/* The pile fans out — each print swings further along its own tilt. */
+.widget-group-body:hover .photo-wall-peek,
+.widget-group-body:focus-visible .photo-wall-peek {
+  rotate: calc(var(--tilt, 3deg) * 1.5);
+}
+
+.widget-group-body:hover .photo-wall-peek-1,
+.widget-group-body:focus-visible .photo-wall-peek-1 {
+  translate: 4px -4px;
+}
+
+.widget-group-body:hover .photo-wall-peek-2,
+.widget-group-body:focus-visible .photo-wall-peek-2 {
+  translate: 2px 3px;
+}
+
 .photo-wall-cover figcaption {
   display: flex;
+  height: 27px;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  padding: 4px 5px 4px 8px;
-  color: #ffffff;
+  padding: 0 4px 0 3px;
+  color: var(--color-ink);
 }
 
 .photo-wall-caption {
@@ -4981,7 +5133,7 @@
 .photo-wall-caption strong {
   overflow: hidden;
   font-family: var(--font-display);
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4989,7 +5141,7 @@
 
 .photo-wall-caption span {
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.64);
+  color: var(--color-muted);
   font-size: 6.5px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -4998,18 +5150,18 @@
 
 .photo-favorite {
   display: grid;
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
   flex: 0 0 auto;
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: rgba(17, 17, 20, 0.06);
+  color: var(--color-ink);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1;
-  transition: scale 120ms ease-out, background 120ms ease-out;
+  transition: scale var(--dur-instant) ease-out, background var(--dur-instant) ease-out;
 }
 
 .photo-favorite:hover {
@@ -5019,7 +5171,7 @@
 .photo-favorite[aria-pressed="true"] {
   background: var(--photo-accent, #e9369d);
   color: var(--photo-accent-ink, #ffffff);
-  animation: photo-favorite-pop 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: photo-favorite-pop 280ms var(--ease-glide);
 }
 
 .photo-wall-empty {
@@ -5051,6 +5203,8 @@
 }
 
 /* ── expanded memory room ── */
+/* The room IS the widget tile grown to fill the screen — same surface color,
+   so the clip-path reveal reads as the tile expanding, not a scene cut. */
 .photo-gallery-dialog {
   box-sizing: border-box;
   width: 100vw;
@@ -5060,7 +5214,7 @@
   margin: 0;
   overflow: hidden;
   border: 0;
-  background: #0b0b0d;
+  background: #151517;
   color: #ffffff;
   padding:
     max(12px, env(safe-area-inset-top))
@@ -5070,7 +5224,11 @@
 }
 
 .photo-gallery-dialog[open] {
-  animation: photo-gallery-zoom-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: photo-gallery-zoom-in var(--dur-arrive) var(--ease-glide) both;
+}
+
+.photo-gallery-dialog.is-closing {
+  animation: photo-gallery-zoom-out 320ms var(--ease-glide) 60ms both;
 }
 
 .photo-gallery-dialog::backdrop {
@@ -5083,6 +5241,13 @@
   height: 100%;
   margin: 0 auto;
   animation: photo-gallery-controls-in 320ms 70ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* When the FLIP spread runs, the shell must sit still so measured landing
+   rects stay true, and the CSS item entrance yields to the WAAPI flight. */
+.photo-gallery-shell.is-spreading,
+.photo-gallery-grid.is-spreading .photo-gallery-item {
+  animation: none;
 }
 
 .photo-gallery-overview,
@@ -5106,7 +5271,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px 12px;
-  background: #0b0b0d;
+  background: #151517;
   padding-bottom: 4px;
 }
 
@@ -5220,39 +5385,59 @@
   flex: 1 1 auto;
   grid-template-columns: minmax(0, 1fr);
   grid-auto-rows: minmax(240px, 66vw);
-  gap: 12px;
+  gap: 14px;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 2px 2px max(2px, env(safe-area-inset-bottom));
+  padding: 10px 8px max(10px, env(safe-area-inset-bottom));
   scrollbar-color: var(--photo-accent, #e9369d) transparent;
   scrollbar-width: thin;
 }
 
+/* Each moment is a cream print spread on the table — same paper anatomy as
+   the pile in the widget, tilted and jogged so the grid reads as a scatter. */
 .photo-gallery-item {
   position: relative;
   display: grid;
   min-width: 0;
   min-height: 0;
   grid-template-rows: minmax(0, 1fr) auto;
-  overflow: hidden;
   border: 0;
-  border-radius: 12px;
-  background: #151517;
-  color: #ffffff;
-  padding: 0;
+  border-radius: 6px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  padding: 8px 8px 0;
   cursor: zoom-in;
   text-align: left;
-  animation: photo-gallery-item-in 340ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  rotate: var(--scatter, 0deg);
+  translate: var(--jog-x, 0) var(--jog-y, 0);
+  box-shadow: 0 6px 0 rgba(5, 3, 4, 0.4);
+  animation: photo-gallery-item-in 340ms var(--ease-glide) both;
   animation-delay: calc(min(var(--photo-index), 7) * 35ms);
   transition:
-    translate 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    outline-color 180ms ease-out;
+    translate var(--dur-base) var(--ease-glide),
+    rotate var(--dur-base) var(--ease-glide),
+    box-shadow var(--dur-base) var(--ease-glide),
+    outline-color var(--dur-quick) ease-out;
+}
+
+.photo-gallery-item-tape {
+  position: absolute;
+  z-index: 3;
+  top: -9px;
+  left: 12%;
+  width: 58px;
+  height: 18px;
+  background: rgba(245, 222, 173, 0.85);
+  box-shadow: 0 1px 0 rgba(90, 65, 40, 0.14);
+  rotate: -5deg;
 }
 
 .photo-gallery-media {
   min-height: 0;
   overflow: hidden;
+  border-radius: 3px;
+  background: #0a0a0b;
 }
 
 .photo-gallery-media img {
@@ -5260,17 +5445,16 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: scale 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: scale 320ms var(--ease-glide);
 }
 
 .photo-gallery-item-caption {
   display: flex;
-  min-height: 52px;
+  min-height: 46px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: #151517;
-  padding: 8px 10px 8px 12px;
+  padding: 6px 4px 8px 6px;
 }
 
 .photo-gallery-item-caption > span {
@@ -5289,20 +5473,20 @@
 
 .photo-gallery-item-caption strong {
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 800;
 }
 
 .photo-gallery-item-caption small {
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--color-muted);
   font-size: 0.6875rem;
   font-weight: 700;
 }
 
 .photo-gallery-item-caption > i {
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 50%;
@@ -5310,20 +5494,34 @@
   color: var(--photo-accent-ink, #ffffff);
   font-size: 1rem;
   font-style: normal;
-  transition: translate 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity var(--dur-quick) var(--ease-glide),
+    scale var(--dur-quick) var(--ease-glide);
 }
 
+/* Hover = picking the print up: it straightens, lifts, and rises above its
+   neighbors in the scatter. The ↗ waits for the pick-up on fine pointers. */
 @media (hover: hover) and (pointer: fine) {
+  .photo-gallery-item .photo-gallery-item-caption > i {
+    opacity: 0;
+    scale: 0.6;
+  }
+
   .photo-gallery-item:hover {
-    translate: 0 -3px;
+    z-index: 4;
+    rotate: 0deg;
+    translate: var(--jog-x, 0) calc(var(--jog-y, 0px) - 5px);
+    box-shadow: 0 12px 0 rgba(5, 3, 4, 0.3);
   }
 
   .photo-gallery-item:hover img {
     scale: 1.025;
   }
 
-  .photo-gallery-item:hover .photo-gallery-item-caption > i {
-    translate: 2px -2px;
+  .photo-gallery-item:hover .photo-gallery-item-caption > i,
+  .photo-gallery-item:focus-visible .photo-gallery-item-caption > i {
+    opacity: 1;
+    scale: 1;
   }
 }
 
@@ -5340,7 +5538,7 @@
   grid-template-columns: minmax(0, 1fr) auto 44px;
   align-items: center;
   gap: 12px;
-  background: #0b0b0d;
+  background: #151517;
   padding-bottom: 4px;
 }
 
@@ -5369,21 +5567,34 @@
   place-items: center;
 }
 
-.photo-lightbox-media {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  place-items: center;
+/* The lifted print — the one you picked up off the table. The cream frame
+   hugs the photo; the caption is handwritten on the chin in ink. */
+.photo-lightbox-print {
+  display: flex;
+  max-width: min(100%, 1200px);
+  max-height: 100%;
+  flex-direction: column;
+  margin: 0;
+  border-radius: 8px;
+  background: var(--color-card);
+  padding: 10px 10px 0;
+  box-shadow: 0 12px 0 rgba(5, 3, 4, 0.35);
 }
 
-.photo-lightbox-media img {
+.photo-lightbox-frame {
+  display: block;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #0a0a0b;
+}
+
+.photo-lightbox-frame img {
   display: block;
   max-width: 100%;
-  max-height: 100%;
-  border-radius: 10px;
+  max-height: calc(100dvh - 240px);
   object-fit: contain;
-  animation: photo-lightbox-image-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: photo-lightbox-image-in 220ms var(--ease-glide) both;
 }
 
 .photo-lightbox-nav {
@@ -5403,23 +5614,24 @@
 
 .photo-lightbox-caption {
   display: flex;
-  min-height: 52px;
+  min-height: 56px;
   flex: 0 0 auto;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
+  color: var(--color-ink);
   text-align: center;
 }
 
 .photo-lightbox-caption strong {
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 1.0625rem;
   font-weight: 800;
 }
 
 .photo-lightbox-caption span {
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--color-muted);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -5453,11 +5665,11 @@
 
 @keyframes photo-gallery-item-in {
   from {
-    clip-path: inset(7% round 12px);
+    clip-path: inset(7% round 6px);
     scale: 0.97;
   }
   to {
-    clip-path: inset(0 round 12px);
+    clip-path: inset(0 round 6px);
     scale: 1;
   }
 }
@@ -5477,6 +5689,23 @@
   }
 }
 
+@keyframes photo-gallery-zoom-out {
+  from {
+    clip-path: inset(0 round 0);
+    opacity: 1;
+  }
+  to {
+    clip-path: inset(
+      var(--photo-gallery-origin-top, 24vh)
+      var(--photo-gallery-origin-right, 24vw)
+      var(--photo-gallery-origin-bottom, 24vh)
+      var(--photo-gallery-origin-left, 24vw)
+      round 15px
+    );
+    opacity: 0;
+  }
+}
+
 @keyframes photo-gallery-controls-in {
   from {
     scale: 0.985;
@@ -5488,12 +5717,22 @@
 
 @keyframes photo-lightbox-image-in {
   from {
-    clip-path: inset(3% round 10px);
+    clip-path: inset(3% round 4px);
     scale: 0.985;
   }
   to {
-    clip-path: inset(0 round 10px);
+    clip-path: inset(0 round 4px);
     scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-gallery-dialog[open],
+  .photo-gallery-dialog.is-closing,
+  .photo-gallery-shell,
+  .photo-gallery-item,
+  .photo-lightbox-frame img {
+    animation: none;
   }
 }
 

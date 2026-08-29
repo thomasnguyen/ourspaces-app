@@ -936,25 +936,31 @@ export function PhotoWallWidget({ widget, style }: { widget: Widget; style: Styl
       </div>
       {photos.length > 0 ? (
         <div className={`photo-wall-preview${peeks.length ? " has-peeks" : ""}`}>
+          {photos.length > 3 && <span className="photo-wall-buried" aria-hidden="true" />}
           {peeks.map((photo, index) => (
             <figure
               key={photo.caption}
               className={`photo-wall-peek photo-wall-peek-${index + 1}`}
+              style={{ "--tilt": `${Math.max(-4, Math.min(4, photo.rotate ?? (index === 0 ? 3 : -3)))}deg` } as Style}
               aria-hidden="true"
             >
-              <img
-                src={photo.thumbnailSrc ?? photo.src ?? "/assets/the-crew-snapshot-thumb.jpg"}
-                alt=""
-                style={{ objectPosition: photo.focus ?? "center" }}
-                onError={(event) => {
-                  event.currentTarget.onerror = null;
-                  event.currentTarget.src = "/assets/the-crew-snapshot-thumb.jpg";
-                }}
-              />
+              <span className="photo-wall-frame">
+                <img
+                  src={photo.thumbnailSrc ?? photo.src ?? "/assets/the-crew-snapshot-thumb.jpg"}
+                  alt=""
+                  style={{ objectPosition: photo.focus ?? "center" }}
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = "/assets/the-crew-snapshot-thumb.jpg";
+                  }}
+                />
+              </span>
+              <figcaption>{photo.caption}</figcaption>
             </figure>
           ))}
           <figure className={`photo-wall-cover${favorites[cover.caption] ? " is-favorite" : ""}`}>
-            <div className="photo-wall-frame">
+            <span className="photo-wall-tape" aria-hidden="true" />
+            <span className="photo-wall-frame">
               <img
                 src={cover.thumbnailSrc ?? cover.src ?? "/assets/the-crew-snapshot-thumb.jpg"}
                 alt={cover.caption}
@@ -964,7 +970,7 @@ export function PhotoWallWidget({ widget, style }: { widget: Widget; style: Styl
                   event.currentTarget.src = "/assets/the-crew-snapshot-thumb.jpg";
                 }}
               />
-            </div>
+            </span>
             <figcaption>
               <div className="photo-wall-caption">
                 <strong>{cover.caption}</strong>
