@@ -1192,8 +1192,8 @@ export const TRIP_WIDGETS: Widget[] = [
       savedBy: "Maya",
       savedAt: Date.UTC(2026, 7, 28),
       questions: [
-        { id: "q1", text: "ok in one sentence — what does the sync engine do?" },
-        { id: "q2", text: "real talk: did anyone read past the intro?" },
+        { id: "q1", text: "sync engine 101" },
+        { id: "q2", text: "who actually read it?" },
       ],
     },
   },
