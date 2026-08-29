@@ -15,7 +15,7 @@ export const WIDGET_SIZES: Partial<Record<WidgetType, { w: number; h: number }>>
   countdown: { w: 190, h: 250 },
   dailyQ: { w: 290, h: 235 },
   decision: { w: 320, h: 190 },
-  expenseSplit: { w: 260, h: 180 },
+  expenseSplit: { w: 260, h: 205 },
   frame: { w: 680, h: 360 },
   itinerary: { w: 310, h: 190 },
   jokeRegistry: { w: 300, h: 200 },

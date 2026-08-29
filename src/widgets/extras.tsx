@@ -1068,7 +1068,6 @@ export function LinkShelfWidget({ widget, style }: { widget: Widget; style: Styl
             const domain = domainFor(link.url);
             return (
               <li key={key} className={`link-shelf-row${copied ? " is-copied" : ""}`}>
-                <span className="link-shelf-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
                 <span className="link-shelf-icon" aria-hidden="true">↗</span>
                 <span className="link-shelf-copy">
                   <a href={hrefFor(link.url)} target="_blank" rel="noreferrer">
@@ -1396,13 +1395,14 @@ export function ExpenseSplitWidget({ widget, style }: { widget: Widget; style: S
     <div className="widget-shell widget-expense" style={style}>
       <div className="expense-heading">
         <h3>{String(widget.data.title)}</h3>
-        <span>${String(widget.data.total)} total</span>
+        <span className="expense-slip">iou slip</span>
       </div>
       <ul>
         {splits.map((split) => (
           <li key={split.name}>
             <MemberFace name={split.name} size="xs" />
-            <span>{split.name}</span>
+            <span className="expense-name">{split.name.toLowerCase()}</span>
+            <i className="expense-dots" aria-hidden="true" />
             {split.owes > 0 ? (
               <span className="expense-owes">owes ${split.owes}</span>
             ) : (
@@ -1411,6 +1411,12 @@ export function ExpenseSplitWidget({ widget, style }: { widget: Widget; style: S
           </li>
         ))}
       </ul>
+      <div className="expense-total">
+        <span>total</span>
+        <i className="expense-dots" aria-hidden="true" />
+        <strong>${String(widget.data.total)}</strong>
+      </div>
+      <span className="expense-thanks">settle up soon ♥</span>
     </div>
   );
 }
@@ -1459,9 +1465,12 @@ export function QuoteWidget({ widget, style }: { widget: Widget; style: Style })
   return (
     <div className="widget-shell widget-quote" style={style}>
       <span className="quote-pin" aria-hidden="true" />
+      <span className="quote-mark" aria-hidden="true">“</span>
       <span className="quote-week">{String(widget.data.week)}</span>
-      <p>“{String(widget.data.text)}”</p>
-      <span>— {String(widget.data.author)}</span>
+      <p>
+        <mark className="quote-hl">{String(widget.data.text)}</mark>
+      </p>
+      <span className="quote-author">— {String(widget.data.author)}</span>
     </div>
   );
 }
@@ -1470,14 +1479,17 @@ export function WeatherWidget({ widget, style }: { widget: Widget; style: Style 
   return (
     <div className="widget-shell widget-weather" style={style}>
       <span className="weather-tape" aria-hidden="true" />
-      <span className="weather-kicker">{String(widget.data.event)}</span>
-      <div className="weather-main">
-        <span className="weather-icon">☀️</span>
+      <div className="weather-window">
+        <span className="weather-sun" aria-hidden="true" />
         <span className="weather-temp">{String(widget.data.temp)}°</span>
+        <span className="weather-date">{String(widget.data.date)}</span>
       </div>
-      <span className="weather-condition">{String(widget.data.condition)}</span>
-      <span className="weather-note">{String(widget.data.note)}</span>
-      <span className="weather-date">{String(widget.data.date)}</span>
+      <div className="weather-sill">
+        <span className="weather-kicker">
+          {String(widget.data.event)} · {String(widget.data.condition).toLowerCase()}
+        </span>
+        <span className="weather-note">{String(widget.data.note)}</span>
+      </div>
     </div>
   );
 }

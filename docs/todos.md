@@ -40,6 +40,24 @@ Backward-looking history lives in `hackathon.md`.
   the deployed backend keep the old height until reseeded — verified via
   `.context/measure-rsvp.mjs` (pill sits inside the card at 230 and 248) and
   `.context/shot-rsvp-block.mjs`.
+- Prop widgets redesigned as physical objects (`/eye-candy` batch pass):
+  **expense** = thermal receipt (dashed rules, dot leaders `.expense-dots`,
+  tabular figures, lowercase names, TOTAL row + "settle up soon ♥" footer
+  above the existing zigzag tear; seeds grew to h 200–205 + blueprint 205;
+  `container-type: size` sheds the footer + tightens print under 150px
+  content height for legacy rows) · **quote** = pinned scrap with torn
+  bottom edge (irregular clip-path + drop-shadow filter — box-shadow dies
+  under clip-path), giant butter “ mark, flat `#ffd84d` highlighter swipe
+  via `mark.quote-hl` with `box-decoration-break: clone`; pin moved inside
+  the clip region (straddling the edge gets clipped now) · **weather** =
+  window (flat `#6fa8ff` sky panel, white mullion cross via
+  `::before/::after`, flat sun disc with hard `#92bcff` ring — no alpha
+  glows, temp + date on the glass, caption on the sill; TSX restructured:
+  kicker = event · condition) · **link shelf** = objects on ledges (rows on
+  2px ledge rules, tilted arrow tiles with standing shadows that straighten
+  on hover; the 01/02/03 index column is gone — banned numbered-scaffold
+  trope) · **daily q** = type polish only (17px balanced question). Eval:
+  `.context/shot-props.mjs` (8 shots across crew/house/trip).
 - Poll widget redesigned as a "ballot" (`/eye-candy` pass on the washed-out
   tinted bars): vote fills are now flat full-strength tone color — the row
   content renders twice (`.poll-row-base` + `.poll-row-fill` clipped via

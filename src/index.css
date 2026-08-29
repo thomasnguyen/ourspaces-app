@@ -4300,9 +4300,11 @@
 .daily-q-question {
   margin: 7px 0 8px;
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
-  line-height: 1.05;
+  letter-spacing: -0.01em;
+  line-height: 1.08;
+  text-wrap: balance;
 }
 
 .dq-page.is-history .daily-q-question {
@@ -7005,6 +7007,9 @@
 
 /* ── expense split ── */
 .widget-expense {
+  container-type: size;
+  display: flex;
+  flex-direction: column;
   border-radius: 8px 8px 0 0;
   background: var(--color-card);
   filter: drop-shadow(0 6px 0 rgba(83, 59, 68, 0.14));
@@ -7032,50 +7037,125 @@
   );
 }
 
+/* receipt pass: the zigzag tear was already here — commit the rest of the
+   thermal-print grammar: dashed rules, dot leaders, tabular figures, a
+   double-ruled TOTAL, and the little printed thank-you. */
 .expense-heading {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1.5px dashed rgba(83, 59, 68, 0.28);
 }
 
 .expense-heading h3 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 800;
 }
 
-.expense-heading span {
-  font-size: 10px;
+.expense-slip {
+  font-size: 8px;
   font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--color-muted);
+  white-space: nowrap;
 }
 
 .widget-expense ul {
-  margin: 10px 0 0;
+  margin: 4px 0 0;
   padding: 0;
   list-style: none;
 }
 
 .widget-expense li {
-  display: grid;
-  grid-template-columns: 18px 1fr auto;
+  display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 0;
-  border-bottom: 1px solid rgba(83, 59, 68, 0.14);
+  padding: 4px 0;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.expense-name {
+  white-space: nowrap;
+}
+
+/* the receipt's dot leader between a name and its amount */
+.expense-dots {
+  flex: 1;
+  min-width: 12px;
+  border-bottom: 2px dotted rgba(83, 59, 68, 0.3);
+  translate: 0 -2px;
+}
+
+.widget-expense li .member-face {
+  width: 16px;
+  height: 16px;
+}
+
+.expense-owes,
+.expense-paid {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .expense-owes {
   color: #a13c22;
-  font-weight: 800;
 }
 
 .expense-paid {
   color: #285d4d;
+}
+
+.expense-total {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 5px;
+  border-top: 1.5px dashed rgba(83, 59, 68, 0.28);
+  padding-top: 6px;
+  font-size: 10px;
   font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.expense-total strong {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.expense-thanks {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+/* short receipts (legacy seeds): shed the thank-you, tighten the print */
+@container (max-height: 150px) {
+  .expense-thanks {
+    display: none;
+  }
+
+  .widget-expense li {
+    padding: 3px 0;
+  }
+
+  .expense-total {
+    margin-top: 3px;
+    padding-top: 4px;
+  }
 }
 
 /* ── itinerary ── */
@@ -7185,19 +7265,38 @@
 }
 
 /* ── quote ── */
+/* scrap pass: the quote of the week is a pinned paper scrap with a torn
+   bottom edge, a giant printer's quote mark, and the line swiped with a
+   flat highlighter — the inside-joke hall of fame. */
 .widget-quote {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border-radius: 6px;
+  border-radius: 6px 6px 0 0;
   background: var(--color-card);
-  box-shadow: 0 6px 0 rgba(83, 59, 68, 0.14);
-  padding: 12px 14px;
+  filter: drop-shadow(0 5px 0 rgba(83, 59, 68, 0.14));
+  padding: 12px 14px 16px;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 8px),
+    91% calc(100% - 2px),
+    83% calc(100% - 9px),
+    71% calc(100% - 4px),
+    60% calc(100% - 10px),
+    47% calc(100% - 3px),
+    36% calc(100% - 9px),
+    24% calc(100% - 2px),
+    13% calc(100% - 8px),
+    5% calc(100% - 4px),
+    0 calc(100% - 10px)
+  );
 }
 
 .quote-pin {
   position: absolute;
-  top: -8px;
+  z-index: 2;
+  top: 4px;
   left: 50%;
   width: 15px;
   height: 15px;
@@ -7208,7 +7307,21 @@
   translate: -50% 0;
 }
 
+/* giant printer's quote mark hanging over the scrap */
+.quote-mark {
+  position: absolute;
+  top: 2px;
+  left: 8px;
+  color: #ffb800;
+  font-family: var(--font-display);
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
 .quote-week {
+  align-self: flex-end;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.01em;
@@ -7216,32 +7329,47 @@
 }
 
 .widget-quote p {
-  margin: 6px 0;
+  margin: 10px 0 6px;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.28;
+  text-wrap: balance;
   color: #3d1c05;
 }
 
-.widget-quote > span:last-child {
+/* the flat highlighter swipe */
+.quote-hl {
+  background: #ffd84d;
+  color: inherit;
+  padding: 0.06em 0.28em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.quote-author {
   font-size: 9px;
   font-weight: 700;
   color: #7a3708;
 }
 
 /* ── weather ── */
+/* window pass: the forecast is a window taped to the wall — flat sky panel
+   behind chunky white mullions, a flat sun disc, the temp painted on the
+   glass, and the caption written on the sill. */
 .widget-weather {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   border-radius: 10px;
   background: #fffaf7;
   box-shadow: 0 6px 0 rgba(73, 41, 52, 0.12);
-  padding: 12px 14px;
+  padding: 7px 7px 6px;
 }
 
 .weather-tape {
   position: absolute;
+  z-index: 3;
   top: -9px;
   left: 20px;
   width: 58px;
@@ -7251,50 +7379,94 @@
   rotate: -5deg;
 }
 
+/* the glass: flat sky, no wash */
+.weather-window {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid #fffaf7;
+  border-radius: 7px 7px 2px 2px;
+  background: #6fa8ff;
+  box-shadow: 0 0 0 1.5px rgba(73, 41, 52, 0.18);
+  min-height: 56px;
+}
+
+/* mullions — the window cross */
+.weather-window::before,
+.weather-window::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  background: #fffaf7;
+}
+
+.weather-window::before {
+  top: 0;
+  bottom: 0;
+  left: 38%;
+  width: 3px;
+}
+
+.weather-window::after {
+  right: 0;
+  left: 0;
+  top: 58%;
+  height: 3px;
+}
+
+.weather-sun {
+  position: absolute;
+  top: 9px;
+  left: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ffd84d;
+  box-shadow: 0 0 0 3.5px #92bcff;
+}
+
+.weather-temp {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  color: white;
+  translate: 8px 0;
+}
+
+.weather-date {
+  position: absolute;
+  z-index: 2;
+  right: 6px;
+  bottom: 4px;
+  font-size: 8px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* the sill */
+.weather-sill {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 5px 1px;
+}
+
 .weather-kicker {
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 800;
   letter-spacing: 0.01em;
   color: #7853ff;
 }
 
-.weather-main {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 4px 0;
-}
-
-.weather-icon {
-  font-size: 28px;
-}
-
-.weather-temp {
-  font-family: var(--font-display);
-  font-size: 36px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.weather-condition {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: capitalize;
-}
-
 .weather-note {
-  margin-top: 2px;
   font-size: 9px;
   font-weight: 600;
-  color: var(--color-muted);
-}
-
-.weather-date {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  font-size: 9px;
-  font-weight: 800;
   color: var(--color-muted);
 }
 
@@ -13443,9 +13615,11 @@
   white-space: nowrap;
 }
 
+/* shelf pass: it's called a shelf — every link is an object standing on a
+   real ledge, leaning a little, with its shadow under it. */
 .link-shelf-list {
   display: grid;
-  gap: 3px;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -13454,14 +13628,15 @@
 .widget-link-shelf .link-shelf-row {
   display: grid;
   min-width: 0;
-  grid-template-columns: 18px 23px minmax(0, 1fr) auto;
+  grid-template-columns: 25px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   border: 0;
-  border-radius: 8px;
+  border-bottom: 2px solid rgba(90, 65, 40, 0.3);
+  border-radius: 0;
   background: transparent;
-  padding: 4px 3px;
-  transition: background 140ms ease-out, translate 140ms ease-out;
+  padding: 3px 2px 5px;
+  transition: background var(--dur-quick) var(--ease-glide), translate var(--dur-quick) var(--ease-glide);
 }
 
 .widget-link-shelf .link-shelf-row:hover,
@@ -13471,24 +13646,33 @@
   translate: 0 -1px;
 }
 
-.link-shelf-index {
-  color: var(--shelf-muted);
-  font-size: 8px;
-  font-weight: 800;
-  text-align: right;
-}
-
+/* the object on the ledge — tilted, with its own standing shadow */
 .link-shelf-icon {
   display: grid;
-  width: 23px;
-  height: 23px;
+  width: 24px;
+  height: 24px;
   place-items: center;
-  border-radius: 7px;
+  border-radius: 7px 5px 6px 4px;
   background: var(--shelf-accent);
+  box-shadow: 0 2.5px 0 rgba(90, 65, 40, 0.35);
   color: white;
   font-size: 13px;
   font-weight: 800;
   line-height: 1;
+}
+
+.link-shelf-row:nth-child(odd) .link-shelf-icon {
+  rotate: -3deg;
+}
+
+.link-shelf-row:nth-child(even) .link-shelf-icon {
+  rotate: 3deg;
+  border-radius: 5px 7px 4px 6px;
+}
+
+.link-shelf-row:hover .link-shelf-icon {
+  rotate: 0deg;
+  transition: rotate var(--dur-quick) var(--ease-glide);
 }
 
 .link-shelf-copy {
