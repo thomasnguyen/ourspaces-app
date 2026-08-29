@@ -379,7 +379,7 @@ export const CREW_WIDGETS: Widget[] = [
     x: 1378,
     y: 314,
     w: 240,
-    h: 175,
+    h: 200,
     z: 3,
     rotate: 1,
     data: {
@@ -1021,7 +1021,7 @@ export const HOUSE_WIDGETS: Widget[] = [
     x: 368,
     y: 64,
     w: 300,
-    h: 190,
+    h: 205,
     z: 3,
     data: {
       title: "rent · $2,850",
@@ -1124,7 +1124,7 @@ export const TRIP_WIDGETS: Widget[] = [
     x: 282,
     y: 54,
     w: 300,
-    h: 180,
+    h: 205,
     z: 3,
     data: {
       title: "cabin + gas · $847",
