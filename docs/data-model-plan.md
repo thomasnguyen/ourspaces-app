@@ -140,8 +140,12 @@ type AvailabilityData = { title: string; days: string[]; members: AvailabilityMe
                           best?: string; tone?: string };
 type ShelfLink = { label: string; url: string; by?: string; contributor?: string };
 type LinkShelfData = { title: string; links: ShelfLink[]; tone?: string };
-type PlaylistData = { title: string; song?: string; artist?: string; pickedBy?: string;
-                      vibes?: string[]; tone?: string };
+type LinkCardData = { url: string; title: string; description: string; imageUrl?: string;
+                      siteName: string; author?: string; publishedAt?: string;
+                      savedBy?: string; savedAt: number };
+type PlaylistData = { title: string; stationId?: string; playedBy?: string;
+                      playing?: boolean; vibes?: string[]; tone?: string;
+                      song?: string; artist?: string; pickedBy?: string };
 type ChatData      = { title?: string };                            // messages live in `messages`
 type FrameData     = { title: string };
 type SportsData    = { league: string; home: string; away: string;  // P3 stretch
@@ -159,7 +163,8 @@ type MediaData     = { caption: string; date: string; src?: string };
 type WidgetByType = {
   countdown: CountdownData; poll: PollData; potluck: PotluckData;
   note: NoteData; chat: ChatData; frame: FrameData; rsvp: RsvpData; photoWall: PhotoWallData; sports: SportsData;
-  decision: DecisionData; availability: AvailabilityData; linkShelf: LinkShelfData; playlist: PlaylistData;
+  decision: DecisionData; availability: AvailabilityData; linkCard: LinkCardData;
+  linkShelf: LinkShelfData; playlist: PlaylistData;
   wheel: WheelData; dualClock: DualClockData;
 };
 type WidgetType = keyof WidgetByType;

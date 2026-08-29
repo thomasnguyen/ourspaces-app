@@ -15285,7 +15285,7 @@
 
 .cozy-color-gamebar .cozy-color-number-pot:hover,
 .cozy-color-gamebar .cozy-color-number-pot.is-active {
-  transform: translateY(-7px) scale(1.08);
+  transform: translateY(-7px) scale(1.1) rotate(-4deg);
 }
 
 .cozy-color-gamebar .cozy-color-number-pot.is-active {
@@ -15295,6 +15295,7 @@
 
 .cozy-color-gamebar .cozy-color-number-pot.is-complete {
   opacity: 0.38;
+  filter: saturate(0.4);
 }
 
 .cozy-color-gamebar .cozy-color-number-pot > b {
@@ -15350,13 +15351,24 @@
 @media (max-width: 760px) {
   .cozy-color-room-main {
     display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
     overflow: hidden;
-    padding: 8px 8px 86px;
+    padding: 8px;
   }
 
   .cozy-color-room-board {
     width: 100%;
     max-width: none;
+  }
+
+  .cozy-color-gamebar {
+    position: static;
+    width: 100%;
+    align-self: center;
+    transform: none;
+    flex-wrap: wrap;
   }
 
   .cozy-color-region {
@@ -15436,7 +15448,7 @@
 
 .cozy-color-room-board {
   max-width: calc((100dvh - 210px) * 1.5);
-  background: var(--color-paper-deep);
+  background: var(--color-card);
 }
 
 .cozy-svg {
@@ -15448,17 +15460,17 @@
 }
 
 .cozy-svg-bg {
-  fill: var(--color-paper-deep);
+  fill: var(--color-card);
 }
 
 .cozy-svg-region {
   --region-paint: var(--paint-berry);
-  fill: color-mix(in srgb, var(--color-paper) 88%, white 7%);
+  fill: var(--color-card);
   stroke: var(--color-sticker);
   stroke-width: 5;
   stroke-linejoin: round;
   cursor: pointer;
-  transition: fill 240ms ease;
+  transition: fill 240ms ease, stroke-opacity 900ms ease;
 }
 
 .cozy-svg-region.tone-berry { --region-paint: var(--paint-berry); }
@@ -15469,11 +15481,11 @@
 .cozy-svg-region.tone-lime { --region-paint: var(--paint-lime); }
 
 .cozy-svg-region.is-matched:not(.is-filled) {
-  fill: color-mix(in srgb, var(--region-paint) 16%, #2b2230);
+  fill: color-mix(in srgb, var(--region-paint) 28%, var(--color-card));
 }
 
 .cozy-svg-region.is-matched:not(.is-filled):hover {
-  fill: color-mix(in srgb, var(--region-paint) 42%, #2b2230);
+  fill: color-mix(in srgb, var(--region-paint) 55%, var(--color-card));
 }
 
 .cozy-svg-region.is-filled {
@@ -15485,7 +15497,8 @@
 }
 
 @keyframes cozy-fill-pop {
-  0% { transform: scale(0.92); }
+  0% { transform: scale(0.9); fill: var(--color-card); }
+  55% { fill: var(--region-paint); }
   100% { transform: scale(1); }
 }
 
@@ -15497,20 +15510,20 @@
 }
 
 .cozy-svg-number {
-  fill: color-mix(in srgb, white 44%, transparent);
+  fill: color-mix(in srgb, var(--color-paper-deep) 52%, transparent);
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   text-anchor: middle;
   dominant-baseline: central;
   pointer-events: none;
   transition: fill 200ms ease, opacity 200ms ease;
   paint-order: stroke;
-  stroke: color-mix(in srgb, var(--color-paper-deep) 55%, transparent);
+  stroke: color-mix(in srgb, var(--color-card) 80%, transparent);
   stroke-width: 3;
 }
 
 .cozy-svg-number.is-matched {
-  fill: white;
+  fill: var(--color-paper-deep);
   transform-box: fill-box;
   transform-origin: center;
   animation: cozy-number-pulse 1.5s ease-in-out infinite;
@@ -15525,15 +15538,48 @@
   opacity: 0;
 }
 
-/* everyone finished — the poster comes alive */
+/* everyone finished — outlines melt away and the painting stands alone */
 .cozy-color-room-board.is-complete {
-  box-shadow:
-    6px 6px 0 var(--paint-berry),
-    0 0 70px color-mix(in srgb, var(--paint-orange) 45%, transparent);
+  box-shadow: 10px 10px 0 var(--paint-berry);
+  animation: cozy-board-finish 700ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cozy-board-finish {
+  0% { transform: scale(1) rotate(0deg); }
+  45% { transform: scale(1.02) rotate(-0.6deg); }
+  100% { transform: scale(1) rotate(0deg); }
 }
 
 .cozy-color-room-board.is-complete .cozy-svg-region {
   cursor: default;
+  stroke-opacity: 0;
+  transition: fill 240ms ease, stroke-opacity 1400ms ease 250ms;
+}
+
+.cozy-color-room-board.is-complete .cozy-color-now {
+  display: none;
+}
+
+.cozy-color-finish-stamp {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 14px;
+  border: 3px solid var(--color-sticker);
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-sticker);
+  padding: 9px 16px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: 4px 4px 0 var(--color-sticker);
+  transform: translateX(-50%) rotate(-5deg);
+  animation: cozy-stamp-in 460ms cubic-bezier(0.34, 1.56, 0.64, 1) 350ms both;
+}
+
+@keyframes cozy-stamp-in {
+  0% { transform: translateX(-50%) rotate(-22deg) scale(0.3); opacity: 0; }
+  100% { transform: translateX(-50%) rotate(-5deg) scale(1); opacity: 1; }
 }
 
 .cozy-color-room-board.is-complete .cozy-svg-star {
@@ -15554,7 +15600,9 @@
 @media (prefers-reduced-motion: reduce) {
   .cozy-svg-region,
   .cozy-svg-number,
-  .cozy-color-room-board.is-complete .cozy-svg-star {
+  .cozy-color-room-board.is-complete,
+  .cozy-color-room-board.is-complete .cozy-svg-star,
+  .cozy-color-finish-stamp {
     animation: none;
     transition: none;
   }
@@ -15612,14 +15660,20 @@
     opacity 150ms ease-out;
 }
 
+.cozy-color-shelf button:nth-child(1) { rotate: -2.5deg; }
+.cozy-color-shelf button:nth-child(2) { rotate: 1.5deg; }
+.cozy-color-shelf button:nth-child(3) { rotate: -1deg; }
+
 .cozy-color-shelf button:hover {
   opacity: 1;
-  transform: translateY(-2px) rotate(-2deg);
+  transform: translateY(-3px);
 }
 
 .cozy-color-shelf button.is-active {
-  border-color: var(--color-card);
+  border-color: var(--color-sticker);
   opacity: 1;
+  outline: 2px solid var(--color-card);
+  outline-offset: 1px;
   box-shadow: 3px 3px 0 var(--color-sticker);
 }
 

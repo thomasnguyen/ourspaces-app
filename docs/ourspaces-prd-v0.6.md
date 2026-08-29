@@ -111,7 +111,7 @@ needs) lives in `docs/spaces-and-widgets.md`.
 - **Paint** *(the couple-space beat).* A small shared pixel/color canvas two people doodle on together — both cursors painting the same cells in real time. The purest possible Convex-realtime flex, and the long-distance answer to "something to *do* together." Keep it tiny: a fixed grid, a handful of colors, one `updateWidgetData`-style mutation per stroke. No brushes, no layers, no undo.
 - **Live sports** *(P3 stretch).* A score that updates on its own, the most visually alive thing on screen, and on-brand for a friend group.
 
-**Props, not features (set dressing).** The playlist (a Spotify embed styled as a sticker — never a real player, licensing and sync are a tarpit), photo wall, link shelf, joke registry, quote, and media widgets exist to make canvases read *lived-in*, per §6. The camera pans past them; it never stops for them. Same rule for party coordination: countdown + poll + potluck reframed as "party mode" is the answer — don't build a new coordination system. Real engineering effort goes only to the demo-beat widgets: daily question, paint, and the Firecrawl link card.
+**Props, not features (set dressing).** Photo wall, link shelf, joke registry, quote, and media widgets exist to make canvases read *lived-in*, per §6. The playlist is a real SomaFM room radio (local audio, shared station via Convex) — still not licensed pop. Real engineering effort goes only to the demo-beat widgets: daily question, paint, and the Firecrawl link card.
 
 ## 9. Platforms
 

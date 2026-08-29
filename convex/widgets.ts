@@ -81,6 +81,21 @@ export const spinWheel = mutation({
   },
 });
 
+/** Room radio station + who started it. Audio itself stays local. */
+export const tuneRadio = mutation({
+  args: {
+    widgetId: v.id("widgets"),
+    stationId: v.string(),
+    playing: v.boolean(),
+    playedBy: v.string(),
+  },
+  handler: async (ctx, { widgetId, ...tune }) => {
+    const widget = await ctx.db.get(widgetId);
+    if (!widget) return;
+    await ctx.db.patch(widget._id, { data: { ...widget.data, ...tune } });
+  },
+});
+
 export const resizeWidget = mutation({
   args: { id: v.id("widgets"), w: v.number(), h: v.number() },
   handler: async (ctx, { id, w, h }) => {

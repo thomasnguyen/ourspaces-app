@@ -90,6 +90,13 @@ function ArtBoard({
   onRegion: (region: BoardRegion) => void;
 }) {
   const strokeW = board.underlay ? 1.7 : 5;
+  // compress label sizes toward a mid band — no billboard numbers, no specks
+  const midLabel = board.w * 0.026;
+  const labelSize = (s: number) => {
+    const raw = s * 1.15;
+    const eased = midLabel * Math.pow(raw / midLabel, 0.6);
+    return Math.min(board.w * 0.034, Math.max(board.w * 0.016, eased));
+  };
   return (
     <svg
       className={`cozy-svg${board.underlay ? " is-traced" : ""}`}
@@ -139,7 +146,7 @@ function ArtBoard({
               key={`${region.id}-${index}`}
               x={label.x}
               y={label.y}
-              fontSize={label.s * 1.15}
+              fontSize={labelSize(label.s)}
               className={`cozy-svg-number${mark ? " is-filled" : ""}${matched ? " is-matched" : ""}`}
             >
               {region.c + 1}
@@ -468,6 +475,9 @@ export function CozyColorWidget({
             ))}
           </div>
           <div className="cozy-color-progress"><i style={{ width: `${progress}%` }} /><span>{progress}% cozy</span></div>
+          {complete ? (
+            <div className="cozy-color-finish-stamp" aria-hidden="true">finished together ✦</div>
+          ) : null}
         </section>
 
         <footer className="cozy-color-gamebar">

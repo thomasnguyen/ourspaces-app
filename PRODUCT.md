@@ -105,10 +105,11 @@ consistent component vocabulary), but the default lane is loud.
    gesture and the demo's climax.
 5. **Lived-in over empty.** The hero space looks like real people use it: an
    inside-joke note, a half-answered poll, a daily question. Populate before you
-   polish. Corollary — **props, not features**: the playlist (Spotify embed
-   styled as a sticker, never a real player), photo wall, and link shelf exist
-   as set dressing the camera pans past; real engineering goes only to
-   demo-beat widgets (daily question, paint, Firecrawl link card).
+   polish. Corollary — **props, not features**: the playlist is now a real
+   SomaFM room radio (play/join, not licensed tracks); photo wall and link
+   shelf stay set dressing the camera pans past. Real engineering goes only to
+   demo-beat widgets (daily question, paint, Firecrawl link card) plus that
+   radio if it's in the shot.
 6. **If it won't show on camera in 3 minutes, it's low priority.** Optimize
    relentlessly for the demo.
 
