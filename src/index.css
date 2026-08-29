@@ -5363,13 +5363,20 @@
   white-space: nowrap;
 }
 
+.photo-gallery-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+}
+
 .photo-gallery-count {
   display: inline-flex;
   min-height: 44px;
   align-items: center;
   justify-content: center;
-  grid-column: 2;
-  grid-row: 1;
   border-radius: 999px;
   background: var(--photo-accent, #e9369d);
   color: var(--photo-accent-ink, #ffffff);
@@ -5377,6 +5384,43 @@
   font-size: 0.8125rem;
   font-weight: 800;
   white-space: nowrap;
+}
+
+/* “Pin a moment” — the room's add affordance: sticker-black pill, lime ＋. */
+.photo-gallery-add-pill {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-sticker);
+  color: #ffffff;
+  padding: 0 16px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  white-space: nowrap;
+  transition:
+    translate var(--dur-quick) var(--ease-glide),
+    scale var(--dur-instant) ease-out;
+}
+
+.photo-gallery-add-pill i {
+  color: var(--color-lime);
+  font-size: 1rem;
+  font-style: normal;
+  line-height: 1;
+}
+
+.photo-gallery-add-pill:hover {
+  translate: 0 -2px;
+}
+
+.photo-gallery-add-pill:active {
+  scale: 0.96;
 }
 
 .photo-gallery-grid {
@@ -5499,6 +5543,16 @@
     scale var(--dur-quick) var(--ease-glide);
 }
 
+/* Notes-on-the-back count, penciled on the chin. */
+.photo-gallery-notes-mark {
+  flex: 0 0 auto;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 /* Hover = picking the print up: it straightens, lifts, and rises above its
    neighbors in the scatter. The ↗ waits for the pick-up on fine pointers. */
 @media (hover: hover) and (pointer: fine) {
@@ -5568,17 +5622,47 @@
 }
 
 /* The lifted print — the one you picked up off the table. The cream frame
-   hugs the photo; the caption is handwritten on the chin in ink. */
+   hugs the photo; the caption is handwritten on the chin in ink. Flipping it
+   over reveals the notes your people wrote on the back. */
 .photo-lightbox-print {
   display: flex;
   max-width: min(100%, 1200px);
   max-height: 100%;
   flex-direction: column;
   margin: 0;
+  perspective: 1600px;
+}
+
+.photo-lightbox-card3d {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  border-radius: 8px;
+  box-shadow: 0 12px 0 rgba(5, 3, 4, 0.35);
+  transform-style: preserve-3d;
+  transition: transform 560ms var(--ease-glide);
+}
+
+.photo-lightbox-print.is-flipped .photo-lightbox-card3d {
+  transform: rotateY(180deg);
+}
+
+.photo-lightbox-face {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
   border-radius: 8px;
   background: var(--color-card);
   padding: 10px 10px 0;
-  box-shadow: 0 12px 0 rgba(5, 3, 4, 0.35);
+  backface-visibility: hidden;
+}
+
+.photo-lightbox-face.is-back {
+  position: absolute;
+  inset: 0;
+  padding: 14px 16px 12px;
+  transform: rotateY(180deg);
 }
 
 .photo-lightbox-frame {
@@ -5616,24 +5700,183 @@
   display: flex;
   min-height: 56px;
   flex: 0 0 auto;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
+  justify-content: space-between;
+  gap: 12px;
   color: var(--color-ink);
-  text-align: center;
+  padding: 0 4px;
+}
+
+.photo-lightbox-caption-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .photo-lightbox-caption strong {
+  overflow: hidden;
   font-family: var(--font-display);
   font-size: 1.0625rem;
   font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.photo-lightbox-caption span {
+.photo-lightbox-caption-text > span {
   color: var(--color-muted);
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+/* The flip affordance — a quiet ink chip on the chin. */
+.photo-lightbox-flip {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(17, 17, 20, 0.07);
+  color: var(--color-ink);
+  padding: 8px 13px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: background var(--dur-quick) ease-out, scale var(--dur-instant) ease-out;
+}
+
+.photo-lightbox-flip i {
+  font-style: normal;
+}
+
+.photo-lightbox-flip:hover {
+  background: rgba(17, 17, 20, 0.13);
+}
+
+.photo-lightbox-flip:active {
+  scale: 0.96;
+}
+
+/* ── the back of the print ── */
+.photo-back-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.photo-back-notes {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Faint ruled lines — the pencil guides on a real print's back. */
+  background-image: repeating-linear-gradient(
+    transparent 0 29px,
+    rgba(17, 17, 20, 0.06) 29px 30px
+  );
+  padding: 12px 4px 8px;
+  scrollbar-width: thin;
+}
+
+.photo-back-empty {
+  margin: auto 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.photo-back-note {
+  margin: 0;
+}
+
+.photo-back-note b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-ink);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.photo-back-note b i {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.photo-back-note > span {
+  display: block;
+  color: var(--color-ink);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.photo-back-note small {
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.photo-back-pen {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 2px 4px;
+}
+
+.photo-back-pen input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  border-bottom: 2px solid rgba(17, 17, 20, 0.18);
+  background: transparent;
+  color: var(--color-ink);
+  padding: 8px 2px;
+  font: inherit;
+  font-weight: 600;
+}
+
+.photo-back-pen input:focus {
+  border-bottom-color: var(--photo-accent, #e9369d);
+  outline: none;
+}
+
+.photo-back-pen input::placeholder {
+  color: var(--color-muted);
+}
+
+.photo-back-pen button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--photo-accent, #e9369d);
+  color: var(--photo-accent-ink, #ffffff);
+  cursor: pointer;
+  font-size: 1.05rem;
+  font-weight: 800;
+  transition: scale var(--dur-instant) ease-out;
+}
+
+.photo-back-pen button:active {
+  scale: 0.92;
 }
 
 .photo-gallery-empty {
@@ -5726,13 +5969,167 @@
   }
 }
 
+/* ── the developing print (add-a-moment draft) ── */
+.photo-draft-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(11, 11, 13, 0.55);
+  animation: photo-draft-dim var(--dur-quick) ease-out both;
+}
+
+.photo-draft-print {
+  position: relative;
+  display: flex;
+  width: min(430px, 88vw);
+  flex-direction: column;
+  margin: 0;
+  border-radius: 8px;
+  background: var(--color-card);
+  padding: 10px 10px 0;
+  box-shadow: 0 14px 0 rgba(5, 3, 4, 0.4);
+  animation: photo-draft-in var(--dur-arrive) var(--ease-pop) both;
+}
+
+.photo-draft-tape {
+  position: absolute;
+  z-index: 3;
+  top: -10px;
+  left: 38%;
+  width: 62px;
+  height: 19px;
+  background: rgba(245, 222, 173, 0.85);
+  box-shadow: 0 1px 0 rgba(90, 65, 40, 0.14);
+  rotate: -4deg;
+}
+
+.photo-draft-frame {
+  display: block;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #0a0a0b;
+}
+
+.photo-draft-frame img {
+  display: block;
+  width: 100%;
+  height: min(44vh, 330px);
+  object-fit: cover;
+}
+
+.photo-draft-chin {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 4px 14px;
+}
+
+.photo-draft-chin input {
+  border: 0;
+  border-bottom: 2px solid rgba(17, 17, 20, 0.18);
+  background: transparent;
+  color: var(--color-ink);
+  padding: 4px 2px 7px;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 800;
+}
+
+.photo-draft-chin input:focus {
+  border-bottom-color: var(--photo-accent, #e9369d);
+  outline: none;
+}
+
+.photo-draft-chin input::placeholder {
+  color: var(--color-muted);
+}
+
+.photo-draft-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.photo-draft-toss {
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.photo-draft-toss:hover {
+  color: var(--color-ink);
+}
+
+.photo-draft-pin {
+  border: 0;
+  border-radius: 999px;
+  background: var(--photo-accent, #e9369d);
+  color: var(--photo-accent-ink, #ffffff);
+  padding: 11px 18px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 800;
+  transition: translate var(--dur-quick) var(--ease-glide), scale var(--dur-instant) ease-out;
+}
+
+.photo-draft-pin:hover {
+  translate: 0 -2px;
+}
+
+.photo-draft-pin:active {
+  scale: 0.95;
+}
+
+.photo-draft-pin:disabled {
+  cursor: default;
+  opacity: 0.7;
+  translate: none;
+}
+
+@keyframes photo-draft-dim {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes photo-draft-in {
+  from {
+    opacity: 0;
+    translate: 0 26px;
+    scale: 0.88;
+    rotate: -3deg;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+    rotate: 0deg;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .photo-gallery-dialog[open],
   .photo-gallery-dialog.is-closing,
   .photo-gallery-shell,
   .photo-gallery-item,
-  .photo-lightbox-frame img {
+  .photo-lightbox-frame img,
+  .photo-draft-backdrop,
+  .photo-draft-print {
     animation: none;
+  }
+
+  .photo-lightbox-card3d {
+    transition: none;
   }
 }
 
@@ -5755,7 +6152,7 @@
     grid-row: 1;
   }
 
-  .photo-gallery-count {
+  .photo-gallery-actions {
     grid-column: 3;
   }
 

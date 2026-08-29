@@ -79,6 +79,20 @@ Backward-looking history lives in `hackathon.md`.
   slot and back, and close gathers everything into the tile. StrictMode's
   phantom `<dialog>` close event is swallowed (`dialogRef.current?.open`
   guard in onClose) — without it the dialog self-destructs in dev.
+- The memory room now **pins photos and takes notes on the back** (2026-08-29):
+  "pin a moment" (header pill, lime ＋) opens a floating draft print → Convex
+  file storage upload (`convex/photos.ts`) → the photo prepends to
+  `data.photos`, becoming the pile cover + room hero on every screen (hero pop
+  + place sound). The lifted lightbox print **flips over** (rotateY) to a
+  ruled cream back where comments ride the message pipes as
+  `<widgetId>::photo:<photoKey>` sub-threads (photoKey = storage id, or
+  caption slug for seeded photos); everyone signs with their presence-color
+  dot. Grid chins show `✎ n`. Verified two-window live: pin from A landed in
+  B, note from A readable in B. Gotcha: an unhandled OS file chooser dismissal
+  can leak a `cancel` to the `<dialog>` — `chooserGuardRef` swallows one; in
+  Playwright drive the hidden input with `setInputFiles`, don't click the
+  pill. Test data: crew wall gained "paint night" (flat sunset PNG) + one
+  note on the dev deployment.
 - The board is a **generated vector scene** ("same moon, both windows"):
   `scripts/generate-cozy-art.mjs` computes 50 closed SVG regions (moon +
   halo-ring donuts, snow-capped peaks, twin lit-window houses, two birds, a
