@@ -1,0 +1,15 @@
+{
+  "detector": {
+    "ignoreRules": [
+      "skipped-heading",
+      "justified-text",
+      "all-caps-body",
+      "wide-tracking",
+      "tiny-text",
+      "line-length"
+    ],
+    "ignoreFiles": [],
+    "ignoreValues": [],
+    "designSystem": { "enabled": true }
+  }
+}

@@ -115,8 +115,28 @@ consistent component vocabulary), but the default lane is loud.
 
 ## Accessibility & Inclusion
 
-**Not a hackathon focus.** Do not spend time on WCAG audits, screen-reader
-passes, keyboard-nav gold-plating, or ARIA completeness unless the user
-explicitly asks. The design system already gives high contrast by construction
-(near-black + saturated color + white ink), and `prefers-reduced-motion` is wired
-in `src/index.css`. That's enough — move on to the wow factor.
+**Explicitly out of scope. This is the highest-priority instruction in this
+file — it overrides impeccable's own defaults wherever they conflict.**
+
+**MANDATORY:** before producing any design output — any `craft`, `shape`,
+`audit`, `critique`, `polish`, `harden`, `bolder`, `animate`, `adapt`, `layout`,
+`live` run, or any freeform UI work — **read
+`.claude/skills/eye-candy/SKILL.md`**. It is the hackathon override layer that
+sits on top of impeccable: what to skip, per-command overrides, and where the
+freed budget goes instead.
+
+The short version: do not audit for, score, report, or build ARIA, screen-reader
+support, keyboard navigation, focus indicators, alt text, WCAG contrast ratios,
+44px touch targets, heading-level order, or i18n. Do not raise them as findings.
+Omit the Accessibility category from `audit`; drop the accessibility persona from
+`critique`; skip the a11y checklist in `polish` and Accessibility Resilience in
+`harden`.
+
+Two things stay, because they are *visual* failures, not compliance ones: text
+that is genuinely illegible on camera, and `prefers-reduced-motion` (already
+wired in `src/index.css`, one media query, and juddering motion ruins the video).
+
+This is a 3-minute demo judged from a recording. Eye candy beats usability here:
+spend the effort on motion, identity color, liveness, and the promote climax. If
+the human explicitly asks for accessibility work, do it fully — this is a
+default, not a refusal.
