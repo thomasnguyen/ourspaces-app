@@ -91,3 +91,10 @@ navigator ~7357, chat drawer ~8313, action dock ~9744, recap ~9951 → pages:
 block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
 (~11482+), ending with the Firecrawl web-post treatment. New CSS goes in a new
 banner section at the end.
+
+## Agent tooling
+
+`.claude/skills/run-ourspaces/` — `/run-ourspaces` skill: headless browser
+driver (`driver.mjs`, playwright-core + cached Chromium) for screenshotting
+the app in mock mode. `shot <route>` · `dock` (web post reading circle) ·
+`eval <file>`. See its SKILL.md for the port/mock-flag gotchas.
