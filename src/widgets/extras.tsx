@@ -1107,6 +1107,7 @@ export function LinkCardWidget({ widget, style }: { widget: Widget; style: Style
           src={artSrc}
           alt=""
           referrerPolicy="no-referrer"
+          draggable={false}
           onError={() => setArtSrc(LINK_CARD_FALLBACK)}
         />
         <span className="link-card-date-tab">
@@ -1148,7 +1149,13 @@ export function LinkCardWidget({ widget, style }: { widget: Widget; style: Style
       style={style}
     >
       {url ? (
-        <a className="link-card-open" href={linkCardHref(url)} target="_blank" rel="noreferrer">
+        <a
+          className="link-card-open"
+          href={linkCardHref(url)}
+          target="_blank"
+          rel="noreferrer"
+          draggable={false}
+        >
           {preview}
         </a>
       ) : (

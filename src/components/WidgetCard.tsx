@@ -878,7 +878,16 @@ function WidgetCardComponent({
       <div
         className="widget-group-body"
         onClick={(e) => {
-          if ((e.target as HTMLElement).closest("button, input, a")) return;
+          if ((e.target as HTMLElement).closest("button, input, a")) {
+            /* A click that ends a drag must not press the control under it
+               (for the web post link, that means: don't open the article). */
+            if (suppressBodyClick.current) {
+              suppressBodyClick.current = false;
+              e.preventDefault();
+              e.stopPropagation();
+            }
+            return;
+          }
           if (suppressBodyClick.current) {
             suppressBodyClick.current = false;
             return;
@@ -897,14 +906,16 @@ function WidgetCardComponent({
         }}
         onPointerDown={(e) => {
           if (remoteLocked || widgetFocused || e.button !== 0) return;
-          if (
-            (e.target as HTMLElement).closest(
-              "button, input, a, textarea, select",
-            )
-          )
+          const interactive = (e.target as HTMLElement).closest(
+            "button, input, a, textarea, select",
+          );
+          /* The web post is one big link — let it arm a body drag anyway.
+             Capture is deferred until real movement so a plain click still
+             opens the article. */
+          if (interactive && !interactive.classList.contains("link-card-open"))
             return;
           suppressBodyClick.current = false;
-          e.currentTarget.setPointerCapture(e.pointerId);
+          if (!interactive) e.currentTarget.setPointerCapture(e.pointerId);
           bodyDrag.current = {
             pointerId: e.pointerId,
             clientX: e.clientX,
@@ -925,6 +936,9 @@ function WidgetCardComponent({
             if (Math.hypot(dx, dy) < 5) return;
             drag.started = true;
             suppressBodyClick.current = true;
+            if (!e.currentTarget.hasPointerCapture(e.pointerId)) {
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }
             setDragging(true);
             onManage?.(widget.id);
             beginWidgetMove();
