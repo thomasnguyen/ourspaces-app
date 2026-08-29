@@ -15426,3 +15426,136 @@
     transition: none;
   }
 }
+
+/* ================================================================
+   COZY COLOR — VECTOR BOARD PASS
+   True closed-region SVG artwork ("same moon, both windows").
+   Regions fill directly with the shared preset palette; numbers live
+   inside the SVG at generated safe spots (scripts/generate-cozy-art.mjs).
+   ================================================================ */
+
+.cozy-color-room-board {
+  max-width: calc((100dvh - 210px) * 1.5);
+  background: var(--color-paper-deep);
+}
+
+.cozy-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cozy-svg-bg {
+  fill: var(--color-paper-deep);
+}
+
+.cozy-svg-region {
+  --region-paint: var(--paint-berry);
+  fill: color-mix(in srgb, var(--color-paper) 88%, white 7%);
+  stroke: var(--color-sticker);
+  stroke-width: 5;
+  stroke-linejoin: round;
+  cursor: pointer;
+  transition: fill 240ms ease;
+}
+
+.cozy-svg-region.tone-berry { --region-paint: var(--paint-berry); }
+.cozy-svg-region.tone-orange { --region-paint: var(--paint-orange); }
+.cozy-svg-region.tone-blue { --region-paint: var(--paint-blue); }
+.cozy-svg-region.tone-violet { --region-paint: var(--paint-violet); }
+.cozy-svg-region.tone-teal { --region-paint: var(--paint-teal); }
+.cozy-svg-region.tone-lime { --region-paint: var(--paint-lime); }
+
+.cozy-svg-region.is-matched:not(.is-filled) {
+  fill: color-mix(in srgb, var(--region-paint) 16%, #2b2230);
+}
+
+.cozy-svg-region.is-matched:not(.is-filled):hover {
+  fill: color-mix(in srgb, var(--region-paint) 42%, #2b2230);
+}
+
+.cozy-svg-region.is-filled {
+  fill: var(--region-paint);
+  cursor: default;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cozy-fill-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cozy-fill-pop {
+  0% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+.cozy-svg-decor {
+  fill: none;
+  stroke: var(--color-sticker);
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.cozy-svg-number {
+  fill: color-mix(in srgb, white 44%, transparent);
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  transition: fill 200ms ease, opacity 200ms ease;
+  paint-order: stroke;
+  stroke: color-mix(in srgb, var(--color-paper-deep) 55%, transparent);
+  stroke-width: 3;
+}
+
+.cozy-svg-number.is-matched {
+  fill: white;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cozy-number-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cozy-number-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+
+.cozy-svg-number.is-filled {
+  opacity: 0;
+}
+
+/* everyone finished — the poster comes alive */
+.cozy-color-room-board.is-complete {
+  box-shadow:
+    6px 6px 0 var(--paint-berry),
+    0 0 70px color-mix(in srgb, var(--paint-orange) 45%, transparent);
+}
+
+.cozy-color-room-board.is-complete .cozy-svg-region {
+  cursor: default;
+}
+
+.cozy-color-room-board.is-complete .cozy-svg-star {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cozy-star-twinkle 1.7s ease-in-out infinite alternate;
+}
+
+.cozy-color-room-board.is-complete .cozy-svg-star:nth-of-type(2n) {
+  animation-delay: 0.55s;
+}
+
+@keyframes cozy-star-twinkle {
+  from { transform: scale(1) rotate(0deg); }
+  to { transform: scale(1.35) rotate(12deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cozy-svg-region,
+  .cozy-svg-number,
+  .cozy-color-room-board.is-complete .cozy-svg-star {
+    animation: none;
+    transition: none;
+  }
+}

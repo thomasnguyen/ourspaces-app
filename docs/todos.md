@@ -42,9 +42,18 @@ Backward-looking history lives in `hackathon.md`.
   Verified headless: cover→dock, read→new tab, paper drag moves the card.
 - Couple space now has a full-screen `cozyColor` paint-by-number room: the
   compact card opens an edge-to-edge portal, a bottom game dock selects one
-  number at a time, 45 matching regions appear directly on the line art, and
-  two shared palette presets recolor every completed region live through Convex.
-  Existing seeded dev rooms still backfill the widget/layout on first load.
+  number at a time, and two shared palette presets recolor every completed
+  region live through Convex. Existing seeded dev rooms still backfill the
+  widget/layout on first load.
+- The board is now a **generated vector scene** ("same moon, both windows"):
+  `scripts/generate-cozy-art.mjs` computes 50 closed SVG regions (moon +
+  halo-ring donuts, snow-capped peaks, twin lit-window houses, two birds, a
+  river carrying the moon shimmer) → `src/widgets/cozyColorArt.ts` +
+  `public/assets/cozy-color-poster.svg` (door preview). Regions fill directly
+  via CSS `--paint-*` vars — no more raster flood fill or white halos. Numbers
+  render inside the SVG at generated safe spots; tapping a dim number switches
+  the active color; finishing triggers glow + twinkling stars. Verified
+  headless end-to-end in mock mode (blank → partial → 100% → sunset preset).
 
 ## Broken / known issues
 
@@ -58,14 +67,6 @@ Backward-looking history lives in `hackathon.md`.
   everyone. Streams are ice2/ice6/ice5 `*-128-mp3` from somafm.com.
 
 ## Next up
-
-- Pick A/B/C from `public/assets/coloring-concepts/compare.svg`, then replace
-  the raster flood-fill canvas with direct SVG region fills. Current read:
-  night lotus has the strongest game feel; same moon preserves the product story.
-
-- Open `#/space/couple`, enter the full-screen coloring room, and capture/tune
-  the numbered seed positions; in-app browser discovery remained unavailable in
-  this session, while typecheck/build and the dev Convex push passed.
 
 - Re-seed live Convex (`npx convex run seed:demo` or equivalent) so
   production canvases pick up the SomaFM fields and seeded buildclub/Tahoe
@@ -112,3 +113,13 @@ Backward-looking history lives in `hackathon.md`.
   selected color reveals only its matching numbers, a compact bottom dock shows
   remaining counts, and the shared `electric`/`sunset` preset is stored as a
   special paint row so both collaborators see the same palette instantly.
+- 2026-08-28 (later): The coloring artwork is **generated, not drawn or
+  fetched** — a Node script computes exact closed-path geometry, so every
+  region is tappable SVG and the raster flood-fill (and its anti-aliasing
+  halos) is gone. All numbers now show (dim → bright when matched) and tapping
+  any dim number jumps to that color; this replaced hiding unmatched numbers.
+  Two gotchas encoded in the widget: the full-screen room must
+  `stopPropagation` on pointerdown/click (portal events bubble through the
+  React tree into WidgetCard's drag pointer-capture, which eats SVG clicks),
+  and mock-mode `onStroke` resolves null so local strokes are only dropped
+  when a real Convex row id comes back.
