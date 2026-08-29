@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
   RECAP_LINES,
   RECAP_LINE_MS,
@@ -6,6 +6,47 @@ import {
   RECAP_THINKING_MS,
   type RecapLine,
 } from "../data/recap";
+import {
+  getRadioSnapshot,
+  stationById,
+  stopRadio,
+  subscribeRadio,
+} from "../lib/radio";
+
+/** The radio lives in a widget that scrolls off canvas — the dock keeps it in view. */
+function DockNowPlaying() {
+  const radio = useSyncExternalStore(subscribeRadio, getRadioSnapshot, getRadioSnapshot);
+  const on = Boolean(radio.stationId && !radio.error && (radio.playing || radio.waiting));
+  if (!on) return null;
+
+  const station = stationById(radio.stationId ?? undefined);
+  const track = radio.stationId ? radio.tracks[radio.stationId] : undefined;
+  const label = radio.waiting
+    ? "tuning…"
+    : track
+      ? `${track.title} — ${track.artist}`
+      : station.name;
+
+  return (
+    <>
+      <span className="action-dock-divider" aria-hidden="true" />
+      <button
+        type="button"
+        className={`action-dock-radio${radio.waiting ? " is-tuning" : ""}`}
+        onClick={stopRadio}
+        title={`${label} · ${station.name} — click to stop`}
+        aria-label={`Now playing ${label} on ${station.name}. Click to stop.`}
+      >
+        <span className="action-dock-radio-eq" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="action-dock-radio-track">{label}</span>
+      </button>
+    </>
+  );
+}
 
 export function ActionDock({
   recapOpen,
@@ -135,6 +176,7 @@ export function ActionDock({
           <div className="action-dock-nav">{nav}</div>
         </>
       )}
+      <DockNowPlaying />
       <span className="action-dock-divider" aria-hidden="true" />
       <button
         type="button"

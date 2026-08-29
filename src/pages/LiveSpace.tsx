@@ -1143,6 +1143,7 @@ export function LiveSpacePage({
                 onFrameLayoutCommit={finishCanvasFrameLayout}
                 onPollVote={handlers.onVote}
                 onWheelSpin={handlers.onWheelSpin}
+                onPlaylistTune={handlers.onPlaylistTune}
                 pollSelections={pollSelections}
                 onRsvp={respondToRsvp}
                 rsvpSelections={rsvpSelections}

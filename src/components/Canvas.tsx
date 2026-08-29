@@ -13,7 +13,7 @@ import type {
 import { FirstRunSticky, type CanvasPoint } from "./FirstRunSticky";
 import { MemberFace } from "./MemberFace";
 import { WidgetCard } from "./WidgetCard";
-import type { RsvpStatus } from "../widgets/extras";
+import type { RsvpStatus, PlaylistTune } from "../widgets/extras";
 import { playSound } from "../lib/sounds";
 import { inviteUrlForSpace } from "../lib/routes";
 
@@ -92,6 +92,7 @@ export function Canvas({
   onClaim,
   claimantId,
   onWheelSpin,
+  onPlaylistTune,
   arrivalPeerId,
 }: {
   spaceId: string;
@@ -150,6 +151,7 @@ export function Canvas({
   onClaim?: (widgetId: string, itemName: string) => void;
   claimantId?: string;
   onWheelSpin?: (widgetId: string, spin: { spinNonce: number; resultIndex: number }) => void;
+  onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
   arrivalPeerId?: string;
 }) {
   const space = getSpace(spaceId);
@@ -281,6 +283,7 @@ export function Canvas({
         onFrameLayoutCommit={onFrameLayoutCommit}
         onPollVote={onPollVote}
         onWheelSpin={onWheelSpin}
+        onPlaylistTune={onPlaylistTune}
         onRsvp={onRsvp}
         onDailyAnswer={onDailyAnswer}
         onDailyReact={onDailyReact}
@@ -313,6 +316,7 @@ export function Canvas({
       onPromote,
       onRsvp,
       onWheelSpin,
+      onPlaylistTune,
       onWidgetDelete,
       onWidgetDragEnd,
       onWidgetDragStart,

@@ -338,6 +338,19 @@ export function useLiveHandlers(
     });
   }, [identity.name, spaceId, spinWheel]);
 
+  const onPlaylistTune = useCallback((
+    widgetId: string,
+    tune: { stationId: string; playing: boolean },
+  ) => {
+    if (!spaceId) return;
+    const widget = widgetsRef.current.find((row) => row.id === widgetId);
+    if (!widget) return;
+    void updateData({
+      id: widgetId as never,
+      data: { ...widget.data, ...tune, playedBy: identity.name },
+    });
+  }, [identity.name, spaceId, updateData]);
+
   const onDelete = useCallback((widget: Widget) => {
     if (!spaceId) return;
     playSound("tap");
@@ -382,6 +395,7 @@ export function useLiveHandlers(
     },
     onClaim,
     onWheelSpin,
+    onPlaylistTune,
     onCreate: (widget: Omit<Widget, "id">) => {
       if (!spaceId) return;
       playSound("place");

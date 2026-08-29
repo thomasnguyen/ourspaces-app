@@ -14,7 +14,7 @@ export const WIDGET_CATALOG: WidgetTemplate[] = [
   { type: "decision", label: "decision", emoji: "✓", pickerHidden: true },
   { type: "availability", label: "availability", emoji: "📅" },
   { type: "linkShelf", label: "links", emoji: "🔗" },
-  { type: "playlist", label: "playlist", emoji: "🎵", pickerHidden: true },
+  { type: "playlist", label: "radio", emoji: "🎵" },
   { type: "jokeRegistry", label: "jokes", emoji: "😂" },
   { type: "expenseSplit", label: "expenses", emoji: "💸" },
   { type: "itinerary", label: "itinerary", emoji: "🗺️" },

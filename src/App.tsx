@@ -1419,6 +1419,21 @@ export default function App() {
     }));
   };
 
+  const tunePlaylist = (widgetId: string, tune: { stationId: string; playing: boolean }) => {
+    setWidgetDataOverrides((current) => ({
+      ...current,
+      [spaceId]: {
+        ...(current[spaceId] ?? {}),
+        [widgetId]: {
+          ...getSpace(spaceId).widgets.find((widget) => widget.id === widgetId)?.data,
+          ...(current[spaceId]?.[widgetId] ?? {}),
+          ...tune,
+          playedBy: "You",
+        },
+      },
+    }));
+  };
+
   const respondToRsvp = (widgetId: string, status: RsvpStatus) => {
     const previous = rsvpSelections[spaceId]?.[widgetId];
     if (previous === status) return;
@@ -1945,6 +1960,7 @@ export default function App() {
               onFrameLayoutCommit={finishFrameLayout}
               onPollVote={voteOnPoll}
               onWheelSpin={spinWheel}
+              onPlaylistTune={tunePlaylist}
               onRsvp={respondToRsvp}
               onDailyAnswer={answerDailyQ}
               onDailyReact={reactToDailyAnswer}

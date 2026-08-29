@@ -24,7 +24,7 @@ export const WIDGET_SIZES: Partial<Record<WidgetType, { w: number; h: number }>>
   messageWall: { w: 520, h: 110 },
   note: { w: 280, h: 165 },
   photoWall: { w: 300, h: 200 },
-  playlist: { w: 320, h: 170 },
+  playlist: { w: 320, h: 176 },
   poll: { w: 250, h: 230 },
   potluck: { w: 400, h: 160 },
   quote: { w: 230, h: 120 },
@@ -128,9 +128,9 @@ export function freshWidgetData(type: WidgetType, source: Widget["data"]): Widge
       return {
         ...source,
         title: String(source.title ?? "shared soundtrack"),
-        song: String(source.song ?? "Espresso"),
-        artist: String(source.artist ?? "Sabrina Carpenter"),
-        pickedBy: String(source.pickedBy ?? "Jules"),
+        stationId: String(source.stationId ?? "indiepop"),
+        playedBy: String(source.playedBy ?? source.pickedBy ?? "Jules"),
+        playing: Boolean(source.playing),
         vibes: Array.isArray(source.vibes) ? source.vibes : ["Maya", "Sam"],
         tone: String(source.tone ?? "violet"),
       };
