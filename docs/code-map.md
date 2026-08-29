@@ -78,6 +78,11 @@ a Firecrawl link card has no page image.
 — generated airport-lounge line art and its finished flat-color target for the
 couple space's collaborative paint-by-number room.
 
+**assets/coloring-concepts/** — three closed-region SVG candidates (`lotus-night`,
+`same-moon`, `window-garden`) plus `compare.svg`; the lotus candidate adapts a
+public-domain Openclipart outline. These are selection prototypes, not yet wired
+into `CozyColorWidget`.
+
 ## convex/
 
 `schema.ts` (spaces, members, widgets, messages, votes, presence; frames are

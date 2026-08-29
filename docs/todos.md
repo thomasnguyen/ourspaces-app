@@ -59,6 +59,10 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Next up
 
+- Pick A/B/C from `public/assets/coloring-concepts/compare.svg`, then replace
+  the raster flood-fill canvas with direct SVG region fills. Current read:
+  night lotus has the strongest game feel; same moon preserves the product story.
+
 - Open `#/space/couple`, enter the full-screen coloring room, and capture/tune
   the numbered seed positions; in-app browser discovery remained unavailable in
   this session, while typecheck/build and the dev Convex push passed.
