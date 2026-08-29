@@ -13643,8 +13643,8 @@
 .widget-group[data-widget-type="jokeRegistry"] .widget-group-body::after {
   position: absolute;
   z-index: -1;
-  bottom: -9px;
-  height: 28%;
+  bottom: -8px;
+  height: 24px;
   mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
   -webkit-mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
   content: "";
@@ -13652,19 +13652,19 @@
 }
 
 .widget-group[data-widget-type="jokeRegistry"] .widget-group-body::before {
-  right: -4px;
-  width: 34%;
+  left: 63%;
+  width: 22%;
   background: var(--color-couple);
-  rotate: 1.8deg;
+  rotate: 1.5deg;
 }
 
 .widget-group[data-widget-type="jokeRegistry"] .widget-group-body::after {
   z-index: -2;
-  bottom: -11px;
-  left: 18%;
-  width: 28%;
+  bottom: -12px;
+  left: 46%;
+  width: 40%;
   background: var(--color-trip);
-  rotate: -1.2deg;
+  rotate: -1deg;
 }
 
 .widget-joke-registry .joke-tape {
