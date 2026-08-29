@@ -83,6 +83,9 @@ type PhotoGalleryState = {
     bottom: number;
     left: number;
   };
+  /** Screen rects of the pile's visible prints (photo index 0/1/2) so the
+     gallery can FLIP them from the pile to their spread positions. */
+  printOrigins?: Array<{ x: number; y: number; w: number; h: number } | null>;
 };
 
 const CAMERA_MS = 360;
@@ -838,6 +841,21 @@ export function LiveSpacePage({
             bottom: window.innerHeight * 0.25,
             left: window.innerWidth * 0.25,
           };
+      const printOrigins = widgetElement
+        ? [".photo-wall-cover", ".photo-wall-peek-1", ".photo-wall-peek-2"].map(
+            (selector) => {
+              const print = widgetElement.querySelector(selector);
+              if (!print) return null;
+              const printRect = print.getBoundingClientRect();
+              return {
+                x: printRect.x,
+                y: printRect.y,
+                w: printRect.width,
+                h: printRect.height,
+              };
+            },
+          )
+        : undefined;
       playSound("tap");
       setManagedWidgetId(widget.id);
       setEditingWidgetId("");
@@ -845,7 +863,7 @@ export function LiveSpacePage({
       setPickerOpen(false);
       setRecapOpen(false);
       setChatOpen(false);
-      setPhotoGallery({ widgetId: widget.id, origin });
+      setPhotoGallery({ widgetId: widget.id, origin, printOrigins });
       return;
     }
 
@@ -1290,7 +1308,11 @@ export function LiveSpacePage({
           widget={photoGalleryWidget}
           spaceName={activeCustomization.name}
           origin={photoGallery?.origin}
-          onClose={() => setPhotoGallery(null)}
+          printOrigins={photoGallery?.printOrigins}
+          onClose={() => {
+            setPhotoGallery(null);
+            setManagedWidgetId("");
+          }}
         />
       )}
       {activeThreadWidget && (

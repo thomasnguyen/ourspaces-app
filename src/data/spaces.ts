@@ -86,15 +86,6 @@ export const CREW_WIDGETS: Widget[] = [
       tone: "blush",
       photos: [
         {
-          caption: "friday at maya's",
-          date: "jun 14",
-          rotate: -3,
-          by: "Maya",
-          src: "/assets/the-crew-snapshot.jpg",
-          thumbnailSrc: "/assets/the-crew-snapshot-thumb.jpg",
-          focus: "center 45%",
-        },
-        {
           caption: "pizza night",
           date: "fri",
           rotate: 2,
@@ -120,6 +111,15 @@ export const CREW_WIDGETS: Widget[] = [
           src: "/photos/crew/tahoe-sunrise.jpg",
           thumbnailSrc: "/photos/thumbs/crew/tahoe-sunrise.jpg",
           focus: "center 65%",
+        },
+        {
+          caption: "friday at maya's",
+          date: "jun 14",
+          rotate: -3,
+          by: "Maya",
+          src: "/assets/the-crew-snapshot.jpg",
+          thumbnailSrc: "/assets/the-crew-snapshot-thumb.jpg",
+          focus: "center 45%",
         },
         {
           caption: "things we left behind",

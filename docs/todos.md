@@ -63,6 +63,22 @@ Backward-looking history lives in `hackathon.md`.
   (token remix, luminance-ranked). Reset clears only the current board
   (`paint.clear` gained optional `regionPrefix`; pushed to dev). Verified
   headless: paint starry to 35%, complete wave, neon flip, per-board counts.
+- Memory wall widget is a **pile of cream prints** (2026-08-29): cover + peeks
+  share the media widget's paper anatomy (cream frame, chin caption in ink,
+  tape scrap), the pile stacks one print over / one under the cover using each
+  photo's seeded `rotate` (clamped ±4°), a buried print edge shows when >3
+  photos, and prints deal in staggered on space open. Crew mock data now leads
+  with pizza night so the wall doesn't duplicate the polaroid above it. Motion
+  tokens `--ease-glide/pop/snap` + `--dur-instant…hero` live in `@theme`.
+- Photo wall zoom is a **spread-the-pile FLIP** (2026-08-29, LiveSpace only —
+  mock App.tsx still uses the generic focus zoom): clicking the wall grows the
+  tile into a full-screen room (`#151517` dialog, clip-path reveal), the three
+  visible prints fly (WAAPI, measured rects via `printOrigins`) to scattered
+  table spots, buried photos deal out from the pile center, hover straightens
+  a print ("pick it up"), the lightbox is a giant print that flies from its
+  slot and back, and close gathers everything into the tile. StrictMode's
+  phantom `<dialog>` close event is swallowed (`dialogRef.current?.open`
+  guard in onClose) — without it the dialog self-destructs in dev.
 - The board is a **generated vector scene** ("same moon, both windows"):
   `scripts/generate-cozy-art.mjs` computes 50 closed SVG regions (moon +
   halo-ring donuts, snow-capped peaks, twin lit-window houses, two birds, a
