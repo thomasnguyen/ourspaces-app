@@ -1168,6 +1168,27 @@ export const TRIP_WIDGETS: Widget[] = [
       kicker: "money note",
     },
   },
+  {
+    id: "trip-link-card",
+    type: "linkCard",
+    x: 704,
+    y: 420,
+    w: 420,
+    h: 340,
+    z: 4,
+    rotate: 1,
+    data: {
+      url: "https://stack.convex.dev/how-convex-works",
+      title: "How Convex Works",
+      description: "A tour of the sync worker, transactions, and subscriptions that keep every connected screen current.",
+      imageUrl: "",
+      siteName: "stack.convex.dev",
+      author: "Sujay Jayakar",
+      publishedAt: "",
+      savedBy: "Maya",
+      savedAt: Date.UTC(2026, 7, 28),
+    },
+  },
 ];
 
 export const SPACES: SpaceMeta[] = [
