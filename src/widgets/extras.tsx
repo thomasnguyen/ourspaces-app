@@ -1090,6 +1090,9 @@ export function LinkCardWidget({ widget, style }: { widget: Widget; style: Style
   const author = String(widget.data.author ?? "").trim();
   const savedBy = String(widget.data.savedBy ?? "you").trim();
   const publishedAt = String(widget.data.publishedAt ?? "");
+  const discussionUrl = String(widget.data.discussionUrl ?? "").trim();
+  const points = Number(widget.data.points ?? 0) || 0;
+  const commentCount = Number(widget.data.commentCount ?? 0) || 0;
   const [artSrc, setArtSrc] = useState(imageUrl || LINK_CARD_FALLBACK);
 
   useEffect(() => {
@@ -1109,11 +1112,22 @@ export function LinkCardWidget({ widget, style }: { widget: Widget; style: Style
         <span className="link-card-date-tab">
           {url ? linkCardDate(publishedAt, widget.data.savedAt) : "add a link"}
         </span>
-        <span className="link-card-blur-crop">
-          <img src={artSrc} alt="" />
-        </span>
+        {discussionUrl ? (
+          <span
+            className="link-card-hn-tab"
+            title="open the Hacker News thread"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              window.open(discussionUrl, "_blank", "noopener");
+            }}
+          >
+            ▲ {points} · {commentCount} comments
+          </span>
+        ) : null}
       </div>
       <div className="link-card-paper">
+        <span className="link-card-tape" aria-hidden="true" />
         <span className="link-card-source">
           <i aria-hidden="true">{siteName.slice(0, 1).toLowerCase()}</i>
           <span>{author ? `${author} · ${siteName}` : siteName}</span>

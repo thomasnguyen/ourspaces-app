@@ -405,6 +405,9 @@ export function WidgetEditorPanel({
               siteName: new URL(url).hostname.replace(/^www\./, ""),
               author: "",
               publishedAt: "",
+              discussionUrl: "",
+              points: 0,
+              commentCount: 0,
             };
         onSave(widget.id, {
           ...widget.data,
