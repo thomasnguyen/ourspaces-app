@@ -3,12 +3,14 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type FormEvent,
   type MouseEvent,
 } from "react";
 import type { Widget } from "../data/types";
 import { playSound } from "../lib/sounds";
 
 type PhotoMoment = {
+  id?: string;
   caption: string;
   date: string;
   rotate?: number;
@@ -16,6 +18,14 @@ type PhotoMoment = {
   focus?: string;
   src?: string;
   thumbnailSrc?: string;
+};
+
+export type PhotoComment = {
+  id: string;
+  name: string;
+  color?: string;
+  text: string;
+  time?: string;
 };
 
 type PrintOrigin = { x: number; y: number; w: number; h: number };
@@ -45,6 +55,14 @@ function readPhotos(widget: Widget): PhotoMoment[] {
     : [];
 }
 
+/** Stable per-photo key for comment threads — uploads carry a storage id,
+ *  seeded photos fall back to their caption slug. */
+export function photoKey(photo: PhotoMoment) {
+  return (
+    photo.id ?? photo.caption.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+  );
+}
+
 function reduceMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -58,6 +76,9 @@ export function PhotoWallGallery({
   spaceName,
   origin,
   printOrigins,
+  comments = {},
+  onComment,
+  onAddPhoto,
   onClose,
 }: {
   widget: Widget;
@@ -69,12 +90,17 @@ export function PhotoWallGallery({
     left: number;
   };
   printOrigins?: Array<PrintOrigin | null>;
+  /** Per-photo comment threads, keyed by photoKey(). */
+  comments?: Record<string, PhotoComment[]>;
+  onComment?: (photoKey: string, text: string) => void;
+  onAddPhoto?: (file: File, caption: string) => Promise<void>;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const lightboxBackRef = useRef<HTMLButtonElement>(null);
   const lightboxPrintRef = useRef<HTMLElement>(null);
   const tileRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const closingRef = useRef(false);
   /* Lightbox travel bookkeeping: where the print lifted from, and where the
      lifted print was hovering when it gets put back down. */
@@ -82,6 +108,14 @@ export function PhotoWallGallery({
   const putBackRectRef = useRef<DOMRect | null>(null);
   const putBackIndexRef = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [flipped, setFlipped] = useState(false);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [photoDraft, setPhotoDraft] = useState<{
+    file: File;
+    previewUrl: string;
+    caption: string;
+  } | null>(null);
+  const [pinning, setPinning] = useState(false);
   const photos = readPhotos(widget);
   const title = String(widget.data.title ?? "recent memories");
   const tone = String(widget.data.tone ?? "blush");
@@ -91,6 +125,7 @@ export function PhotoWallGallery({
   const [spreading] = useState(
     () => Boolean(printOrigins?.some(Boolean)) && !reduceMotion(),
   );
+  const heroKeyRef = useRef<string | null>(photos[0] ? photoKey(photos[0]) : null);
 
   const pileCenter = () => {
     if (!origin) {
@@ -176,6 +211,29 @@ export function PhotoWallGallery({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /* A new hero print (someone pinned a photo) pops onto the table. */
+  useEffect(() => {
+    const nextKey = photos[0] ? photoKey(photos[0]) : null;
+    const previousKey = heroKeyRef.current;
+    heroKeyRef.current = nextKey;
+    if (!nextKey || nextKey === previousKey || lightboxOpen) return;
+    if (reduceMotion()) return;
+    window.requestAnimationFrame(() => {
+      const hero = tileRefs.current[0];
+      if (!hero) return;
+      hero.animate(
+        [
+          { transform: "scale(0.55) rotate(-7deg)", opacity: 0 },
+          { opacity: 1, offset: 0.4 },
+          { transform: "none", opacity: 1 },
+        ],
+        { duration: 460, easing: POP, fill: "backwards" },
+      );
+      playSound("place");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photos[0] ? photoKey(photos[0]) : null, lightboxOpen]);
+
   /* Picking a print up: it flies from its table spot into the lightbox. */
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -231,9 +289,16 @@ export function PhotoWallGallery({
     });
   }, [lightboxOpen]);
 
+  /* Fresh photo in the lightbox = photo side up, empty pen. */
+  useEffect(() => {
+    setFlipped(false);
+    setCommentDraft("");
+  }, [activeIndex]);
+
   useEffect(() => {
     if (!lightboxOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.target as HTMLElement | null)?.tagName === "INPUT") return;
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         setActiveIndex((current) =>
@@ -258,6 +323,7 @@ export function PhotoWallGallery({
     if (closingRef.current) return;
     closingRef.current = true;
     playSound("tap");
+    if (photoDraft) URL.revokeObjectURL(photoDraft.previewUrl);
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (reduceMotion() || lightboxOpen) {
@@ -320,6 +386,62 @@ export function PhotoWallGallery({
     if (event.target === event.currentTarget) requestClose();
   };
 
+  /* While the OS file chooser is up, its dismissal can leak an Esc-like
+     `cancel` to the dialog — swallow that one instead of closing the room. */
+  const chooserGuardRef = useRef(false);
+
+  const pickFile = () => {
+    playSound("tap");
+    chooserGuardRef.current = true;
+    window.setTimeout(() => {
+      chooserGuardRef.current = false;
+    }, 60_000);
+    fileInputRef.current?.click();
+  };
+
+  const startDraft = (file: File | undefined) => {
+    chooserGuardRef.current = false;
+    if (!file) return;
+    if (photoDraft) URL.revokeObjectURL(photoDraft.previewUrl);
+    setPhotoDraft({ file, previewUrl: URL.createObjectURL(file), caption: "" });
+  };
+
+  const cancelDraft = () => {
+    playSound("tap");
+    if (photoDraft) URL.revokeObjectURL(photoDraft.previewUrl);
+    setPhotoDraft(null);
+    setPinning(false);
+  };
+
+  const pinDraft = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!photoDraft || !onAddPhoto || pinning) return;
+    setPinning(true);
+    playSound("tap");
+    try {
+      await onAddPhoto(photoDraft.file, photoDraft.caption);
+      URL.revokeObjectURL(photoDraft.previewUrl);
+      setPhotoDraft(null);
+    } catch {
+      /* leave the draft up so they can retry */
+    } finally {
+      setPinning(false);
+    }
+  };
+
+  const sendComment = (event: FormEvent) => {
+    event.preventDefault();
+    const text = commentDraft.trim();
+    if (!text || !onComment || !activePhoto) return;
+    playSound("tap");
+    onComment(photoKey(activePhoto), text);
+    setCommentDraft("");
+  };
+
+  const activeComments = activePhoto
+    ? comments[photoKey(activePhoto)] ?? []
+    : [];
+
   return (
     <dialog
       ref={dialogRef}
@@ -344,7 +466,19 @@ export function PhotoWallGallery({
       onClick={closeFromBackdrop}
       onCancel={(event) => {
         event.preventDefault();
+        if (chooserGuardRef.current) {
+          chooserGuardRef.current = false;
+          return;
+        }
+        if (photoDraft) {
+          cancelDraft();
+          return;
+        }
         if (activeIndex !== null) {
+          if (flipped) {
+            setFlipped(false);
+            return;
+          }
           closePhoto();
           return;
         }
@@ -386,25 +520,98 @@ export function PhotoWallGallery({
               >
                 ←
               </button>
-              <figure className="photo-lightbox-print" ref={lightboxPrintRef}>
-                <span className="photo-lightbox-frame">
-                  <img
-                    key={activePhoto.src ?? activePhoto.caption}
-                    src={activePhoto.src ?? FALLBACK_PHOTO}
-                    alt={activePhoto.caption}
-                    onError={(event) => {
-                      event.currentTarget.onerror = null;
-                      event.currentTarget.src = FALLBACK_PHOTO;
-                    }}
-                  />
-                </span>
-                <figcaption className="photo-lightbox-caption">
-                  <strong id="photo-lightbox-title">{activePhoto.caption}</strong>
-                  <span>
-                    {activePhoto.by ? `${activePhoto.by} · ` : ""}
-                    {activePhoto.date}
-                  </span>
-                </figcaption>
+              <figure
+                className={`photo-lightbox-print${flipped ? " is-flipped" : ""}`}
+                ref={lightboxPrintRef}
+              >
+                <div className="photo-lightbox-card3d">
+                  <div className="photo-lightbox-face is-front">
+                    <span className="photo-lightbox-frame">
+                      <img
+                        key={activePhoto.src ?? activePhoto.caption}
+                        src={activePhoto.src ?? FALLBACK_PHOTO}
+                        alt={activePhoto.caption}
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = FALLBACK_PHOTO;
+                        }}
+                      />
+                    </span>
+                    <figcaption className="photo-lightbox-caption">
+                      <span className="photo-lightbox-caption-text">
+                        <strong id="photo-lightbox-title">{activePhoto.caption}</strong>
+                        <span>
+                          {activePhoto.by ? `${activePhoto.by} · ` : ""}
+                          {activePhoto.date}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        className="photo-lightbox-flip"
+                        onClick={() => {
+                          playSound("tap");
+                          setFlipped(true);
+                        }}
+                      >
+                        <i aria-hidden="true">✎</i>
+                        {activeComments.length > 0
+                          ? `${activeComments.length} on the back`
+                          : "write on the back"}
+                      </button>
+                    </figcaption>
+                  </div>
+                  <div className="photo-lightbox-face is-back" aria-hidden={!flipped}>
+                    <header className="photo-back-header">
+                      <span>the back of the print</span>
+                      <button
+                        type="button"
+                        className="photo-lightbox-flip"
+                        onClick={() => {
+                          playSound("tap");
+                          setFlipped(false);
+                        }}
+                        tabIndex={flipped ? 0 : -1}
+                      >
+                        <i aria-hidden="true">↩</i>
+                        photo side
+                      </button>
+                    </header>
+                    <div className="photo-back-notes">
+                      {activeComments.length === 0 && (
+                        <p className="photo-back-empty">
+                          nothing written back here yet — leave the first note.
+                        </p>
+                      )}
+                      {activeComments.map((comment) => (
+                        <p className="photo-back-note" key={comment.id}>
+                          <b>
+                            <i
+                              aria-hidden="true"
+                              style={{ background: comment.color ?? "#5f5055" }}
+                            />
+                            {comment.name.toLowerCase()}
+                          </b>
+                          <span>{comment.text}</span>
+                          {comment.time && <small>{comment.time}</small>}
+                        </p>
+                      ))}
+                    </div>
+                    {onComment && (
+                      <form className="photo-back-pen" onSubmit={sendComment}>
+                        <input
+                          value={commentDraft}
+                          onChange={(event) => setCommentDraft(event.target.value)}
+                          placeholder="write on the back…"
+                          aria-label="Write a note on the back of this print"
+                          tabIndex={flipped ? 0 : -1}
+                        />
+                        <button type="submit" tabIndex={flipped ? 0 : -1}>
+                          →
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </div>
               </figure>
               <button
                 type="button"
@@ -435,8 +642,20 @@ export function PhotoWallGallery({
                 </span>
                 <h2 id="photo-gallery-title">{title}</h2>
               </div>
-              <span className="photo-gallery-count">
-                {photos.length} {photos.length === 1 ? "moment" : "moments"}
+              <span className="photo-gallery-actions">
+                {onAddPhoto && (
+                  <button
+                    type="button"
+                    className="photo-gallery-add-pill"
+                    onClick={pickFile}
+                  >
+                    <i aria-hidden="true">＋</i>
+                    pin a moment
+                  </button>
+                )}
+                <span className="photo-gallery-count">
+                  {photos.length} {photos.length === 1 ? "moment" : "moments"}
+                </span>
               </span>
             </header>
 
@@ -446,63 +665,139 @@ export function PhotoWallGallery({
                   photos.length > 5 ? " has-more" : ""
                 }${spreading ? " is-spreading" : ""}`}
               >
-                {photos.map((photo, index) => (
-                  <button
-                    ref={(node) => {
-                      tileRefs.current[index] = node;
-                    }}
-                    type="button"
-                    key={`${photo.caption}-${index}`}
-                    className="photo-gallery-item"
-                    style={
-                      {
-                        "--photo-index": index,
-                        "--scatter": `${SCATTER_TILT[index % SCATTER_TILT.length]}deg`,
-                        "--jog-x": `${SCATTER_JOG[index % SCATTER_JOG.length][0]}px`,
-                        "--jog-y": `${SCATTER_JOG[index % SCATTER_JOG.length][1]}px`,
-                      } as CSSProperties
-                    }
-                    onClick={() => openPhoto(index)}
-                    aria-label={`Open ${photo.caption}`}
-                  >
-                    {index === 0 && (
-                      <span className="photo-gallery-item-tape" aria-hidden="true" />
-                    )}
-                    <span className="photo-gallery-media">
-                      <img
-                        src={photo.src ?? FALLBACK_PHOTO}
-                        alt=""
-                        loading={index > 4 ? "lazy" : undefined}
-                        style={{ objectPosition: photo.focus ?? "center" }}
-                        onError={(event) => {
-                          event.currentTarget.onerror = null;
-                          event.currentTarget.src = FALLBACK_PHOTO;
-                        }}
-                      />
-                    </span>
-                    <span className="photo-gallery-item-caption">
-                      <span>
-                        <strong>{photo.caption}</strong>
-                        <small>
-                          {photo.by ? `${photo.by} · ` : ""}
-                          {photo.date}
-                        </small>
+                {photos.map((photo, index) => {
+                  const noteCount = comments[photoKey(photo)]?.length ?? 0;
+                  return (
+                    <button
+                      ref={(node) => {
+                        tileRefs.current[index] = node;
+                      }}
+                      type="button"
+                      key={photoKey(photo)}
+                      className="photo-gallery-item"
+                      style={
+                        {
+                          "--photo-index": index,
+                          "--scatter": `${SCATTER_TILT[index % SCATTER_TILT.length]}deg`,
+                          "--jog-x": `${SCATTER_JOG[index % SCATTER_JOG.length][0]}px`,
+                          "--jog-y": `${SCATTER_JOG[index % SCATTER_JOG.length][1]}px`,
+                        } as CSSProperties
+                      }
+                      onClick={() => openPhoto(index)}
+                      aria-label={`Open ${photo.caption}`}
+                    >
+                      {index === 0 && (
+                        <span className="photo-gallery-item-tape" aria-hidden="true" />
+                      )}
+                      <span className="photo-gallery-media">
+                        <img
+                          src={photo.src ?? FALLBACK_PHOTO}
+                          alt=""
+                          loading={index > 4 ? "lazy" : undefined}
+                          style={{ objectPosition: photo.focus ?? "center" }}
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = FALLBACK_PHOTO;
+                          }}
+                        />
                       </span>
-                      <i aria-hidden="true">↗</i>
-                    </span>
-                  </button>
-                ))}
+                      <span className="photo-gallery-item-caption">
+                        <span>
+                          <strong>{photo.caption}</strong>
+                          <small>
+                            {photo.by ? `${photo.by} · ` : ""}
+                            {photo.date}
+                          </small>
+                        </span>
+                        {noteCount > 0 && (
+                          <em className="photo-gallery-notes-mark">✎ {noteCount}</em>
+                        )}
+                        <i aria-hidden="true">↗</i>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <div className="photo-gallery-empty">
                 <span aria-hidden="true">✦</span>
                 <strong>no moments here yet</strong>
-                <p>Close the wall and add the first one from the canvas.</p>
+                <p>
+                  {onAddPhoto
+                    ? "Pin the first one — the wall remembers from there."
+                    : "Close the wall and add the first one from the canvas."}
+                </p>
+                {onAddPhoto && (
+                  <button
+                    type="button"
+                    className="photo-gallery-add-pill"
+                    onClick={pickFile}
+                  >
+                    <i aria-hidden="true">＋</i>
+                    pin a moment
+                  </button>
+                )}
               </div>
             )}
           </section>
         )}
       </div>
+
+      {onAddPhoto && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(event) => {
+            startDraft(event.target.files?.[0]);
+            event.target.value = "";
+          }}
+        />
+      )}
+
+      {photoDraft && (
+        <div className="photo-draft-backdrop" onClick={cancelDraft}>
+          <form
+            className="photo-draft-print"
+            onClick={(event) => event.stopPropagation()}
+            onSubmit={pinDraft}
+          >
+            <span className="photo-draft-tape" aria-hidden="true" />
+            <span className="photo-draft-frame">
+              <img src={photoDraft.previewUrl} alt="New moment preview" />
+            </span>
+            <div className="photo-draft-chin">
+              <input
+                value={photoDraft.caption}
+                onChange={(event) =>
+                  setPhotoDraft((current) =>
+                    current ? { ...current, caption: event.target.value } : current,
+                  )
+                }
+                placeholder="name this moment…"
+                aria-label="Caption for the new photo"
+                maxLength={48}
+                autoFocus
+                disabled={pinning}
+              />
+              <div className="photo-draft-actions">
+                <button
+                  type="button"
+                  className="photo-draft-toss"
+                  onClick={cancelDraft}
+                  disabled={pinning}
+                >
+                  toss it
+                </button>
+                <button type="submit" className="photo-draft-pin" disabled={pinning}>
+                  {pinning ? "pinning…" : "pin it →"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
     </dialog>
   );
 }

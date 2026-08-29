@@ -108,6 +108,8 @@ widgets) · `spaces.ts` · `widgets.ts` (CRUD/move/resize) · `messages.ts`
 `firecrawl.ts` (`scrapeLink` action) · `questions.ts` (`sparkQuestions`: OpenAI →
 2 conversation starters on a link card, canned fallback without a key) ·
 `paint.ts` (reactive numbered-region fills + couple-room widget backfill) ·
+`photos.ts` (`generateUploadUrl` + `addPhoto`: file-storage upload prepended to
+a photoWall widget's `data.photos`, becomes the pile cover) ·
 `convex.config.ts` (components, env)
 
 ## src/index.css (~14k lines, hand-written, banner comments)

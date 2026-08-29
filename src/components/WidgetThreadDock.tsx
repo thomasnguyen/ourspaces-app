@@ -159,7 +159,7 @@ export function WidgetThreadDock({
           <span aria-hidden="true">＋</span>
           <div>
             <strong>add photos</strong>
-            <p>Drop images here or choose from your library.</p>
+            <p>Open the memory wall and “pin a moment.”</p>
           </div>
         </div>
       )}

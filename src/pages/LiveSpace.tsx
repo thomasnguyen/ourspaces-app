@@ -31,7 +31,8 @@ import {
   type SpaceCustomization,
 } from "../data/spaceThemes";
 import { RECAP_LINES, type RecapLine } from "../data/recap";
-import { toChatMessage } from "../live/adapt";
+import { relTime, toChatMessage } from "../live/adapt";
+import type { PhotoComment } from "../components/PhotoWallGallery";
 import { useIdentity } from "../live/identity";
 import { useLiveHandlers } from "../live/useLiveHandlers";
 import { useLivePoll } from "../live/useLivePoll";
@@ -224,6 +225,8 @@ export function LiveSpacePage({
   const [moreRight, setMoreRight] = useState(false);
 
   const join = useMutation(api.spaces.joinDemoSpace);
+  const generatePhotoUploadUrl = useMutation(api.photos.generateUploadUrl);
+  const pinPhoto = useMutation(api.photos.addPhoto);
   const addPaintStroke = useMutation(api.paint.addStroke);
   const clearPaint = useMutation(api.paint.clear);
   const ensureCozyColorWidget = useMutation(api.paint.ensureCozyColorWidget);
@@ -376,6 +379,45 @@ export function LiveSpacePage({
       (widget) => widget.id === photoGallery?.widgetId && widget.type === "photoWall",
     ) ?? null,
     [adaptedWidgets, photoGallery?.widgetId],
+  );
+  /* Notes written on the backs of the wall's prints — sub-threads riding the
+     message pipes with `<widgetId>::photo:<photoKey>` keys, like the reading
+     circle's `::q:` starters. */
+  const photoGalleryComments = useMemo(() => {
+    if (!photoGalleryWidget) return {};
+    const prefix = `${photoGalleryWidget.id}::photo:`;
+    const map: Record<string, PhotoComment[]> = {};
+    for (const message of allMessages ?? []) {
+      if (!message.widgetId.startsWith(prefix)) continue;
+      (map[message.widgetId.slice(prefix.length)] ??= []).push({
+        id: message._id,
+        name: message.authorName,
+        color: message.authorColor,
+        text: message.text,
+        time: relTime(message.createdAt),
+      });
+    }
+    return map;
+  }, [allMessages, photoGalleryWidget]);
+  const addPhotoToWall = useCallback(
+    async (file: File, caption: string) => {
+      if (!photoGalleryWidget) return;
+      const uploadUrl = await generatePhotoUploadUrl();
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "image/jpeg" },
+        body: file,
+      });
+      if (!response.ok) throw new Error("photo upload failed");
+      const { storageId } = (await response.json()) as { storageId: string };
+      await pinPhoto({
+        widgetId: photoGalleryWidget.id as Id<"widgets">,
+        storageId: storageId as Id<"_storage">,
+        caption,
+        by: identity.name,
+      });
+    },
+    [generatePhotoUploadUrl, identity.name, photoGalleryWidget, pinPhoto],
   );
   const globalMessages = useMemo(
     () => (allMessages ?? [])
@@ -1309,6 +1351,11 @@ export function LiveSpacePage({
           spaceName={activeCustomization.name}
           origin={photoGallery?.origin}
           printOrigins={photoGallery?.printOrigins}
+          comments={photoGalleryComments}
+          onComment={(photoId, text) =>
+            handlers.onSend(`${photoGalleryWidget.id}::photo:${photoId}`, text)
+          }
+          onAddPhoto={addPhotoToWall}
           onClose={() => {
             setPhotoGallery(null);
             setManagedWidgetId("");
