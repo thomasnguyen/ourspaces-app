@@ -40,7 +40,7 @@ export function widgetLabel(widget: Widget): string {
     case "expenseSplit":
       return String(widget.data.title ?? "expense split");
     case "playlist":
-      return String(widget.data.song ?? widget.data.title ?? "playlist");
+      return String(widget.data.title ?? "playlist");
     case "weather":
       return String(widget.data.event ?? "weather");
     case "decision":

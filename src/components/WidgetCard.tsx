@@ -49,12 +49,18 @@ import {
   BackendLiveWidget,
   DualClockWidget,
   WheelWidget,
+  type PlaylistTune,
   type RsvpStatus,
 } from "../widgets/extras";
 
 /* Daily question grows with its answers — seeded height is just the floor. */
 function widgetGrows(widget: Widget) {
-  return widget.type === "dailyQ" || widget.type === "availability" || widget.type === "linkShelf";
+  return (
+    widget.type === "dailyQ" ||
+    widget.type === "availability" ||
+    widget.type === "linkShelf" ||
+    widget.type === "playlist"
+  );
 }
 
 function innerStyle(widget: Widget): CSSProperties {
@@ -238,6 +244,7 @@ function WidgetCardComponent({
   onClaim,
   claimantId,
   onWheelSpin,
+  onPlaylistTune,
 }: {
   widget: Widget;
   spaceId: string;
@@ -288,6 +295,7 @@ function WidgetCardComponent({
   onClaim?: (widgetId: string, itemName: string) => void;
   claimantId?: string;
   onWheelSpin?: (widgetId: string, spin: { spinNonce: number; resultIndex: number }) => void;
+  onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
 }) {
   const dragState = useRef<{
     pointerId: number;
@@ -663,7 +671,13 @@ function WidgetCardComponent({
       content = <LinkShelfWidget widget={widget} style={inner} />;
       break;
     case "playlist":
-      content = <PlaylistWidget widget={widget} style={inner} />;
+      content = (
+        <PlaylistWidget
+          widget={widget}
+          style={inner}
+          onTune={onPlaylistTune ? (tune) => onPlaylistTune(widget.id, tune) : undefined}
+        />
+      );
       break;
     case "jokeRegistry":
       content = <JokeRegistryWidget widget={widget} style={inner} />;

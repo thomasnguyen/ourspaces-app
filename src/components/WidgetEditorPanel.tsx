@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { WIDGET_CATALOG } from "../data/templates";
 import type { Widget } from "../data/types";
+import { DEFAULT_STATION_ID, RADIO_STATIONS } from "../lib/radio";
 
 type PollOption = {
   id: string;
@@ -187,9 +188,7 @@ export function WidgetEditorPanel({
   const [linkShelfTitle, setLinkShelfTitle] = useState("");
   const [linkShelfTone, setLinkShelfTone] = useState("sky");
   const [playlistTitle, setPlaylistTitle] = useState("");
-  const [playlistSong, setPlaylistSong] = useState("");
-  const [playlistArtist, setPlaylistArtist] = useState("");
-  const [playlistPickedBy, setPlaylistPickedBy] = useState("");
+  const [playlistStationId, setPlaylistStationId] = useState(DEFAULT_STATION_ID);
   const [playlistTone, setPlaylistTone] = useState("violet");
   const [genericValue, setGenericValue] = useState("");
   const [frameTitle, setFrameTitle] = useState("");
@@ -223,9 +222,7 @@ export function WidgetEditorPanel({
     setLinkShelfTitle(String(widget.data.title ?? "saved links"));
     setLinkShelfTone(String(widget.data.tone ?? "sky"));
     setPlaylistTitle(String(widget.data.title ?? "shared soundtrack"));
-    setPlaylistSong(String(widget.data.song ?? ""));
-    setPlaylistArtist(String(widget.data.artist ?? ""));
-    setPlaylistPickedBy(String(widget.data.pickedBy ?? ""));
+    setPlaylistStationId(String(widget.data.stationId || DEFAULT_STATION_ID));
     setPlaylistTone(String(widget.data.tone ?? "violet"));
     setFrameTitle(String(widget.data.title ?? "frame"));
     setFrameSubtitle(String(widget.data.subtitle ?? ""));
@@ -384,9 +381,7 @@ export function WidgetEditorPanel({
       onSave(widget.id, {
         ...widget.data,
         title: playlistTitle.trim(),
-        song: playlistSong.trim(),
-        artist: playlistArtist.trim(),
-        pickedBy: playlistPickedBy.trim(),
+        stationId: playlistStationId,
         tone: playlistTone,
       });
       return;
@@ -784,34 +779,23 @@ export function WidgetEditorPanel({
                   autoFocus
                 />
               </label>
-              <label className="widget-editor-field">
-                <span>Song</span>
-                <input
-                  type="text"
-                  value={playlistSong}
-                  onChange={(event) => setPlaylistSong(event.target.value)}
-                  placeholder="Espresso"
-                />
-              </label>
-              <label className="widget-editor-field">
-                <span>Artist</span>
-                <input
-                  type="text"
-                  value={playlistArtist}
-                  onChange={(event) => setPlaylistArtist(event.target.value)}
-                  placeholder="Sabrina Carpenter"
-                />
-              </label>
-              <label className="widget-editor-field">
-                <span>Picked by</span>
-                <input
-                  type="text"
-                  value={playlistPickedBy}
-                  onChange={(event) => setPlaylistPickedBy(event.target.value)}
-                  placeholder="Jules"
-                />
-              </label>
-              <ToneSwatches value={playlistTone} onChange={setPlaylistTone} legend="Soundtrack tone" />
+              <fieldset className="widget-editor-swatches">
+                <legend>SomaFM station</legend>
+                <div className="widget-editor-station-row">
+                  {RADIO_STATIONS.map((station) => (
+                    <button
+                      type="button"
+                      key={station.id}
+                      className={playlistStationId === station.id ? "is-active" : ""}
+                      onClick={() => setPlaylistStationId(station.id)}
+                      aria-pressed={playlistStationId === station.id}
+                    >
+                      {station.chip}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <ToneSwatches value={playlistTone} onChange={setPlaylistTone} legend="Radio tone" />
             </>
           )}
 

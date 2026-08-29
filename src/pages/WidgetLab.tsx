@@ -48,7 +48,7 @@ function emptyFixture(widget: Widget): Widget {
     case "playlist":
       return {
         ...widget,
-        data: { ...widget.data, song: "", artist: "", pickedBy: "" },
+        data: { ...widget.data, stationId: "", song: "", artist: "", pickedBy: "", playedBy: "" },
       };
     default:
       return widget;
@@ -213,6 +213,15 @@ export function WidgetLab() {
                       )
                     : { ...current, [answerName]: emoji },
                 )
+              }
+              onPlaylistTune={(_, tune) =>
+                patchWidget({
+                  data: {
+                    ...activeWidget.data,
+                    ...tune,
+                    playedBy: "You",
+                  },
+                })
               }
             />
           </div>
