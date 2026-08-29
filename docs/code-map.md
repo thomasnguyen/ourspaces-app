@@ -4,7 +4,7 @@ For agents: read this before searching the codebase. Update it when structure
 changes. Stale line numbers are fine (treat them as landmarks); missing files
 are not.
 
-## src/App.tsx (~2100 lines, one giant `App()`) — the MOCK/demo canvas path
+## src/App.tsx (~2150 lines, one giant `App()`) — the MOCK/demo canvas path
 
 | ~Lines | Section |
 |---|---|
@@ -23,7 +23,7 @@ are not.
 | 1640–1717 | Route early-returns → pages (live/join/space → `LiveSpacePage`, home → `(Live)BlockPage`) |
 | 1719–2130 | Mock-mode derived data + the big JSX render (`Rail`, `Canvas` ~1921, panels, docks, toasts) |
 
-`src/pages/LiveSpace.tsx` (~1370 lines) is the LIVE twin of App.tsx's inline canvas.
+`src/pages/LiveSpace.tsx` (~1375 lines) is the LIVE twin of App.tsx's inline canvas.
 
 ## src/ directories
 
@@ -34,14 +34,15 @@ are not.
 `Rail.tsx` (space rail) · `ActionDock.tsx` (bottom dock + recap trigger) ·
 `CanvasNavigator.tsx` (minimap) · `CanvasEdgePan.tsx` · `SpaceEditorPanel.tsx`
 (theme editor) · `ClaimCard.tsx` (identity claim) · `FirstRunSticky.tsx` ·
-`GhostCanvas.tsx` · `MemberFace.tsx` · `PhotoWallGallery.tsx` · `WelcomePill.tsx`
+`GhostCanvas.tsx` · `MemberFace.tsx` · `PhotoWallGallery.tsx` · `WelcomePill.tsx` ·
+`LinkQuestionStrip.tsx` (web post conversation starters in the thread dock)
 
 **pages/** — `LiveSpace.tsx` (live canvas) · `Block.tsx` (mock `#/home`) ·
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
 `CursorLab.tsx` · `labs.css`
 
 **widgets/** — `core.tsx` (sticker, frame, countdown, poll, note…) ·
-`extras.tsx` (rsvp, dailyQ, availability, link shelf, playlist, expense,
+`extras.tsx` (rsvp, dailyQ, availability, Firecrawl link card, link shelf, playlist, expense,
 itinerary, quote, weather, sports…)
 
 **live/** — `useSpaceData.ts` / `useLiveSpace.ts` / `useLiveHandlers.ts`
@@ -54,7 +55,9 @@ itinerary, quote, weather, sports…)
 
 **lib/** — `routes.ts` (hash + invite URLs) · `widgetDefaults.ts`
 (`WIDGET_BLUEPRINTS`) · `widgetLabels.ts` · `widgetThreads.ts` · `blockZoom.ts` ·
-`entrance.ts` · `onboarding.ts` · `sounds.ts` · `backendCounts.ts`
+`entrance.ts` · `onboarding.ts` · `sounds.ts` · `radio.ts` (SomaFM singleton) ·
+`backendCounts.ts` · `linkQuestions.ts` (web post question threads:
+`<widgetId>::q:<id>` ride the normal message pipes; canned fallback generator)
 
 **data/** — `types.ts` (`Widget`/`Space`) · `spaces.ts` (all seeded spaces,
 1300+ lines) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes.ts` ·
@@ -66,6 +69,9 @@ itinerary, quote, weather, sports…)
 `note-paper.jpg` (fibers/tape) + `note-torn-paper.png` (transparent restrained
 bottom tear).
 
+**assets/link-card-fallback.jpg** — generated crop-safe paper collage used when
+a Firecrawl link card has no page image.
+
 ## convex/
 
 `schema.ts` (spaces, members, widgets, messages, votes, presence; frames are
@@ -73,12 +79,15 @@ widgets) · `spaces.ts` · `widgets.ts` (CRUD/move/resize) · `messages.ts`
 (per-widget threads) · `votes.ts` · `presence.ts` (cursors + gestures, TTLs) ·
 `stats.ts` (live counts) · `seed.ts` · `crons.ts` (presence cleanup) ·
 `http.ts` + `agentmail.ts` (webhook `/api/agentmail/webhook`, per-space inbox) ·
-`firecrawl.ts` (`scrapeLink` action) · `convex.config.ts` (components, env)
+`firecrawl.ts` (`scrapeLink` action) · `questions.ts` (`sparkQuestions`: OpenAI →
+2 conversation starters on a link card, canned fallback without a key) ·
+`convex.config.ts` (components, env)
 
-## src/index.css (~13k lines, hand-written, banner comments)
+## src/index.css (~14k lines, hand-written, banner comments)
 
 Tokens `@theme` (lines 4–21) → base (~1–1000) → space entrance (~1048) →
 per-widget sections (~1670–6300) → chrome: picker ~6305, threads ~7047,
 navigator ~7357, chat drawer ~8313, action dock ~9744, recap ~9951 → pages:
 block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
-(~11482+). New CSS goes in a new banner section at the end.
+(~11482+), ending with the Firecrawl web-post treatment. New CSS goes in a new
+banner section at the end.

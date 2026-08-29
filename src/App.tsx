@@ -25,7 +25,6 @@ import { WidgetPicker } from "./components/WidgetPicker";
 import { WidgetEditorPanel } from "./components/WidgetEditorPanel";
 import { WelcomePill } from "./components/WelcomePill";
 import {
-  getCommentCount,
   getGlobalThread,
   getThread,
   type ChatMessage,
@@ -60,6 +59,8 @@ import {
   WIDGET_SIZES,
 } from "./lib/widgetDefaults";
 import { widgetSupportsThread } from "./lib/widgetThreads";
+import { linkCardQuestions, questionThreadId } from "./lib/linkQuestions";
+import { LinkQuestionStrip } from "./components/LinkQuestionStrip";
 import { LiveSpacePage } from "./pages/LiveSpace";
 import {
   ZOOM_LANDING_MS,
@@ -286,6 +287,8 @@ export default function App() {
   const [widgetDataOverrides, setWidgetDataOverrides] = useState<
     Record<string, Record<string, Widget["data"]>>
   >({});
+  /** Which web post conversation starter the thread dock is answering. */
+  const [activeQuestionId, setActiveQuestionId] = useState("");
   const [spaceCustomizations, setSpaceCustomizations] = useState<
     Record<string, SpaceCustomization>
   >({});
@@ -299,6 +302,9 @@ export default function App() {
     defaultCanvasSize(spaceFromHash()),
   );
   const [focusedTarget, setFocusedTarget] = useState<FocusedTarget | null>(null);
+  useEffect(() => {
+    setActiveQuestionId("");
+  }, [focusedTarget?.id]);
   const [threadDockPlacement, setThreadDockPlacement] =
     useState<ThreadDockPlacement>("below");
   const [threadDockSize, setThreadDockSize] = useState<ThreadDockSize>(
@@ -1764,23 +1770,56 @@ export default function App() {
     ? widgetLabel(activeThreadWidget)
     : undefined;
   const currentLocalMessages = localThreadMessages[spaceId] ?? {};
+  const threadMessageCount = (threadId: string) =>
+    getThread(spaceId, threadId).messages.length +
+    (currentLocalMessages[threadId]?.length ?? 0);
   const commentCounts = Object.fromEntries(
     visibleWidgets.map((widget) => [
       widget.id,
-      getCommentCount(spaceId, widget.id) +
-        (currentLocalMessages[widget.id]?.length ?? 0),
+      threadMessageCount(widget.id) +
+        linkCardQuestions(widget).reduce(
+          (sum, question) =>
+            sum + threadMessageCount(questionThreadId(widget.id, question.id)),
+          0,
+        ),
     ]),
   );
-  const focusedThread =
+  /* A zoomed web post talks through its conversation starters — each one is
+     its own thread under a namespaced id; other widgets keep the plain one. */
+  const focusedThreadWidget =
     focusedTarget?.kind === "widget"
-      ? getThread(spaceId, focusedTarget.id)
+      ? visibleWidgets.find((widget) => widget.id === focusedTarget.id) ?? null
       : null;
+  const focusedQuestions = focusedThreadWidget
+    ? linkCardQuestions(focusedThreadWidget)
+    : [];
+  const activeQuestion =
+    focusedQuestions.find((question) => question.id === activeQuestionId) ??
+    focusedQuestions[0] ??
+    null;
+  const focusedThreadId =
+    focusedTarget?.kind === "widget"
+      ? activeQuestion
+        ? questionThreadId(focusedTarget.id, activeQuestion.id)
+        : focusedTarget.id
+      : null;
+  const focusedThread = focusedThreadId
+    ? getThread(spaceId, focusedThreadId)
+    : null;
   const focusedThreadMessages = focusedThread
     ? [
         ...focusedThread.messages,
         ...(currentLocalMessages[focusedThread.widgetId] ?? []),
       ]
     : [];
+  const focusedQuestionCounts = Object.fromEntries(
+    focusedTarget?.kind === "widget"
+      ? focusedQuestions.map((question) => [
+          question.id,
+          threadMessageCount(questionThreadId(focusedTarget.id, question.id)),
+        ])
+      : [],
+  );
 
   return (
     <main
@@ -2007,8 +2046,22 @@ export default function App() {
           label={focusedTarget.label}
           messages={focusedThreadMessages}
           placement={threadDockPlacement}
-          onSend={(text) => sendThreadMessage(focusedTarget.id, text)}
+          onSend={(text) =>
+            sendThreadMessage(focusedThreadId ?? focusedTarget.id, text)
+          }
           onSizeChange={updateThreadDockSize}
+          topper={
+            focusedQuestions.length > 0 ? (
+              <LinkQuestionStrip
+                questions={focusedQuestions}
+                activeId={activeQuestion?.id ?? ""}
+                counts={focusedQuestionCounts}
+                onPick={setActiveQuestionId}
+              />
+            ) : undefined
+          }
+          placeholder={activeQuestion ? "your take…" : undefined}
+          emptyText={activeQuestion ? "No takes yet — go first." : undefined}
           actions={
             focusedTarget.type === "rsvp" ? (
               <div className="thread-rsvp-chips">

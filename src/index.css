@@ -14081,3 +14081,91 @@
     transition: none;
   }
 }
+
+/* —— Web post reading circle: conversation starters in the thread dock ——
+ * Two AI questions ride the zoomed web post's dock; the active one reads
+ * as a paper slip (same material as the clipping), the rest stay chrome. */
+.thread-question-strip {
+  display: grid;
+  gap: 6px;
+  /* Clears the floating "thread" pill that hangs over the dock's top edge. */
+  padding: 24px 12px 2px;
+}
+
+.thread-question-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.thread-question-kicker i {
+  color: var(--color-lime);
+  font-style: normal;
+}
+
+.thread-question-strip button {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.84);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 160ms ease-out,
+    color 160ms ease-out,
+    rotate 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.thread-question-strip button:hover {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.thread-question-strip button.is-active {
+  background: var(--color-card);
+  color: var(--color-ink);
+  rotate: -0.5deg;
+}
+
+.thread-question-strip button i {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.6;
+  opacity: 0.5;
+}
+
+.thread-question-strip button span {
+  min-width: 0;
+}
+
+.thread-question-strip button em {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.6;
+  opacity: 0.55;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thread-question-strip button {
+    transition: none;
+  }
+}

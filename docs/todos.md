@@ -74,3 +74,10 @@ Backward-looking history lives in `hackathon.md`.
   notes' torn-paper texture, masking tape, a solid dated tab, and a
   `--space-accent` source chip. Glassmorphism is banned by PRODUCT.md; don't
   reintroduce backdrop-filter here.
+- 2026-08-28: Zoomed web posts talk through a **reading circle** — up to 2 AI
+  conversation starters in the thread dock, each its own thread under
+  `<widgetId>::q:<id>` (rides the existing message pipes, no schema change).
+  Seeded on the tahoe + hackathon cards; the editor attaches canned starters
+  on link save and live mode swaps in OpenAI ones via
+  `convex/questions.sparkQuestions` (canned fallback when `OPENAI_API_KEY`
+  is unset — set it in Convex env for real generations).

@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { WIDGET_CATALOG } from "../data/templates";
 import type { LinkCardScrape, Widget } from "../data/types";
+import { cannedLinkQuestions } from "../lib/linkQuestions";
 import { DEFAULT_STATION_ID, RADIO_STATIONS } from "../lib/radio";
 
 type PollOption = {
@@ -412,6 +413,11 @@ export function WidgetEditorPanel({
         onSave(widget.id, {
           ...widget.data,
           ...scraped,
+          // Instant conversation starters; live mode swaps in OpenAI ones.
+          questions:
+            Array.isArray(widget.data.questions) && widget.data.questions.length > 0
+              ? widget.data.questions
+              : cannedLinkQuestions(scraped.title || url),
           savedAt: Date.now(),
         });
       } catch {

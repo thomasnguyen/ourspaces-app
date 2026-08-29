@@ -14,6 +14,7 @@ import type * as firecrawl from "../firecrawl.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as presence from "../presence.js";
+import type * as questions from "../questions.js";
 import type * as seed from "../seed.js";
 import type * as spaces from "../spaces.js";
 import type * as stats from "../stats.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   messages: typeof messages;
   presence: typeof presence;
+  questions: typeof questions;
   seed: typeof seed;
   spaces: typeof spaces;
   stats: typeof stats;
