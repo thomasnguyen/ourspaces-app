@@ -15,6 +15,20 @@ by Thomas Nguyen (build) and Holly (design).
 Convex · Vite + React + TypeScript · Tailwind v4 · OpenAI (via Convex AI
 Gateway) · AgentMail · Firecrawl
 
+## Convex depth
+
+- **Components:** `@convex-dev/static-hosting`, `@agentmail/convex`,
+  `@firecrawl/firecrawl-convex`
+- **Schema & data:** tables + indexes for spaces, members, widgets, messages,
+  votes, collaborative paint marks, presence, email events
+- **Realtime:** live queries drive the canvas, presence cursors/gestures, and
+  poll + cozy-color results — no hand-rolled sync
+- **Functions:** queries, mutations, internal mutations, actions, HTTP actions
+- **Scheduling:** crons (stale presence cleanup) + scheduled functions
+- **Integrations:** AgentMail per-space inboxes (send/receive via HTTP
+  webhook), Firecrawl turns pasted webpages into reactive rich-post widgets,
+  OpenAI via Convex AI Gateway
+
 ## Run
 
 ```bash

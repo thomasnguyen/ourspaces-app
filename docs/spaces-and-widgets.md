@@ -18,7 +18,7 @@ a space reads lived-in instead of demo-empty.
 | **Memory** | Proof of history — the accumulation pitch | photo wall, joke registry, inside-joke notes, message wall |
 | **Now** | The current occasion, grouped in a frame | "Maya's bday" frame: countdown, cake poll, RSVP, potluck |
 | **Talk** | Something to talk about, daily | daily question, chat threads |
-| **Props** | Set dressing, camera pans past | playlist, weather, link shelf, expense split, itinerary, availability |
+| **Props** | Set dressing, camera pans past | SomaFM room radio, weather, link shelf, expense split, itinerary, availability |
 
 ## Widget catalog (all built unless marked)
 
@@ -26,7 +26,7 @@ a space reads lived-in instead of demo-empty.
 note · media.
 
 **Extras** (`extras.tsx`): wheel · dualClock · dailyQ · rsvp · decision ·
-availability · photoWall · linkShelf · playlist · jokeRegistry ·
+availability · photoWall · linkCard · linkShelf · playlist · jokeRegistry ·
 expenseSplit · itinerary · messageWall · quote · weather · sports ·
 backendLive.
 
@@ -35,11 +35,10 @@ backendLive.
 - **paint** — tiny shared pixel canvas, both cursors coloring the same cells
   live. The couple-space demo beat and the purest Convex flex. Fixed grid,
   few colors, one mutation per stroke. No brushes, layers, or undo.
-- **linkCard** (Firecrawl) — drop a URL, it unfurls into a rich card:
-  scraped title, image, summary, a couple of discussion questions, live
-  upvotes (the `votes` table already covers this; backend hooks exist in
-  `convex/firecrawl.ts`). The buildclub demo beat. Distinct from
-  `linkShelf`, which is a static prop list of links.
+- **linkCard discussion layer** — the Firecrawl-powered URL → title, image,
+  summary card is built. Add two OpenAI-generated questions and live upvotes
+  for the full article-club beat. Distinct from `linkShelf`, which remains a
+  static prop list of links.
 
 ---
 
@@ -53,7 +52,7 @@ backendLive.
 | Memory | photo wall · joke registry · inside-joke note · "summer?" note · message wall |
 | Now | **"Maya's bday" frame** → countdown · cake poll (matcha winning) · RSVP (4 yes) · potluck (balloons claimed, candles open) |
 | Talk | daily question (3 answered) · chat threads |
-| Props | playlist · weather · link shelf · expense split · itinerary · availability |
+| Props | SomaFM room radio · weather · link shelf · expense split · itinerary · availability |
 
 Demo role: two-window liveness (votes, potluck claims, cursors), the promote
 climax, the AgentMail follow-up sequence.
@@ -82,7 +81,7 @@ whitespace than the crew's clutter. Two people, not six.
 
 ## 3. the hackathon (buildclub) — dev group (`#3f70ff` blue, "you're invited")
 
-**Status: well-furnished, needs its demo beat.** Seven members, the open
+**Status: Firecrawl card landed; discussion follow-up remains.** Seven members, the open
 room (312 visitors). Already the most frame-organized space: reading table,
 shipped board, watch party, poll, wall.
 
@@ -92,9 +91,9 @@ wall · media · daily question · poll · message wall (guestbook).
 
 Needs:
 
-1. **linkCard** (Firecrawl) — the demo beat: drop a link on the reading
-   table, it unfurls to a summary card with discussion questions, someone
-   answers in window B, upvotes land live. "Hacker News as a bedroom wall."
+1. **linkCard discussion layer** — URL drop and the rich summary card are live.
+   Add two OpenAI questions, answers, and live upvotes for the complete
+   "Hacker News as a bedroom wall" beat.
 2. Optionally a **"front page" frame** where link cards cluster, sorted by
    votes — the HN joke made spatial. Visual only, cuttable.
 
