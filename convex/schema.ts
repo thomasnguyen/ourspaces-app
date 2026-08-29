@@ -107,6 +107,7 @@ export default defineSchema({
     ),
     size: v.number(),
     points: v.array(v.object({ x: v.number(), y: v.number() })),
+    regionId: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_space", ["spaceId"])
