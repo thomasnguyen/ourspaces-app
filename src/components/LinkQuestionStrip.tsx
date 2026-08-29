@@ -14,6 +14,23 @@ export function LinkQuestionStrip({
   onPick: (questionId: string) => void;
 }) {
   if (questions.length === 0) return null;
+
+  // One starter needs no tabs — show it as the thread's standing question.
+  if (questions.length === 1) {
+    return (
+      <div className="thread-question-strip">
+        <span className="thread-question-kicker">
+          <i aria-hidden="true">✦</i> conversation starter
+        </span>
+        <p className="thread-question-single">
+          <i aria-hidden="true">q1</i>
+          <span>{questions[0].text}</span>
+        </p>
+      </div>
+    );
+  }
+
+  const activeIndex = questions.findIndex((question) => question.id === activeId);
   return (
     <div className="thread-question-strip">
       <span className="thread-question-kicker">
@@ -34,6 +51,11 @@ export function LinkQuestionStrip({
           </button>
         );
       })}
+      {activeIndex >= 0 ? (
+        <span className="thread-question-scope">
+          ↳ takes on q{activeIndex + 1}
+        </span>
+      ) : null}
     </div>
   );
 }
