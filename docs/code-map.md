@@ -79,7 +79,8 @@ switches it back) ·
 
 **assets/textures/** — generated real-paper surfaces for `NoteWidget`:
 `note-paper.jpg` (fibers/tape) + `note-torn-paper.png` (transparent restrained
-bottom tear).
+bottom tear), plus `widget-paper-v1.jpg` (quiet seamless fibers, currently a
+one-card material prototype on the crew poll).
 
 **assets/link-card-fallback.jpg** — generated crop-safe paper collage used when
 a Firecrawl link card has no page image.
