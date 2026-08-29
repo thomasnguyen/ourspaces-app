@@ -48,6 +48,9 @@ export type LinkCardScrape = {
   siteName: string;
   author: string;
   publishedAt: string;
+  discussionUrl: string;
+  points: number;
+  commentCount: number;
 };
 
 export type SpaceMember = {
