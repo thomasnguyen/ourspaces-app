@@ -13613,7 +13613,7 @@
 
 /* —— Paper family: safe note footer + hall-of-fame ledger ——————————————
  * Same tactile material, different specimens: the note tears at the bottom;
- * the registry is a bottom-torn scorecard with layered color scraps. */
+ * the registry is a bottom-torn scorecard with one pink backing scrap. */
 .widget-paper-note .note-footer {
   margin-bottom: 8px;
 }
@@ -13639,32 +13639,19 @@
   isolation: isolate;
 }
 
-.widget-group[data-widget-type="jokeRegistry"] .widget-group-body::before,
-.widget-group[data-widget-type="jokeRegistry"] .widget-group-body::after {
+.widget-group[data-widget-type="jokeRegistry"] .widget-group-body::before {
   position: absolute;
   z-index: -1;
-  bottom: -8px;
-  height: 24px;
+  bottom: -4px;
+  height: 20px;
   mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
   -webkit-mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
   content: "";
-  pointer-events: none;
-}
-
-.widget-group[data-widget-type="jokeRegistry"] .widget-group-body::before {
-  left: 63%;
-  width: 22%;
+  left: 58%;
+  width: 28%;
   background: var(--color-couple);
-  rotate: 1.5deg;
-}
-
-.widget-group[data-widget-type="jokeRegistry"] .widget-group-body::after {
-  z-index: -2;
-  bottom: -12px;
-  left: 46%;
-  width: 40%;
-  background: var(--color-trip);
-  rotate: -1deg;
+  pointer-events: none;
+  rotate: 1deg;
 }
 
 .widget-joke-registry .joke-tape {
