@@ -14042,28 +14042,44 @@
 }
 
 .link-card-blur-crop {
-  display: none;
+  right: 16px;
+  bottom: 14px;
+  left: 16px;
+  z-index: 1;
+  display: block;
+  height: 186px;
+  border-radius: 12px;
+  background: transparent;
+  outline: 0;
+}
+
+.link-card-blur-crop img {
+  inset: -30%;
+  width: 160%;
+  height: 160%;
+  filter: blur(38px) saturate(0.82) contrast(0.78) brightness(1.12);
+  opacity: 0.96;
 }
 
 .link-card-paper {
-  background: color-mix(in srgb, var(--color-card) 44%, transparent);
-  outline: 1px solid color-mix(in srgb, var(--color-card) 72%, transparent);
+  background: color-mix(in srgb, var(--color-card) 32%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--color-card) 76%, transparent);
   outline-offset: -1px;
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, var(--color-card) 82%, transparent),
     inset 0 -1px 0 color-mix(in srgb, var(--color-card) 24%, transparent),
     0 4px 0 color-mix(in srgb, var(--color-sticker) 12%, transparent);
-  -webkit-backdrop-filter: blur(34px) saturate(0.92) brightness(1.1);
-  backdrop-filter: blur(34px) saturate(0.92) brightness(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(0.82) contrast(0.82) brightness(1.08);
+  backdrop-filter: blur(18px) saturate(0.82) contrast(0.82) brightness(1.08);
 }
 
 .link-card-date-tab {
-  background: color-mix(in srgb, var(--color-card) 56%, transparent);
+  background: color-mix(in srgb, var(--color-card) 42%, transparent);
   outline: 1px solid color-mix(in srgb, var(--color-card) 70%, transparent);
   outline-offset: -1px;
   box-shadow: 0 3px 0 color-mix(in srgb, var(--color-sticker) 14%, transparent);
-  -webkit-backdrop-filter: blur(18px) saturate(0.92) brightness(1.08);
-  backdrop-filter: blur(18px) saturate(0.92) brightness(1.08);
+  -webkit-backdrop-filter: blur(22px) saturate(0.84) contrast(0.86) brightness(1.08);
+  backdrop-filter: blur(22px) saturate(0.84) contrast(0.86) brightness(1.08);
 }
 
 .widget-link-card p {
@@ -14073,4 +14089,12 @@
 .link-card-open:hover .link-card-cover-image,
 .link-card-open:focus-visible .link-card-cover-image {
   transform: scale(1.075);
+}
+
+@container (max-width: 370px) {
+  .link-card-blur-crop {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+  }
 }
