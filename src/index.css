@@ -13646,7 +13646,7 @@
   translate: 0 -1px;
 }
 
-/* the object on the ledge — tilted, with its own standing shadow */
+/* the object on the ledge — tilted, flat against the paper */
 .link-shelf-icon {
   display: grid;
   width: 24px;
@@ -13654,7 +13654,6 @@
   place-items: center;
   border-radius: 7px 5px 6px 4px;
   background: var(--shelf-accent);
-  box-shadow: 0 2.5px 0 rgba(90, 65, 40, 0.35);
   color: white;
   font-size: 13px;
   font-weight: 800;
