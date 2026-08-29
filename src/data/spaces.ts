@@ -673,6 +673,10 @@ export const BUILD_CLUB_WIDGETS: Widget[] = [
       publishedAt: "",
       savedBy: "riley",
       savedAt: Date.UTC(2026, 7, 27),
+      questions: [
+        { id: "q1", text: "which part of the sync design surprised you?" },
+        { id: "q2", text: "would you trust it with your demo tomorrow?" },
+      ],
     },
   },
   {
@@ -1187,6 +1191,10 @@ export const TRIP_WIDGETS: Widget[] = [
       publishedAt: "",
       savedBy: "Maya",
       savedAt: Date.UTC(2026, 7, 28),
+      questions: [
+        { id: "q1", text: "ok in one sentence — what does the sync engine do?" },
+        { id: "q2", text: "real talk: did anyone read past the intro?" },
+      ],
     },
   },
 ];

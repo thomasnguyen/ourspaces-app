@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { useQuery } from "convex-helpers/react/cache";
 import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock } from "../components/ActionDock";
 import { Canvas, SpaceHeader } from "../components/Canvas";
 import { CanvasNavigator } from "../components/CanvasNavigator";
@@ -21,6 +22,8 @@ import {
 } from "../components/WidgetThreadDock";
 import { getSpace, SPACES_BY_ID } from "../data/spaces";
 import type { Widget, WidgetType } from "../data/types";
+import { LinkQuestionStrip } from "../components/LinkQuestionStrip";
+import { linkCardQuestions, questionThreadId } from "../lib/linkQuestions";
 import { getSoundEnabled, playSound, setSoundEnabled } from "../lib/sounds";
 import {
   defaultSpaceCustomization,
@@ -250,6 +253,9 @@ export function LiveSpacePage({
   const liveCursors = presence.peers;
   const allMessages = useQuery(api.messages.listBySpace, space ? { spaceId: space._id } : "skip");
   const liveCounts = useQuery(api.stats.getLiveCounts);
+  const sparkQuestions = useAction(api.questions.sparkQuestions);
+  /** Which web post conversation starter the thread dock is answering. */
+  const [activeQuestionId, setActiveQuestionId] = useState("");
   const handlers = useLiveHandlers(space?._id, identity, presence, widgets);
   const poll = widgets.find((widget) => widget.type === "poll") ?? emptyWidget;
   const livePoll = useLivePoll(poll, identity.userId, members);
@@ -322,10 +328,11 @@ export function LiveSpacePage({
       (allMessages ?? [])
         .filter((message) => message.widgetId !== "global")
         .reduce(
-          (counts, message) => counts.set(
-            message.widgetId,
-            (counts.get(message.widgetId) ?? 0) + 1,
-          ),
+          // Question threads ("<widget>::q:<id>") count toward their widget's chip.
+          (counts, message) => {
+            const widgetId = message.widgetId.split("::")[0];
+            return counts.set(widgetId, (counts.get(widgetId) ?? 0) + 1);
+          },
           new Map<string, number>(),
         ),
     ),
@@ -436,9 +443,37 @@ export function LiveSpacePage({
   const activeThreadId =
     focusedTarget?.kind === "widget" ? focusedTarget.id : selectedWidgetId;
   const activeThreadWidget = adaptedWidgets.find((widget) => widget.id === activeThreadId) ?? null;
+  /* A zoomed web post talks through its conversation starters — each one is
+     its own thread under a namespaced id; other widgets keep the plain one. */
+  const activeThreadQuestions = activeThreadWidget
+    ? linkCardQuestions(activeThreadWidget)
+    : [];
+  const activeQuestion =
+    activeThreadQuestions.find((question) => question.id === activeQuestionId) ??
+    activeThreadQuestions[0] ??
+    null;
+  const activeThreadKey =
+    activeThreadWidget && activeQuestion
+      ? questionThreadId(activeThreadWidget.id, activeQuestion.id)
+      : activeThreadId;
   const activeThreadMessages = (allMessages ?? [])
-    .filter((message) => message.widgetId === activeThreadId)
+    .filter((message) => message.widgetId === activeThreadKey)
     .map(toChatMessage);
+  const activeQuestionCounts = Object.fromEntries(
+    activeThreadWidget
+      ? activeThreadQuestions.map((question) => [
+          question.id,
+          (allMessages ?? []).filter(
+            (message) =>
+              message.widgetId ===
+              questionThreadId(activeThreadWidget.id, question.id),
+          ).length,
+        ])
+      : [],
+  );
+  useEffect(() => {
+    setActiveQuestionId("");
+  }, [activeThreadId]);
   const focusedFrame = (focusedTarget?.kind === "frame"
     ? adaptedWidgets.find((widget) => widget.id === focusedTarget.id && widget.type === "frame") ?? null
     : null) as Widget | null;
@@ -1204,12 +1239,24 @@ export function LiveSpacePage({
           label={widgetLabel(activeThreadWidget)}
           messages={activeThreadMessages}
           placement={threadDockPlacement}
-          onSend={(text) => handlers.onSend(activeThreadWidget.id, text)}
+          onSend={(text) => handlers.onSend(activeThreadKey, text)}
           onSizeChange={
             focusedTarget?.kind === "widget"
               ? updateThreadDockSize
               : undefined
           }
+          topper={
+            activeThreadQuestions.length > 0 ? (
+              <LinkQuestionStrip
+                questions={activeThreadQuestions}
+                activeId={activeQuestion?.id ?? ""}
+                counts={activeQuestionCounts}
+                onPick={setActiveQuestionId}
+              />
+            ) : undefined
+          }
+          placeholder={activeQuestion ? "your take…" : undefined}
+          emptyText={activeQuestion ? "No takes yet — go first." : undefined}
           actions={
             activeThreadWidget.type === "rsvp" ? (
               <div className="thread-rsvp-chips">
@@ -1268,6 +1315,16 @@ export function LiveSpacePage({
         onSave={(widgetId, data, layout) => {
           handlers.onUpdate(widgetId, data);
           if (layout) handlers.onResize(widgetId, layout.w, layout.h);
+          // A saved link gets OpenAI conversation starters; canned ones from
+          // the editor hold the spot until the action lands.
+          const saved = widgets.find((item) => item.id === widgetId);
+          if (saved?.type === "linkCard" && typeof data.url === "string" && data.url) {
+            void sparkQuestions({
+              widgetId: widgetId as Id<"widgets">,
+              title: String(data.title ?? ""),
+              description: String(data.description ?? ""),
+            }).catch(() => {});
+          }
           setEditingWidgetId("");
         }}
         onResolveLink={handlers.onResolveLink}

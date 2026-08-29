@@ -25,6 +25,9 @@ export function WidgetThreadDock({
   onSend,
   onSizeChange,
   actions,
+  topper,
+  placeholder,
+  emptyText,
 }: {
   viewportRef: RefObject<HTMLDivElement | null>;
   widgetId: string;
@@ -36,6 +39,10 @@ export function WidgetThreadDock({
   onSizeChange?: (size: ThreadDockSize) => void;
   /** Widget quick actions (e.g. rsvp chips) shown above the composer. */
   actions?: ReactNode;
+  /** Rendered between the header and the messages (e.g. question strip). */
+  topper?: ReactNode;
+  placeholder?: string;
+  emptyText?: string;
 }) {
   const dockRef = useRef<HTMLElement>(null);
   const isPhoto = widgetType === "media" || widgetType === "photoWall";
@@ -145,6 +152,8 @@ export function WidgetThreadDock({
         <span className="widget-thread-count">{messages.length}</span>
       </header>
 
+      {topper}
+
       {isPhoto && (
         <div className="widget-thread-photo-hint" aria-label="Photo adding preview">
           <span aria-hidden="true">＋</span>
@@ -161,6 +170,8 @@ export function WidgetThreadDock({
         label={label}
         onSend={onSend}
         actions={actions}
+        placeholder={placeholder}
+        emptyText={emptyText}
       />
     </aside>
   );

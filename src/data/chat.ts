@@ -161,6 +161,34 @@ export const LEAGUE_WIDGET_THREADS: Record<string, ChatThread> = {
   },
 };
 
+export const TRIP_WIDGET_THREADS: Record<string, ChatThread> = {
+  "trip-link-card::q:q1": {
+    widgetId: "trip-link-card::q:q1",
+    label: "ok in one sentence — what does the sync engine do?",
+    messages: [
+      {
+        id: "tq1a",
+        from: "Jules",
+        text: "keeps every screen honest. like a group chat with rules",
+        time: "1h",
+      },
+      {
+        id: "tq1b",
+        from: "Maya",
+        text: "the transactions part actually goes hard",
+        time: "32m",
+      },
+    ],
+  },
+  "trip-link-card::q:q2": {
+    widgetId: "trip-link-card::q:q2",
+    label: "real talk: did anyone read past the intro?",
+    messages: [
+      { id: "tq2a", from: "Kenji", text: "i skimmed. it syncs. we vibe", time: "1h" },
+    ],
+  },
+};
+
 export const BUILD_CLUB_WIDGET_THREADS: Record<string, ChatThread> = {
   "bc-poll": {
     widgetId: "bc-poll",
@@ -185,12 +213,38 @@ export const BUILD_CLUB_WIDGET_THREADS: Record<string, ChatThread> = {
       { id: "bl1", from: "riley", text: "sync engine article is 🔥", time: "1h" },
     ],
   },
+  "bc-link-card::q:q1": {
+    widgetId: "bc-link-card::q:q1",
+    label: "which part of the sync design surprised you?",
+    messages: [
+      {
+        id: "bq1a",
+        from: "riley",
+        text: "subscriptions being just queries is so clean",
+        time: "2h",
+      },
+      {
+        id: "bq1b",
+        from: "alex",
+        text: "the mutation log rewired my brain a little",
+        time: "1h",
+      },
+    ],
+  },
+  "bc-link-card::q:q2": {
+    widgetId: "bc-link-card::q:q2",
+    label: "would you trust it with your demo tomorrow?",
+    messages: [
+      { id: "bq2a", from: "jordan", text: "already am lol", time: "45m" },
+    ],
+  },
 };
 
 export function getThreadsForSpace(spaceId: string) {
   if (spaceId === "league") return LEAGUE_WIDGET_THREADS;
   if (spaceId === "buildclub") return BUILD_CLUB_WIDGET_THREADS;
-  if (spaceId === "couple" || spaceId === "house" || spaceId === "trip") return {};
+  if (spaceId === "trip") return TRIP_WIDGET_THREADS;
+  if (spaceId === "couple" || spaceId === "house") return {};
   return CREW_WIDGET_THREADS;
 }
 
