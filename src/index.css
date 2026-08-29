@@ -13764,6 +13764,8 @@
   background: var(--color-sticker);
   color: inherit;
   text-decoration: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .link-card-cover {
