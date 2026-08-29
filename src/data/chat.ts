@@ -164,7 +164,7 @@ export const LEAGUE_WIDGET_THREADS: Record<string, ChatThread> = {
 export const TRIP_WIDGET_THREADS: Record<string, ChatThread> = {
   "trip-link-card::q:q1": {
     widgetId: "trip-link-card::q:q1",
-    label: "ok in one sentence — what does the sync engine do?",
+    label: "sync engine 101",
     messages: [
       {
         id: "tq1a",
@@ -182,7 +182,7 @@ export const TRIP_WIDGET_THREADS: Record<string, ChatThread> = {
   },
   "trip-link-card::q:q2": {
     widgetId: "trip-link-card::q:q2",
-    label: "real talk: did anyone read past the intro?",
+    label: "who actually read it?",
     messages: [
       { id: "tq2a", from: "Kenji", text: "i skimmed. it syncs. we vibe", time: "1h" },
     ],
