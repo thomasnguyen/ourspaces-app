@@ -1244,6 +1244,7 @@ export function LiveSpacePage({
                 paintIdentity={identity}
                 onPaintStroke={paintStroke}
                 onPaintClear={clearPaintWidget}
+                onPaintCursor={presence.reportZone}
                 pollSelections={pollSelections}
                 onRsvp={respondToRsvp}
                 rsvpSelections={rsvpSelections}

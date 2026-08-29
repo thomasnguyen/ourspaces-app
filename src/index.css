@@ -15652,3 +15652,53 @@
     transition: none;
   }
 }
+
+/* ================================================================
+   COZY COLOR — ROOM CURSORS PASS
+   Live collaborator cursors inside the coloring room, scoped per
+   postcard via presence.zone ("cozy:<boardId>", 0..1 board coords).
+   ================================================================ */
+
+.cozy-cursor-layer {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.cozy-cursor {
+  position: absolute;
+  transition:
+    left 110ms linear,
+    top 110ms linear;
+}
+
+.cozy-cursor svg {
+  display: block;
+  fill: var(--peer-color, var(--color-couple));
+  stroke: var(--color-sticker);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  filter: drop-shadow(1px 2px 0 rgba(0 0 0 / 0.35));
+}
+
+.cozy-cursor span {
+  position: absolute;
+  left: 15px;
+  top: 20px;
+  border: 1.5px solid var(--peer-color, var(--color-couple));
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: white;
+  padding: 2px 7px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cozy-cursor {
+    transition: none;
+  }
+}

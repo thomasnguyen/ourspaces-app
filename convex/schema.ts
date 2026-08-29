@@ -124,6 +124,9 @@ export default defineSchema({
     color: v.string(),
     emoji: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
+    /** unset = canvas cursor (world coords); "cozy:<boardId>" = coloring-room
+     *  cursor with x/y normalized 0..1 over that board */
+    zone: v.optional(v.string()),
     gesture: v.optional(
       v.object({
         sessionId: v.string(),

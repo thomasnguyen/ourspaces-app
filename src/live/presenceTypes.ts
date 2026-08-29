@@ -26,6 +26,8 @@ export type LivePeer = {
   avatarUrl?: string;
   x: number;
   y: number;
+  /** "cozy:<boardId>" when the peer is in the coloring room (x/y are 0..1) */
+  zone?: string;
   updatedAt: number;
   gesture?: LiveGesture;
 };

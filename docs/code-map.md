@@ -55,7 +55,10 @@ except the legacy unprefixed scene) · `boards/starry.ts` + `boards/wave.ts`
 (AUTO-GENERATED traced-painting data from `scripts/trace-artwork.mjs`)
 
 **live/** — `useSpaceData.ts` / `useLiveSpace.ts` / `useLiveHandlers.ts`
-(gesture claim/accept/reject) / `useLivePoll.ts` / `usePresence.ts` ·
+(gesture claim/accept/reject) / `useLivePoll.ts` / `usePresence.ts`
+(canvas cursors + gestures; `reportZone(x, y, "cozy:<boardId>")` switches the
+heartbeat to 0..1 zone coords for the coloring room, canvas pointermove
+switches it back) ·
 `dataMode.ts` (live/mock detection) · `identity.ts` (local identity + colors) ·
 `presenceTypes.ts` · `snapshot.ts` (localStorage snapshot) · `adapt.ts`
 (Convex↔UI key escaping)
