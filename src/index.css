@@ -13340,3 +13340,133 @@
     opacity: 1;
   }
 }
+
+/* —— Paper family: safe note footer + hall-of-fame ledger ——————————————
+ * Same tactile material, different specimens: the note tears at the bottom;
+ * the registry stays square like an index card and carries the ranked ink. */
+.widget-paper-note .note-footer {
+  margin-bottom: 8px;
+}
+
+.widget-joke-registry {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  border-radius: 2px;
+  background-color: var(--color-card);
+  background-image: url("/assets/textures/note-paper.jpg");
+  background-position: center;
+  background-size: 430px 430px;
+  background-blend-mode: multiply;
+  box-shadow: none;
+  padding: 15px 15px 13px;
+  rotate: -1deg;
+}
+
+.widget-joke-registry::before {
+  position: absolute;
+  z-index: -1;
+  right: -5px;
+  bottom: -4px;
+  width: 44%;
+  height: 25%;
+  background: var(--color-couple);
+  clip-path: polygon(
+    0 8%,
+    12% 2%,
+    26% 7%,
+    39% 1%,
+    54% 6%,
+    68% 0,
+    83% 7%,
+    100% 2%,
+    98% 100%,
+    0 96%
+  );
+  content: "";
+  rotate: 2deg;
+}
+
+.widget-joke-registry .joke-tape {
+  top: -5px;
+  right: 31px;
+  width: 48px;
+  height: 14px;
+  background-color: var(--color-card);
+  background-image: url("/assets/textures/note-paper.jpg");
+  background-position: center;
+  background-size: 250px 250px;
+  box-shadow: none;
+  clip-path: polygon(
+    0 10%,
+    12% 1%,
+    25% 8%,
+    39% 0,
+    53% 7%,
+    68% 1%,
+    83% 8%,
+    100% 2%,
+    98% 92%,
+    84% 100%,
+    69% 92%,
+    53% 100%,
+    37% 92%,
+    20% 100%,
+    1% 91%
+  );
+  opacity: 0.66;
+  rotate: 4deg;
+}
+
+.widget-joke-registry h3 {
+  position: relative;
+  z-index: 1;
+  width: max-content;
+  max-width: calc(100% - 30px);
+  overflow: hidden;
+  margin: -1px 0 9px -3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: white;
+  padding: 5px 9px;
+  font-size: 13px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  rotate: -1.5deg;
+}
+
+.widget-joke-registry ol {
+  position: relative;
+  z-index: 1;
+  padding-inline: 2px;
+}
+
+.widget-joke-registry li {
+  border-color: color-mix(
+    in srgb,
+    var(--color-muted) 18%,
+    transparent
+  );
+  padding: 5px 1px 5px 0;
+}
+
+.widget-joke-registry li:last-child {
+  border-bottom: 0;
+}
+
+.widget-joke-registry .joke-rank {
+  color: var(--color-couple);
+  font-size: 11px;
+}
+
+.widget-joke-registry .joke-votes {
+  color: var(--color-muted);
+}
+
+.widget-group.is-thread-selected .widget-shell.widget-joke-registry,
+.widget-group.is-managed .widget-shell.widget-joke-registry,
+.widget-group.is-dragging .widget-shell.widget-joke-registry {
+  box-shadow: none;
+  filter: none;
+}
