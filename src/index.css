@@ -13343,7 +13343,7 @@
 
 /* —— Paper family: safe note footer + hall-of-fame ledger ——————————————
  * Same tactile material, different specimens: the note tears at the bottom;
- * the registry stays square like an index card and carries the ranked ink. */
+ * the registry is a bottom-torn scorecard with layered color scraps. */
 .widget-paper-note .note-footer {
   margin-bottom: 8px;
 }
@@ -13352,39 +13352,49 @@
   position: relative;
   isolation: isolate;
   overflow: visible;
-  border-radius: 2px;
-  background-color: var(--color-card);
-  background-image: url("/assets/textures/note-paper.jpg");
+  border-radius: 0;
+  background-color: transparent;
+  background-image: url("/assets/textures/note-torn-paper.png");
   background-position: center;
-  background-size: 430px 430px;
-  background-blend-mode: multiply;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-blend-mode: normal;
   box-shadow: none;
-  padding: 15px 15px 13px;
+  padding: 16px 15px 22px;
   rotate: -1deg;
 }
 
-.widget-joke-registry::before {
+.widget-group[data-widget-type="jokeRegistry"] .widget-group-body {
+  position: relative;
+  isolation: isolate;
+}
+
+.widget-group[data-widget-type="jokeRegistry"] .widget-group-body::before,
+.widget-group[data-widget-type="jokeRegistry"] .widget-group-body::after {
   position: absolute;
   z-index: -1;
-  right: -5px;
-  bottom: -4px;
-  width: 44%;
-  height: 25%;
-  background: var(--color-couple);
-  clip-path: polygon(
-    0 8%,
-    12% 2%,
-    26% 7%,
-    39% 1%,
-    54% 6%,
-    68% 0,
-    83% 7%,
-    100% 2%,
-    98% 100%,
-    0 96%
-  );
+  bottom: -9px;
+  height: 28%;
+  mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
+  -webkit-mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
   content: "";
-  rotate: 2deg;
+  pointer-events: none;
+}
+
+.widget-group[data-widget-type="jokeRegistry"] .widget-group-body::before {
+  right: -4px;
+  width: 34%;
+  background: var(--color-couple);
+  rotate: 1.8deg;
+}
+
+.widget-group[data-widget-type="jokeRegistry"] .widget-group-body::after {
+  z-index: -2;
+  bottom: -11px;
+  left: 18%;
+  width: 28%;
+  background: var(--color-trip);
+  rotate: -1.2deg;
 }
 
 .widget-joke-registry .joke-tape {
