@@ -55,6 +55,7 @@ function emptyFixture(widget: Widget): Widget {
           description: "",
           imageUrl: "",
           siteName: "",
+          author: "",
         },
       };
     case "playlist":
