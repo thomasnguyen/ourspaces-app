@@ -9,14 +9,16 @@ import { createPortal } from "react-dom";
 import { MemberFace } from "../components/MemberFace";
 import type { Widget } from "../data/types";
 import { playSound } from "../lib/sounds";
+import {
+  ART_DECOR,
+  ART_H,
+  ART_REGIONS,
+  ART_W,
+  type ArtRegion,
+  type ArtTone,
+} from "./cozyColorArt";
 
-export type CozyColorTone =
-  | "berry"
-  | "orange"
-  | "blue"
-  | "violet"
-  | "teal"
-  | "lime";
+export type CozyColorTone = ArtTone;
 
 export type CozyColorPoint = { x: number; y: number };
 export type CozyColorPreset = "electric" | "sunset";
@@ -42,15 +44,6 @@ export type CozyColorIdentity = {
   avatarUrl?: string;
 };
 
-type PaintRegion = {
-  id: string;
-  number: number;
-  tone: CozyColorTone;
-  x: number;
-  y: number;
-  label: string;
-};
-
 const TONES: { tone: CozyColorTone; number: number; label: string }[] = [
   { tone: "berry", number: 1, label: "pink" },
   { tone: "orange", number: 2, label: "orange" },
@@ -59,172 +52,72 @@ const TONES: { tone: CozyColorTone; number: number; label: string }[] = [
   { tone: "teal", number: 5, label: "teal" },
   { tone: "lime", number: 6, label: "lime" },
 ];
+const TONE_NUMBER = Object.fromEntries(TONES.map(({ tone, number }) => [tone, number])) as Record<
+  CozyColorTone,
+  number
+>;
 
-const REGIONS: PaintRegion[] = [
-  { id: "sky-left", number: 3, tone: "blue", x: 0.145, y: 0.1, label: "left sky" },
-  { id: "sky-mid-left", number: 3, tone: "blue", x: 0.34, y: 0.1, label: "middle left sky" },
-  { id: "sky-mid-right", number: 3, tone: "blue", x: 0.64, y: 0.1, label: "middle right sky" },
-  { id: "sky-right", number: 3, tone: "blue", x: 0.74, y: 0.12, label: "right sky" },
-  { id: "sky-far-right", number: 3, tone: "blue", x: 0.9, y: 0.1, label: "far right sky" },
-  { id: "moon", number: 2, tone: "orange", x: 0.5, y: 0.17, label: "moon" },
-  { id: "cloud-far-left", number: 5, tone: "teal", x: 0.23, y: 0.15, label: "far left cloud" },
-  { id: "cloud-left", number: 5, tone: "teal", x: 0.35, y: 0.34, label: "left cloud" },
-  { id: "cloud-right", number: 5, tone: "teal", x: 0.64, y: 0.36, label: "right cloud" },
-  { id: "cloud-far-right", number: 5, tone: "teal", x: 0.92, y: 0.18, label: "far right cloud" },
-  { id: "plant-pot", number: 4, tone: "violet", x: 0.08, y: 0.43, label: "plant pot" },
-  { id: "plant-leaf-1", number: 6, tone: "lime", x: 0.045, y: 0.2, label: "plant leaf" },
-  { id: "plant-leaf-2", number: 6, tone: "lime", x: 0.105, y: 0.18, label: "plant leaf" },
-  { id: "plant-leaf-3", number: 6, tone: "lime", x: 0.04, y: 0.29, label: "plant leaf" },
-  { id: "plant-leaf-4", number: 6, tone: "lime", x: 0.115, y: 0.28, label: "plant leaf" },
-  { id: "plant-leaf-5", number: 6, tone: "lime", x: 0.045, y: 0.35, label: "plant leaf" },
-  { id: "plant-leaf-6", number: 6, tone: "lime", x: 0.11, y: 0.36, label: "plant leaf" },
-  { id: "lamp", number: 1, tone: "berry", x: 0.93, y: 0.34, label: "lamp shade" },
-  { id: "lamp-base", number: 5, tone: "teal", x: 0.93, y: 0.46, label: "lamp base" },
-  { id: "airplane", number: 2, tone: "orange", x: 0.75, y: 0.42, label: "airplane" },
-  { id: "tower-top", number: 2, tone: "orange", x: 0.22, y: 0.32, label: "control tower" },
-  { id: "tower-body", number: 4, tone: "violet", x: 0.22, y: 0.4, label: "control tower" },
-  { id: "left-chair", number: 5, tone: "teal", x: 0.055, y: 0.56, label: "left chair back" },
-  { id: "left-seat", number: 5, tone: "teal", x: 0.24, y: 0.7, label: "left chair seat" },
-  { id: "left-base", number: 4, tone: "violet", x: 0.27, y: 0.82, label: "left chair base" },
-  { id: "left-arm", number: 4, tone: "violet", x: 0.085, y: 0.62, label: "left chair arm" },
-  { id: "right-chair", number: 2, tone: "orange", x: 0.95, y: 0.56, label: "right chair back" },
-  { id: "right-seat", number: 2, tone: "orange", x: 0.75, y: 0.7, label: "right chair seat" },
-  { id: "right-base", number: 5, tone: "teal", x: 0.73, y: 0.82, label: "right chair base" },
-  { id: "right-arm", number: 3, tone: "blue", x: 0.915, y: 0.62, label: "right chair arm" },
-  { id: "left-pillow", number: 2, tone: "orange", x: 0.19, y: 0.58, label: "left pillow" },
-  { id: "right-pillow", number: 4, tone: "violet", x: 0.8, y: 0.58, label: "right pillow" },
-  { id: "left-blanket", number: 2, tone: "orange", x: 0.31, y: 0.64, label: "left blanket" },
-  { id: "right-blanket", number: 1, tone: "berry", x: 0.7, y: 0.64, label: "right blanket" },
-  { id: "left-mug", number: 5, tone: "teal", x: 0.45, y: 0.67, label: "left mug" },
-  { id: "right-mug", number: 2, tone: "orange", x: 0.54, y: 0.67, label: "right mug" },
-  { id: "table", number: 4, tone: "violet", x: 0.5, y: 0.71, label: "table top" },
-  { id: "table-base", number: 4, tone: "violet", x: 0.5, y: 0.86, label: "table base" },
-  { id: "left-suitcase", number: 1, tone: "berry", x: 0.11, y: 0.83, label: "left suitcase" },
-  { id: "left-suitcase-panel", number: 1, tone: "berry", x: 0.1, y: 0.9, label: "left suitcase panel" },
-  { id: "right-suitcase", number: 3, tone: "blue", x: 0.89, y: 0.84, label: "right suitcase" },
-  { id: "right-suitcase-panel", number: 3, tone: "blue", x: 0.88, y: 0.9, label: "right suitcase panel" },
-  { id: "runway", number: 4, tone: "violet", x: 0.5, y: 0.55, label: "runway" },
-  { id: "floor-left", number: 2, tone: "orange", x: 0.39, y: 0.92, label: "left floor" },
-  { id: "floor-right", number: 2, tone: "orange", x: 0.61, y: 0.92, label: "right floor" },
-];
-const REGION_IDS = new Set(REGIONS.map((region) => region.id));
+const REGION_IDS = new Set(ART_REGIONS.map((region) => region.id));
 
-const TONE_PROPERTIES: Record<CozyColorTone, string> = {
-  berry: "--paint-berry",
-  orange: "--paint-orange",
-  blue: "--paint-blue",
-  violet: "--paint-violet",
-  teal: "--paint-teal",
-  lime: "--paint-lime",
-};
-
-const CANVAS_WIDTH = 1152;
-const CANVAS_HEIGHT = 768;
-
-function cssColorToRgba(value: string): [number, number, number, number] {
-  const sample = document.createElement("canvas");
-  sample.width = 1;
-  sample.height = 1;
-  const context = sample.getContext("2d");
-  if (!context) return [0, 0, 0, 255];
-  context.fillStyle = value;
-  context.fillRect(0, 0, 1, 1);
-  return [...context.getImageData(0, 0, 1, 1).data] as [number, number, number, number];
-}
-
-function floodFill(
-  image: ImageData,
-  startX: number,
-  startY: number,
-  fill: [number, number, number, number],
-) {
-  const { data, width, height } = image;
-  const start = (startY * width + startX) * 4;
-  const target = [data[start], data[start + 1], data[start + 2]];
-  if (target[0] < 190 || target[1] < 190 || target[2] < 190) return;
-
-  const seen = new Uint8Array(width * height);
-  const stack = [startY * width + startX];
-  while (stack.length) {
-    const pixel = stack.pop();
-    if (pixel === undefined || seen[pixel]) continue;
-    seen[pixel] = 1;
-    const offset = pixel * 4;
-    const close =
-      Math.abs(data[offset] - target[0]) < 42 &&
-      Math.abs(data[offset + 1] - target[1]) < 42 &&
-      Math.abs(data[offset + 2] - target[2]) < 42;
-    if (!close) continue;
-    data[offset] = fill[0];
-    data[offset + 1] = fill[1];
-    data[offset + 2] = fill[2];
-    data[offset + 3] = fill[3];
-    const x = pixel % width;
-    const y = Math.floor(pixel / width);
-    if (x > 0) stack.push(pixel - 1);
-    if (x < width - 1) stack.push(pixel + 1);
-    if (y > 0) stack.push(pixel - width);
-    if (y < height - 1) stack.push(pixel + width);
-  }
-}
-
-function PaintCanvas({
-  src,
+function ArtBoard({
   filled,
-  preset,
+  activeTone,
+  complete,
+  onRegion,
 }: {
-  src: string;
   filled: Map<string, CozyColorStroke>;
-  preset: CozyColorPreset;
+  activeTone: CozyColorTone;
+  complete: boolean;
+  onRegion: (region: ArtRegion) => void;
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
-  const [imageReady, setImageReady] = useState(false);
-
-  useEffect(() => {
-    setImageReady(false);
-    const image = new Image();
-    image.src = src;
-    image.onload = () => {
-      imageRef.current = image;
-      setImageReady(true);
-    };
-    return () => {
-      image.onload = null;
-    };
-  }, [src]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const source = imageRef.current;
-    if (!canvas || !source || !imageReady) return;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context) return;
-    context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    context.drawImage(source, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    const pixels = context.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    const styles = window.getComputedStyle(canvas);
-    for (const region of REGIONS) {
-      const stroke = filled.get(region.id);
-      if (!stroke) continue;
-      floodFill(
-        pixels,
-        Math.round(region.x * CANVAS_WIDTH),
-        Math.round(region.y * CANVAS_HEIGHT),
-        cssColorToRgba(styles.getPropertyValue(TONE_PROPERTIES[stroke.tone]).trim()),
-      );
-    }
-    context.putImageData(pixels, 0, 0);
-  }, [filled, imageReady, preset]);
-
   return (
-    <canvas
-      ref={canvasRef}
-      className="cozy-color-room-canvas"
-      width={CANVAS_WIDTH}
-      height={CANVAS_HEIGHT}
-      aria-label="Shared paint-by-number airport lounge"
-    />
+    <svg
+      className="cozy-svg"
+      viewBox={`0 0 ${ART_W} ${ART_H}`}
+      role="img"
+      aria-label="Paint-by-number night valley: one moon over two hills, two houses, one river"
+    >
+      <rect className="cozy-svg-bg" width={ART_W} height={ART_H} />
+      {ART_REGIONS.map((region) => {
+        const mark = filled.get(region.id);
+        const matched = region.tone === activeTone;
+        return (
+          <path
+            key={region.id}
+            d={region.d}
+            fillRule="evenodd"
+            className={`cozy-svg-region tone-${region.tone}${mark ? " is-filled" : ""}${matched ? " is-matched" : ""}${region.id.startsWith("star") ? " cozy-svg-star" : ""}`}
+            onClick={() => onRegion(region)}
+            aria-label={`${region.id.replace(/-/g, " ")}, number ${TONE_NUMBER[region.tone]}`}
+          />
+        );
+      })}
+      {ART_DECOR.map((piece, index) => (
+        <path
+          key={index}
+          d={piece.d}
+          strokeWidth={piece.w}
+          className={`cozy-svg-decor${complete ? " is-lit" : ""}`}
+        />
+      ))}
+      {ART_REGIONS.flatMap((region) =>
+        region.labels.map((label, index) => {
+          const mark = filled.get(region.id);
+          const matched = region.tone === activeTone;
+          return (
+            <text
+              key={`${region.id}-${index}`}
+              x={label.x}
+              y={label.y}
+              fontSize={label.s * 1.15}
+              className={`cozy-svg-number${mark ? " is-filled" : ""}${matched ? " is-matched" : ""}`}
+            >
+              {TONE_NUMBER[region.tone]}
+            </text>
+          );
+        }),
+      )}
+    </svg>
   );
 }
 
@@ -266,15 +159,21 @@ export function CozyColorWidget({
     }
     return result;
   }, [shownStrokes]);
-  const progress = Math.round((filled.size / REGIONS.length) * 100);
-  const source = String(widget.data.src ?? "/assets/cozy-color-same-moon.png");
+  const progress = Math.round((filled.size / ART_REGIONS.length) * 100);
+  const complete = filled.size === ART_REGIONS.length;
+  const wasComplete = useRef(complete);
   const remainingByTone = useMemo(() => {
     const result = new Map<CozyColorTone, number>(TONES.map(({ tone }) => [tone, 0]));
-    for (const region of REGIONS) {
+    for (const region of ART_REGIONS) {
       if (!filled.has(region.id)) result.set(region.tone, (result.get(region.tone) ?? 0) + 1);
     }
     return result;
   }, [filled]);
+
+  useEffect(() => {
+    if (complete && !wasComplete.current) playSound("promote");
+    wasComplete.current = complete;
+  }, [complete]);
 
   useEffect(() => {
     if ((remainingByTone.get(activeTone) ?? 0) > 0) return;
@@ -310,8 +209,15 @@ export function CozyColorWidget({
     };
   }, [roomOpen]);
 
-  const fillRegion = (region: PaintRegion) => {
+  const fillRegion = (region: ArtRegion) => {
     if (filled.has(region.id)) return;
+    if (region.tone !== activeTone) {
+      // tapping any dim number jumps to that color
+      setActiveTone(region.tone);
+      playSound("tap");
+      return;
+    }
+    const label = region.labels[0];
     const localId = `paint-${crypto.randomUUID()}`;
     const next: CozyColorStroke = {
       id: localId,
@@ -320,28 +226,31 @@ export function CozyColorWidget({
       authorColor: identity?.color ?? "var(--color-couple)",
       tone: region.tone,
       size: 0.04,
-      points: [{ x: region.x, y: region.y }],
+      points: [{ x: label.x / ART_W, y: label.y / ART_H }],
       regionId: region.id,
       createdAt: Date.now(),
     };
     setLocalStrokes((existing) => [...existing, next]);
-    playSound("tap");
-    if (!onStroke) return;
-    void Promise.resolve(
-      onStroke({
-        userId: next.userId,
-        authorName: next.authorName,
-        authorColor: next.authorColor,
-        tone: next.tone,
-        size: next.size,
-        points: next.points,
-        regionId: next.regionId,
-      }),
-    ).then(() => {
-      window.setTimeout(() => {
-        setLocalStrokes((existing) => existing.filter((stroke) => stroke.id !== localId));
-      }, 500);
-    });
+    playSound("place");
+    if (onStroke) {
+      void Promise.resolve(
+        onStroke({
+          userId: next.userId,
+          authorName: next.authorName,
+          authorColor: next.authorColor,
+          tone: next.tone,
+          size: next.size,
+          points: next.points,
+          regionId: next.regionId,
+        }),
+      ).then((saved) => {
+        // mock mode resolves null — keep the local stroke as the source of truth
+        if (!saved) return;
+        window.setTimeout(() => {
+          setLocalStrokes((existing) => existing.filter((stroke) => stroke.id !== localId));
+        }, 500);
+      });
+    }
     if ((remainingByTone.get(region.tone) ?? 0) === 1) {
       const nextTone = TONES.find(({ tone }) => tone !== region.tone && (remainingByTone.get(tone) ?? 0) > 0);
       if (nextTone) window.setTimeout(() => setActiveTone(nextTone.tone), 180);
@@ -377,7 +286,8 @@ export function CozyColorWidget({
         regionId: next.regionId,
         preset: next.preset,
       }),
-    ).then(() => {
+    ).then((saved) => {
+      if (!saved) return;
       window.setTimeout(() => {
         setLocalStrokes((existing) => existing.filter((stroke) => stroke.id !== localId));
       }, 500);
@@ -397,6 +307,11 @@ export function CozyColorWidget({
       role="dialog"
       aria-modal="true"
       aria-label="Color together"
+      // portal events bubble through the React tree into WidgetCard's
+      // drag handlers (which pointer-capture non-button targets and eat
+      // clicks on the SVG regions) — keep the room self-contained
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
     >
       <header className="cozy-color-room-header">
         <button type="button" className="cozy-color-room-close" onClick={() => setRoomOpen(false)}>
@@ -419,35 +334,19 @@ export function CozyColorWidget({
               />
             ))}
           </div>
-          <strong>{progress === 100 ? "finished!" : `${filled.size}/${REGIONS.length}`}</strong>
+          <strong>{complete ? "finished!" : `${filled.size}/${ART_REGIONS.length}`}</strong>
         </div>
       </header>
 
       <main className="cozy-color-room-main">
-        <section className="cozy-color-room-board" aria-label={`${progress}% colored`}>
-          <PaintCanvas src={source} filled={filled} preset={preset} />
-          <div className="cozy-color-region-layer">
-            {REGIONS.map((region) => {
-              const isFilled = filled.has(region.id);
-              const isMatched = activeTone === region.tone;
-              return (
-                <button
-                  type="button"
-                  key={region.id}
-                  className={`cozy-color-region${isFilled ? " is-filled" : ""}${isMatched ? " is-matched" : ""}`}
-                  style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%` }}
-                  onClick={() => fillRegion(region)}
-                  disabled={isFilled || !isMatched}
-                  aria-label={`${isFilled ? "Colored" : "Fill"} ${region.label} with number ${region.number}`}
-                >
-                  {isFilled ? "" : region.number}
-                </button>
-              );
-            })}
-          </div>
+        <section
+          className={`cozy-color-room-board${complete ? " is-complete" : ""}`}
+          aria-label={`${progress}% colored`}
+        >
+          <ArtBoard filled={filled} activeTone={activeTone} complete={complete} onRegion={fillRegion} />
           <div className="cozy-color-now">
-            <b className={`tone-${activeTone}`}>{TONES.find(({ tone }) => tone === activeTone)?.number}</b>
-            <span>tap the matching numbers</span>
+            <b className={`tone-${activeTone}`}>{TONE_NUMBER[activeTone]}</b>
+            <span>{complete ? "you finished it together" : "tap the matching numbers"}</span>
           </div>
           <div className="cozy-color-progress"><i style={{ width: `${progress}%` }} /><span>{progress}% cozy</span></div>
         </section>
@@ -534,10 +433,10 @@ export function CozyColorWidget({
             playSound("tap");
           }}
         >
-          <img src="/assets/cozy-color-same-moon-colored.png" alt="Colorful airport lounge postcard" />
+          <img src="/assets/cozy-color-poster.svg" alt="Night valley poster: one moon over two little houses" />
           <span className="cozy-color-door-shade" />
           <span className="cozy-color-door-cta"><b>open coloring room</b><em>fills your whole screen →</em></span>
-          <span className="cozy-color-door-progress">{filled.size}/{REGIONS.length} filled</span>
+          <span className="cozy-color-door-progress">{filled.size}/{ART_REGIONS.length} filled</span>
         </button>
         <footer className="cozy-color-preview-footer">
           <div className="cozy-color-mini-palette" aria-hidden="true">

@@ -44,8 +44,11 @@ are not.
 **widgets/** — `core.tsx` (sticker, frame, countdown, poll, note…) ·
 `extras.tsx` (rsvp, dailyQ, availability, Firecrawl link card, link shelf, playlist, expense,
 itinerary, quote, weather, sports…) · `CozyColorWidget.tsx` (full-screen
-paint-by-number game, two live palette presets, generated postcard; accepts
-mock-local or Convex-backed region fills)
+paint-by-number game on an inline SVG board: 50 closed vector regions fill via
+CSS `--paint-*` vars, numbers live in the SVG, tapping a dim number switches
+color; two live palette presets; mock-local or Convex-backed region fills) ·
+`cozyColorArt.ts` (AUTO-GENERATED region/decor path data — regenerate with
+`node scripts/generate-cozy-art.mjs`, don't hand-edit)
 
 **live/** — `useSpaceData.ts` / `useLiveSpace.ts` / `useLiveHandlers.ts`
 (gesture claim/accept/reject) / `useLivePoll.ts` / `usePresence.ts` ·
@@ -74,14 +77,15 @@ bottom tear).
 **assets/link-card-fallback.jpg** — generated crop-safe paper collage used when
 a Firecrawl link card has no page image.
 
-**assets/cozy-color-same-moon.png** + **assets/cozy-color-same-moon-colored.png**
-— generated airport-lounge line art and its finished flat-color target for the
-couple space's collaborative paint-by-number room.
+**assets/cozy-color-poster.svg** — AUTO-GENERATED finished "same moon, both
+windows" poster (door preview for `CozyColorWidget`); emitted by
+`scripts/generate-cozy-art.mjs` alongside `src/widgets/cozyColorArt.ts`.
 
-**assets/coloring-concepts/** — three closed-region SVG candidates (`lotus-night`,
-`same-moon`, `window-garden`) plus `compare.svg`; the lotus candidate adapts a
-public-domain Openclipart outline. These are selection prototypes, not yet wired
-into `CozyColorWidget`.
+**assets/cozy-color-same-moon*.png** — legacy raster line art from the
+flood-fill era; no longer rendered (widget `data.src` is ignored).
+
+**assets/coloring-concepts/** — superseded selection prototypes from before the
+generated vector board; kept for history only.
 
 ## convex/
 
@@ -103,6 +107,13 @@ navigator ~7357, chat drawer ~8313, action dock ~9744, recap ~9951 → pages:
 block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
 (~11482+), ending with the full-screen cozy-color room treatment. New CSS goes
 in a new banner section at the end.
+
+## scripts/
+
+`generate-cozy-art.mjs` — computes the cozy-color scene geometry (halo-ring
+donuts, peaks/caps, pine zigzags, sine river ribbons, mirrored houses, birds)
+and emits `src/widgets/cozyColorArt.ts` + `public/assets/cozy-color-poster.svg`.
+Edit the script, rerun it, never the outputs.
 
 ## Agent tooling
 
