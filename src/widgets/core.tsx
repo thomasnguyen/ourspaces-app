@@ -91,12 +91,44 @@ export function FrameWidget({
 }
 
 const DAY_MS = 86_400_000;
-const MAX_STRIP_SEGMENTS = 14;
+const MAX_TEAR_SEGMENTS = 14;
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
 function localMidnight(iso: string): number {
   return new Date(`${iso}T00:00:00`).getTime();
+}
+
+/* One cell of the black clock chips — value changes roll through a clipped window. */
+function ClockCell({ value, unit }: { value: string; unit: string }) {
+  const [shown, setShown] = useState(value);
+  const [outgoing, setOutgoing] = useState<string | null>(null);
+  useEffect(() => {
+    if (value === shown) return;
+    setOutgoing(shown);
+    setShown(value);
+    const id = setTimeout(() => setOutgoing(null), 220);
+    return () => clearTimeout(id);
+  }, [value, shown]);
+
+  return (
+    <span className="cd-cell">
+      <span className="cd-cell-win">
+        {outgoing !== null && (
+          <span className="cd-cell-num is-out" aria-hidden="true">
+            {outgoing}
+          </span>
+        )}
+        <span
+          key={shown}
+          className={`cd-cell-num${outgoing !== null ? " is-in" : ""}`}
+        >
+          {shown}
+        </span>
+      </span>
+      <span className="cd-cell-unit">{unit}</span>
+    </span>
+  );
 }
 
 export function CountdownWidget({ widget, style }: { widget: Widget; style: Style }) {
@@ -133,9 +165,9 @@ export function CountdownWidget({ widget, style }: { widget: Widget; style: Styl
       : String(widget.data.unit ?? "days!");
 
   const rest = remaining !== null && remaining > 0 ? remaining % DAY_MS : 0;
-  const tick = `+ ${pad2(Math.floor(rest / 3_600_000))}h ${pad2(
-    Math.floor((rest % 3_600_000) / 60_000),
-  )}m ${pad2(Math.floor((rest % 60_000) / 1000))}s`;
+  const hh = pad2(Math.floor(rest / 3_600_000));
+  const mm = pad2(Math.floor((rest % 3_600_000) / 60_000));
+  const ss = pad2(Math.floor((rest % 60_000) / 1000));
 
   const dateLabel = isToday
     ? "today"
@@ -145,20 +177,23 @@ export function CountdownWidget({ widget, style }: { widget: Widget; style: Styl
           .toLowerCase()
       : String(widget.data.date ?? "soon");
 
-  // day-strip: one segment per day between start and target, capped; done = elapsed share
+  // tear-off row: one page stub per day between start and target, capped.
+  // done = torn off (gap on the perforation), now = today's page, todo = still hanging
   let segments: Array<"done" | "now" | "todo"> | null = null;
   if (target !== null && startDate) {
     const totalDays = Math.max(
       1,
       Math.round((target - localMidnight(startDate)) / DAY_MS),
     );
-    const count = Math.min(totalDays, MAX_STRIP_SEGMENTS);
+    const count = Math.min(totalDays, MAX_TEAR_SEGMENTS);
     const elapsed = Math.min(totalDays, Math.max(0, totalDays - (liveDays ?? 0)));
     const done = isToday ? count : Math.round((elapsed / totalDays) * count);
     segments = Array.from({ length: count }, (_, i) =>
       i < done ? "done" : i === done && !isToday ? "now" : "todo",
     );
   }
+  const tearSegments =
+    segments ?? Array.from({ length: 12 }, () => "todo" as const);
 
   // digit rollover: when the number flips, the old one rolls out and the new one springs in
   const display = isToday ? "today" : value;
@@ -179,18 +214,28 @@ export function CountdownWidget({ widget, style }: { widget: Widget; style: Styl
       }${isToday ? " is-today" : ""}`}
       style={style}
     >
+      <span className="countdown-tear" aria-hidden="true">
+        {tearSegments.map((state, i) => (
+          <i key={i} className={state === "todo" ? "" : `is-${state}`} />
+        ))}
+      </span>
       <div className="countdown-top">
         {event && <span className="countdown-event">{event}</span>}
         <span className="countdown-date">{dateLabel}</span>
       </div>
       <span className="countdown-number-wrap">
         {outgoing !== null && (
-          <span className="countdown-number is-roll-out" aria-hidden="true">
+          <span
+            className="countdown-number is-roll-out"
+            data-len={outgoing.length}
+            aria-hidden="true"
+          >
             {outgoing}
           </span>
         )}
         <span
           key={shown}
+          data-len={shown.length}
           className={`countdown-number${outgoing !== null ? " is-roll-in" : ""}${
             isToday ? " is-today-word" : ""
           }`}
@@ -199,24 +244,22 @@ export function CountdownWidget({ widget, style }: { widget: Widget; style: Styl
         </span>
       </span>
       <span className="countdown-unit">{isToday ? "it's here 🎉" : unit}</span>
-      {targetDate && (
-        <span className="countdown-tick">
-          {isToday ? "hope it's a good one" : tick}
-        </span>
-      )}
+      {targetDate &&
+        (isToday ? (
+          <span className="countdown-tick">hope it's a good one</span>
+        ) : (
+          <span className="countdown-clock">
+            <ClockCell value={hh} unit="h" />
+            <ClockCell value={mm} unit="m" />
+            <ClockCell value={ss} unit="s" />
+          </span>
+        ))}
       {hyped.length > 0 && (
         <span className="countdown-hype">
           {hyped.slice(0, 3).map((name) => (
             <MemberFace key={name} name={name} size="xs" />
           ))}
           <em>{hyped.length} hyped</em>
-        </span>
-      )}
-      {segments && (
-        <span className="countdown-strip" aria-hidden="true">
-          {segments.map((state, i) => (
-            <i key={i} className={state === "todo" ? "" : `is-${state}`} />
-          ))}
         </span>
       )}
     </div>

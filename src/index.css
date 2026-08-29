@@ -1927,14 +1927,16 @@
 }
 
 .widget-countdown {
-  /* tone system — the countdown stays the loud flat card; every color reads from these */
+  /* tone system — the countdown stays the loud flat card; every color reads from these.
+     it's a tear-off desk calendar: perforated top, page stubs, chunky print number */
   --cd-bg: #7853ff;
   --cd-ink: white;
   --cd-soft: rgba(255, 255, 255, 0.88);
   --cd-deco: rgba(255, 255, 255, 0.22);
   --cd-shadow: rgba(78, 50, 164, 0.25);
+  --cd-num-shadow: rgba(43, 22, 118, 0.55);
   --cd-chip-bg: rgba(255, 255, 255, 0.16);
-  --cd-dot: rgba(255, 255, 255, 0.28);
+  --cd-dot: rgba(255, 255, 255, 0.34);
   --cd-dot-done: white;
   display: flex;
   overflow: hidden;
@@ -1944,12 +1946,13 @@
   background: var(--cd-bg);
   box-shadow: 0 8px 0 var(--cd-shadow);
   color: var(--cd-ink);
-  padding: 16px 18px 20px;
+  padding: 27px 18px 20px;
 }
 
 .cd-tone-blush {
   --cd-bg: #e9369d;
   --cd-shadow: rgba(140, 20, 90, 0.3);
+  --cd-num-shadow: rgba(126, 10, 78, 0.55);
 }
 
 .cd-tone-butter {
@@ -1958,19 +1961,64 @@
   --cd-soft: rgba(17, 17, 20, 0.62);
   --cd-deco: rgba(17, 17, 20, 0.14);
   --cd-shadow: rgba(146, 104, 24, 0.35);
+  --cd-num-shadow: rgba(205, 141, 5, 0.9);
   --cd-chip-bg: rgba(17, 17, 20, 0.1);
-  --cd-dot: rgba(17, 17, 20, 0.2);
+  --cd-dot: rgba(17, 17, 20, 0.26);
   --cd-dot-done: #111114;
+  --cd-tear: rgba(17, 17, 20, 0.32);
+  --cd-tear-dot: rgba(17, 17, 20, 0.34);
 }
 
 .cd-tone-mint {
   --cd-bg: #13b8a6;
   --cd-shadow: rgba(11, 100, 90, 0.32);
+  --cd-num-shadow: rgba(5, 92, 82, 0.6);
 }
 
 .cd-tone-sky {
   --cd-bg: #3f70ff;
   --cd-shadow: rgba(24, 50, 130, 0.32);
+  --cd-num-shadow: rgba(19, 44, 128, 0.6);
+}
+
+/* perforated tear-off row — one page stub per day; torn days leave a gap on the
+   dotted line, today's page pulses, the rest hang waiting for their turn */
+.countdown-tear {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  gap: 6px;
+  height: 17px;
+  padding: 0 13px;
+  border-bottom: 2px dotted var(--cd-tear-dot, rgba(255, 255, 255, 0.4));
+}
+
+.countdown-tear i {
+  flex: 1;
+  height: 11px;
+  border-radius: 0 0 4px 4px;
+  background: var(--cd-tear, rgba(255, 255, 255, 0.55));
+}
+
+.countdown-tear i.is-done {
+  background: transparent;
+}
+
+.countdown-tear i.is-now {
+  background: var(--cd-dot-done);
+  animation: cd-now-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes cd-now-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* flat sparkle pair in the open top-right corner (brand mark, matches the poll deco) */
@@ -1992,18 +2040,33 @@
 }
 
 .widget-countdown::before {
-  top: 14px;
+  top: 21px;
   right: 13px;
   width: 22px;
   height: 22px;
+  animation: cd-twinkle 5.4s ease-in-out infinite;
 }
 
 .widget-countdown::after {
-  top: 38px;
+  top: 45px;
   right: 34px;
   width: 11px;
   height: 11px;
   rotate: 20deg;
+  animation: cd-twinkle 5.4s ease-in-out 2.7s infinite;
+}
+
+/* idle life — the sparkles breathe, out of phase, slow enough to be felt not seen */
+@keyframes cd-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+  50% {
+    opacity: 0.45;
+    scale: 0.78;
+  }
 }
 
 .widget-countdown.is-today {
@@ -2047,13 +2110,25 @@
   display: block;
 }
 
+/* the number is chunky print — a flat hard offset shadow, same move as the card's own */
 .countdown-number {
   display: block;
+  transform-origin: left bottom;
   font-family: var(--font-display);
   font-size: 104px;
   font-weight: 800;
-  line-height: 0.7;
+  line-height: 0.72;
   letter-spacing: -0.04em;
+  text-shadow: 0 0.055em 0 var(--cd-num-shadow);
+}
+
+/* long counts shrink instead of kissing the card edge */
+.countdown-number[data-len="3"]:not(.is-today-word) {
+  font-size: 84px;
+}
+
+.countdown-number[data-len="4"]:not(.is-today-word) {
+  font-size: 62px;
 }
 
 .countdown-number.is-today-word {
@@ -2069,7 +2144,7 @@
 }
 
 .countdown-number.is-roll-in {
-  animation: cd-roll-in 0.52s cubic-bezier(0.2, 0.9, 0.3, 1.18);
+  animation: cd-roll-in 0.52s var(--ease-pop);
 }
 
 @keyframes cd-roll-out {
@@ -2079,29 +2154,108 @@
   }
 }
 
+/* new day lands with a little squash-and-stretch */
 @keyframes cd-roll-in {
   from {
     opacity: 0;
     translate: 0 62%;
+    scale: 1.05 0.84;
+  }
+  70% {
+    scale: 0.99 1.05;
+  }
+  to {
+    scale: 1 1;
   }
 }
 
 .countdown-unit {
   margin-top: 8px;
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 800;
   line-height: 1;
 }
 
-/* real-time remainder — the seconds visibly tick */
+/* today-state one-liner under the big word */
 .countdown-tick {
-  margin-top: 5px;
+  margin-top: 6px;
   font-size: 10.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   color: var(--cd-soft);
+}
+
+/* real-time remainder — black sticker chips, the seconds digit visibly rolls */
+.countdown-clock {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.cd-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+  border-radius: 7px;
+  background: var(--color-sticker);
+  color: white;
+  padding: 4px 6px 4px 7px;
+}
+
+.cd-cell:nth-child(1) {
+  rotate: -1.5deg;
+}
+
+.cd-cell:nth-child(3) {
+  rotate: 1.2deg;
+}
+
+.cd-cell-win {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  height: 12px;
+}
+
+.cd-cell-num {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 12px;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.cd-cell-num.is-out {
+  position: absolute;
+  inset: 0;
+  animation: cd-cell-out var(--dur-base) var(--ease-glide) forwards;
+}
+
+.cd-cell-num.is-in {
+  animation: cd-cell-in var(--dur-base) var(--ease-glide);
+}
+
+@keyframes cd-cell-out {
+  to {
+    opacity: 0.2;
+    translate: 0 -100%;
+  }
+}
+
+@keyframes cd-cell-in {
+  from {
+    opacity: 0.4;
+    translate: 0 100%;
+  }
+}
+
+.cd-cell-unit {
+  font-size: 8.5px;
+  font-weight: 800;
+  opacity: 0.55;
 }
 
 .countdown-hype {
@@ -2127,38 +2281,20 @@
   color: var(--cd-soft);
 }
 
-/* day strip hugging the bottom edge — one segment per day, crossed off as they pass */
-.countdown-strip {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  display: flex;
-  gap: 3px;
-  height: 7px;
-}
-
-.countdown-strip i {
-  flex: 1;
-  background: var(--cd-dot);
-}
-
-.countdown-strip i.is-done {
-  background: var(--cd-dot-done);
-}
-
-.countdown-strip i.is-now {
-  background: var(--cd-dot-done);
-  animation: cd-now-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes cd-now-pulse {
-  0%,
-  100% {
-    opacity: 0.35;
+@media (prefers-reduced-motion: reduce) {
+  .widget-countdown::before,
+  .widget-countdown::after,
+  .countdown-tear i.is-now,
+  .cd-cell-num.is-in {
+    animation: none;
   }
-  50% {
-    opacity: 1;
+
+  .cd-cell-num.is-out {
+    display: none;
+  }
+
+  .countdown-tear i.is-now {
+    opacity: 0.75;
   }
 }
 
@@ -13998,7 +14134,7 @@
   }
 
   .paper-bg[data-space-id="crew"] .widget-countdown {
-    padding: 16px 16px 20px;
+    padding: 27px 16px 20px;
   }
 
   .paper-bg[data-space-id="crew"] .poll-content {
