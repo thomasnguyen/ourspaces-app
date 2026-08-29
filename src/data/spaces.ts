@@ -487,6 +487,7 @@ export const LEAGUE_WIDGETS: Widget[] = [
     z: 3,
     data: {
       question: "pizza order?",
+      tone: "mint",
       options: [
         { id: "a", label: "pepperoni", votes: 2, total: 4, voters: ["Sam", "Kenji"] },
         { id: "b", label: "veggie", votes: 1, total: 4, voters: ["Jules"] },

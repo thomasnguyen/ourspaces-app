@@ -7,6 +7,19 @@ Backward-looking history lives in `hackathon.md`.
 
 - Full app deployed live: https://necessary-cobra-892.convex.site (Convex
   static hosting + prod backend, all spaces seeded).
+- Poll widget redesigned as a "ballot" (`/eye-candy` pass on the washed-out
+  tinted bars): vote fills are now flat full-strength tone color — the row
+  content renders twice (`.poll-row-base` + `.poll-row-fill` clipped via
+  `clip-path: inset(… round 999px)` to `--poll-pct`), so labels/faces flip to
+  fill ink exactly at the bar edge. Leading row gets an ink ring (drawn above
+  the fill via `::after`) + a gold crown that lands with `--ease-pop`; tallies
+  are chunky display-font numbers; question gets a tone-color marker underline;
+  ballot bubble previews tone color on hover and fills sticker-black + lime
+  when you vote; waiting-on faces breathe. Violet tone = loud card with cream
+  rows and sticker-black bars. `pizza-poll` fixture now `tone: "mint"` to match
+  league teal. Verified all 4 variants + hover/voted at 3x and 1x via
+  `.context/shot-poll.mjs`; live prod shows it after redeploy (component API
+  unchanged, CSS/JSX only).
 - Countdown widget redesigned as a tear-off desk calendar: perforated top row
   (one page stub per day — torn days leave gaps on the dotted line, today's
   page pulses; replaces the old bottom day-strip), chunky flat offset shadow
