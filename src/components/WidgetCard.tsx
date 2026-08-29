@@ -778,6 +778,11 @@ function WidgetCardComponent({
   const label = widgetLabel(widget);
   const controlLabel = WIDGET_CATALOG.find((item) => item.type === widget.type)?.label ?? label;
   const supportsThread = widgetSupportsThread(widget);
+  /* A filled web post zooms on a plain background click, like the photo wall;
+     only its paper clipping / read pill opens the article. */
+  const zoomsOnClick =
+    widget.type === "photoWall" ||
+    (widget.type === "linkCard" && String(widget.data.url ?? "").trim() !== "");
 
   const beginWidgetMove = () => {
     if (onGestureStart) onGestureStart(widget, "move");
@@ -892,7 +897,7 @@ function WidgetCardComponent({
             suppressBodyClick.current = false;
             return;
           }
-          if (widget.type === "photoWall" && !widgetFocused && supportsThread) {
+          if (zoomsOnClick && !widgetFocused && supportsThread) {
             onSelect?.(widget);
             return;
           }
@@ -912,7 +917,11 @@ function WidgetCardComponent({
           /* The web post is one big link — let it arm a body drag anyway.
              Capture is deferred until real movement so a plain click still
              opens the article. */
-          if (interactive && !interactive.classList.contains("link-card-open"))
+          if (
+            interactive &&
+            !interactive.classList.contains("link-card-open") &&
+            !interactive.classList.contains("link-card-read")
+          )
             return;
           suppressBodyClick.current = false;
           if (!interactive) e.currentTarget.setPointerCapture(e.pointerId);
@@ -993,7 +1002,7 @@ function WidgetCardComponent({
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            if (widget.type === "photoWall" && !widgetFocused && supportsThread) {
+            if (zoomsOnClick && !widgetFocused && supportsThread) {
               onSelect?.(widget);
             } else {
               onManage?.(widget.id);
@@ -1003,7 +1012,7 @@ function WidgetCardComponent({
         role="button"
         tabIndex={0}
         aria-label={
-          widget.type === "photoWall" && !widgetFocused
+          zoomsOnClick && !widgetFocused
             ? `Open ${label}. Use the drag control to move it.`
             : `Select ${controlLabel} widget. Drag to move it.`
         }
