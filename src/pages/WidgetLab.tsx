@@ -45,6 +45,18 @@ function emptyFixture(widget: Widget): Widget {
       };
     case "linkShelf":
       return { ...widget, data: { ...widget.data, links: [] } };
+    case "linkCard":
+      return {
+        ...widget,
+        data: {
+          ...widget.data,
+          url: "",
+          title: "",
+          description: "",
+          imageUrl: "",
+          siteName: "",
+        },
+      };
     case "playlist":
       return {
         ...widget,

@@ -41,6 +41,34 @@ type ShelfLink = {
   contributor?: string;
 };
 
+const LINK_CARD_FALLBACK = "/assets/link-card-fallback.jpg";
+
+function linkCardHref(value: string) {
+  const url = value.trim();
+  return url.includes("://") ? url : `https://${url}`;
+}
+
+function linkCardDomain(value: string) {
+  try {
+    return new URL(linkCardHref(value)).hostname.replace(/^www\./, "");
+  } catch {
+    return "shared from the web";
+  }
+}
+
+function linkCardDate(publishedAt: string, savedAt: unknown) {
+  const published = publishedAt.trim();
+  const date = published
+    ? new Date(published)
+    : new Date(typeof savedAt === "number" ? savedAt : Date.now());
+  if (Number.isNaN(date.getTime())) return "saved today";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
 const REACTION_EMOJIS = ["❤️", "😂", "👀"];
 
 type WheelSlice = { id: string; label: string };
@@ -1048,6 +1076,71 @@ export function LinkShelfWidget({ widget, style }: { widget: Widget; style: Styl
         </div>
       )}
     </section>
+  );
+}
+
+export function LinkCardWidget({ widget, style }: { widget: Widget; style: Style }) {
+  const url = String(widget.data.url ?? "").trim();
+  const imageUrl = String(widget.data.imageUrl ?? "").trim();
+  const title = String(widget.data.title ?? "").trim() || "paste a link";
+  const description = String(widget.data.description ?? "").trim() ||
+    "Send the article everyone should read. This space will turn it into something worth keeping.";
+  const siteName = String(widget.data.siteName ?? "").trim() ||
+    (url ? linkCardDomain(url) : "new web post");
+  const author = String(widget.data.author ?? "").trim();
+  const savedBy = String(widget.data.savedBy ?? "you").trim();
+  const publishedAt = String(widget.data.publishedAt ?? "");
+  const [artSrc, setArtSrc] = useState(imageUrl || LINK_CARD_FALLBACK);
+
+  useEffect(() => {
+    setArtSrc(imageUrl || LINK_CARD_FALLBACK);
+  }, [imageUrl]);
+
+  const preview = (
+    <>
+      <div className="link-card-cover" aria-hidden="true">
+        <img
+          className="link-card-cover-image"
+          src={artSrc}
+          alt=""
+          referrerPolicy="no-referrer"
+          onError={() => setArtSrc(LINK_CARD_FALLBACK)}
+        />
+        <span className="link-card-date-tab">
+          {url ? linkCardDate(publishedAt, widget.data.savedAt) : "add a link"}
+        </span>
+        <span className="link-card-blur-crop">
+          <img src={artSrc} alt="" />
+        </span>
+      </div>
+      <div className="link-card-paper">
+        <span className="link-card-source">
+          <i aria-hidden="true">{siteName.slice(0, 1).toLowerCase()}</i>
+          <span>{author ? `${author} · ${siteName}` : siteName}</span>
+        </span>
+        <h3>{title}</h3>
+        <p>{description}</p>
+        <footer>
+          <span>{url ? `saved by ${savedBy}` : "edit this widget to paste a URL"}</span>
+          <strong>{url ? "read ↗" : "paste ↗"}</strong>
+        </footer>
+      </div>
+    </>
+  );
+
+  return (
+    <article
+      className={`widget-shell widget-link-card${url ? " is-ready" : " is-empty"}`}
+      style={style}
+    >
+      {url ? (
+        <a className="link-card-open" href={linkCardHref(url)} target="_blank" rel="noreferrer">
+          {preview}
+        </a>
+      ) : (
+        <div className="link-card-open">{preview}</div>
+      )}
+    </article>
   );
 }
 

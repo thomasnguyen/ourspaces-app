@@ -19,6 +19,7 @@ export const WIDGET_SIZES: Partial<Record<WidgetType, { w: number; h: number }>>
   frame: { w: 680, h: 360 },
   itinerary: { w: 310, h: 190 },
   jokeRegistry: { w: 300, h: 200 },
+  linkCard: { w: 420, h: 360 },
   linkShelf: { w: 320, h: 210 },
   media: { w: 300, h: 220 },
   messageWall: { w: 520, h: 110 },
@@ -123,6 +124,18 @@ export function freshWidgetData(type: WidgetType, source: Widget["data"]): Widge
         title: String(source.title ?? "saved links"),
         links: Array.isArray(source.links) ? source.links : [],
         tone: String(source.tone ?? "sky"),
+      };
+    case "linkCard":
+      return {
+        url: String(source.url ?? ""),
+        title: String(source.title ?? ""),
+        description: String(source.description ?? ""),
+        imageUrl: String(source.imageUrl ?? ""),
+        siteName: String(source.siteName ?? ""),
+        author: String(source.author ?? ""),
+        publishedAt: String(source.publishedAt ?? ""),
+        savedBy: String(source.savedBy ?? "you"),
+        savedAt: Number(source.savedAt ?? Date.now()),
       };
     case "playlist":
       return {

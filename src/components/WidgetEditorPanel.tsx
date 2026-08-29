@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { WIDGET_CATALOG } from "../data/templates";
-import type { Widget } from "../data/types";
+import type { LinkCardScrape, Widget } from "../data/types";
 import { DEFAULT_STATION_ID, RADIO_STATIONS } from "../lib/radio";
 
 type PollOption = {
@@ -94,6 +94,7 @@ function genericFieldFor(widget: Widget | null): GenericField | null {
   if (
     widget.type === "decision" ||
     widget.type === "availability" ||
+    widget.type === "linkCard" ||
     widget.type === "linkShelf" ||
     widget.type === "playlist"
   ) {
@@ -154,6 +155,7 @@ export function WidgetEditorPanel({
   onClose,
   onSave,
   onDelete,
+  onResolveLink,
   onFrameLayoutChange,
   onFrameLayoutCommit,
 }: {
@@ -165,6 +167,7 @@ export function WidgetEditorPanel({
     layout?: WidgetLayoutUpdate,
   ) => void;
   onDelete?: (widgetId: string, label: string) => void;
+  onResolveLink?: (url: string) => Promise<LinkCardScrape>;
   onFrameLayoutChange?: (
     widgetId: string,
     layout: WidgetLayoutUpdate,
@@ -187,6 +190,9 @@ export function WidgetEditorPanel({
   const [availabilityTone, setAvailabilityTone] = useState("sky");
   const [linkShelfTitle, setLinkShelfTitle] = useState("");
   const [linkShelfTone, setLinkShelfTone] = useState("sky");
+  const [linkCardUrl, setLinkCardUrl] = useState("");
+  const [linkCardResolving, setLinkCardResolving] = useState(false);
+  const [linkCardError, setLinkCardError] = useState("");
   const [playlistTitle, setPlaylistTitle] = useState("");
   const [playlistStationId, setPlaylistStationId] = useState(DEFAULT_STATION_ID);
   const [playlistTone, setPlaylistTone] = useState("violet");
@@ -221,6 +227,9 @@ export function WidgetEditorPanel({
     setAvailabilityTone(String(widget.data.tone ?? "sky"));
     setLinkShelfTitle(String(widget.data.title ?? "saved links"));
     setLinkShelfTone(String(widget.data.tone ?? "sky"));
+    setLinkCardUrl(String(widget.data.url ?? ""));
+    setLinkCardResolving(false);
+    setLinkCardError("");
     setPlaylistTitle(String(widget.data.title ?? "shared soundtrack"));
     setPlaylistStationId(String(widget.data.stationId || DEFAULT_STATION_ID));
     setPlaylistTone(String(widget.data.tone ?? "violet"));
@@ -265,6 +274,7 @@ export function WidgetEditorPanel({
   const isPhotoWall = widget.type === "photoWall";
   const isDecision = widget.type === "decision";
   const isAvailability = widget.type === "availability";
+  const isLinkCard = widget.type === "linkCard";
   const isLinkShelf = widget.type === "linkShelf";
   const isPlaylist = widget.type === "playlist";
   const genericField = genericFieldFor(widget);
@@ -276,6 +286,15 @@ export function WidgetEditorPanel({
   const genericIsValid = Boolean(genericField && genericValue.trim().length > 0);
   const decisionIsValid = decisionTitle.trim().length > 0;
   const availabilityIsValid = availabilityTitle.trim().length > 0;
+  const linkCardIsValid = (() => {
+    try {
+      const value = linkCardUrl.trim();
+      const parsed = new URL(value.includes("://") ? value : `https://${value}`);
+      return Boolean(parsed.hostname.includes("."));
+    } catch {
+      return false;
+    }
+  })();
   const linkShelfIsValid = linkShelfTitle.trim().length > 0;
   const playlistIsValid = playlistTitle.trim().length > 0;
   const frameIsValid =
@@ -296,13 +315,15 @@ export function WidgetEditorPanel({
             ? decisionIsValid
             : isAvailability
               ? availabilityIsValid
-              : isLinkShelf
-                ? linkShelfIsValid
-                : isPlaylist
-                  ? playlistIsValid
-                  : genericIsValid;
+              : isLinkCard
+                ? linkCardIsValid
+                : isLinkShelf
+                  ? linkShelfIsValid
+                  : isPlaylist
+                    ? playlistIsValid
+                    : genericIsValid;
 
-  const save = () => {
+  const save = async () => {
     setAttemptedSave(true);
     if (!isValid) return;
 
@@ -365,6 +386,36 @@ export function WidgetEditorPanel({
         best: availabilityBest.trim(),
         tone: availabilityTone,
       });
+      return;
+    }
+
+    if (isLinkCard) {
+      const value = linkCardUrl.trim();
+      const url = value.includes("://") ? value : `https://${value}`;
+      setLinkCardResolving(true);
+      setLinkCardError("");
+      try {
+        const scraped = onResolveLink
+          ? await onResolveLink(url)
+          : {
+              url,
+              title: new URL(url).hostname.replace(/^www\./, ""),
+              description: "Saved for the group. Open it when you’re ready.",
+              imageUrl: "",
+              siteName: new URL(url).hostname.replace(/^www\./, ""),
+              author: "",
+              publishedAt: "",
+            };
+        onSave(widget.id, {
+          ...widget.data,
+          ...scraped,
+          savedAt: Date.now(),
+        });
+      } catch {
+        setLinkCardError("Couldn’t read that page. Check the link and try again.");
+      } finally {
+        setLinkCardResolving(false);
+      }
       return;
     }
 
@@ -437,7 +488,7 @@ export function WidgetEditorPanel({
         className="widget-editor-form"
         onSubmit={(event) => {
           event.preventDefault();
-          save();
+          void save();
         }}
       >
         <div className="widget-editor-fields">
@@ -767,6 +818,36 @@ export function WidgetEditorPanel({
             </>
           )}
 
+          {isLinkCard && (
+            <>
+              <label className="widget-editor-field">
+                <span>Webpage link</span>
+                <input
+                  type="url"
+                  inputMode="url"
+                  value={linkCardUrl}
+                  onChange={(event) => {
+                    setLinkCardUrl(event.target.value);
+                    setLinkCardError("");
+                  }}
+                  placeholder="https://example.com/article"
+                  autoFocus
+                />
+                <small>We’ll pull the title, summary, and cover with Firecrawl.</small>
+              </label>
+              <div className="widget-editor-link-recipe" aria-hidden="true">
+                <span>link</span>
+                <i>→</i>
+                <span>post</span>
+                <i>→</i>
+                <span>space</span>
+              </div>
+              {linkCardError && (
+                <p className="widget-editor-error" role="alert">{linkCardError}</p>
+              )}
+            </>
+          )}
+
           {isPlaylist && (
             <>
               <label className="widget-editor-field">
@@ -845,6 +926,7 @@ export function WidgetEditorPanel({
             !isCountdown &&
             !isDecision &&
             !isAvailability &&
+            !isLinkCard &&
             !isLinkShelf &&
             !isPlaylist &&
             genericField && (
@@ -894,6 +976,7 @@ export function WidgetEditorPanel({
             !isCountdown &&
             !isDecision &&
             !isAvailability &&
+            !isLinkCard &&
             !isLinkShelf &&
             !isPlaylist &&
             !genericField && (
@@ -917,11 +1000,13 @@ export function WidgetEditorPanel({
                     ? "Add a status before saving."
                     : isAvailability
                       ? "Add a schedule title before saving."
-                      : isLinkShelf
-                        ? "Add a shelf title before saving."
-                        : isPlaylist
-                          ? "Add a playlist title before saving."
-                  : "Add some text before saving."}
+                      : isLinkCard
+                        ? "Paste a complete webpage link."
+                        : isLinkShelf
+                          ? "Add a shelf title before saving."
+                          : isPlaylist
+                            ? "Add a playlist title before saving."
+                            : "Add some text before saving."}
             </p>
           )}
         </div>
@@ -945,17 +1030,26 @@ export function WidgetEditorPanel({
             type="submit"
             className="widget-editor-save"
             disabled={
-              !isFrame &&
-              !genericField &&
-              !isPoll &&
-              !isCountdown &&
-              !isDecision &&
-              !isAvailability &&
-              !isLinkShelf &&
-              !isPlaylist
+              (
+                !isFrame &&
+                !genericField &&
+                !isPoll &&
+                !isCountdown &&
+                !isDecision &&
+                !isAvailability &&
+                !isLinkCard &&
+                !isLinkShelf &&
+                !isPlaylist
+              ) || linkCardResolving
             }
           >
-            {isFrame ? "done" : "save changes"}
+            {linkCardResolving
+              ? "reading page…"
+              : isLinkCard
+                ? "turn into a post"
+                : isFrame
+                  ? "done"
+                  : "save changes"}
           </button>
         </footer>
       </form>

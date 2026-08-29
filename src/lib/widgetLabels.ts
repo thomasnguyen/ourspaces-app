@@ -35,6 +35,8 @@ export function widgetLabel(widget: Widget): string {
       return String(widget.data.title ?? "availability");
     case "linkShelf":
       return String(widget.data.title ?? "saved links");
+    case "linkCard":
+      return String(widget.data.title || widget.data.siteName || "web post");
     case "jokeRegistry":
       return String(widget.data.title ?? "inside jokes");
     case "expenseSplit":
