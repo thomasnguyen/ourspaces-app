@@ -4787,11 +4787,11 @@
   animation: rsvp-count-pop var(--dur-arrive) var(--ease-pop);
 }
 
-/* the postmark ring around the count — off-center like a real cancel mark */
+/* the postmark ring around the count */
 .rsvp-hero strong::after {
   content: "";
   position: absolute;
-  inset: -4px -14px -10px -11px;
+  inset: -6px -12px -8px -12px;
   border: 2.5px solid var(--rsvp-accent);
   border-radius: 50%;
   opacity: 0.85;
