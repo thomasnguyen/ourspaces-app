@@ -61,6 +61,9 @@ export function FrameWidget({
       }`}
       style={style}
     >
+      <svg className="frame-stitch" aria-hidden="true">
+        <rect className="frame-stitch-rect" />
+      </svg>
       {isParty && (
         <>
           <span className="frame-party-garland" aria-hidden="true">
