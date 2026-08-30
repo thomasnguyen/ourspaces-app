@@ -38,12 +38,15 @@ function widgetIsInsideFrame(widget: Widget, frame: Widget) {
   if (widget.id === frame.id) return true;
   if (widget.type === "frame") return false;
 
-  const tolerance = 1;
+  // Center containment, not full containment — collage pieces deliberately
+  // breach the frame border (the bday cake sticker) and still belong to it.
+  const cx = widget.x + widget.w / 2;
+  const cy = widget.y + widget.h / 2;
   return (
-    widget.x >= frame.x - tolerance &&
-    widget.y >= frame.y - tolerance &&
-    widget.x + widget.w <= frame.x + frame.w + tolerance &&
-    widget.y + widget.h <= frame.y + frame.h + tolerance
+    cx >= frame.x &&
+    cy >= frame.y &&
+    cx <= frame.x + frame.w &&
+    cy <= frame.y + frame.h
   );
 }
 

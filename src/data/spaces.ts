@@ -167,6 +167,9 @@ export const CREW_WIDGETS: Widget[] = [
   },
 
   // ── center: birthday frame ──
+  // Collage physics: staggered tops, hand-placed tilts, deliberate overlaps
+  // (poll over countdown, notes tucked under the rsvp) so the party corner
+  // reads pinned-up, not dashboard. z tells the layering story.
   {
     id: "frame-bday",
     type: "frame",
@@ -175,16 +178,17 @@ export const CREW_WIDGETS: Widget[] = [
     w: 688,
     h: 560,
     z: 0,
-    data: { title: "Maya's bday", subtitle: "party HQ" },
+    data: { title: "Maya's bday", subtitle: "party HQ", deco: "party" },
   },
   {
     id: "countdown",
     type: "countdown",
-    x: 376,
-    y: 86,
-    w: 170,
-    h: 250,
+    x: 372,
+    y: 106,
+    w: 186,
+    h: 262,
     z: 2,
+    rotate: -1.8,
     data: {
       event: "maya's bday 🎂",
       targetDate: isoDaysFromNow(7),
@@ -195,11 +199,12 @@ export const CREW_WIDGETS: Widget[] = [
   {
     id: "poll-cake",
     type: "poll",
-    x: 566,
-    y: 100,
-    w: 240,
-    h: 230,
-    z: 3,
+    x: 546,
+    y: 122,
+    w: 244,
+    h: 234,
+    z: 4,
+    rotate: 1.3,
     data: {
       question: "cake flavor?",
       options: [
@@ -213,11 +218,12 @@ export const CREW_WIDGETS: Widget[] = [
   {
     id: "rsvp",
     type: "rsvp",
-    x: 826,
-    y: 92,
-    w: 190,
-    h: 248,
+    x: 814,
+    y: 90,
+    w: 196,
+    h: 250,
     z: 3,
+    rotate: -1.2,
     data: {
       title: "who's coming",
       responses: [
@@ -234,11 +240,12 @@ export const CREW_WIDGETS: Widget[] = [
   {
     id: "potluck",
     type: "potluck",
-    x: 376,
-    y: 350,
-    w: 400,
-    h: 150,
+    x: 378,
+    y: 372,
+    w: 392,
+    h: 158,
     z: 2,
+    rotate: 0.9,
     data: {
       title: "who's bringing what",
       kicker: "party prep",
@@ -255,10 +262,10 @@ export const CREW_WIDGETS: Widget[] = [
   {
     id: "message-wall",
     type: "messageWall",
-    x: 376,
-    y: 508,
-    w: 640,
-    h: 98,
+    x: 806,
+    y: 354,
+    w: 234,
+    h: 248,
     z: 2,
     data: {
       title: "birthday messages",
@@ -268,6 +275,17 @@ export const CREW_WIDGETS: Widget[] = [
         { from: "Ash", text: "matcha cake or riot" },
       ],
     },
+  },
+  {
+    id: "sticker-bday-cake",
+    type: "sticker",
+    x: 708,
+    y: 10,
+    w: 122,
+    h: 126,
+    z: 12,
+    rotate: 4,
+    data: { stickerId: "maya-cake" },
   },
 
   // ── right column: live (chat lives in the global drawer) ──
@@ -1219,7 +1237,7 @@ export const SPACES: SpaceMeta[] = [
   {
     id: "crew",
     name: "the crew",
-    color: "#7c5cff",
+    color: "#e9369d",
     icon: "✦",
     activity: false,
     kind: "ongoing",
