@@ -2933,8 +2933,42 @@
   position: relative;
   isolation: isolate;
   border-radius: 8px 14px 10px 6px;
-  background: var(--potluck-bg);
   color: var(--potluck-ink);
+}
+
+/* sign-up sheet becomes real paper: rough-cut textured face on ::before so
+   the masking tape can straddle the silhouette (same build as availability) */
+.widget-potluck::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background-color: var(--potluck-bg);
+  background-image: url("/assets/textures/widget-paper-v1.jpg");
+  background-position: 22% 64%;
+  background-size: cover;
+  background-blend-mode: multiply;
+  filter: brightness(1.05) contrast(0.96);
+  clip-path: polygon(
+    0.7% 1.2%,
+    19% 0.2%,
+    42% 1%,
+    68% 0.1%,
+    99.3% 0.9%,
+    100% 28%,
+    99.2% 58%,
+    100% 84%,
+    99.4% 99%,
+    74% 99.8%,
+    48% 99%,
+    22% 100%,
+    0.5% 99.2%,
+    0 69%,
+    0.8% 38%,
+    0.3% 16%
+  );
+  content: "";
+  pointer-events: none;
 }
 
 .potluck-tone-blush {
@@ -3142,7 +3176,7 @@
   grid-template-columns: 15px minmax(0, auto) minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
-  border-bottom: 1px solid var(--potluck-rule);
+  border-bottom: 1.5px dashed var(--potluck-rule);
   color: var(--potluck-muted);
   padding: 2px 1px 3px;
 }
@@ -4738,10 +4772,32 @@
   display: flex;
   overflow: hidden;
   flex-direction: column;
-  border-radius: 10px;
-  background: var(--rsvp-bg);
+  border-radius: 9px 13px 8px 11px;
+  background-color: var(--rsvp-bg);
+  background-image: url("/assets/textures/widget-paper-v1.jpg");
+  background-position: 62% 28%;
+  background-size: cover;
+  background-blend-mode: multiply;
   color: var(--rsvp-ink);
   padding: 16px 14px 18px;
+  /* rough-cut invite card — ::before/::after are the postage stamp, so the
+     paper silhouette is cut on the shell itself (link-shelf pattern) */
+  clip-path: polygon(
+    0.9% 1.6%,
+    21% 0.4%,
+    46% 1.3%,
+    73% 0.2%,
+    99.2% 1%,
+    100% 31%,
+    99.1% 62%,
+    100% 98.5%,
+    76% 99.7%,
+    51% 98.8%,
+    24% 100%,
+    0.6% 99%,
+    0 66%,
+    0.8% 34%
+  );
 }
 
 /* short cards (legacy 230 seeds, hand-resizes): shed the quote and the slack,
@@ -13634,11 +13690,17 @@
   }
 }
 
-/* shell is a transparent clip-path paper now — rectangular selection shadows
+/* shells are transparent clip-path paper now — rectangular selection shadows
    would betray the rough cut (same treatment as paper-note / joke-registry) */
 .widget-group.is-thread-selected .widget-shell.widget-availability,
 .widget-group.is-managed .widget-shell.widget-availability,
-.widget-group.is-dragging .widget-shell.widget-availability {
+.widget-group.is-dragging .widget-shell.widget-availability,
+.widget-group.is-thread-selected .widget-shell.widget-potluck,
+.widget-group.is-managed .widget-shell.widget-potluck,
+.widget-group.is-dragging .widget-shell.widget-potluck,
+.widget-group.is-thread-selected .widget-shell.widget-rsvp,
+.widget-group.is-managed .widget-shell.widget-rsvp,
+.widget-group.is-dragging .widget-shell.widget-rsvp {
   box-shadow: none;
   filter: none;
 }
