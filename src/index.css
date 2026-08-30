@@ -17118,11 +17118,10 @@
   position: absolute;
   z-index: 0;
   inset: 0;
-  background: transparent url("/assets/textures/note-torn-paper.png") center /
-    100% 100% no-repeat;
+  background: transparent url("/assets/textures/note-torn-paper.png") center
+    bottom / 100% 110% no-repeat;
   content: "";
-  filter: brightness(1.06) contrast(0.97)
-    drop-shadow(0 7px 0 var(--poll-shadow));
+  filter: brightness(1.06) contrast(0.97);
   pointer-events: none;
 }
 
@@ -17130,16 +17129,4 @@
 .paper-bg[data-space-id="crew"] .widget-poll .poll-content {
   z-index: 1;
   border-radius: 0;
-  mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
-  -webkit-mask: url("/assets/textures/note-torn-paper.png") center / 100% 100%
-    no-repeat;
-}
-
-.paper-bg.space-theme-blush
-  .widget-group:is(.is-managed, .is-dragging)
-  .widget-poll::before,
-.paper-bg[data-space-id="crew"]
-  .widget-group:is(.is-managed, .is-dragging)
-  .widget-poll::before {
-  filter: brightness(1.06) contrast(0.97);
 }
