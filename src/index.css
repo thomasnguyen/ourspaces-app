@@ -17507,20 +17507,20 @@
 
 /* ================================================================
    QUOTE SCRAP — GENERATED PUSH PIN
-   The transparent product cutout keeps its real molded-plastic highlights.
+   Low cap + tiny collar: the hidden needle reads as pressed into the paper.
    ================================================================ */
 
 .quote-pin {
-  top: 0;
-  width: 36px;
-  height: 40px;
+  top: 4px;
+  width: 31px;
+  height: 22px;
   border: 0;
   border-radius: 0;
   background: transparent url("/assets/ui/quote-pushpin.png") center / contain
     no-repeat;
   box-shadow: none;
-  filter: drop-shadow(1px 3px 1px rgba(17, 17, 20, 0.28));
-  rotate: -8deg;
+  filter: none;
+  rotate: 0deg;
 }
 
 .quote-pin::before,
