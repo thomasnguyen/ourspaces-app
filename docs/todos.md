@@ -5,6 +5,12 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- Web-post clippings now default to a compact **340×280** footprint (down from
+  420×360) without changing any typography. The live adapter visually
+  normalizes already-created 420×340/360 cards to the new size on reload, so
+  the Firecrawl cover becomes a short backing strip instead of dominating the
+  clipping. Verified with the screenshot copy at
+  `.context/link-card-compact.png`; `npm run build` passes.
 - Rail spaces now use distinct generated flash-photo covers: two hands making a
   heart (`us two`), a chaotic four-key pile (`the house`), and a scuffed
   ball/foam-finger/snack still life (`game day`). `Rail.tsx` maps the four
