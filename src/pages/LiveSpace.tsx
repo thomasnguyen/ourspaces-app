@@ -263,7 +263,6 @@ export function LiveSpacePage({
   );
   const liveCursors = presence.peers;
   const allMessages = useQuery(api.messages.listBySpace, space ? { spaceId: space._id } : "skip");
-  const liveCounts = useQuery(api.stats.getLiveCounts);
   const paintRows = useQuery(api.paint.listBySpace, space ? { spaceId: space._id } : "skip");
   const sparkQuestions = useAction(api.questions.sparkQuestions);
   /** Which web post conversation starter the thread dock is answering. */
@@ -1323,7 +1322,6 @@ export function LiveSpacePage({
                 promoted={promotedMessageIds.size > 0}
                 onPromote={ignorePromote}
                 recapCites={canvasRecapCites}
-                backendLiveCounts={slug === "buildclub" ? liveCounts?.counts : undefined}
                 entrance={roomEntered}
                 arrivalPeerId={arrivalPeer?.userId}
               />

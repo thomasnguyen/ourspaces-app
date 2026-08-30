@@ -47,10 +47,10 @@ the three reasons chats go quiet. Nothing to talk about → daily question /
 topics. Nothing to do together → the collab paint canvas, the playlist sticker,
 party mode. Nothing accumulates → photo wall, promoted notes, the archive.
 
-The three demo verticals are the same canvas wearing three skins — friend group
-(hero), long-distance couple (paint canvas, the realtime flex), dev group
-(Firecrawl link cards, Hacker News as a bedroom wall) — which is itself the
-personalization claim on camera.
+The demo verticals are the same canvas wearing different skins — friend group
+(hero), long-distance couple (paint canvas, the realtime flex), plus house and
+game-day rooms as lived-in background — which is itself the personalization
+claim on camera.
 
 This is a **Convex hackathon MVP**. Success is singular: **win the hackathon with
 a demo that lands in 3 minutes.** Every decision answers one question — does it

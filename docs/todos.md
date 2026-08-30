@@ -5,6 +5,14 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- Rail spaces now use distinct generated flash-photo covers: two hands making a
+  heart (`us two`), a chaotic four-key pile (`the house`), and a scuffed
+  ball/foam-finger/snack still life (`game day`). `Rail.tsx` maps the four
+  showcase spaces to image covers and falls back to the old glyph for any
+  space without one. Verified in mock crew at `.context/space-cover-check.png`;
+  commit `67d3fec`.
+- Cut the hackathon again (and Tahoe stays gone). Showcase is crew, game day,
+  us two, and the house. `seed:demo` retires leftover `buildclub` + `trip` rows.
 - Crew media uses a deliberately unpolished **camera-roll trio**: `friday at
   maya's`, `roof dusk`, and `paint night`. Roof dusk + paint night got a looser
   second pass: only 3–4 people happen to be in frame, faces turn away or get
@@ -18,6 +26,11 @@ Backward-looking history lives in `hackathon.md`.
   the final static JPGs while preserving photo ids + note threads. Dev patched
   2 photos / 1 widget; live proof: `.context/photo-wall-live-fixed.png`.
 
+- Cut **the hackathon** (buildclub) and **tahoe** (trip) from the showcase:
+  rail, home block, seed catalog, mock chat, and live home fetches. Home is
+  now crew + game day (near) and us two + the house (far). Crew still mentions
+  a past Tahoe trip in memories. Run `npx convex run spaces:retireCutSpaces`
+  (or `seed:demo`) to drop leftover live rows.
 - Party pass **v2** (same session, human asked for more eye candy): left garland
   gained an answering right swag tied off at the cake sticker and both settle
   with a one-shot rotate on entrance; five flat confetti die-cuts sit in the
@@ -286,6 +299,12 @@ Backward-looking history lives in `hackathon.md`.
 - Add the web-post discussion layer: OpenAI creates two direct questions, then
   answers and upvotes sync live. This satisfies the structured
   extractor/decider sponsor beat without a chatbot UI.
+- Build four static vendor pages in `public/` (convex / agentmail / firecrawl /
+  openai) from one shared template: per-page OG tags, hero clip,
+  what-it-does-in-OurSpaces, code peek, deep link into the live app. Needed
+  live by Sep 16. Spec in `.context/ourspaces-marketing-playbook-v2.md` §5.
+- Stand up the public "commons" space for hackathon builders (separate from
+  the demo spaces — strangers get write access) around Sep 16.
 
 ## Decisions
 
@@ -387,3 +406,10 @@ Backward-looking history lives in `hackathon.md`.
   selectable preset (its crew re-inks kept). crew2/crew3 removed from mock data
   and deleted live via new `spaces:deleteBySlug`; live crew retinted with
   `spaces:retintSpace`. Rail is back to six spaces.
+- 2026-08-29 (marketing): Playbook v2 finalized in chat; canonical doc is
+  `.context/ourspaces-marketing-playbook-v2.md` (gitignored — marketing
+  strategy stays out of the public repo). Shape: quiet until Sep 12, then a
+  10-day build-in-public arc on X (one post/day), sponsor posts staggered
+  Sep 17–20 with AgentMail as the Sat Sep 19 finale + the single LinkedIn
+  post, submit early Sep 21. Build items it creates are in "Next up" (vendor
+  pages, commons space); clips get batch-recorded Sep 10–11 as MP4s.

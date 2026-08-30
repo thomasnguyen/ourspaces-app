@@ -618,16 +618,6 @@ export const LEAGUE_WIDGETS: Widget[] = [
   },
 ];
 
-const BUILD_CLUB_MEMBERS = [
-  { name: "alex", color: "#7853ff", online: true },
-  { name: "jordan", color: "#e9369d", online: true },
-  { name: "riley", color: "#3f70ff", online: true },
-  { name: "morgan", color: "#ff7c42", online: true },
-  { name: "priya", color: "#13b8a6", online: true },
-  { name: "casey", color: "#c9ff3d", online: true },
-  { name: "dev", color: "#7c5cff", online: false },
-];
-
 const COUPLE_MEMBERS = [
   { name: "ren", color: "#e9369d", online: true },
   { name: "sky", color: "#7c5cff", online: true },
@@ -638,262 +628,6 @@ const HOUSE_MEMBERS = [
   { name: "theo", color: "#3f70ff", online: false },
   { name: "gigi", color: "#e9369d", online: true },
   { name: "marco", color: "#13b8a6", online: false },
-];
-
-const TRIP_MEMBERS = [
-  { name: "Maya", color: "#7c5cff", online: false },
-  { name: "Jules", color: "#e63da8", online: false },
-  { name: "Sam", color: "#3d6eff", online: false },
-  { name: "Kenji", color: "#13b8a6", online: false },
-  { name: "Rio", color: "#ff7a3d", online: false },
-];
-
-export const BUILD_CLUB_WIDGETS: Widget[] = [
-  {
-    id: "backend-live",
-    type: "backendLive",
-    x: 32,
-    y: 48,
-    w: 420,
-    h: 100,
-    z: 5,
-    data: {
-      counts: [
-        { label: "spaces", value: 1 },
-        { label: "widgets", value: 47 },
-        { label: "messages", value: 892 },
-        { label: "here now", value: 6 },
-      ],
-    },
-  },
-  {
-    id: "frame-reading",
-    type: "frame",
-    x: 32,
-    y: 168,
-    w: 740,
-    h: 400,
-    z: 0,
-    data: { title: "reading table", subtitle: "links become something to talk about" },
-  },
-  {
-    id: "bc-links",
-    type: "linkShelf",
-    x: 56,
-    y: 232,
-    w: 250,
-    h: 210,
-    z: 3,
-    data: {
-      title: "survival kit",
-      links: [
-        { label: "convex quickstart", url: "docs.convex.dev" },
-        { label: "the sync engine", url: "stack.convex.dev" },
-        { label: "submission portal", url: "convex.dev" },
-      ],
-    },
-  },
-  {
-    id: "bc-link-card",
-    type: "linkCard",
-    x: 328,
-    y: 204,
-    w: 420,
-    h: 340,
-    z: 4,
-    data: {
-      url: "https://stack.convex.dev/how-convex-works",
-      title: "How Convex Works",
-      description: "A tour of the sync worker, transactions, and subscriptions that keep every connected screen current.",
-      imageUrl: "",
-      siteName: "stack.convex.dev",
-      author: "Sujay Jayakar",
-      publishedAt: "",
-      savedBy: "riley",
-      savedAt: Date.UTC(2026, 7, 27),
-      questions: [
-        { id: "q1", text: "which part of the sync design surprised you?" },
-        { id: "q2", text: "would you trust it with your demo tomorrow?" },
-      ],
-    },
-  },
-  {
-    id: "bc-note-1",
-    type: "note",
-    x: 300,
-    y: 234,
-    w: 240,
-    h: 130,
-    z: 3,
-    rotate: -3,
-    data: {
-      text: "shipping a multiplayer canvas. this one, actually",
-      author: "alex",
-      tone: "warm",
-    },
-  },
-  {
-    id: "bc-note-2",
-    type: "note",
-    x: 520,
-    y: 190,
-    w: 230,
-    h: 125,
-    z: 3,
-    rotate: 2,
-    data: {
-      text: "my demo video is 90% vibes 10% sleep",
-      author: "jordan",
-      tone: "warm",
-    },
-  },
-  {
-    id: "bc-note-3",
-    type: "note",
-    x: 516,
-    y: 442,
-    w: 220,
-    h: 120,
-    z: 3,
-    rotate: -1,
-    data: {
-      text: "the wheel is rigged (affectionate)",
-      author: "riley",
-      tone: "warm",
-    },
-  },
-  {
-    id: "frame-shipped",
-    type: "frame",
-    x: 800,
-    y: 168,
-    w: 340,
-    h: 280,
-    z: 0,
-    data: { title: "shipped board", subtitle: "built this weekend" },
-  },
-  {
-    id: "bc-photos",
-    type: "photoWall",
-    x: 820,
-    y: 232,
-    w: 300,
-    h: 200,
-    z: 3,
-    data: {
-      photos: [
-        { caption: "ourspaces v0.1", date: "today", rotate: -2, src: "/photos/hackathon/shipped-v01.jpg", thumbnailSrc: "/photos/thumbs/hackathon/shipped-v01.jpg" },
-        { caption: "3am push", date: "sat", rotate: 3, src: "/photos/hackathon/hack-weekend.jpg", thumbnailSrc: "/photos/thumbs/hackathon/hack-weekend.jpg" },
-      ],
-    },
-  },
-  {
-    id: "frame-watch",
-    type: "frame",
-    x: 1168,
-    y: 168,
-    w: 320,
-    h: 280,
-    z: 0,
-    data: { title: "watch", subtitle: "demo day stream" },
-  },
-  {
-    id: "bc-media",
-    type: "media",
-    x: 1188,
-    y: 232,
-    w: 280,
-    h: 200,
-    z: 3,
-    rotate: 1,
-    data: { caption: "demo day", date: "sunday", src: "/photos/hackathon/demo-day.jpg", thumbnailSrc: "/photos/thumbs/hackathon/demo-day.jpg" },
-  },
-  {
-    id: "bc-daily",
-    type: "dailyQ",
-    x: 1168,
-    y: 472,
-    w: 280,
-    h: 195,
-    z: 3,
-    data: {
-      question: "what did you ship today?",
-      tone: "sky",
-      streak: 21,
-      youAnswered: true,
-      waitingOn: ["riley"],
-      answers: [
-        { name: "alex", text: "auth flow" },
-        { name: "jordan", text: "fixed the bug", reactions: { "❤️": ["alex"] } },
-        { name: "priya", text: "nothing lol", reactions: { "😂": ["jordan", "alex"] } },
-      ],
-      history: [
-        {
-          day: "yesterday",
-          question: "blocker of the day?",
-          topAnswer: { name: "riley", text: "cors. always cors" },
-          count: 4,
-        },
-      ],
-    },
-  },
-  {
-    id: "frame-poll",
-    type: "frame",
-    x: 800,
-    y: 472,
-    w: 340,
-    h: 280,
-    z: 0,
-    data: { title: "the poll", subtitle: "tap to vote" },
-  },
-  {
-    id: "bc-poll",
-    type: "poll",
-    x: 820,
-    y: 532,
-    w: 280,
-    h: 210,
-    z: 3,
-    data: {
-      question: "how's the hackathon going?",
-      tone: "violet",
-      options: [
-        { id: "a", label: "shipped", votes: 0, total: 5, voters: ["alex", "jordan"] },
-        { id: "b", label: "debugging at 2am", votes: 0, total: 5, voters: ["riley", "casey"] },
-        { id: "c", label: "pivoted twice", votes: 0, total: 5, voters: ["morgan"] },
-      ],
-    },
-  },
-  {
-    id: "frame-wall",
-    type: "frame",
-    x: 32,
-    y: 592,
-    w: 1080,
-    h: 140,
-    z: 0,
-    data: { title: "the wall", subtitle: "guestbook · leave one" },
-  },
-  {
-    id: "bc-wall",
-    type: "messageWall",
-    x: 56,
-    y: 636,
-    w: 1020,
-    h: 90,
-    z: 3,
-    data: {
-      title: "guestbook",
-      messages: [
-        { from: "priya", text: "shipped my first mutation 🎉" },
-        { from: "riley", text: "building from toronto!" },
-        { from: "morgan", text: "first time here, this is cool" },
-        { from: "casey", text: "convex > firebase fight me" },
-        { from: "dev", text: "judge here. leaving a note like everyone else" },
-      ],
-    },
-  },
 ];
 
 export const COUPLE_WIDGETS: Widget[] = [
@@ -1137,120 +871,6 @@ export const HOUSE_WIDGETS: Widget[] = [
   },
 ];
 
-export const TRIP_WIDGETS: Widget[] = [
-  {
-    id: "trip-countdown",
-    type: "countdown",
-    x: 48,
-    y: 54,
-    w: 190,
-    h: 250,
-    z: 2,
-    rotate: -2,
-    data: {
-      event: "tahoe 🏔",
-      targetDate: isoDaysFromNow(18),
-      startDate: isoDaysFromNow(-24),
-      hyped: ["Maya", "Jules", "Sam", "Kenji", "Rio"],
-    },
-  },
-  {
-    id: "trip-expense-split",
-    type: "expenseSplit",
-    x: 282,
-    y: 54,
-    w: 300,
-    h: 205,
-    z: 3,
-    data: {
-      title: "cabin + gas · $847",
-      total: 847,
-      splits: [
-        { name: "Maya", owes: 0, paid: 320 },
-        { name: "Jules", owes: 42, paid: 0 },
-        { name: "Sam", owes: 18, paid: 180 },
-        { name: "Kenji", owes: 0, paid: 347 },
-      ],
-    },
-  },
-  {
-    id: "trip-itinerary",
-    type: "itinerary",
-    x: 626,
-    y: 54,
-    w: 360,
-    h: 210,
-    z: 2,
-    data: {
-      title: "tahoe · aug 14–17",
-      days: [
-        { day: "Thu", plan: "drive up · check in 4pm" },
-        { day: "Fri", plan: "kayak AM · tacos PM" },
-        { day: "Sat", plan: "hike · hot tub · poker" },
-      ],
-    },
-  },
-  {
-    id: "trip-poll",
-    type: "poll",
-    x: 282,
-    y: 280,
-    w: 300,
-    h: 220,
-    z: 3,
-    data: {
-      question: "saturday: hike or lake day?",
-      tone: "mint",
-      options: [
-        { id: "a", label: "hike", votes: 3, total: 5 },
-        { id: "b", label: "lake day", votes: 2, total: 5 },
-      ],
-      waitingOn: ["Rio"],
-    },
-  },
-  {
-    id: "trip-note",
-    type: "note",
-    x: 626,
-    y: 324,
-    w: 320,
-    h: 150,
-    z: 2,
-    rotate: 2,
-    data: {
-      text: "kenji booked the cabin — venmo him",
-      author: "Sam",
-      tone: "warm",
-      kicker: "money note",
-    },
-  },
-  {
-    id: "trip-link-card",
-    type: "linkCard",
-    x: 704,
-    y: 420,
-    w: 340,
-    h: 280,
-    z: 4,
-    rotate: 1,
-    data: {
-      url: "https://stack.convex.dev/how-convex-works",
-      title: "How Convex Works",
-      description: "A tour of the sync worker, transactions, and subscriptions that keep every connected screen current.",
-      imageUrl: "",
-      siteName: "stack.convex.dev",
-      author: "Sujay Jayakar",
-      publishedAt: "",
-      savedBy: "Maya",
-      savedAt: Date.UTC(2026, 7, 28),
-      questions: [
-        { id: "q1", text: "sync engine 101" },
-        { id: "q2", text: "who actually read it?" },
-      ],
-    },
-  },
-];
-
 export const SPACES: SpaceMeta[] = [
   {
     id: "crew",
@@ -1262,18 +882,6 @@ export const SPACES: SpaceMeta[] = [
     tagline: "your people, in one place",
     preview: "daily q · 3 answered",
     showcase: "birthday HQ · plans, polls, memories",
-  },
-  {
-    id: "buildclub",
-    name: "the hackathon",
-    color: "#3f70ff",
-    icon: "⚡",
-    activity: true,
-    kind: "ongoing",
-    tagline: "you're invited",
-    preview: "312 building · guestbook open",
-    showcase: "open room · guestbook, demos, shipped board",
-    visitorCount: 312,
   },
   {
     id: "couple",
@@ -1300,18 +908,6 @@ export const SPACES: SpaceMeta[] = [
     showcase: "roommate HQ · chores, rent, fridge notes",
   },
   {
-    id: "trip",
-    name: "tahoe",
-    color: "#ff7a3d",
-    icon: "▲",
-    canvasSize: { width: 1180, height: 800 },
-    activity: true,
-    kind: "event",
-    tagline: "aug 14–17",
-    preview: "18 days · $847 split",
-    showcase: "trip board · itinerary, expenses, decisions",
-  },
-  {
     id: "league",
     name: "game day",
     color: "#13b8a6",
@@ -1331,30 +927,20 @@ export const SPACES_BY_ID: Record<string, Space> = {
     members: CREW_MEMBERS,
     widgets: CREW_WIDGETS,
   },
-  buildclub: {
-    ...SPACES[1],
-    members: BUILD_CLUB_MEMBERS,
-    widgets: BUILD_CLUB_WIDGETS,
-  },
-  league: {
-    ...SPACES[5],
-    members: CREW_MEMBERS,
-    widgets: LEAGUE_WIDGETS,
-  },
   couple: {
-    ...SPACES[2],
+    ...SPACES[1],
     members: COUPLE_MEMBERS,
     widgets: COUPLE_WIDGETS,
   },
   house: {
-    ...SPACES[3],
+    ...SPACES[2],
     members: HOUSE_MEMBERS,
     widgets: HOUSE_WIDGETS,
   },
-  trip: {
-    ...SPACES[4],
-    members: TRIP_MEMBERS,
-    widgets: TRIP_WIDGETS,
+  league: {
+    ...SPACES[3],
+    members: CREW_MEMBERS,
+    widgets: LEAGUE_WIDGETS,
   },
 };
 
@@ -1372,12 +958,6 @@ export const SPACE_CURSORS: Record<
     { name: "Kenji", color: "#13b8a6", x: 440, y: 700 },
     { name: "Jules", color: "#e63da8", x: 800, y: 140 },
   ],
-  buildclub: [
-    { name: "alex", color: "#7853ff", x: 620, y: 320 },
-    { name: "riley", color: "#3f70ff", x: 980, y: 480 },
-    { name: "jordan", color: "#e9369d", x: 440, y: 680 },
-    { name: "morgan", color: "#ff7c42", x: 1200, y: 260 },
-  ],
   couple: [
     { name: "ren", color: "#e9369d", x: 446, y: 300 },
     { name: "sky", color: "#7c5cff", x: 780, y: 410 },
@@ -1387,7 +967,6 @@ export const SPACE_CURSORS: Record<
     { name: "noor", color: "#ffb02e", x: 820, y: 180 },
     { name: "theo", color: "#3f70ff", x: 520, y: 540 },
   ],
-  trip: [],
 };
 
 export function canvasSizeFor(id: string): { width: number; height: number } {
@@ -1395,9 +974,7 @@ export function canvasSizeFor(id: string): { width: number; height: number } {
     SPACES_BY_ID[id]?.canvasSize ??
     (id === "league"
       ? { width: 1240, height: 900 }
-      : id === "buildclub"
-        ? { width: 1520, height: 920 }
-        : { width: 1640, height: 1080 })
+      : { width: 1640, height: 1080 })
   );
 }
 

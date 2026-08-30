@@ -1,5 +1,40 @@
-import { query, mutation, internalMutation } from "./_generated/server";
+import { query, mutation, internalMutation, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
+
+const RETIRED_SPACE_SLUGS = ["buildclub", "trip"] as const;
+
+async function deleteSpaceBySlug(ctx: MutationCtx, slug: string) {
+  const space = await ctx.db
+    .query("spaces")
+    .withIndex("by_slug", (q) => q.eq("slug", slug))
+    .unique();
+  if (!space) return null;
+
+  for (const widget of await ctx.db
+    .query("widgets")
+    .withIndex("by_space", (q) => q.eq("spaceId", space._id))
+    .collect()) {
+    for (const vote of await ctx.db
+      .query("votes")
+      .withIndex("by_widget", (q) => q.eq("widgetId", widget._id))
+      .collect()) {
+      await ctx.db.delete(vote._id);
+    }
+    await ctx.db.delete(widget._id);
+  }
+
+  for (const table of ["messages", "members", "presence", "paintMarks", "emailEvents"] as const) {
+    for (const row of await ctx.db
+      .query(table)
+      .withIndex("by_space", (q) => q.eq("spaceId", space._id))
+      .collect()) {
+      await ctx.db.delete(row._id);
+    }
+  }
+
+  await ctx.db.delete(space._id);
+  return space._id;
+}
 
 /** Feeds Home and the rail — preview payload plus live member count (PRD §11). */
 export const listSpaces = query({
@@ -93,38 +128,22 @@ export const retintSpace = internalMutation({
  * up the background-remix scaffolding once a winner was picked). */
 export const deleteBySlug = internalMutation({
   args: { slug: v.string() },
-  handler: async (ctx, { slug }) => {
-    const space = await ctx.db
-      .query("spaces")
-      .withIndex("by_slug", (q) => q.eq("slug", slug))
-      .unique();
-    if (!space) return null;
+  handler: async (ctx, { slug }) => deleteSpaceBySlug(ctx, slug),
+});
 
-    for (const widget of await ctx.db
-      .query("widgets")
-      .withIndex("by_space", (q) => q.eq("spaceId", space._id))
-      .collect()) {
-      for (const vote of await ctx.db
-        .query("votes")
-        .withIndex("by_widget", (q) => q.eq("widgetId", widget._id))
-        .collect()) {
-        await ctx.db.delete(vote._id);
-      }
-      await ctx.db.delete(widget._id);
-    }
+export async function retireCutSpaceRows(ctx: MutationCtx) {
+  const retired: string[] = [];
+  for (const slug of RETIRED_SPACE_SLUGS) {
+    const id = await deleteSpaceBySlug(ctx, slug);
+    if (id) retired.push(slug);
+  }
+  return retired;
+}
 
-    for (const table of ["messages", "members", "presence", "paintMarks", "emailEvents"] as const) {
-      for (const row of await ctx.db
-        .query(table)
-        .withIndex("by_space", (q) => q.eq("spaceId", space._id))
-        .collect()) {
-        await ctx.db.delete(row._id);
-      }
-    }
-
-    await ctx.db.delete(space._id);
-    return space._id;
-  },
+/** Drop the hackathon + Tahoe demo rooms from an already-seeded backend. */
+export const retireCutSpaces = internalMutation({
+  args: {},
+  handler: async (ctx) => retireCutSpaceRows(ctx),
 });
 
 /** One-shot clone of a live space → a new slug (the background remixes).

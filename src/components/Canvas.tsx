@@ -93,7 +93,6 @@ export function Canvas({
   firstRunActive = false,
   onFirstRunPlace,
   viewportRef,
-  visitorCount,
   entrance = true,
   widgets: widgetsProp,
   cursors: cursorsProp,
@@ -243,7 +242,6 @@ export function Canvas({
   const enterDelays = useMemo(() => wavefrontDelays(widgets), [widgets]);
 
   const isLeague = spaceId === "league";
-  const isBuildClub = spaceId === "buildclub";
   const focusedFrame =
     widgets.find(
       (widget) =>
@@ -373,7 +371,7 @@ export function Canvas({
         focusedFrame ? "has-frame-focus" : ""
       } ${focusedWidgetId ? "has-widget-focus" : ""} ${
         isLeague ? "space-canvas-league" : ""
-      } ${isBuildClub ? "space-canvas-buildclub" : ""}`}
+      }`}
       style={{
         minWidth: space.canvasSize?.width,
         minHeight: space.canvasSize?.height,
@@ -384,18 +382,6 @@ export function Canvas({
         }
       }}
     >
-      {isBuildClub && (
-        <>
-          <div className="decor-sticker buildclub-join-sticker" aria-hidden="true">
-            you&apos;re
-            <br />
-            invited
-          </div>
-          <div className="decor-sticker buildclub-visited-sticker" aria-hidden="true">
-            {visitorCount ?? space.visitorCount ?? 312} visited
-          </div>
-        </>
-      )}
       {widgetCards}
 
       {cursors.filter((cursor) => !cursor.zone).map((cursor) => (
@@ -438,7 +424,6 @@ export function SpaceHeader({
   spaceMeta,
   roomEditing = false,
   onEditSpace,
-  visitorCount,
   entrance = true,
   members: membersProp,
   spaceName,
@@ -474,7 +459,6 @@ export function SpaceHeader({
   const entering = useSpaceEntrance(entrance);
   const space = getSpace(spaceId);
   const online = (membersProp ?? space.members).filter((member) => member.online);
-  const isBuildClub = spaceId === "buildclub";
   const name = spaceName ?? spaceMeta?.name ?? space.name;
   const tagline = spaceMeta?.tagline ?? space.tagline;
   const kind = spaceMeta?.kind ?? space.kind;
@@ -648,11 +632,6 @@ export function SpaceHeader({
         </div>
 
         <div className="space-header-side">
-          {isBuildClub && (visitorCount ?? space.visitorCount) != null && (
-            <span className="space-visitor-count">
-              {visitorCount ?? space.visitorCount} people have been here
-            </span>
-          )}
           <div className="space-presence" aria-label={presenceDescription}>
             {(self || visibleLivePeers.length > 0 || visibleOnline.length > 0) && (
               <div className="header-faces">

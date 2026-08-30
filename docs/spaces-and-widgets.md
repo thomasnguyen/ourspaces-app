@@ -1,10 +1,10 @@
 # Spaces & widgets
 
-The three demo verticals, what's on each canvas today, and what each still
-needs. Source of truth for seed content is `src/data/spaces.ts` (+ `chat.ts`
+The demo rooms, what's on each canvas today, and what each still needs.
+Source of truth for seed content is `src/data/spaces.ts` (+ `chat.ts`
 for threads); widget components live in `src/widgets/core.tsx` and
 `extras.tsx`. The crew is the reference — it's the most complete space, and
-its anatomy is the pattern the other two should follow.
+its anatomy is the pattern the others should follow.
 
 ## The anatomy of a lived-in space (learned from the crew)
 
@@ -79,31 +79,14 @@ Needs, in priority order:
 Skin note: same widgets, softer register — fewer, larger objects, more
 whitespace than the crew's clutter. Two people, not six.
 
-## 3. the hackathon (buildclub) — dev group (`#3f70ff` blue, "you're invited")
-
-**Status: Firecrawl card landed; discussion follow-up remains.** Seven members, the open
-room (312 visitors). Already the most frame-organized space: reading table,
-shipped board, watch party, poll, wall.
-
-Has today: backendLive counter (spaces/widgets/messages/here-now — the
-"prove it's real" widget) · link shelf ("survival kit") · notes · photo
-wall · media · daily question · poll · message wall (guestbook).
-
-Needs:
-
-1. **linkCard discussion layer** — URL drop and the rich summary card are live.
-   Add two OpenAI questions, answers, and live upvotes for the complete
-   "Hacker News as a bedroom wall" beat.
-2. Optionally a **"front page" frame** where link cards cluster, sorted by
-   votes — the HN joke made spatial. Visual only, cuttable.
-
 ## Background spaces (Home-grid set dressing only)
 
 These exist so the gallery reads alive and personal — never demo beats.
 
 - **the house** (`#ffb02e`) — roommates: chore wheel, rent split, groceries
   potluck, wifi quote, fridge wall.
-- **tahoe** (`#ff7a3d`, event) — trip: countdown, expense split, itinerary,
-  poll, note.
 - **game day** (`#13b8a6`) — rec league: live sports score, punishment
   wheel, pizza poll, trash-talk wall, daily q.
+
+The hackathon (buildclub) and Tahoe (trip) stay cut. `npx convex run seed:demo`
+retires leftover backend rows for both.
