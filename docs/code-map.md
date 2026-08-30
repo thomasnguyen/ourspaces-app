@@ -91,8 +91,10 @@ cotton-rag worksheet stock; `link-shelf-ledger.jpg` is a cooler speckled receipt
 stock. The crew poll shares the note/Hall of Fame torn-paper surface, while the
 daily question and saved-links card intentionally use different paper families.
 
-**assets/link-card-fallback.jpg** — generated crop-safe paper collage used when
-a Firecrawl link card has no page image.
+**assets/link-card-fallback.jpg** — original generated crop-safe paper collage
+used when a Firecrawl link card has no page image. Three generated comparison
+siblings — `link-card-collage-amber.png`, `link-card-collage-teal.png`, and
+`link-card-collage-violet.png` — are staged on duplicate house web-post cards.
 
 **assets/ui/quote-pushpin.png** — image-generated transparent purple plastic
 pushpin used by the “same moon, both windows” quote scrap.

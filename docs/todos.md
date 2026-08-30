@@ -5,6 +5,12 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- The house now stages **four copies of the Dan Luu web post side by side** at
+  the bottom of its live dev canvas: the original cut-paper cover plus three
+  generated siblings (amber/cobalt, teal/magenta, violet/orange). The 640px
+  crop-safe assets live at `public/assets/link-card-collage-*.png`; comparison
+  screenshot: `.context/house-link-variants.png`. Dev deployment only; the
+  three preview clones can be deleted after the human picks a cover.
 - Web-post clippings now default to a compact **300×250** footprint (down from
   420×360) without changing any typography. The live adapter visually
   normalizes already-created 340×280 and 420×340/360 cards on reload, so
