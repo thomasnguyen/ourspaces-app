@@ -17096,18 +17096,49 @@
 }
 
 /* ================================================================
-   CREW POLL — GENERATED PAPER PROTOTYPE
-   One-card material test before the paper treatment spreads to the
-   rest of the birthday widgets. The tiny radius mismatch keeps the
-   silhouette feeling cut by hand without turning it into a torn note.
+   CREW POLL — TORN BALLOT SHEET
+   The hall-of-fame paper anatomy, translated to a wider interactive
+   ballot: quiet fibers, straight-cut sides, one restrained deckled edge.
+   The paper lives behind the content so the daisy pin can still overhang.
    ================================================================ */
 
 .paper-bg.space-theme-blush .widget-poll,
 .paper-bg[data-space-id="crew"] .widget-poll {
-  border-radius: 13px 15px 12px 16px / 14px 12px 16px 13px;
-  background-color: var(--poll-bg);
-  background-image: url("/assets/textures/widget-paper-v1.jpg");
-  background-position: center;
-  background-size: cover;
-  background-blend-mode: multiply;
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+.paper-bg.space-theme-blush .widget-poll::before,
+.paper-bg[data-space-id="crew"] .widget-poll::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: transparent url("/assets/textures/note-torn-paper.png") center /
+    100% 100% no-repeat;
+  content: "";
+  filter: drop-shadow(0 7px 0 var(--poll-shadow));
+  pointer-events: none;
+}
+
+.paper-bg.space-theme-blush .widget-poll .poll-content,
+.paper-bg[data-space-id="crew"] .widget-poll .poll-content {
+  z-index: 1;
+  border-radius: 0;
+  mask: url("/assets/textures/note-torn-paper.png") center / 100% 100% no-repeat;
+  -webkit-mask: url("/assets/textures/note-torn-paper.png") center / 100% 100%
+    no-repeat;
+}
+
+.paper-bg.space-theme-blush
+  .widget-group:is(.is-managed, .is-dragging)
+  .widget-poll::before,
+.paper-bg[data-space-id="crew"]
+  .widget-group:is(.is-managed, .is-dragging)
+  .widget-poll::before {
+  filter: none;
 }

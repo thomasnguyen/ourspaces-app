@@ -7,11 +7,11 @@ Backward-looking history lives in `hackathon.md`.
 
 - Full app deployed live: https://necessary-cobra-892.convex.site (Convex
   static hosting + prod backend, all spaces seeded).
-- Crew poll now carries a one-widget paper-material prototype: generated
-  `public/assets/textures/widget-paper-v1.jpg` adds quiet cellulose fibers via
-  multiply blending, while slightly mismatched corner radii soften the perfect
-  card silhouette. The neighboring RSVP and potluck stay flat for an on-screen
-  A/B comparison; mock `#/` was verified headlessly at normal canvas scale.
+- Crew poll now carries a one-widget torn-paper prototype: the generated fiber
+  study led to the same restrained paper surface used by Hall of Fame, with
+  straight-cut sides and one shallow deckled bottom edge. The paper is a masked
+  layer behind the ballot so its daisy pin can still overhang; neighboring RSVP
+  and potluck widgets stay flat for an on-screen A/B comparison.
 - Potluck widget redesigned as a "sign-up sheet" (`/eye-candy` pass): chip
   rows → ruled baselines with a dashed center fold, wonky hand-drawn
   checkboxes whose ✓ draws in (`stroke-dashoffset`), claimants "sign" the
@@ -208,8 +208,8 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
-- 2026-08-29: Trial the generated paper surface on the crew poll only before
-  spreading a shared material treatment across the birthday widget set.
+- 2026-08-29: Trial the Hall-of-Fame-style torn paper on the crew poll only
+  before spreading a shared material treatment across the birthday widget set.
 - 2026-08-28: Hackathon mode locked in — no tests ever, B/C-grade code fine,
   keep TypeScript decent, 100% vibe-coded by the human.
 - 2026-08-28: Replies to the human: ≤3 bullets, no paragraphs; bold
