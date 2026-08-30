@@ -1110,9 +1110,18 @@
 .widget-frame {
   --frame-stroke: color-mix(in srgb, var(--space-accent, #7853ff) 72%, transparent);
   border-radius: 18px;
-  background: transparent;
+  /* the frame's floor: a step darker than the canvas so the corner reads as
+     its own room; transparent ink, so it deepens whatever the space color is
+     and the canvas texture still shows through */
+  background: color-mix(in srgb, var(--color-ink) 16%, transparent);
   pointer-events: none;
-  transition: opacity var(--dur-base) ease-out;
+  transition:
+    background var(--dur-base) ease-out,
+    opacity var(--dur-base) ease-out;
+}
+
+.widget-frame.is-focused {
+  background: color-mix(in srgb, var(--color-ink) 22%, transparent);
 }
 
 .widget-frame-group:hover .widget-frame {
@@ -10605,7 +10614,8 @@
 .space-theme-cobalt .widget-frame,
 .space-theme-midnight .widget-frame {
   --frame-stroke: rgba(255, 255, 255, 0.58);
-  background: transparent;
+  /* dark canvases: the room lifts toward paper instead of sinking */
+  background: color-mix(in srgb, var(--color-card) 7%, transparent);
 }
 
 .space-theme-cobalt .widget-frame.is-focused,
