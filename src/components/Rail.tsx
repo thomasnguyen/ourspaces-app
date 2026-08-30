@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { SPACES, SPACES_BY_ID } from "../data/spaces";
 import type { SpaceMeta } from "../data/types";
 
@@ -19,14 +20,18 @@ export function Rail({
       </a>
 
       <div className="space-list">
-        {SPACES.map((space) => {
+        {SPACES.map((space, i) => {
           const active = space.id === activeId;
           const displaySpace = active ? { ...space, ...activeSpaceOverride } : space;
           const crewPhoto = space.id === "crew";
           const hasSpace = Boolean(SPACES_BY_ID[space.id]);
 
           return (
-            <div key={space.id} className="space-link-wrap">
+            <div
+              key={space.id}
+              className="space-link-wrap"
+              style={{ "--i": i } as CSSProperties}
+            >
               <button
                 type="button"
                 className={`space-link ${active ? "is-active" : ""} ${
@@ -57,7 +62,10 @@ export function Rail({
           );
         })}
 
-        <div className="space-link-wrap">
+        <div
+          className="space-link-wrap"
+          style={{ "--i": SPACES.length } as CSSProperties}
+        >
           <button
             type="button"
             className="create-space-button"

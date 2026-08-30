@@ -656,9 +656,10 @@
   place-items: center;
   border-radius: 12px;
   rotate: -4deg;
+  animation: rail-tile-in var(--dur-arrive) var(--ease-pop) backwards;
   transition:
-    translate 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    rotate 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    translate var(--dur-quick) var(--ease-glide),
+    rotate var(--dur-quick) var(--ease-glide);
 }
 
 .rail-brand img {
@@ -690,10 +691,10 @@
   color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
   transition:
-    translate 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    background 160ms ease-out,
-    border-color 160ms ease-out,
-    color 160ms ease-out;
+    translate var(--dur-quick) var(--ease-glide),
+    background var(--dur-quick) ease-out,
+    border-color var(--dur-quick) ease-out,
+    color var(--dur-quick) ease-out;
 }
 
 .create-space-button span {
@@ -701,6 +702,7 @@
   font-size: 24px;
   font-weight: 800;
   line-height: 1;
+  transition: rotate var(--dur-base) var(--ease-pop);
 }
 
 .create-space-button:hover {
@@ -708,6 +710,10 @@
   border-color: transparent;
   background: var(--color-lime);
   color: var(--color-sticker);
+}
+
+.create-space-button:hover span {
+  rotate: 90deg;
 }
 
 .space-list {
@@ -724,6 +730,24 @@
   display: flex;
   width: 100%;
   justify-content: center;
+  animation: rail-tile-in var(--dur-arrive) var(--ease-pop) backwards;
+  animation-delay: calc(60ms + var(--i, 0) * 40ms);
+}
+
+@keyframes rail-tile-in {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+
+/* Sticker-wall resting tilt — straightens on hover, active keeps a stuck-on lean */
+:where(.space-link-wrap:nth-child(odd)) .space-link {
+  rotate: -2deg;
+}
+
+:where(.space-link-wrap:nth-child(even)) .space-link {
+  rotate: 2.25deg;
 }
 
 .space-link {
@@ -741,8 +765,10 @@
   font-family: var(--font-display);
   font-size: 22px;
   transition:
-    translate 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    translate var(--dur-quick) var(--ease-glide),
+    rotate var(--dur-quick) var(--ease-glide),
+    scale var(--dur-quick) var(--ease-glide),
+    box-shadow var(--dur-quick) var(--ease-glide);
 }
 
 .space-link.has-photo {
@@ -764,15 +790,22 @@
   z-index: 1;
 }
 
-.space-link:hover {
+.space-link:hover:not(.is-active):not(:disabled) {
   translate: 0 -3px;
+  rotate: 0deg;
+  scale: 1.06;
 }
 
 .space-link.is-active {
   translate: 9px 0;
+  rotate: -2deg;
   box-shadow:
     0 0 0 3px white,
     6px 7px 0 var(--space-accent, #7853ff);
+  transition:
+    translate var(--dur-base) var(--ease-pop),
+    rotate var(--dur-base) var(--ease-pop),
+    box-shadow var(--dur-base) var(--ease-pop);
 }
 
 .activity-dot {
@@ -785,6 +818,30 @@
   border: 3px solid var(--color-rail);
   border-radius: 50%;
   background: var(--color-lime);
+}
+
+/* Liveness ping — the dot means "something's happening", so let it breathe */
+.activity-dot::after {
+  position: absolute;
+  inset: -3px;
+  border: 2px solid var(--color-lime);
+  border-radius: 50%;
+  animation: activity-ping 2.6s var(--ease-glide) infinite;
+  content: "";
+  opacity: 0;
+}
+
+@keyframes activity-ping {
+  0% {
+    opacity: 0.8;
+    scale: 0.8;
+  }
+
+  70%,
+  100% {
+    opacity: 0;
+    scale: 2;
+  }
 }
 
 .space-tooltip {
@@ -800,16 +857,17 @@
   font-size: 12px;
   font-weight: 700;
   pointer-events: none;
-  transform: translate(-5px, -50%);
+  transform: translate(-5px, -50%) scale(0.92);
+  transform-origin: left center;
   transition:
-    opacity 160ms ease-out,
-    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity var(--dur-quick) ease-out,
+    transform var(--dur-quick) var(--ease-glide);
   white-space: nowrap;
 }
 
 .space-link-wrap:hover .space-tooltip {
   opacity: 1;
-  transform: translate(0, -50%);
+  transform: translate(0, -50%) scale(1);
 }
 
 .space-link.is-active + .space-tooltip {
