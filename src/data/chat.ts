@@ -47,18 +47,6 @@ export const LEAGUE_GLOBAL: ChatThread = {
   ],
 };
 
-export const BUILD_CLUB_GLOBAL: ChatThread = {
-  widgetId: "global",
-  label: "everyone",
-  messages: [
-    { id: "b1", from: "alex", text: "just shipped auth flow", time: "now" },
-    { id: "b2", from: "riley", text: "queries are functions is so good", time: "1m" },
-    { id: "b3", from: "jordan", text: "anyone else building on convex rn?", time: "2m" },
-    { id: "b4", from: "morgan", text: "anyone else submitting tonight?", time: "3m" },
-    { id: "b5", from: "dev", text: "the guestbook is filling up", time: "now" },
-  ],
-};
-
 export const COUPLE_GLOBAL: ChatThread = {
   widgetId: "global",
   label: "everyone",
@@ -76,16 +64,6 @@ export const HOUSE_GLOBAL: ChatThread = {
     { id: "h2", from: "marco", text: "not it", time: "2m" },
     { id: "h3", from: "theo", text: "whoever spins dishes buys it", time: "4m" },
     { id: "h4", from: "noor", text: "the wheel has spoken before. it will speak again", time: "6m" },
-  ],
-};
-
-export const TRIP_GLOBAL: ChatThread = {
-  widgetId: "global",
-  label: "everyone",
-  messages: [
-    { id: "t1", from: "Kenji", text: "cabin booked ✅", time: "now" },
-    { id: "t2", from: "Maya", text: "hike or lake day?", time: "3m" },
-    { id: "t3", from: "Jules", text: "i'll bring snacks", time: "8m" },
   ],
 };
 
@@ -161,99 +139,16 @@ export const LEAGUE_WIDGET_THREADS: Record<string, ChatThread> = {
   },
 };
 
-export const TRIP_WIDGET_THREADS: Record<string, ChatThread> = {
-  "trip-link-card::q:q1": {
-    widgetId: "trip-link-card::q:q1",
-    label: "sync engine 101",
-    messages: [
-      {
-        id: "tq1a",
-        from: "Jules",
-        text: "keeps every screen honest. like a group chat with rules",
-        time: "1h",
-      },
-      {
-        id: "tq1b",
-        from: "Maya",
-        text: "the transactions part actually goes hard",
-        time: "32m",
-      },
-    ],
-  },
-  "trip-link-card::q:q2": {
-    widgetId: "trip-link-card::q:q2",
-    label: "who actually read it?",
-    messages: [
-      { id: "tq2a", from: "Kenji", text: "i skimmed. it syncs. we vibe", time: "1h" },
-    ],
-  },
-};
-
-export const BUILD_CLUB_WIDGET_THREADS: Record<string, ChatThread> = {
-  "bc-poll": {
-    widgetId: "bc-poll",
-    label: "building on Convex?",
-    messages: [
-      { id: "bp1", from: "alex", text: "saas app gang", time: "5m" },
-      { id: "bp2", from: "casey", text: "side project for life", time: "2m" },
-    ],
-  },
-  "bc-daily": {
-    widgetId: "bc-daily",
-    label: "what did you ship today?",
-    messages: [
-      { id: "bd1", from: "priya", text: "nothing lol", time: "today" },
-      { id: "bd2", from: "jordan", text: "fixed a gnarly bug", time: "today" },
-    ],
-  },
-  "bc-links": {
-    widgetId: "bc-links",
-    label: "convex docs",
-    messages: [
-      { id: "bl1", from: "riley", text: "sync engine article is 🔥", time: "1h" },
-    ],
-  },
-  "bc-link-card::q:q1": {
-    widgetId: "bc-link-card::q:q1",
-    label: "which part of the sync design surprised you?",
-    messages: [
-      {
-        id: "bq1a",
-        from: "riley",
-        text: "subscriptions being just queries is so clean",
-        time: "2h",
-      },
-      {
-        id: "bq1b",
-        from: "alex",
-        text: "the mutation log rewired my brain a little",
-        time: "1h",
-      },
-    ],
-  },
-  "bc-link-card::q:q2": {
-    widgetId: "bc-link-card::q:q2",
-    label: "would you trust it with your demo tomorrow?",
-    messages: [
-      { id: "bq2a", from: "jordan", text: "already am lol", time: "45m" },
-    ],
-  },
-};
-
 export function getThreadsForSpace(spaceId: string) {
   if (spaceId === "league") return LEAGUE_WIDGET_THREADS;
-  if (spaceId === "buildclub") return BUILD_CLUB_WIDGET_THREADS;
-  if (spaceId === "trip") return TRIP_WIDGET_THREADS;
   if (spaceId === "couple" || spaceId === "house") return {};
   return CREW_WIDGET_THREADS;
 }
 
 export function getGlobalThread(spaceId: string) {
   if (spaceId === "league") return LEAGUE_GLOBAL;
-  if (spaceId === "buildclub") return BUILD_CLUB_GLOBAL;
   if (spaceId === "couple") return COUPLE_GLOBAL;
   if (spaceId === "house") return HOUSE_GLOBAL;
-  if (spaceId === "trip") return TRIP_GLOBAL;
   return GLOBAL_THREAD;
 }
 

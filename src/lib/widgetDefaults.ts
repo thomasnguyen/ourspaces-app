@@ -4,9 +4,45 @@ import type { Widget, WidgetType } from "../data/types";
 export const WIDGET_BLUEPRINTS: Widget[] = [
   ...getSpace("crew").widgets,
   ...getSpace("league").widgets,
-  ...getSpace("buildclub").widgets,
   ...getSpace("couple").widgets,
   DECISION_WIDGET,
+  {
+    id: "blueprint-backend-live",
+    type: "backendLive",
+    x: 32,
+    y: 48,
+    w: 420,
+    h: 100,
+    z: 5,
+    data: {
+      counts: [
+        { label: "spaces", value: 1 },
+        { label: "widgets", value: 0 },
+        { label: "messages", value: 0 },
+        { label: "here now", value: 1 },
+      ],
+    },
+  },
+  {
+    id: "blueprint-link-card",
+    type: "linkCard",
+    x: 328,
+    y: 204,
+    w: 420,
+    h: 340,
+    z: 4,
+    data: {
+      url: "",
+      title: "",
+      description: "",
+      imageUrl: "",
+      siteName: "",
+      author: "",
+      publishedAt: "",
+      savedBy: "you",
+      savedAt: Date.now(),
+    },
+  },
 ];
 
 export const WIDGET_SIZES: Partial<Record<WidgetType, { w: number; h: number }>> = {

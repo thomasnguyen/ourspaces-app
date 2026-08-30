@@ -51,17 +51,13 @@ export function defaultSpaceCustomization(space: SpaceMeta): SpaceCustomization 
   const theme =
     space.id === "crew"
       ? "lagoon"
-      : space.id === "buildclub"
-      ? "cobalt"
       : space.id === "league"
         ? "mint"
         : space.id === "couple"
           ? "violet"
           : space.id === "house"
             ? "butter"
-            : space.id === "trip"
-              ? "midnight"
-              : "blush";
+            : "blush";
 
   return {
     name: space.name,

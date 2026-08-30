@@ -71,8 +71,8 @@ switches it back) ·
 `backendCounts.ts` · `linkQuestions.ts` (web post question threads:
 `<widgetId>::q:<id>` ride the normal message pipes; canned fallback generator)
 
-**data/** — `types.ts` (`Widget`/`Space`) · `spaces.ts` (all seeded spaces,
-1300+ lines) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes.ts` ·
+**data/** — `types.ts` (`Widget`/`Space`) · `spaces.ts` (seeded spaces: crew,
+couple, house, league) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes.ts` ·
 `templates.ts` (`WIDGET_CATALOG`) · `stickers.ts` (stable sticker ids → die-cut
 character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
 
@@ -96,6 +96,10 @@ a Firecrawl link card has no page image.
 
 **assets/ui/quote-pushpin.png** — image-generated transparent purple plastic
 pushpin used by the “same moon, both windows” quote scrap.
+
+**assets/space-covers/** — three generated square flash-photo covers used by
+the rail for `us two`, `the house`, and `game day`; Crew keeps its existing
+snapshot cover.
 
 **assets/stickers/** — twelve generated transparent die-cut crew stickers mixing
 character art, holographic foil, and flash-lit photo cutouts (`hello-cat`,

@@ -12,7 +12,7 @@
 - **Auth:** none
 - **AI models:** gpt-4o-mini (OpenAI API)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-08-30T01:27:42Z
+- **Last updated:** 2026-08-30T05:37:11Z
 
 ## Log
 
@@ -210,3 +210,27 @@ room's quote scrap a dimensional purple thumbtack (`src/index.css`,
 ### 2026-08-30 - working tree
 Changed the daily-question history stack from gray tints to cream paper sheets
 separated by hard offset edges (`src/index.css`).
+
+### 2026-08-30 - df95c97
+Added three deliberately unpolished camera-roll memories for the crew: Friday
+at Maya's, roof dusk, and paint night. The matching full-size and preview assets
+now fill the seven-photo memory pile and the main media print
+(`src/data/spaces.ts`, `public/photos/crew/`, `public/photos/thumbs/crew/`).
+
+### 2026-08-30 - 61281e8
+Made roof dusk and paint night feel more accidental: fewer people in frame,
+turned-away and cropped faces, foreground occlusion, underexposure, and table
+clutter replace the posed group-photo look (`public/photos/crew/`,
+`public/photos/thumbs/crew/`).
+
+### 2026-08-30 - 67d3fec
+Replaced the generic rail glyphs for us two, the house, and game day with
+distinct flash-photo covers: a shared hand-heart, a chaotic roommate key pile,
+and a scuffed post-game still life (`src/components/Rail.tsx`,
+`public/assets/space-covers/`).
+
+### 2026-08-30 - 36180dc
+Replaced two stale file-storage test uploads in the live crew memory wall with
+the final Roof Dusk and Paint Night JPGs while preserving photo ids and note
+threads. Added an idempotent internal backfill and verified it on the personal
+dev deployment (`convex/photos.ts`).
