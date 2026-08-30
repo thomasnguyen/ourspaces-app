@@ -2,6 +2,13 @@ import type { CSSProperties } from "react";
 import { SPACES, SPACES_BY_ID } from "../data/spaces";
 import type { SpaceMeta } from "../data/types";
 
+const SPACE_COVERS: Record<string, string> = {
+  crew: "/assets/the-crew-snapshot-thumb.jpg",
+  couple: "/assets/space-covers/us-two.png",
+  house: "/assets/space-covers/the-house.png",
+  league: "/assets/space-covers/game-day.png",
+};
+
 export function Rail({
   activeId = "crew",
   activeSpaceOverride,
@@ -23,7 +30,7 @@ export function Rail({
         {SPACES.map((space, i) => {
           const active = space.id === activeId;
           const displaySpace = active ? { ...space, ...activeSpaceOverride } : space;
-          const crewPhoto = space.id === "crew";
+          const spaceCover = SPACE_COVERS[space.id];
           const hasSpace = Boolean(SPACES_BY_ID[space.id]);
 
           return (
@@ -35,13 +42,11 @@ export function Rail({
               <button
                 type="button"
                 className={`space-link ${active ? "is-active" : ""} ${
-                  crewPhoto ? "has-photo" : ""
+                  spaceCover ? "has-photo" : ""
                 }`}
                 style={{
                   backgroundColor: displaySpace.color,
-                  backgroundImage: crewPhoto
-                    ? "url('/assets/the-crew-snapshot-thumb.jpg')"
-                    : undefined,
+                  backgroundImage: spaceCover ? `url('${spaceCover}')` : undefined,
                 }}
                 aria-label={displaySpace.name}
                 aria-current={active ? "page" : undefined}
@@ -49,7 +54,7 @@ export function Rail({
                 disabled={!hasSpace}
               >
                 {/* U+FE0E keeps ♥ a text glyph (white ink) instead of the emoji */}
-                <span>{`${displaySpace.icon}\uFE0E`}</span>
+                {!spaceCover && <span>{`${displaySpace.icon}\uFE0E`}</span>}
               </button>
               <span className="space-tooltip">
                 {displaySpace.name}
