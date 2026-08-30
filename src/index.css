@@ -17793,3 +17793,159 @@
   letter-spacing: 0.04em;
   text-transform: none;
 }
+
+/* —— PARTY PASS v2 — motion + dressing ——————————————————————————————————
+ * Round two of the bday-frame candy: the garlands settle in and gain an
+ * answering right swag tied off at the cake sticker, five flat confetti
+ * die-cuts fill the frame's quiet corners (popping in on entrance, then
+ * still), poll bars sweep to their tallies as the space opens (all polls —
+ * liveness made visible), the leader crown waits to land until its bar
+ * arrives, and the sign-up sheet gets faint ruled lines. All one-shot
+ * entrance motion — nothing loops. */
+
+.frame-party-garland.is-right {
+  position: absolute;
+  top: -4px;
+  left: 486px;
+  width: 112px;
+  pointer-events: none;
+}
+
+.space-canvas.is-entering .frame-party-garland {
+  transform-origin: 50% 0;
+  animation: garland-settle 640ms var(--ease-pop) 460ms both;
+}
+
+.space-canvas.is-entering .frame-party-garland.is-right {
+  animation-name: garland-settle-right;
+  animation-delay: 560ms;
+}
+
+@keyframes garland-settle {
+  from {
+    rotate: -2.6deg;
+  }
+}
+
+@keyframes garland-settle-right {
+  from {
+    rotate: 2.6deg;
+  }
+}
+
+/* Confetti: five pieces, flat and full-strength, parked in the dead zones. */
+.frame-party-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.frame-party-confetti i {
+  position: absolute;
+  display: block;
+}
+
+.frame-party-confetti i:nth-child(1) {
+  left: 4%;
+  bottom: 11%;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #e9369d;
+}
+
+.frame-party-confetti i:nth-child(2) {
+  left: 7.5%;
+  bottom: 6%;
+  width: 10px;
+  height: 9px;
+  background: #ffb800;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  rotate: 18deg;
+}
+
+.frame-party-confetti i:nth-child(3) {
+  right: 3.5%;
+  top: 24%;
+  width: 4px;
+  height: 10px;
+  background: #7853ff;
+  rotate: -24deg;
+}
+
+.frame-party-confetti i:nth-child(4) {
+  left: 31%;
+  bottom: 4.5%;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #fffdf7;
+}
+
+.frame-party-confetti i:nth-child(5) {
+  left: 55%;
+  bottom: 8%;
+  width: 4px;
+  height: 9px;
+  background: #e9369d;
+  rotate: 32deg;
+}
+
+.space-canvas.is-entering .frame-party-confetti i {
+  animation: confetti-pop var(--dur-arrive) var(--ease-pop) backwards;
+}
+
+.space-canvas.is-entering .frame-party-confetti i:nth-child(1) { animation-delay: 620ms; }
+.space-canvas.is-entering .frame-party-confetti i:nth-child(2) { animation-delay: 690ms; }
+.space-canvas.is-entering .frame-party-confetti i:nth-child(3) { animation-delay: 760ms; }
+.space-canvas.is-entering .frame-party-confetti i:nth-child(4) { animation-delay: 830ms; }
+.space-canvas.is-entering .frame-party-confetti i:nth-child(5) { animation-delay: 900ms; }
+
+@keyframes confetti-pop {
+  from {
+    opacity: 0;
+    scale: 0;
+  }
+}
+
+/* Poll bars sweep to their tallies on space open — the room saying "this is
+ * live" before anyone touches it. Rides each widget's entrance-wave delay. */
+.space-canvas.is-entering .poll-row-fill {
+  animation: poll-fill-sweep 560ms var(--ease-glide)
+    calc(var(--enter-delay, 0ms) + 300ms + var(--i, 0) * 110ms) backwards;
+}
+
+@keyframes poll-fill-sweep {
+  from {
+    clip-path: inset(0 100% 0 0 round 999px);
+  }
+}
+
+/* The crown lands only after its bar has swept in. */
+.space-canvas.is-entering .poll-options li.is-leading::before {
+  animation-delay: calc(var(--enter-delay, 0ms) + 980ms);
+}
+
+/* Sign-up sheet: faint ruled lines under the list, like real notepad stock. */
+.potluck-list {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 29px,
+    color-mix(in srgb, var(--potluck-muted, #5f5055) 18%, transparent) 29px 30px
+  );
+}
+
+/* One tilted pill for personality — the wall label is a sticker, let it sit
+ * like one. */
+.message-wall-label {
+  rotate: -2deg;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-canvas.is-entering .frame-party-garland,
+  .space-canvas.is-entering .frame-party-garland.is-right,
+  .space-canvas.is-entering .frame-party-confetti i,
+  .space-canvas.is-entering .poll-row-fill {
+    animation: none;
+  }
+}
