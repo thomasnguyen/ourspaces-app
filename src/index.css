@@ -5,6 +5,7 @@
   --color-paper: #211922;
   --color-paper-deep: #171119;
   --color-card: #fffaf7;
+  --color-mat: #f0e5d8;
   --color-ink: #111114;
   --color-muted: #5f5055;
   --color-sticker: #0b0b0e;
@@ -1110,10 +1111,9 @@
 .widget-frame {
   --frame-stroke: color-mix(in srgb, var(--space-accent, #7853ff) 72%, transparent);
   border-radius: 18px;
-  /* the frame's floor: a step darker than the canvas so the corner reads as
-     its own room; transparent ink, so it deepens whatever the space color is
-     and the canvas texture still shows through */
-  background: color-mix(in srgb, var(--color-ink) 16%, transparent);
+  /* the frame's floor is a kraft paper mat — a real second background, one
+     step warmer and darker than the widgets' card white so they still pop */
+  background: var(--color-mat);
   pointer-events: none;
   transition:
     background var(--dur-base) ease-out,
@@ -1121,7 +1121,7 @@
 }
 
 .widget-frame.is-focused {
-  background: color-mix(in srgb, var(--color-ink) 22%, transparent);
+  background: color-mix(in srgb, var(--color-ink) 5%, var(--color-mat));
 }
 
 .widget-frame-group:hover .widget-frame {
@@ -1757,7 +1757,9 @@
   right: 18px;
   max-width: min(42%, 280px);
   overflow: hidden;
-  color: var(--space-muted-color, rgba(59, 38, 67, 0.62));
+  /* sits on the kraft mat, not the canvas — always muted ink, never the
+     space's light muted tone */
+  color: color-mix(in srgb, var(--color-ink) 58%, transparent);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -10611,24 +10613,8 @@
   opacity: 0.94;
 }
 
-.space-theme-cobalt .widget-frame,
-.space-theme-midnight .widget-frame {
-  --frame-stroke: rgba(255, 255, 255, 0.58);
-  /* dark canvases: the room lifts toward paper instead of sinking */
-  background: color-mix(in srgb, var(--color-card) 7%, transparent);
-}
-
-.space-theme-cobalt .widget-frame.is-focused,
-.space-theme-midnight .widget-frame.is-focused,
-.space-theme-cobalt .widget-frame-group.is-frame-managed .widget-frame,
-.space-theme-midnight .widget-frame-group.is-frame-managed .widget-frame {
-  --frame-stroke: rgba(255, 255, 255, 0.92);
-}
-
-.space-theme-cobalt .frame-subtitle,
-.space-theme-midnight .frame-subtitle {
-  color: rgba(255, 255, 255, 0.68);
-}
+/* (cobalt/midnight frame re-inks retired — the kraft mat floor works on
+   dark canvases too, and the accent stitch reads on both sides of it) */
 
 .global-chat-header {
   display: flex;
@@ -14851,18 +14837,8 @@
     background-size: 100% 100%, 30%;
   }
 
-  .paper-bg[data-space-id^="crew"] .widget-frame {
-    border-color: rgba(120, 83, 255, 0.9);
-    border-radius: 22px;
-    background: rgba(255, 250, 247, 0.22);
-    box-shadow: inset 0 0 0 1px rgba(120, 83, 255, 0.08);
-  }
-
-  .paper-bg[data-space-id^="crew"] .widget-frame.is-focused,
-  .paper-bg[data-space-id^="crew"] .widget-frame-group.is-frame-managed .widget-frame {
-    border-color: var(--space-accent, #7853ff);
-    background: rgba(255, 250, 247, 0.28);
-  }
+  /* (the old cream frame washes died with the kraft mat — the base
+     .widget-frame floor + accent stitch now carry every theme) */
 
   .paper-bg[data-space-id^="crew"] .frame-label {
     min-height: 40px;
@@ -14872,7 +14848,6 @@
 
   .paper-bg[data-space-id^="crew"] .frame-subtitle {
     top: 19px;
-    color: rgba(59, 38, 67, 0.72);
     font-size: 0.75rem;
   }
 
@@ -17839,32 +17814,10 @@
   }
 }
 
-.paper-bg.space-theme-lagoon[data-space-id^="crew"] .widget-frame {
-  border-color: rgba(255, 250, 247, 0.85);
-  background: rgba(255, 250, 247, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(255, 250, 247, 0.1);
-}
-
-.paper-bg.space-theme-lagoon[data-space-id^="crew"] .widget-frame.is-focused,
-.paper-bg.space-theme-lagoon[data-space-id^="crew"] .widget-frame-group.is-frame-managed .widget-frame {
-  border-color: #fffaf7;
-  background: rgba(255, 250, 247, 0.2);
-}
-
-.paper-bg.space-theme-lagoon[data-space-id^="crew"] .frame-subtitle {
-  color: rgba(255, 255, 255, 0.82);
-}
-
 .paper-bg.space-theme-lagoon[data-space-id^="crew"] .space-edit-button:hover,
 .paper-bg.space-theme-lagoon[data-space-id^="crew"] .space-edit-button:focus-visible,
 .paper-bg.space-theme-lagoon[data-space-id^="crew"] .space-edit-button.is-active {
   background: rgba(255, 255, 255, 0.18);
-}
-
-/* Accent-violet ghost pills vanish on the teal field — re-ink white. */
-.paper-bg.space-theme-lagoon[data-space-id^="crew"] .message-wall-add {
-  border-color: rgba(255, 255, 255, 0.6);
-  color: rgba(255, 255, 255, 0.92);
 }
 
 /* —— Crew spruce alternate ————————————————————————————————————————————
@@ -17881,23 +17834,6 @@
     background-repeat: no-repeat, repeat;
     background-size: 100% 100%, 30%;
   }
-}
-
-/* Shared dark-field re-inks (the crew hero pass assumes light blush). */
-.paper-bg.space-theme-spruce[data-space-id^="crew"] .frame-subtitle {
-  color: rgba(255, 255, 255, 0.82);
-}
-
-/* On the dark field the cream frame wash reads milky — thin it, and let the
- * violet border do the jewelry work. */
-.paper-bg.space-theme-spruce[data-space-id^="crew"] .widget-frame {
-  background: rgba(255, 250, 247, 0.08);
-  box-shadow: inset 0 0 0 1px rgba(120, 83, 255, 0.16);
-}
-
-.paper-bg.space-theme-spruce[data-space-id^="crew"] .message-wall-add {
-  border-color: rgba(255, 255, 255, 0.55);
-  color: rgba(255, 255, 255, 0.9);
 }
 
 .paper-bg.space-theme-spruce[data-space-id^="crew"] .space-edit-button:hover,
