@@ -78,6 +78,11 @@ character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
 
 ## public/
 
+**photos/crew/** — seven casual camera-roll memories for the crew wall; generated
+`friday-at-mayas`, `roof-dusk`, and `paint-night` intentionally use imperfect
+iPhone framing/flash and matching cast continuity. `photos/thumbs/crew/` holds
+640×480 preview copies used during the pile-to-room animation.
+
 **assets/textures/** — generated real-paper surfaces for `NoteWidget`:
 `note-paper.jpg` (fibers/tape) + `note-torn-paper.png` (transparent restrained
 bottom tear), plus `widget-paper-v1.jpg` (quiet seamless fibers from the
