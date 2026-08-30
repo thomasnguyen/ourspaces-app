@@ -17130,3 +17130,176 @@
   z-index: 1;
   border-radius: 0;
 }
+
+/* ================================================================
+   STICKER PACK — DIE-CUT CHARACTER PASS
+   Illustrated vinyl pieces float loose in the picker, then lift as a
+   silhouette on the canvas instead of casting a rectangular widget shadow.
+   ================================================================ */
+
+.widget-picker-sticker-section {
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background-color: var(--color-card);
+  background-image: url("/assets/textures/widget-paper-v1.jpg");
+  background-position: center;
+  background-size: cover;
+  padding: 12px 12px 10px;
+}
+
+.widget-picker-sticker-heading {
+  margin-bottom: 5px;
+}
+
+.widget-picker-sticker-heading h3 {
+  color: var(--color-ink);
+  font-size: 12px;
+}
+
+.widget-picker-sticker-heading > span {
+  color: var(--color-muted);
+  font-size: 10px;
+}
+
+.widget-picker-sticker-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px 8px;
+  padding: 2px 0 0;
+}
+
+.widget-picker-sticker-list li {
+  height: 98px;
+  animation: picker-sticker-arrive var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(var(--i) * 40ms);
+}
+
+.widget-picker-sticker-list li:nth-child(1) {
+  --sticker-tilt: -5deg;
+  --sticker-rest-y: 3px;
+}
+
+.widget-picker-sticker-list li:nth-child(2) {
+  --sticker-tilt: 4deg;
+  --sticker-rest-y: -1px;
+}
+
+.widget-picker-sticker-list li:nth-child(3) {
+  --sticker-tilt: -3deg;
+  --sticker-rest-y: 4px;
+}
+
+.widget-picker-sticker-list li:nth-child(4) {
+  --sticker-tilt: 3deg;
+  --sticker-rest-y: -2px;
+}
+
+.widget-picker-sticker-list li:nth-child(5) {
+  --sticker-tilt: -4deg;
+  --sticker-rest-y: 3px;
+}
+
+.widget-picker-sticker-list li:nth-child(6) {
+  --sticker-tilt: 5deg;
+  --sticker-rest-y: 0px;
+}
+
+.widget-picker-sticker-list button {
+  height: 98px;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+  padding: 3px;
+  transition: none;
+}
+
+.widget-picker-sticker-list img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 94px;
+  filter: drop-shadow(
+    2px 3px 0 color-mix(in srgb, var(--color-sticker) 52%, transparent)
+  );
+  rotate: var(--sticker-tilt);
+  scale: 1;
+  translate: 0 var(--sticker-rest-y);
+  transition:
+    filter var(--dur-quick) var(--ease-glide),
+    scale var(--dur-quick) var(--ease-glide),
+    translate var(--dur-quick) var(--ease-glide);
+}
+
+.widget-picker-sticker-list button:hover {
+  background: transparent;
+  translate: 0;
+}
+
+.widget-picker-sticker-list button:hover img {
+  filter: drop-shadow(
+    5px 7px 0 color-mix(in srgb, var(--color-sticker) 48%, transparent)
+  );
+  scale: 1.08;
+  translate: 0 calc(var(--sticker-rest-y) - 6px);
+}
+
+.widget-picker-sticker-list button:active {
+  scale: 1;
+}
+
+.widget-picker-sticker-list button:active img {
+  filter: drop-shadow(
+    1px 2px 0 color-mix(in srgb, var(--color-sticker) 38%, transparent)
+  );
+  scale: 0.96;
+  translate: 0 calc(var(--sticker-rest-y) + 1px);
+}
+
+.widget-sticker img {
+  filter: drop-shadow(
+    2px 3px 0 color-mix(in srgb, var(--color-sticker) 36%, transparent)
+  );
+  scale: 1;
+  translate: 0;
+  transition:
+    filter var(--dur-quick) var(--ease-glide),
+    scale var(--dur-quick) var(--ease-glide),
+    translate var(--dur-quick) var(--ease-glide);
+}
+
+.widget-sticker-group:not(.is-dragging) .widget-group-body:hover .widget-sticker img {
+  filter: drop-shadow(
+    4px 6px 0 color-mix(in srgb, var(--color-sticker) 38%, transparent)
+  );
+  translate: 0 -3px;
+}
+
+.widget-sticker-group.is-managed .widget-sticker {
+  box-shadow: none;
+}
+
+.widget-sticker-group.is-managed .widget-sticker img {
+  filter: drop-shadow(
+    6px 8px 0 color-mix(in srgb, var(--color-sticker) 42%, transparent)
+  );
+  scale: 1.025;
+}
+
+@keyframes picker-sticker-arrive {
+  from {
+    opacity: 0.65;
+    transform: translateY(8px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget-picker-sticker-list li,
+  .widget-picker-sticker-list img,
+  .widget-sticker img {
+    animation: none;
+    transition: none;
+  }
+}

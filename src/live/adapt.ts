@@ -1,4 +1,5 @@
 import type { ChatMessage } from "../data/chat";
+import { getStickerDefinition } from "../data/stickers";
 import type { Widget, WidgetType } from "../data/types";
 
 function restoreKeys(value: unknown): unknown {
@@ -32,16 +33,20 @@ export function toWidget(row: {
   rotate?: number;
   data: unknown;
 }): Widget {
+  const data = restoreKeys(row.data) as Record<string, unknown>;
+  const sticker =
+    row.type === "sticker" ? getStickerDefinition(data.stickerId) : undefined;
+
   return {
     id: row._id,
     type: row.type as WidgetType,
     x: row.x,
     y: row.y,
-    w: row.w,
-    h: row.h,
+    w: sticker?.width ?? row.w,
+    h: sticker?.height ?? row.h,
     z: row.z,
-    rotate: row.rotate,
-    data: restoreKeys(row.data) as Record<string, unknown>,
+    rotate: sticker?.rotate ?? row.rotate,
+    data,
   };
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type CSSProperties } from "react";
 import { STICKER_CATALOG } from "../data/stickers";
 import { SPACE_TEMPLATES, WIDGET_CATALOG } from "../data/templates";
 import type { WidgetTemplate, WidgetType } from "../data/types";
@@ -262,11 +262,14 @@ export function WidgetPicker({
             >
               <div className="widget-picker-sticker-heading">
                 <h3 id={stickersTitleId}>stickers</h3>
-                <span>decorate the wall</span>
+                <span>peel one off</span>
               </div>
               <ul className="widget-picker-sticker-list">
-                {STICKER_CATALOG.map((sticker) => (
-                  <li key={sticker.id}>
+                {STICKER_CATALOG.map((sticker, index) => (
+                  <li
+                    key={sticker.id}
+                    style={{ "--i": index } as CSSProperties}
+                  >
                     <button
                       type="button"
                       onClick={() => {

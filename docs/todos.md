@@ -7,6 +7,15 @@ Backward-looking history lives in `hackathon.md`.
 
 - Full app deployed live: https://necessary-cobra-892.convex.site (Convex
   static hosting + prod backend, all spaces seeded).
+- Sticker pack redesigned as six original illustrated die-cuts: hello cat,
+  pizza pals, roller crew, skate sun, cherry duo, and moon sparkle. Stable
+  sticker ids preserve existing rows while the live adapter applies the new
+  proportions without a reseed. The picker now presents them loose on a real
+  paper sheet with staggered pop-in and silhouette shadows; hover/managed lift
+  follows the artwork instead of drawing a rectangular widget shadow. Live
+  sticker buttons are now wired through the existing Convex create mutation.
+  Verified on the crew canvas, open picker, and add/managed flow in
+  `.context/sticker-redesign/`.
 - Crew poll now carries a one-widget torn-paper prototype: the generated fiber
   study led to the same restrained paper surface used by Hall of Fame, with
   straight-cut sides and one shallow deckled bottom edge. Its transparent source
@@ -210,6 +219,10 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- 2026-08-29: Sticker ids stay stable for persisted rows, but the visible pack
+  is character-led rather than slogan badges. The picker is a light physical
+  sheet inside dark chrome so the white die-cut border reads like the supplied
+  vinyl-sticker reference; canvas depth follows the transparent silhouette.
 - 2026-08-29: Trial the Hall-of-Fame-style torn paper on the crew poll only
   before spreading a shared material treatment across the birthday widget set.
 - 2026-08-28: Hackathon mode locked in — no tests ever, B/C-grade code fine,
