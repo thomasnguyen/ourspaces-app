@@ -128,7 +128,9 @@ widgets) · `spaces.ts` · `widgets.ts` (CRUD/move/resize) · `messages.ts`
 2 conversation starters on a link card, canned fallback without a key) ·
 `paint.ts` (reactive numbered-region fills + couple-room widget backfill) ·
 `photos.ts` (`generateUploadUrl` + `addPhoto`: file-storage upload prepended to
-a photoWall widget's `data.photos`, becomes the pile cover) ·
+a photoWall widget's `data.photos`, becomes the pile cover;
+`backfillCrewMemorySources` replaces the two old test-upload sources without
+changing their ids/note threads) ·
 `convex.config.ts` (components, env)
 
 ## src/index.css (~17.3k lines, hand-written, banner comments)

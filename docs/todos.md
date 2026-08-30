@@ -12,7 +12,11 @@ Backward-looking history lives in `hackathon.md`.
   clutter wins over posing. The memory pile stays at **7 moments**, with roof
   dusk as cover and paint night + Friday as the peeks. Full-size and 640×480
   previews live under `public/photos/{,thumbs/}crew/`; verified in mock crew at
-  `.context/generated-photo-wall-casual-v2.png`.
+  `.context/generated-photo-wall-casual-v2.png`. **Live-data fix:** the old
+  Juno test uploads were still ahead of the seed photos with their file-storage
+  URLs, so `photos:backfillCrewMemorySources` now swaps matching captions to
+  the final static JPGs while preserving photo ids + note threads. Dev patched
+  2 photos / 1 widget; live proof: `.context/photo-wall-live-fixed.png`.
 
 - Party pass **v2** (same session, human asked for more eye candy): left garland
   gained an answering right swag tied off at the cake sticker and both settle
