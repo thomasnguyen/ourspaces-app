@@ -5,6 +5,19 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- Party pass **v2** (same session, human asked for more eye candy): left garland
+  gained an answering right swag tied off at the cake sticker and both settle
+  with a one-shot rotate on entrance; five flat confetti die-cuts sit in the
+  frame's dead zones (staggered pop-in via `.is-entering`, then still — nothing
+  loops); **all poll bars app-wide sweep to their tallies on space open**
+  (`poll-fill-sweep` keyframe animates the existing `--poll-pct` clip-path,
+  staggered per row via `--i` now set on each `<li>`; the leader crown's
+  `poll-crown-land` is delayed to land after its bar); potluck lists get faint
+  ruled notepad lines (`repeating-linear-gradient` hard stops off
+  `--potluck-muted`); the message-wall label pill tilts −2°. All in the
+  "PARTY PASS v2" banner at the end of `index.css`, reduced-motion killed.
+  Entrance verified frame-by-frame via `.context/shot-party-entrance.mjs`
+  (shots `/tmp/party-entrance-*.png`, `/tmp/party-focused.png`).
 - Maya's bday frame got a **party pass** (the human asked "square or not?" —
   verdict: shape was never the problem, the frame was the only dashboard-grid on
   a collage wall). Rectangles stay; what changed: seed data now staggers tops,

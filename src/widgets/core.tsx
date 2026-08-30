@@ -62,27 +62,59 @@ export function FrameWidget({
       style={style}
     >
       {isParty && (
-        <span className="frame-party-garland" aria-hidden="true">
-          {/* two swags strung from the top border, flat die-cut pennants */}
-          <svg viewBox="0 0 200 30" fill="none">
-            <path
-              d="M0 3 Q 50 27 100 4 Q 150 27 200 3"
-              stroke="#fffdf7"
-              strokeWidth="1.6"
-              opacity="0.9"
-            />
-            {GARLAND_PENNANTS.map(([x, y], i) => (
+        <>
+          <span className="frame-party-garland" aria-hidden="true">
+            {/* two swags strung from the top border, flat die-cut pennants */}
+            <svg viewBox="0 0 200 30" fill="none">
               <path
-                key={i}
-                d={`M${x - 6} ${y} L${x + 6} ${y} L${x} ${y + 14} Z`}
-                fill={GARLAND_COLORS[i % GARLAND_COLORS.length]}
+                d="M0 3 Q 50 27 100 4 Q 150 27 200 3"
+                stroke="#fffdf7"
+                strokeWidth="1.6"
+                opacity="0.9"
               />
-            ))}
-            <circle cx="0" cy="3" r="2.2" fill="#fffdf7" />
-            <circle cx="100" cy="4" r="2.2" fill="#fffdf7" />
-            <circle cx="200" cy="3" r="2.2" fill="#fffdf7" />
-          </svg>
-        </span>
+              {GARLAND_PENNANTS.map(([x, y], i) => (
+                <path
+                  key={i}
+                  d={`M${x - 6} ${y} L${x + 6} ${y} L${x} ${y + 14} Z`}
+                  fill={GARLAND_COLORS[i % GARLAND_COLORS.length]}
+                />
+              ))}
+              <circle cx="0" cy="3" r="2.2" fill="#fffdf7" />
+              <circle cx="100" cy="4" r="2.2" fill="#fffdf7" />
+              <circle cx="200" cy="3" r="2.2" fill="#fffdf7" />
+            </svg>
+          </span>
+          <span
+            className="frame-party-garland is-right"
+            aria-hidden="true"
+          >
+            {/* short answering swag on the far side of the cake sticker */}
+            <svg viewBox="0 0 110 27" fill="none">
+              <path
+                d="M0 3 Q 55 24 110 3"
+                stroke="#fffdf7"
+                strokeWidth="1.6"
+                opacity="0.9"
+              />
+              {GARLAND_PENNANTS_RIGHT.map(([x, y], i) => (
+                <path
+                  key={i}
+                  d={`M${x - 5} ${y} L${x + 5} ${y} L${x} ${y + 12} Z`}
+                  fill={GARLAND_COLORS[(i + 1) % GARLAND_COLORS.length]}
+                />
+              ))}
+              <circle cx="0" cy="3" r="2.2" fill="#fffdf7" />
+              <circle cx="110" cy="3" r="2.2" fill="#fffdf7" />
+            </svg>
+          </span>
+          <span className="frame-party-confetti" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+        </>
       )}
       <button
         type="button"
@@ -126,6 +158,12 @@ const GARLAND_PENNANTS: Array<[number, number]> = [
   [182, 10.1],
 ];
 const GARLAND_COLORS = ["#e9369d", "#ffb800", "#fffdf7", "#7853ff"];
+const GARLAND_PENNANTS_RIGHT: Array<[number, number]> = [
+  [22, 9.7],
+  [49.5, 13.4],
+  [79.2, 11.5],
+  [96.8, 7.4],
+];
 
 const DAY_MS = 86_400_000;
 const MAX_TEAR_SEGMENTS = 14;
@@ -356,7 +394,7 @@ function PollWidgetComponent({
           </span>
         </div>
         <ul className="poll-options">
-          {options.map((option) => {
+          {options.map((option, optionIndex) => {
             const selected = selectedOptionId === option.id;
             const votes = option.votes + (selected ? 1 : 0);
             const total = option.total + (hasLocalVote ? 1 : 0);
@@ -392,6 +430,7 @@ function PollWidgetComponent({
             return (
               <li
                 key={option.id}
+                style={{ "--i": optionIndex } as Style}
                 className={`${selected ? "is-selected" : ""} ${leading ? "is-leading" : ""}`}
               >
                 <button
