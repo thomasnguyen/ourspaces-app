@@ -124,6 +124,21 @@ export const retintSpace = internalMutation({
   },
 });
 
+/** One-off canvas resize for staging visual comparisons in a demo room. */
+export const resizeCanvasBySlug = internalMutation({
+  args: { slug: v.string(), canvasW: v.number(), canvasH: v.number() },
+  returns: v.id("spaces"),
+  handler: async (ctx, { slug, canvasW, canvasH }) => {
+    const space = await ctx.db
+      .query("spaces")
+      .withIndex("by_slug", (q) => q.eq("slug", slug))
+      .unique();
+    if (!space) throw new Error(`no space with slug ${slug}`);
+    await ctx.db.patch(space._id, { canvasW, canvasH });
+    return space._id;
+  },
+});
+
 /** Remove a space and everything hanging off it (run via CLI — used to clean
  * up the background-remix scaffolding once a winner was picked). */
 export const deleteBySlug = internalMutation({
