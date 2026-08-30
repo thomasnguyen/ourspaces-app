@@ -7,9 +7,9 @@ Backward-looking history lives in `hackathon.md`.
 
 - The “same moon, both windows” quote scrap now uses an image-generated,
   transparent purple pushpin cutout (`public/assets/ui/quote-pushpin.png`) with
-  real molded-plastic highlights and a steel point; the CSS-built dot/pin was
-  removed. Verified on `#/space/couple`; reference screenshot:
-  `.context/quote-pin-imagegen.png`.
+  a low three-quarter cap and only a tiny collar visible; its needle is hidden
+  in the paper and the detached CSS shadow is gone. Verified on
+  `#/space/couple`; reference screenshot: `.context/quote-pin-embedded-v2.png`.
 - Full app deployed live: https://necessary-cobra-892.convex.site (Convex
   static hosting + prod backend, all spaces seeded).
 - Sticker pack expanded to twelve crew-specific die-cuts, adding photoreal Rio
