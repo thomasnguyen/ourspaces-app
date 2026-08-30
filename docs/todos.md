@@ -5,6 +5,11 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- Hold **Space + drag** to pan the canvas (Figma-style), including over
+  widgets. Grab cursor while Space is down, grabbing while dragging. Skips
+  text fields and chrome. Wired in mock `App.tsx` and live `LiveSpace.tsx`
+  via `src/lib/canvasSpacePan.ts`. Empty-canvas click-drag in mock still
+  works without Space.
 - Canvas stacking is now **stickers (100000) > grabbed/selected card (99999) >
   everything else**. The old grab boost of `55` slipped under any card that
   had already been moved (`widget.z` starts at 1000). Verified with
@@ -310,6 +315,11 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Next up
 
+- vibeapps listing description is drafted in `docs/vibeapps-listing.md` —
+  problem-first, "three rooms, three real problems" up top. Fill the
+  [bracketed] placeholders (real-event receipts, commons counts, day/commit
+  totals) at submit time (Sep 21); cut any line whose feature didn't land
+  (email→action routing, commons, live catch-me-up recap).
 - Re-seed live Convex (`npx convex run seed:demo` or equivalent) so
   production canvases pick up the SomaFM fields and seeded buildclub/Tahoe
   web-post cards.
