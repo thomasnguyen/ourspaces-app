@@ -5238,66 +5238,7 @@
   font-weight: 700;
 }
 
-/* ── availability ── */
-.widget-availability {
-  border-radius: 8px;
-  background: #fffaf7;
-  padding: 16px 14px;
-}
-
-.avail-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.avail-heading h3 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.avail-best {
-  border-radius: 999px;
-  background: #7853ff;
-  color: white;
-  padding: 3px 8px;
-  font-size: 9px;
-  font-weight: 800;
-}
-
-.avail-grid {
-  width: 100%;
-  margin-top: 10px;
-  border-collapse: collapse;
-  font-size: 10px;
-}
-
-.avail-grid th,
-.avail-grid td {
-  padding: 5px 4px;
-  text-align: center;
-}
-
-.avail-grid td:first-child {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  text-align: left;
-  font-weight: 600;
-}
-
-.avail-grid th {
-  color: #7853ff;
-  font-weight: 800;
-}
-
-.avail-grid .is-free {
-  color: #285d4d;
-  font-weight: 800;
-}
+/* ── availability ── (styles live in the paper pass further down) */
 
 /* ── photo wall ── */
 .widget-photo-wall {
@@ -13188,19 +13129,92 @@
 
 /* availability: the summary is the headline; the table is the evidence */
 .widget-availability {
-  --avail-bg: #fffaf7;
+  --avail-bg: #fbf5eb;
   --avail-ink: #111114;
-  --avail-muted: #5a3d48;
+  --avail-muted: #5a4a3d;
   --avail-accent: #3f70ff;
-  --avail-soft: rgba(63, 112, 255, 0.12);
+  --avail-soft: rgba(63, 112, 255, 0.14);
   --avail-cell: rgba(63, 112, 255, 0.08);
+  --avail-rule: rgba(83, 66, 49, 0.28);
   position: relative;
-  overflow: hidden;
   isolation: isolate;
-  border-radius: 12px;
-  background: var(--avail-bg);
   color: var(--avail-ink);
-  padding: 14px 15px 11px;
+  padding: 16px 16px 12px;
+}
+
+/* Sign-up-sheet material: rough-cut paper lives on ::before (like daily-q)
+   so the tape strip can overhang the silhouette instead of being clipped. */
+.widget-availability::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: 9px 13px 8px 12px;
+  background-color: var(--avail-bg);
+  background-image: url("/assets/textures/widget-paper-v1.jpg");
+  background-position: 38% 42%;
+  background-size: cover;
+  background-blend-mode: multiply;
+  filter: brightness(1.06) contrast(0.95);
+  clip-path: polygon(
+    0.8% 1.4%,
+    17% 0.3%,
+    38% 1.1%,
+    61% 0.2%,
+    82% 1%,
+    99.4% 0.4%,
+    100% 24%,
+    99.2% 52%,
+    100% 79%,
+    99.3% 98.9%,
+    78% 99.8%,
+    55% 98.9%,
+    31% 100%,
+    9% 99%,
+    0.4% 99.7%,
+    0 71%,
+    0.7% 44%,
+    0.2% 18%
+  );
+  content: "";
+  pointer-events: none;
+}
+
+/* the strip of tape holding the sheet to the wall */
+.avail-tape {
+  position: absolute;
+  z-index: 3;
+  top: -7px;
+  left: 50%;
+  width: 56px;
+  height: 16px;
+  translate: -50%;
+  rotate: -3deg;
+  background-color: rgba(249, 234, 197, 0.85);
+  background-image: url("/assets/textures/note-paper.jpg");
+  background-position: center;
+  background-size: 250px 250px;
+  background-blend-mode: multiply;
+  clip-path: polygon(
+    0 12%,
+    10% 2%,
+    22% 9%,
+    36% 0,
+    50% 8%,
+    64% 1%,
+    78% 9%,
+    90% 2%,
+    100% 10%,
+    99% 88%,
+    88% 98%,
+    74% 91%,
+    60% 100%,
+    46% 92%,
+    32% 99%,
+    18% 92%,
+    8% 100%,
+    1% 90%
+  );
+  pointer-events: none;
 }
 
 .availability-tone-blush {
@@ -13238,6 +13252,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  border-bottom: 1.5px dashed var(--avail-rule);
+  padding-bottom: 7px;
 }
 
 .avail-kicker,
@@ -13262,6 +13278,7 @@
   text-wrap: balance;
 }
 
+/* inked rubber stamp instead of an app chip */
 .avail-tone-mark {
   display: grid;
   width: 26px;
@@ -13271,12 +13288,13 @@
   grid-template-rows: repeat(2, 4px);
   gap: 2px;
   place-items: center;
-  border-radius: 8px;
-  background: var(--avail-soft);
+  border: 1.5px dashed color-mix(in srgb, var(--avail-accent) 55%, transparent);
+  border-radius: 7px 9px 6px 8px;
+  background: transparent;
   color: var(--avail-accent);
   font-size: 17px;
   font-weight: 800;
-  rotate: 4deg;
+  rotate: 7deg;
 }
 
 .avail-tone-mark i {
@@ -13286,15 +13304,18 @@
   background: currentColor;
 }
 
+/* best-fit reads as a hand-stamped box on the paper, not a filled app pill */
 .avail-recommendation {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 4px 12px;
-  margin: 11px 0 7px;
-  border-radius: 9px;
-  background: var(--avail-soft);
-  padding: 8px 10px;
+  margin: 11px 2px 8px;
+  border: 1.5px dashed color-mix(in srgb, var(--avail-accent) 60%, transparent);
+  border-radius: 6px 10px 5px 9px;
+  background: transparent;
+  padding: 8px 11px;
+  rotate: -0.6deg;
 }
 
 .avail-recommendation > div:first-child {
@@ -13312,13 +13333,26 @@
   text-transform: uppercase;
 }
 
+/* highlighter swipe across the winning day */
 .avail-recommendation > div:first-child strong {
   overflow: hidden;
+  align-self: flex-start;
+  max-width: 100%;
+  margin-left: -4px;
+  background: linear-gradient(
+    104deg,
+    transparent 2%,
+    color-mix(in srgb, var(--avail-accent) 24%, transparent) 9%,
+    color-mix(in srgb, var(--avail-accent) 24%, transparent) 93%,
+    transparent 97%
+  );
   color: var(--avail-ink);
   font-family: var(--font-display);
   font-size: 20px;
   font-weight: 800;
-  line-height: 0.95;
+  line-height: 1;
+  padding: 1px 7px 2px;
+  rotate: -1deg;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -13352,14 +13386,24 @@
   scrollbar-width: thin;
 }
 
+/* printed sign-up sheet: dashed rules between rows, no floating app cells */
 .avail-grid {
   width: 100%;
   min-width: 330px;
-  margin-top: 1px;
-  border-collapse: separate;
-  border-spacing: 3px 2px;
+  margin-top: 2px;
+  border-collapse: collapse;
   color: var(--avail-ink);
   font-size: 9px;
+}
+
+.avail-grid tbody th,
+.avail-grid tbody td {
+  border-bottom: 1.5px dashed color-mix(in srgb, var(--avail-rule) 75%, transparent);
+}
+
+.avail-grid tbody tr:last-child th,
+.avail-grid tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .avail-grid th,
@@ -13372,6 +13416,7 @@
 
 .avail-grid thead th {
   height: 32px;
+  border-bottom: 1.5px dashed var(--avail-rule);
   color: var(--avail-muted);
   font-size: 9px;
   font-weight: 800;
@@ -13394,10 +13439,19 @@
   font-weight: 800;
 }
 
+/* the winning day gets a hand-drawn circle; the column below it reads as one
+   continuous highlighter stripe */
 .avail-grid thead th.is-recommended {
-  border-radius: 6px;
-  background: var(--avail-soft);
+  background: color-mix(in srgb, var(--avail-accent) 9%, transparent);
   color: var(--avail-accent);
+}
+
+.avail-grid thead th.is-recommended > span {
+  display: inline-block;
+  border: 2px solid var(--avail-accent);
+  border-radius: 55% 45% 60% 40% / 60% 55% 45% 50%;
+  padding: 1px 9px 2px;
+  rotate: -3deg;
 }
 
 .avail-grid tbody th {
@@ -13416,24 +13470,29 @@
 }
 
 .avail-grid td {
-  border-radius: 6px;
-  background: rgba(17, 17, 20, 0.045);
-  color: rgba(17, 17, 20, 0.3);
+  background: transparent;
+  color: rgba(17, 17, 20, 0.26);
   font-size: 12px;
   font-weight: 800;
 }
 
+/* checks are inked by different hands: tilt alternates per column */
 .avail-grid td.is-free {
-  background: var(--avail-cell);
   color: var(--avail-accent);
+  font-size: 13px;
+}
+
+.avail-grid td.is-free > span {
+  display: inline-block;
+  rotate: -6deg;
+}
+
+.avail-grid td.is-free:nth-child(odd) > span {
+  rotate: 5deg;
 }
 
 .avail-grid td.is-recommended {
-  background: var(--avail-soft);
-}
-
-.avail-grid td.is-free.is-recommended {
-  background: color-mix(in srgb, var(--avail-accent) 18%, transparent);
+  background: color-mix(in srgb, var(--avail-accent) 9%, transparent);
 }
 
 .avail-you-row th {
@@ -13453,31 +13512,42 @@
   text-transform: uppercase;
 }
 
+/* your slots: a penciled-in circle waiting for your mark; tapping stamps it */
 .avail-cell-button {
   display: grid;
-  width: 100%;
-  height: 27px;
+  width: 23px;
+  height: 23px;
+  margin-inline: auto;
   place-items: center;
-  border: 0;
-  border-radius: 6px;
+  border: 1.5px dashed rgba(17, 17, 20, 0.32);
+  border-radius: 55% 45% 50% 60% / 50% 60% 45% 55%;
   background: transparent;
   color: rgba(17, 17, 20, 0.38);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   cursor: pointer;
-  transition: background 140ms ease-out, color 140ms ease-out, scale 140ms ease-out;
+  transition:
+    background var(--dur-quick) var(--ease-glide),
+    color var(--dur-quick) var(--ease-glide),
+    border-color var(--dur-quick) var(--ease-glide),
+    scale var(--dur-quick) var(--ease-glide);
 }
 
 .avail-cell-button:hover,
 .avail-cell-button:focus-visible {
+  border-color: var(--avail-accent);
   background: var(--avail-cell);
   color: var(--avail-accent);
-  scale: 1.06;
+  scale: 1.1;
 }
 
 .avail-cell-button.is-free {
+  border-color: var(--avail-accent);
+  border-style: solid;
   background: var(--avail-accent);
   color: white;
+  rotate: -4deg;
+  animation: avail-stamp var(--dur-base) var(--ease-pop);
 }
 
 .avail-cell-button.is-free:hover,
@@ -13491,10 +13561,35 @@
   outline-offset: 1px;
 }
 
+/* the stamp comes down onto the paper */
+@keyframes avail-stamp {
+  from {
+    scale: 1.45;
+    rotate: 3deg;
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avail-cell-button.is-free {
+    animation: none;
+  }
+}
+
+/* shell is a transparent clip-path paper now — rectangular selection shadows
+   would betray the rough cut (same treatment as paper-note / joke-registry) */
+.widget-group.is-thread-selected .widget-shell.widget-availability,
+.widget-group.is-managed .widget-shell.widget-availability,
+.widget-group.is-dragging .widget-shell.widget-availability {
+  box-shadow: none;
+  filter: none;
+}
+
 .avail-hint {
-  margin: 6px 0 0;
+  margin: 7px 2px 0;
   color: var(--avail-muted);
   font-size: 8px;
+  font-style: italic;
   font-weight: 700;
   text-align: right;
 }
