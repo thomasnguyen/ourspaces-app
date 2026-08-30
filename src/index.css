@@ -17303,3 +17303,174 @@
     transition: none;
   }
 }
+
+/* ================================================================
+   PAPER OBJECTS — DISTINCT MATERIAL PASS
+   Daily question is a soft, punched worksheet stack. Saved links is a
+   cooler ledger scrap with a rough-cut silhouette and dry printed rules.
+   Both stay text-free raster materials underneath real interactive UI.
+   ================================================================ */
+
+.widget-daily-q::before {
+  border-radius: 11px 15px 10px 13px;
+  background-color: var(--dq-bg);
+  background-image: url("/assets/textures/daily-question-paper.jpg");
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: multiply;
+  clip-path: polygon(
+    0.6% 1.1%,
+    19% 0.2%,
+    43% 0.9%,
+    69% 0.1%,
+    99.3% 0.8%,
+    100% 27%,
+    99.5% 57%,
+    100% 82%,
+    99.1% 99.2%,
+    72% 99.8%,
+    47% 99.1%,
+    21% 100%,
+    0.5% 99.1%,
+    0 73%,
+    0.6% 42%
+  );
+  filter: brightness(1.1) contrast(0.94);
+}
+
+/* Three faint punch marks make the question read as a worksheet pulled
+   from a binder, rather than another torn note. */
+.widget-daily-q::after {
+  position: absolute;
+  z-index: 1;
+  top: 70px;
+  left: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(17, 17, 20, 0.16);
+  box-shadow:
+    0 48px 0 rgba(17, 17, 20, 0.13),
+    0 96px 0 rgba(17, 17, 20, 0.1);
+  content: "";
+  pointer-events: none;
+}
+
+.dq-stack,
+.dq-stack::after {
+  border-radius: 10px 14px 11px 12px;
+  background-color: var(--dq-bg);
+  background-image: url("/assets/textures/daily-question-paper.jpg");
+  background-size: cover;
+  background-blend-mode: multiply;
+  clip-path: polygon(
+    0.4% 0.8%,
+    26% 0,
+    53% 0.7%,
+    78% 0.1%,
+    99.6% 1%,
+    100% 99.1%,
+    76% 100%,
+    49% 99.2%,
+    23% 99.9%,
+    0 99.1%
+  );
+}
+
+.dq-stack {
+  background-position: 36% 48%;
+  filter: brightness(1.08) contrast(0.95);
+}
+
+.dq-stack::after {
+  background-position: 68% 55%;
+  filter: brightness(1.045) contrast(0.96);
+}
+
+.widget-link-shelf {
+  overflow: hidden;
+  border-radius: 5px 9px 6px 4px;
+  background-color: var(--shelf-bg);
+  background-image: url("/assets/textures/link-shelf-ledger.jpg");
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: multiply;
+  clip-path: polygon(
+    0.7% 0.9%,
+    18% 0.1%,
+    39% 0.7%,
+    63% 0,
+    84% 0.8%,
+    99.5% 0.3%,
+    100% 30%,
+    99.4% 63%,
+    100% 96.8%,
+    96% 99.1%,
+    91% 97.8%,
+    86% 100%,
+    80% 98.1%,
+    74% 99.6%,
+    67% 98%,
+    60% 100%,
+    53% 98.3%,
+    46% 99.8%,
+    39% 98.1%,
+    32% 100%,
+    25% 98.2%,
+    18% 99.7%,
+    11% 98%,
+    5% 99.6%,
+    0.3% 97.5%,
+    0 68%,
+    0.5% 35%
+  );
+}
+
+.widget-link-shelf::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: rgba(255, 250, 247, 0.66);
+  content: "";
+  pointer-events: none;
+}
+
+/* A folded corner is the ledger's one construction detail; the material and
+   serrated bottom carry the rest so it does not become another taped note. */
+.widget-link-shelf::after {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  width: 17px;
+  height: 17px;
+  background: rgba(17, 17, 20, 0.08);
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+  content: "";
+  pointer-events: none;
+}
+
+.link-shelf-heading,
+.link-shelf-list,
+.link-shelf-empty {
+  position: relative;
+  z-index: 1;
+}
+
+.widget-link-shelf .link-shelf-row {
+  border-bottom: 1.5px dashed rgba(63, 54, 58, 0.34);
+}
+
+.widget-link-shelf .link-shelf-row:nth-child(odd) {
+  rotate: -0.18deg;
+}
+
+.widget-link-shelf .link-shelf-row:nth-child(even) {
+  rotate: 0.22deg;
+}
+
+.widget-link-shelf .link-shelf-row:hover,
+.widget-link-shelf .link-shelf-row:focus-within,
+.widget-link-shelf .link-shelf-row.is-copied {
+  rotate: 0deg;
+}
