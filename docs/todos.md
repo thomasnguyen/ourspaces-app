@@ -5,14 +5,14 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
-- Crew media now uses a new deliberately unpolished **camera-roll trio**:
-  `friday at maya's`, `roof dusk`, and `paint night`. All three keep the same
-  six-friend cast but use crooked iPhone framing, mixed light/direct flash,
-  foreground occlusion, and motion blur instead of editorial polish. The
-  memory pile matches the reference again at **7 moments**, with roof dusk as
-  cover and paint night + Friday as the two visible peeks. Full-size and 640×480
+- Crew media uses a deliberately unpolished **camera-roll trio**: `friday at
+  maya's`, `roof dusk`, and `paint night`. Roof dusk + paint night got a looser
+  second pass: only 3–4 people happen to be in frame, faces turn away or get
+  cropped, a finger/arm blocks the lens, the roof is underexposed, and paint
+  clutter wins over posing. The memory pile stays at **7 moments**, with roof
+  dusk as cover and paint night + Friday as the peeks. Full-size and 640×480
   previews live under `public/photos/{,thumbs/}crew/`; verified in mock crew at
-  `.context/generated-photo-wall.png`.
+  `.context/generated-photo-wall-casual-v2.png`.
 
 - Party pass **v2** (same session, human asked for more eye candy): left garland
   gained an answering right swag tied off at the cake sticker and both settle
