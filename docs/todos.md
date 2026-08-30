@@ -4,12 +4,12 @@ Session handoff file. Update at the end of every session (see `AGENTS.md`).
 Backward-looking history lives in `hackathon.md`.
 
 ## Now working
+
 - The “same moon, both windows” quote scrap now uses a dimensional purple
   thumbtack instead of the flat white-ringed dot: solid bevel layers, a small
   specular fleck, tight contact shadow, and short metal point make it read as a
   physical pin at normal canvas scale. Verified on `#/space/couple`; reference
   screenshot: `.context/quote-pin-after.png`.
-
 - Full app deployed live: https://necessary-cobra-892.convex.site (Convex
   static hosting + prod backend, all spaces seeded).
 - Sticker pack expanded to twelve crew-specific die-cuts, adding photoreal Rio
