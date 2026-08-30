@@ -73,7 +73,8 @@ switches it back) ·
 
 **data/** — `types.ts` (`Widget`/`Space`) · `spaces.ts` (all seeded spaces,
 1300+ lines) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes.ts` ·
-`templates.ts` (`WIDGET_CATALOG`) · `stickers.ts` · `avatars.ts` · `crew.ts`
+`templates.ts` (`WIDGET_CATALOG`) · `stickers.ts` (stable sticker ids → die-cut
+character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
 
 ## public/
 
@@ -85,6 +86,10 @@ Fame torn-paper surface for a consistent physical family.
 
 **assets/link-card-fallback.jpg** — generated crop-safe paper collage used when
 a Firecrawl link card has no page image.
+
+**assets/stickers/** — six generated transparent die-cut character stickers
+(`hello-cat`, `pizza-pals`, `roller-crew`, `skate-sun`, `cherry-duo`,
+`moon-sparkle`); legacy badge assets remain on disk but are no longer catalogued.
 
 **assets/cozy-color-poster.svg** — AUTO-GENERATED finished "same moon, both
 windows" poster (door preview for `CozyColorWidget`); emitted by
@@ -114,13 +119,13 @@ widgets) · `spaces.ts` · `widgets.ts` (CRUD/move/resize) · `messages.ts`
 a photoWall widget's `data.photos`, becomes the pile cover) ·
 `convex.config.ts` (components, env)
 
-## src/index.css (~14k lines, hand-written, banner comments)
+## src/index.css (~17.3k lines, hand-written, banner comments)
 
-Tokens `@theme` (lines 4–21) → base (~1–1000) → space entrance (~1048) →
+Tokens `@theme` (lines 4–27) → base (~1–1000) → space entrance (~1048) →
 per-widget sections (~1670–6300) → chrome: picker ~6305, threads ~7047,
 navigator ~7357, chat drawer ~8313, action dock ~9744, recap ~9951 → pages:
 block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
-(~11482+), ending with the full-screen cozy-color room treatment. New CSS goes
+(~11482+), ending with the die-cut sticker pack/picker treatment. New CSS goes
 in a new banner section at the end.
 
 ## scripts/

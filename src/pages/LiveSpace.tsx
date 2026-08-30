@@ -21,6 +21,7 @@ import {
   type ThreadDockSize,
 } from "../components/WidgetThreadDock";
 import { getSpace, SPACES_BY_ID } from "../data/spaces";
+import { getStickerDefinition } from "../data/stickers";
 import type { Widget, WidgetType } from "../data/types";
 import { LinkQuestionStrip } from "../components/LinkQuestionStrip";
 import { linkCardQuestions, questionThreadId } from "../lib/linkQuestions";
@@ -1186,6 +1187,24 @@ export function LiveSpacePage({
     }
   };
 
+  const addSticker = async (stickerId: string) => {
+    const sticker = getStickerDefinition(stickerId);
+    if (!sticker || !space) return;
+
+    const widget: Omit<Widget, "id"> = {
+      type: "sticker",
+      x: Math.max(24, canvasWidth - sticker.width - 48),
+      y: Math.max(24, canvasHeight - sticker.height - 48),
+      w: sticker.width,
+      h: sticker.height,
+      z: 1000,
+      rotate: sticker.rotate,
+      data: { stickerId },
+    };
+    const createdId = await handlers.onCreate(widget);
+    if (createdId) setManagedWidgetId(String(createdId));
+  };
+
   const hasBoard = status === "ready" || status === "cached" || status === "empty";
   const boardKey = `${slug}:${roomEntered ? "in" : "gate"}`;
   const canvasRecapCites = useMemo(
@@ -1449,6 +1468,7 @@ export function LiveSpacePage({
       )}
       <WidgetPicker
         open={pickerOpen}
+        onAddSticker={addSticker}
         onAddWidget={addWidget}
         onClose={() => setPickerOpen(false)}
       />
