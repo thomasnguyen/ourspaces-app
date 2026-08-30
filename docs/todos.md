@@ -5,6 +5,11 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- Canvas stacking is now **stickers (100000) > grabbed/selected card (99999) >
+  everything else**. The old grab boost of `55` slipped under any card that
+  had already been moved (`widget.z` starts at 1000). Verified with
+  `.context/eval-z-index.mjs`: a second grab sits at 99999 over a previously
+  moved card at 1001, under the sticker at 100000.
 - The house now stages **seven copies of the Dan Luu web post** across two rows
   at the bottom of its live dev canvas. Row one keeps the original plus three
   cut-paper colorways; row two adds three genuinely different materials:

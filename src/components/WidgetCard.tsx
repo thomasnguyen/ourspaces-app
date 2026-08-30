@@ -908,11 +908,17 @@ function WidgetCardComponent({
       } ${recapCited ? "is-recap-cited" : ""}`}
       style={{
         ...groupStyle(widget, enterDelay, remoteGesture),
+        // Stickers stay on top of the collage. The card in your hand is
+        // next. Stored widget.z starts at 1000 after a move, so a 55
+        // grab boost used to slip *under* already-moved cards.
         zIndex:
           widget.type === "sticker"
             ? (managed || dragging ? 100001 : 100000)
-            : remoteGesture?.z ??
-              (managed || dragging || widgetFocused ? 55 : recapCited ? 54 : widget.z),
+            : remoteGesture || managed || dragging || widgetFocused
+              ? 99999
+              : recapCited
+                ? 99998
+                : widget.z,
       }}
       ref={syncInert}
       data-widget-id={widget.id}
