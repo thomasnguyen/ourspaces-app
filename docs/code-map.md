@@ -87,6 +87,9 @@ Fame torn-paper surface for a consistent physical family.
 **assets/link-card-fallback.jpg** — generated crop-safe paper collage used when
 a Firecrawl link card has no page image.
 
+
+**assets/ui/quote-pushpin.png** — image-generated transparent purple plastic
+pushpin used by the “same moon, both windows” quote scrap.
 **assets/stickers/** — twelve generated transparent die-cut crew stickers mixing
 character art, holographic foil, and flash-lit photo cutouts (`hello-cat`,
 `socks-terrier`, `holo-smiley`, `pizza-pals`, `blah-blah`, `matcha-cake`,
