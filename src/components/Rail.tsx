@@ -50,9 +50,6 @@ export function Rail({
               >
                 {/* U+FE0E keeps ♥ a text glyph (white ink) instead of the emoji */}
                 <span>{`${displaySpace.icon}\uFE0E`}</span>
-                {space.activity && !active && (
-                  <span className="activity-dot" aria-label="New activity" />
-                )}
               </button>
               <span className="space-tooltip">
                 {displaySpace.name}

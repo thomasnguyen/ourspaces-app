@@ -645,7 +645,22 @@
   border-radius: 28px;
   background: var(--color-rail);
   box-shadow: 0 8px 8px rgba(45, 22, 31, 0.2);
+  animation: rail-in var(--dur-stage) var(--ease-glide) backwards;
   padding: 16px 10px 14px;
+}
+
+@keyframes rail-in {
+  from {
+    opacity: 0;
+    translate: -24px 0;
+  }
+}
+
+@keyframes rail-in-up {
+  from {
+    opacity: 0;
+    translate: 0 24px;
+  }
 }
 
 .rail-brand {
@@ -790,10 +805,25 @@
   z-index: 1;
 }
 
+.space-link > span {
+  transition: scale var(--dur-quick) var(--ease-glide);
+}
+
 .space-link:hover:not(.is-active):not(:disabled) {
   translate: 0 -3px;
   rotate: 0deg;
   scale: 1.06;
+  box-shadow: 0 5px 0 rgba(20, 10, 14, 0.35);
+}
+
+.space-link:hover:not(.is-active):not(:disabled) > span {
+  scale: 1.15;
+}
+
+/* Dock ripple — neighbors of the hovered tile perk up a hair */
+.space-link-wrap:hover + .space-link-wrap :is(.space-link, .create-space-button):not(.is-active),
+.space-link-wrap:has(+ .space-link-wrap:hover) :is(.space-link, .create-space-button):not(.is-active) {
+  translate: 0 -1px;
 }
 
 .space-link.is-active {
@@ -806,42 +836,6 @@
     translate var(--dur-base) var(--ease-pop),
     rotate var(--dur-base) var(--ease-pop),
     box-shadow var(--dur-base) var(--ease-pop);
-}
-
-.activity-dot {
-  position: absolute;
-  z-index: 2;
-  top: -4px;
-  right: -4px;
-  width: 12px;
-  height: 12px;
-  border: 3px solid var(--color-rail);
-  border-radius: 50%;
-  background: var(--color-lime);
-}
-
-/* Liveness ping — the dot means "something's happening", so let it breathe */
-.activity-dot::after {
-  position: absolute;
-  inset: -3px;
-  border: 2px solid var(--color-lime);
-  border-radius: 50%;
-  animation: activity-ping 2.6s var(--ease-glide) infinite;
-  content: "";
-  opacity: 0;
-}
-
-@keyframes activity-ping {
-  0% {
-    opacity: 0.8;
-    scale: 0.8;
-  }
-
-  70%,
-  100% {
-    opacity: 0;
-    scale: 2;
-  }
 }
 
 .space-tooltip {
@@ -857,7 +851,7 @@
   font-size: 12px;
   font-weight: 700;
   pointer-events: none;
-  transform: translate(-5px, -50%) scale(0.92);
+  transform: translate(-5px, -50%) rotate(-3deg) scale(0.92);
   transform-origin: left center;
   transition:
     opacity var(--dur-quick) ease-out,
@@ -867,7 +861,7 @@
 
 .space-link-wrap:hover .space-tooltip {
   opacity: 1;
-  transform: translate(0, -50%) scale(1);
+  transform: translate(0, -50%) rotate(-2deg) scale(1);
 }
 
 .space-link.is-active + .space-tooltip {
@@ -11996,6 +11990,7 @@
     flex-direction: row;
     justify-content: center;
     border-radius: 24px;
+    animation-name: rail-in-up;
     padding: 10px 12px;
   }
 
