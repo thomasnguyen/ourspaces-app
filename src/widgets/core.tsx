@@ -71,7 +71,7 @@ export function FrameWidget({
             <svg viewBox="0 0 200 30" fill="none">
               <path
                 d="M0 3 Q 50 27 100 4 Q 150 27 200 3"
-                stroke="#fffdf7"
+                stroke="#4a3a40"
                 strokeWidth="1.6"
                 opacity="0.9"
               />
@@ -82,9 +82,9 @@ export function FrameWidget({
                   fill={GARLAND_COLORS[i % GARLAND_COLORS.length]}
                 />
               ))}
-              <circle cx="0" cy="3" r="2.2" fill="#fffdf7" />
-              <circle cx="100" cy="4" r="2.2" fill="#fffdf7" />
-              <circle cx="200" cy="3" r="2.2" fill="#fffdf7" />
+              <circle cx="0" cy="3" r="2.2" fill="#4a3a40" />
+              <circle cx="100" cy="4" r="2.2" fill="#4a3a40" />
+              <circle cx="200" cy="3" r="2.2" fill="#4a3a40" />
             </svg>
           </span>
           <span
@@ -95,7 +95,7 @@ export function FrameWidget({
             <svg viewBox="0 0 110 27" fill="none">
               <path
                 d="M0 3 Q 55 24 110 3"
-                stroke="#fffdf7"
+                stroke="#4a3a40"
                 strokeWidth="1.6"
                 opacity="0.9"
               />
@@ -106,8 +106,8 @@ export function FrameWidget({
                   fill={GARLAND_COLORS[(i + 1) % GARLAND_COLORS.length]}
                 />
               ))}
-              <circle cx="0" cy="3" r="2.2" fill="#fffdf7" />
-              <circle cx="110" cy="3" r="2.2" fill="#fffdf7" />
+              <circle cx="0" cy="3" r="2.2" fill="#4a3a40" />
+              <circle cx="110" cy="3" r="2.2" fill="#4a3a40" />
             </svg>
           </span>
           <span className="frame-party-confetti" aria-hidden="true">
@@ -160,7 +160,8 @@ const GARLAND_PENNANTS: Array<[number, number]> = [
   [162, 14.5],
   [182, 10.1],
 ];
-const GARLAND_COLORS = ["#e9369d", "#ffb800", "#fffdf7", "#7853ff"];
+// no white pennant — it would ghost against the frame's kraft mat
+const GARLAND_COLORS = ["#e9369d", "#ffb800", "#13b8a6", "#7853ff"];
 const GARLAND_PENNANTS_RIGHT: Array<[number, number]> = [
   [22, 9.7],
   [49.5, 13.4],
