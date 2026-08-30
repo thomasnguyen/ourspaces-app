@@ -36,18 +36,18 @@ export function toWidget(row: {
   const data = restoreKeys(row.data) as Record<string, unknown>;
   const sticker =
     row.type === "sticker" ? getStickerDefinition(data.stickerId) : undefined;
-  const legacyLinkCardSize =
+  const supersededLinkCardSize =
     row.type === "linkCard" &&
-    row.w === 420 &&
-    (row.h === 340 || row.h === 360);
+    ((row.w === 420 && (row.h === 340 || row.h === 360)) ||
+      (row.w === 340 && row.h === 280));
 
   return {
     id: row._id,
     type: row.type as WidgetType,
     x: row.x,
     y: row.y,
-    w: sticker?.width ?? (legacyLinkCardSize ? 340 : row.w),
-    h: sticker?.height ?? (legacyLinkCardSize ? 280 : row.h),
+    w: sticker?.width ?? (supersededLinkCardSize ? 300 : row.w),
+    h: sticker?.height ?? (supersededLinkCardSize ? 250 : row.h),
     z: row.z,
     rotate: sticker?.rotate ?? row.rotate,
     data,
