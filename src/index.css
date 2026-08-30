@@ -17121,7 +17121,8 @@
   background: transparent url("/assets/textures/note-torn-paper.png") center /
     100% 100% no-repeat;
   content: "";
-  filter: drop-shadow(0 7px 0 var(--poll-shadow));
+  filter: brightness(1.06) contrast(0.97)
+    drop-shadow(0 7px 0 var(--poll-shadow));
   pointer-events: none;
 }
 
@@ -17140,5 +17141,5 @@
 .paper-bg[data-space-id="crew"]
   .widget-group:is(.is-managed, .is-dragging)
   .widget-poll::before {
-  filter: none;
+  filter: brightness(1.06) contrast(0.97);
 }

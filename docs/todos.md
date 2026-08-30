@@ -10,8 +10,9 @@ Backward-looking history lives in `hackathon.md`.
 - Crew poll now carries a one-widget torn-paper prototype: the generated fiber
   study led to the same restrained paper surface used by Hall of Fame, with
   straight-cut sides and one shallow deckled bottom edge. The paper is a masked
-  layer behind the ballot so its daisy pin can still overhang; neighboring RSVP
-  and potluck widgets stay flat for an on-screen A/B comparison.
+  layer behind the ballot with a restrained neutral lightness lift, so its daisy
+  pin can still overhang; neighboring RSVP and potluck widgets stay flat for an
+  on-screen A/B comparison.
 - Potluck widget redesigned as a "sign-up sheet" (`/eye-candy` pass): chip
   rows → ruled baselines with a dashed center fold, wonky hand-drawn
   checkboxes whose ✓ draws in (`stroke-dashoffset`), claimants "sign" the
