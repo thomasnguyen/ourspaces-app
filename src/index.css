@@ -17248,7 +17248,7 @@
   height: auto;
   max-height: 80px;
   filter: drop-shadow(
-    2px 3px 0 color-mix(in srgb, var(--color-sticker) 52%, transparent)
+    1px 2px 0 color-mix(in srgb, var(--color-sticker) 40%, transparent)
   );
   rotate: var(--sticker-tilt);
   scale: 1;
@@ -17266,7 +17266,7 @@
 
 .widget-picker-sticker-list button:hover img {
   filter: drop-shadow(
-    5px 7px 0 color-mix(in srgb, var(--color-sticker) 48%, transparent)
+    3px 4px 0 color-mix(in srgb, var(--color-sticker) 40%, transparent)
   );
   scale: 1.08;
   translate: 0 calc(var(--sticker-rest-y) - 6px);
@@ -17278,7 +17278,7 @@
 
 .widget-picker-sticker-list button:active img {
   filter: drop-shadow(
-    1px 2px 0 color-mix(in srgb, var(--color-sticker) 38%, transparent)
+    1px 1px 0 color-mix(in srgb, var(--color-sticker) 32%, transparent)
   );
   scale: 0.96;
   translate: 0 calc(var(--sticker-rest-y) + 1px);
@@ -17286,7 +17286,7 @@
 
 .widget-sticker img {
   filter: drop-shadow(
-    2px 3px 0 color-mix(in srgb, var(--color-sticker) 36%, transparent)
+    1px 2px 0 color-mix(in srgb, var(--color-sticker) 30%, transparent)
   );
   scale: 1;
   translate: 0;
@@ -17298,9 +17298,9 @@
 
 .widget-sticker-group:not(.is-dragging) .widget-group-body:hover .widget-sticker img {
   filter: drop-shadow(
-    4px 6px 0 color-mix(in srgb, var(--color-sticker) 38%, transparent)
+    2px 3px 0 color-mix(in srgb, var(--color-sticker) 32%, transparent)
   );
-  translate: 0 -3px;
+  translate: 0 -2px;
 }
 
 .widget-sticker-group.is-managed .widget-sticker {
@@ -17309,7 +17309,7 @@
 
 .widget-sticker-group.is-managed .widget-sticker img {
   filter: drop-shadow(
-    6px 8px 0 color-mix(in srgb, var(--color-sticker) 42%, transparent)
+    3px 4px 0 color-mix(in srgb, var(--color-sticker) 34%, transparent)
   );
   scale: 1.025;
 }
@@ -17504,3 +17504,49 @@
 .widget-link-shelf .link-shelf-row.is-copied {
   rotate: 0deg;
 }
+
+/* ================================================================
+   QUOTE SCRAP — DIMENSIONAL THUMBTACK
+   A solid domed cap and tight contact shadow replace the flat status-dot pin.
+   ================================================================ */
+
+.quote-pin {
+  top: 3px;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-crew);
+  box-shadow:
+    inset 3px 3px 0 rgba(255, 255, 255, 0.3),
+    inset -3px -4px 0 rgba(17, 17, 20, 0.18),
+    0 3px 0 color-mix(in srgb, var(--color-crew) 68%, var(--color-sticker)),
+    1px 5px 4px -2px rgba(17, 17, 20, 0.38);
+  rotate: -8deg;
+}
+
+.quote-pin::before {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  width: 6px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  content: "";
+  rotate: -24deg;
+}
+
+.quote-pin::after {
+  position: absolute;
+  z-index: -1;
+  bottom: -11px;
+  left: 54%;
+  width: 2px;
+  height: 13px;
+  border-radius: 0 0 2px 2px;
+  background: color-mix(in srgb, var(--color-sticker) 72%, white);
+  box-shadow: 1px 1px 1px rgba(17, 17, 20, 0.2);
+  content: "";
+  rotate: 8deg;
+  translate: -50% 0;
