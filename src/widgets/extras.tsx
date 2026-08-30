@@ -793,6 +793,7 @@ export function AvailabilityWidget({ widget, style }: { widget: Widget; style: S
 
   return (
     <section className={`widget-shell widget-availability availability-tone-${tone}`} style={style}>
+      <span className="avail-tape" aria-hidden="true" />
       <header className="avail-heading">
         <div>
           <span className="avail-kicker">scheduling snapshot</span>
