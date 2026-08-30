@@ -4,6 +4,11 @@ Session handoff file. Update at the end of every session (see `AGENTS.md`).
 Backward-looking history lives in `hackathon.md`.
 
 ## Now working
+- The “same moon, both windows” quote scrap now uses a dimensional purple
+  thumbtack instead of the flat white-ringed dot: solid bevel layers, a small
+  specular fleck, tight contact shadow, and short metal point make it read as a
+  physical pin at normal canvas scale. Verified on `#/space/couple`; reference
+  screenshot: `.context/quote-pin-after.png`.
 
 - Full app deployed live: https://necessary-cobra-892.convex.site (Convex
   static hosting + prod backend, all spaces seeded).
@@ -227,6 +232,8 @@ Backward-looking history lives in `hackathon.md`.
 - 2026-08-29: Crew stickers can mix illustration, restrained holographic foil,
   simple symbols/type, and photographic cutouts as long as every piece shares
   the same black keyline, white vinyl cutline, and punchy physical-sheet feel.
+- 2026-08-29: Sticker depth stays close to the vinyl edge: 1–2px at rest and
+  3–4px when hovered or selected, so the cutline leads instead of the shadow.
 - 2026-08-29: Trial the Hall-of-Fame-style torn paper on the crew poll only
   before spreading a shared material treatment across the birthday widget set.
 - 2026-08-28: Hackathon mode locked in — no tests ever, B/C-grade code fine,
