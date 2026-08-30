@@ -17162,13 +17162,13 @@
 }
 
 .widget-picker-sticker-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px 6px;
   padding: 2px 0 0;
 }
 
 .widget-picker-sticker-list li {
-  height: 98px;
+  height: 84px;
   animation: picker-sticker-arrive var(--dur-arrive) var(--ease-pop) both;
   animation-delay: calc(var(--i) * 40ms);
 }
@@ -17203,8 +17203,38 @@
   --sticker-rest-y: 0px;
 }
 
+.widget-picker-sticker-list li:nth-child(7) {
+  --sticker-tilt: -2deg;
+  --sticker-rest-y: 3px;
+}
+
+.widget-picker-sticker-list li:nth-child(8) {
+  --sticker-tilt: 4deg;
+  --sticker-rest-y: -2px;
+}
+
+.widget-picker-sticker-list li:nth-child(9) {
+  --sticker-tilt: 2deg;
+  --sticker-rest-y: 2px;
+}
+
+.widget-picker-sticker-list li:nth-child(10) {
+  --sticker-tilt: -3deg;
+  --sticker-rest-y: -1px;
+}
+
+.widget-picker-sticker-list li:nth-child(11) {
+  --sticker-tilt: -4deg;
+  --sticker-rest-y: 3px;
+}
+
+.widget-picker-sticker-list li:nth-child(12) {
+  --sticker-tilt: 5deg;
+  --sticker-rest-y: 0px;
+}
+
 .widget-picker-sticker-list button {
-  height: 98px;
+  height: 84px;
   overflow: visible;
   border-radius: 0;
   background: transparent;
@@ -17216,7 +17246,7 @@
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 94px;
+  max-height: 80px;
   filter: drop-shadow(
     2px 3px 0 color-mix(in srgb, var(--color-sticker) 52%, transparent)
   );

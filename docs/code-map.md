@@ -87,8 +87,10 @@ Fame torn-paper surface for a consistent physical family.
 **assets/link-card-fallback.jpg** — generated crop-safe paper collage used when
 a Firecrawl link card has no page image.
 
-**assets/stickers/** — six generated transparent die-cut character stickers
-(`hello-cat`, `pizza-pals`, `roller-crew`, `skate-sun`, `cherry-duo`,
+**assets/stickers/** — twelve generated transparent die-cut crew stickers mixing
+character art, holographic foil, and flash-lit photo cutouts (`hello-cat`,
+`socks-terrier`, `holo-smiley`, `pizza-pals`, `blah-blah`, `matcha-cake`,
+`roller-crew`, `crew-high-five`, `skate-sun`, `tahoe-car`, `cherry-duo`,
 `moon-sparkle`); legacy badge assets remain on disk but are no longer catalogued.
 
 **assets/cozy-color-poster.svg** — AUTO-GENERATED finished "same moon, both
