@@ -17507,19 +17507,19 @@
 
 /* ================================================================
    QUOTE SCRAP — GENERATED PUSH PIN
-   Low cap + tiny collar: the hidden needle reads as pressed into the paper.
+   Matte front cap only; a one-pixel contact shadow seats it into the paper.
    ================================================================ */
 
 .quote-pin {
   top: 4px;
-  width: 31px;
-  height: 22px;
+  width: 21px;
+  height: 21px;
   border: 0;
   border-radius: 0;
   background: transparent url("/assets/ui/quote-pushpin.png") center / contain
     no-repeat;
   box-shadow: none;
-  filter: none;
+  filter: drop-shadow(0 1px 0 rgba(17, 17, 20, 0.26));
   rotate: 0deg;
 }
 
