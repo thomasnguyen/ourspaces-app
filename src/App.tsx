@@ -11,7 +11,6 @@ import {
 import { ActionDock } from "./components/ActionDock";
 import { Canvas, SpaceHeader } from "./components/Canvas";
 import { CanvasEdgePan } from "./components/CanvasEdgePan";
-import { CanvasNavigator } from "./components/CanvasNavigator";
 import type { CanvasPoint } from "./components/FirstRunSticky";
 import { GlobalChatPanel } from "./components/GlobalChatPanel";
 import { Rail } from "./components/Rail";
@@ -731,61 +730,6 @@ export default function App() {
     },
     [activeThreadId, chatOpen, focusedTarget, restoreFrameEdit],
   );
-
-  const resetRoomHome = useCallback(() => {
-    playSound("tap");
-    setFocusedTarget(null);
-    canvasReturnView.current = null;
-    const chatView = chatReturnView.current;
-    chatReturnView.current = null;
-    if (chatView) {
-      setActiveThreadId(chatView.threadId);
-      setChatOpen(chatView.open);
-    }
-    animateCanvasCamera(
-      { scale: 1, scrollLeft: 0, scrollTop: 0 },
-      CAMERA_EXIT_DURATION_MS,
-    );
-  }, [animateCanvasCamera]);
-
-  const prepareRoomNavigation = useCallback(() => {
-    if (!focusedTarget && canvasScaleRef.current === 1) return;
-
-    const viewport = canvasViewportRef.current;
-    if (!viewport) return;
-
-    const viewportStyles = window.getComputedStyle(viewport);
-    const paddingLeft = cssPixels(viewportStyles.paddingLeft);
-    const paddingTop = cssPixels(viewportStyles.paddingTop);
-    const scale = canvasScaleRef.current;
-    const worldCenterX =
-      (viewport.scrollLeft + viewport.clientWidth / 2 - paddingLeft) / scale;
-    const worldCenterY =
-      (viewport.scrollTop + viewport.clientHeight / 2 - paddingTop) / scale;
-
-    setFocusedTarget(null);
-    canvasReturnView.current = null;
-    const chatView = chatReturnView.current;
-    chatReturnView.current = null;
-    if (chatView) {
-      setActiveThreadId(chatView.threadId);
-      setChatOpen(chatView.open);
-    }
-    animateCanvasCamera(
-      {
-        scale: 1,
-        scrollLeft: Math.max(
-          0,
-          paddingLeft + worldCenterX - viewport.clientWidth / 2,
-        ),
-        scrollTop: Math.max(
-          0,
-          paddingTop + worldCenterY - viewport.clientHeight / 2,
-        ),
-      },
-      0,
-    );
-  }, [animateCanvasCamera, focusedTarget]);
 
   const refitFocusedTarget = useCallback(
     (duration = CAMERA_DURATION_MS) => {
@@ -1835,6 +1779,7 @@ export default function App() {
         canvasCameraAnimating ? "is-canvas-camera-animating" : ""
       } ${zoom.phase === "landing" ? "is-zoom-landing" : ""} space-theme-${activeSpaceCustomization.theme}`}
       style={spaceCustomizationStyle(activeSpaceCustomization)}
+      data-space-id={spaceId}
     >
       <Rail
         activeId={spaceId}
@@ -1910,9 +1855,11 @@ export default function App() {
           canvasPanning ? "is-canvas-panning" : ""
         }`}
         onScroll={(event) => {
-          setCanvasAwayFromHome(
-            event.currentTarget.scrollLeft > 48 || event.currentTarget.scrollTop > 72,
-          );
+          const el = event.currentTarget;
+          setCanvasAwayFromHome(el.scrollLeft > 48 || el.scrollTop > 72);
+          // Scroll-linked header fade: 0 at home → 1 by ~150px down / ~260px right.
+          const fade = Math.min(1, Math.max(el.scrollTop / 150, el.scrollLeft / 260));
+          el.parentElement?.style.setProperty("--header-scroll-fade", fade.toFixed(3));
         }}
         onPointerDown={(event) => {
           if (firstRunActive || focusedTarget?.kind === "widget") return;
@@ -2127,16 +2074,6 @@ export default function App() {
         onSave={saveSpace}
       />
       <ActionDock
-        nav={
-          <CanvasNavigator
-            key={spaceId}
-            viewportRef={canvasViewportRef}
-            spaceName={activeSpaceCustomization.name}
-            focusedTargetId={focusedTarget?.id ?? ""}
-            onHome={resetRoomHome}
-            onRoomNavigate={prepareRoomNavigation}
-          />
-        }
         recapOpen={recapOpen}
         recapRunId={recapRunId}
         onRecapReveal={revealRecap}

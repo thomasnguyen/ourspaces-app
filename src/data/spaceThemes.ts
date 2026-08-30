@@ -3,6 +3,8 @@ import type { SpaceMeta } from "./types";
 
 export type SpaceThemeId =
   | "blush"
+  | "lagoon"
+  | "spruce"
   | "nightwall"
   | "white"
   | "violet"
@@ -25,6 +27,8 @@ export const SPACE_THEME_PRESETS: {
   ink: string;
 }[] = [
   { id: "blush", name: "blush", background: "#ffdad6", ink: "#111114" },
+  { id: "lagoon", name: "lagoon", background: "#12a594", ink: "#ffffff" },
+  { id: "spruce", name: "spruce", background: "#0f5c50", ink: "#ffffff" },
   { id: "nightwall", name: "night wall", background: "#211922", ink: "#ffffff" },
   { id: "white", name: "clean", background: "#f4f4f2", ink: "#111114" },
   { id: "violet", name: "violet", background: "#b7a7ff", ink: "#1b1532" },
@@ -45,7 +49,9 @@ export const SPACE_ACCENTS = [
 
 export function defaultSpaceCustomization(space: SpaceMeta): SpaceCustomization {
   const theme =
-    space.id === "buildclub"
+    space.id === "crew"
+      ? "lagoon"
+      : space.id === "buildclub"
       ? "cobalt"
       : space.id === "league"
         ? "mint"

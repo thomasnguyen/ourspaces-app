@@ -5,12 +5,49 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- Maya's bday frame got a **party pass** (the human asked "square or not?" —
+  verdict: shape was never the problem, the frame was the only dashboard-grid on
+  a collage wall). Rectangles stay; what changed: seed data now staggers tops,
+  hand-tilts (±0.9–1.8°) and overlaps the cards (poll over countdown, notes
+  tucked under the rsvp), a `maya-cake` sticker breaches the frame's top border,
+  and `FrameWidget` renders a flat SVG pennant garland when
+  `data.deco === "party"`. Birthday messages are now pastel sticky notes
+  (cream/butter/blush cycle, washi on every 3n+2, staggered pop-in on entrance);
+  a `@container (min-height: 180px)` query flips the wall to a vertical stack,
+  so the wide guestbook/fridge/trash-talk strips elsewhere keep their row —
+  they just get the paper material too. Potluck kicker dropped to sentence
+  case. Frame focus-softening now tests **center** containment
+  (`widgetIsInsideFrame` in `Canvas.tsx`) so border-breaching pieces stay lit
+  when the frame is focused. CSS in the "BDAY FRAME — PARTY PASS" banner at the
+  end of `index.css`. Verified mock crew/crew2 + league + buildclub; focused
+  shot via `.context/shot-bday-frame.mjs` (also proves the frame label stays
+  clickable — the raised countdown buried it at first, y-nudged clear).
+  **Live parity gap:** already-seeded live crew docs still hold the old
+  positions/sizes; they need a reseed or a `retintSpace`-style backfill
+  mutation to pick up the new composition + sticker.
+- Space header (eyebrow + big title) now fades out scroll-linked instead of the
+  old binary snap: `--header-scroll-fade` (0 → 1 over ~150px scrollTop / ~260px
+  scrollLeft) is set on `<main>` by the `space-scroll` onScroll handlers in
+  `App.tsx` and `LiveSpace.tsx` (live mode previously had no fade at all); CSS
+  in the "SPACE HEADER — SCROLL-LINKED FADE" section at the end of `index.css`
+  maps it to opacity + lift + slight scale + blur, eyebrow leading at 1.8×.
+  `.is-canvas-away` now only guards pointer-events. Verified via
+  `.context/eval-header-fade.mjs` (shots in `/tmp/header-fade-*.png`).
 - The “same moon, both windows” quote scrap now uses an image-generated,
   transparent purple pushpin cutout (`public/assets/ui/quote-pushpin.png`) with
   a smaller matte head viewed almost straight-on; the collar and needle are
   fully hidden, and one hard 1px contact shadow seats the cap into the paper.
   Verified on `#/space/couple`; reference screenshot:
   `.context/quote-pin-final.png`.
+- Selected-widget action bar is now more compact (36px controls, tighter
+  padding/type/icons) so it reads as light canvas chrome instead of covering the
+  card beneath it.
+- Daily question and saved-links now carry deliberately different real-paper
+  materials instead of sharing a flat cream card: the question is a soft
+  cotton-rag worksheet stack with uneven edges and three binder punch marks;
+  saved links is a cooler speckled ledger/receipt with a folded corner, rough
+  serrated bottom, and dry dashed rules. Both textures are generated, text-free,
+  crop-safe assets under real UI (`public/assets/textures/`).
 - Full app deployed live: https://necessary-cobra-892.convex.site (Convex
   static hosting + prod backend, all spaces seeded).
 - Sticker pack expanded to twelve crew-specific die-cuts, adding photoreal Rio
@@ -226,6 +263,9 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- 2026-08-29: Organic paper is a material family, not one repeated filter.
+  Notes/poll keep the shallow deckled-bottom stock; daily question gets soft
+  punched worksheet paper; saved links gets cooler machine-made ledger stock.
 - 2026-08-29: Sticker ids stay stable for persisted rows, but the visible pack
   is character-led rather than slogan badges. The picker is a light physical
   sheet inside dark chrome so the white die-cut border reads like the supplied
@@ -291,3 +331,33 @@ Backward-looking history lives in `hackathon.md`.
   classic/neon on traced boards and night pop/sunset on the scene. paintMarks
   `take(240)` still covers all three boards because addStroke dedupes per
   regionId (186 region rows max + preset rows).
+- 2026-08-29: "the crew 2.0" (`#/space/crew2`) is a background-remix duplicate
+  of the crew — the human disliked the blush field's low contrast, everything
+  else stays. New `lagoon` theme preset (flat teal `#12a594`, white ink, same
+  topo texture under a 0.72 wash) in `spaceThemes.ts` + `index.css`; mock entry
+  reuses `CREW_MEMBERS`/`CREW_WIDGETS`; live copy created once via
+  `spaces:duplicateCrew` (internal, idempotent — clones widgets/members/votes/
+  messages/paint, skips the AgentMail inbox). The crew hero CSS pass now keys
+  on `[data-space-id^="crew"]` so both spaces share it; crew2-only re-inks
+  (white frame borders/subtitle) live in the "Crew 2.0" banner at the CSS end.
+  Original crew untouched, so reverting = ignore/delete crew2.
+- 2026-08-29 (later): Topo texture on crew2 calmed to a 0.86 wash per the human.
+  Gotcha found doing it: App.tsx's mock wrapper never set `data-space-id`, so
+  every `[data-space-id^="crew"]` rule (the whole crew hero pass) silently only
+  applied in live mode — mock screenshots were lying. Fixed by adding the
+  attribute to App.tsx's `<main>`; mock and live now render identically.
+- 2026-08-29 (later still): Two color-direction remixes now exist to answer
+  "violet fights the teal field": **crew2** keeps lagoon teal but hands the
+  identity to magenta `#e9369d` (meta color → accent; birthday pill re-inked
+  via `--space-accent`; live doc retinted with `spaces:retintSpace`), and
+  **crew3 / "the crew 3.0"** is a new duplicate on a deep `spruce` theme
+  (`#0f5c50`, 0.82 topo wash) where violet + cream read as jewelry (thinner
+  frame fill, white ghost pills). `spaces:duplicateCrew` generalized to
+  `spaces:duplicateBySlug({fromSlug,toSlug,name})`; crew3 cloned live.
+  Human is picking between them; loser(s) can just be deleted.
+- 2026-08-29 (final): Human picked the lagoon+magenta remix — it now IS the
+  crew. `crew` meta color → `#e9369d`, default theme → `lagoon`; remix CSS
+  retargeted from crew2/crew3 to `[data-space-id^="crew"]`; spruce stays as a
+  selectable preset (its crew re-inks kept). crew2/crew3 removed from mock data
+  and deleted live via new `spaces:deleteBySlug`; live crew retinted with
+  `spaces:retintSpace`. Rail is back to six spaces.

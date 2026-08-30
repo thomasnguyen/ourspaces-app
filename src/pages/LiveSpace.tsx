@@ -5,7 +5,6 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock } from "../components/ActionDock";
 import { Canvas, SpaceHeader } from "../components/Canvas";
-import { CanvasNavigator } from "../components/CanvasNavigator";
 import { ClaimCard, type InviteContext } from "../components/ClaimCard";
 import { MemberFace } from "../components/MemberFace";
 import { PhotoWallGallery } from "../components/PhotoWallGallery";
@@ -200,6 +199,7 @@ export function LiveSpacePage({
   const [recapHover, setRecapHover] = useState<string | null>(null);
   const [highlightMessageId, setHighlightMessageId] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [canvasAwayFromHome, setCanvasAwayFromHome] = useState(false);
   const [customization, setCustomization] = useState<SpaceCustomization>(() =>
     defaultSpaceCustomization(getSpace(slug)),
   );
@@ -963,47 +963,6 @@ export function LiveSpacePage({
     });
   }, [chatOpen, focusedTarget, leaveFocus]);
 
-  const resetCanvasHome = useCallback(() => {
-    playSound("tap");
-    setEditingWidgetId("");
-    setSelectedWidgetId("");
-    setFocusedTarget(null);
-    canvasReturnView.current = null;
-    chatReturnView.current = null;
-    moveCanvasCamera({ scale: 1, scrollLeft: 0, scrollTop: 0 }, CAMERA_EXIT_MS);
-  }, [moveCanvasCamera]);
-
-  const prepareCanvasNavigation = useCallback(() => {
-    if (!focusedTarget && canvasScaleRef.current === 1) return;
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const viewportStyles = window.getComputedStyle(viewport);
-    const paddingLeft = cssPixels(viewportStyles.paddingLeft);
-    const paddingTop = cssPixels(viewportStyles.paddingTop);
-    const scale = canvasScaleRef.current;
-    const worldCenterX =
-      (viewport.scrollLeft + viewport.clientWidth / 2 - paddingLeft) / scale;
-    const worldCenterY =
-      (viewport.scrollTop + viewport.clientHeight / 2 - paddingTop) / scale;
-
-    setEditingWidgetId("");
-    setSelectedWidgetId("");
-    setFocusedTarget(null);
-    canvasReturnView.current = null;
-    chatReturnView.current = null;
-    moveCanvasCamera({
-      scale: 1,
-      scrollLeft: Math.max(
-        0,
-        paddingLeft + worldCenterX - viewport.clientWidth / 2,
-      ),
-      scrollTop: Math.max(
-        0,
-        paddingTop + worldCenterY - viewport.clientHeight / 2,
-      ),
-    }, 0);
-  }, [focusedTarget, moveCanvasCamera]);
-
   const updateThreadDockSize = useCallback((size: ThreadDockSize) => {
     setThreadDockSize((current) =>
       Math.abs(current.width - size.width) < 1 &&
@@ -1234,7 +1193,7 @@ export function LiveSpacePage({
   const ignorePromote = useCallback(() => {}, []);
 
   return (
-    <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
+    <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
       <Rail activeId={slug} onSelectSpace={selectSpace} onCreateClick={openWidgetPicker} />
       <SpaceHeader
         key={boardKey}
@@ -1287,7 +1246,17 @@ export function LiveSpacePage({
           )}
         </nav>
       )}
-      <div ref={viewportRef} className="space-scroll h-full overflow-auto">
+      <div
+        ref={viewportRef}
+        className="space-scroll h-full overflow-auto"
+        onScroll={(event) => {
+          const el = event.currentTarget;
+          setCanvasAwayFromHome(el.scrollLeft > 48 || el.scrollTop > 72);
+          // Scroll-linked header fade: 0 at home → 1 by ~150px down / ~260px right.
+          const fade = Math.min(1, Math.max(el.scrollTop / 150, el.scrollLeft / 260));
+          el.parentElement?.style.setProperty("--header-scroll-fade", fade.toFixed(3));
+        }}
+      >
         <div
           ref={canvasStageRef}
           className="canvas-stage"
@@ -1544,16 +1513,6 @@ export function LiveSpacePage({
         highlightMessageId={highlightMessageId}
       />
       <ActionDock
-        nav={
-          <CanvasNavigator
-            key={boardKey}
-            viewportRef={viewportRef}
-            spaceName={activeCustomization.name}
-            focusedTargetId={focusedTarget?.id ?? ""}
-            onHome={resetCanvasHome}
-            onRoomNavigate={prepareCanvasNavigation}
-          />
-        }
         recapOpen={recapOpen}
         recapRunId={recapRunId}
         recapLines={recapLines}

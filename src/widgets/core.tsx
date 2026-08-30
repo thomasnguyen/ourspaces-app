@@ -52,6 +52,7 @@ export function FrameWidget({
   onMoveKeyDown?: KeyboardEventHandler<HTMLButtonElement>;
 }) {
   const title = String(widget.data.title ?? "frame");
+  const isParty = widget.data.deco === "party";
 
   return (
     <div
@@ -60,6 +61,29 @@ export function FrameWidget({
       }`}
       style={style}
     >
+      {isParty && (
+        <span className="frame-party-garland" aria-hidden="true">
+          {/* two swags strung from the top border, flat die-cut pennants */}
+          <svg viewBox="0 0 200 30" fill="none">
+            <path
+              d="M0 3 Q 50 27 100 4 Q 150 27 200 3"
+              stroke="#fffdf7"
+              strokeWidth="1.6"
+              opacity="0.9"
+            />
+            {GARLAND_PENNANTS.map(([x, y], i) => (
+              <path
+                key={i}
+                d={`M${x - 6} ${y} L${x + 6} ${y} L${x} ${y + 14} Z`}
+                fill={GARLAND_COLORS[i % GARLAND_COLORS.length]}
+              />
+            ))}
+            <circle cx="0" cy="3" r="2.2" fill="#fffdf7" />
+            <circle cx="100" cy="4" r="2.2" fill="#fffdf7" />
+            <circle cx="200" cy="3" r="2.2" fill="#fffdf7" />
+          </svg>
+        </span>
+      )}
       <button
         type="button"
         className="frame-label"
@@ -89,6 +113,19 @@ export function FrameWidget({
     </div>
   );
 }
+
+/* Pennant anchors precomputed along the two garland dips (200×30 viewBox). */
+const GARLAND_PENNANTS: Array<[number, number]> = [
+  [18, 10.1],
+  [38, 14.5],
+  [62, 14.7],
+  [82, 10.8],
+  [118, 10.8],
+  [138, 14.7],
+  [162, 14.5],
+  [182, 10.1],
+];
+const GARLAND_COLORS = ["#e9369d", "#ffb800", "#fffdf7", "#7853ff"];
 
 const DAY_MS = 86_400_000;
 const MAX_TEAR_SEGMENTS = 14;

@@ -1446,8 +1446,12 @@ export function MessageWallWidget({ widget, style }: { widget: Widget; style: St
     <div className="widget-shell widget-message-wall" style={style}>
       <span className="message-wall-label">{String(widget.data.title)}</span>
       <div className="message-wall-scroll">
-        {messages.map((message) => (
-          <div key={`${message.from}-${message.text}`} className="message-wall-card">
+        {messages.map((message, index) => (
+          <div
+            key={`${message.from}-${message.text}`}
+            className="message-wall-card"
+            style={{ "--i": index } as CSSProperties}
+          >
             <MemberFace name={message.from} size="xs" />
             <strong>{message.from}</strong>
             <p>{message.text}</p>

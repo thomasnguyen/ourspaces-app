@@ -12,7 +12,7 @@
 - **Auth:** none
 - **AI models:** gpt-4o-mini (OpenAI API)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-08-29T05:52:01Z
+- **Last updated:** 2026-08-30T01:27:42Z
 
 ## Log
 
@@ -145,7 +145,68 @@ a public-domain-derived night lotus, a simplified same-moon lounge, and a cozy
 window garden. Added a side-by-side comparison for choosing the final art before
 replacing the current raster flood-fill canvas (`public/assets/coloring-concepts/`).
 
-### 2026-08-29 - working tree
+### 2026-08-29 - 15a8e39
+Replaced the raster coloring concept with a generated 50-region vector board,
+then added traced Starry Night and Great Wave postcards plus board-scoped live
+cursors. Fills, palettes, and collaborator positions stay reactive. Convex
+features: schema, mutations, realtime queries, presence (`convex/paint.ts`,
+`convex/presence.ts`, `src/widgets/CozyColorWidget.tsx`, `scripts/`).
+
+### 2026-08-29 - f76b70d
 Added a live shared room radio backed by SomaFM station state so one person can
 pick the station and others can join while audio playback remains local
 (`convex/widgets.ts`, `src/widgets/extras.tsx`, `src/lib/radio.ts`).
+
+### 2026-08-29 - f668e0b
+Turned the memory wall into a pile of physical prints that spreads into a
+full-screen room. People can pin uploaded photos through Convex file storage and
+write reactive notes on each print's back through the existing message threads.
+Convex features: file storage, mutation, realtime queries (`convex/photos.ts`,
+`src/components/PhotoWallGallery.tsx`, `src/pages/LiveSpace.tsx`).
+
+### 2026-08-29 - aff8461
+Reworked the birthday demo widgets as distinct physical objects: a tear-off
+calendar, ballot poll, sign-up sheet, postal RSVP, receipt, highlighted scrap,
+window weather card, and shelf ledges. Added a generated low-contrast paper
+surface to the crew poll as a one-widget material prototype (`src/widgets/`,
+`src/index.css`, `public/assets/textures/widget-paper-v1.jpg`).
+
+### 2026-08-30 - 393467a
+Refined the crew poll into a torn ballot sheet using the same restrained paper
+surface as the Hall of Fame: straight-cut sides and a shallow deckled bottom.
+Cropped the source's transparent top margin so the title stays whole, removed
+the content mask, and dropped the hard offset shadow so the paper lies flat
+behind its overhanging daisy pin. A small neutral lightness lift keeps the
+fibers visible while making the stock read cleaner and whiter (`src/index.css`,
+`public/assets/textures/note-torn-paper.png`).
+
+### 2026-08-30 - 03f2b7b
+Replaced the flat badge-style sticker pack with six illustrated die-cut
+characters, gave the picker a physical paper tray and silhouette lift, and wired
+sticker creation in live Convex spaces. Existing sticker rows adopt the new art
+dimensions without a reseed (`src/data/stickers.ts`,
+`src/components/WidgetPicker.tsx`, `src/live/adapt.ts`,
+`src/pages/LiveSpace.tsx`, `src/index.css`, `public/assets/stickers/`).
+
+### 2026-08-30 - 5075fcc
+Gave the daily question and saved-links widgets distinct organic materials: a
+light cotton-rag worksheet stack and a brighter speckled ledger scrap, each with
+its own irregular edge treatment (`src/index.css`,
+`public/assets/textures/`).
+
+### 2026-08-30 - 126b58e
+Expanded the sticker tray to twelve crew-specific die-cuts, mixing illustrated
+characters, restrained holographic foil, simple chat art, and photoreal Rio and
+matcha-cake keepsakes. Reflowed the picker as a compact 4×3 sheet and verified
+the add-to-canvas flow (`src/data/stickers.ts`, `src/index.css`,
+`public/assets/stickers/`).
+
+### 2026-08-30 - 6e59878
+Tightened sticker silhouette shadows across resting, hover, pressed, and
+selected states so the white vinyl cutline stays dominant. Also gave the couple
+room's quote scrap a dimensional purple thumbtack (`src/index.css`,
+`docs/todos.md`).
+
+### 2026-08-30 - working tree
+Changed the daily-question history stack from gray tints to cream paper sheets
+separated by hard offset edges (`src/index.css`).

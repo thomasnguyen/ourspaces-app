@@ -81,15 +81,17 @@ character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
 **assets/textures/** — generated real-paper surfaces for `NoteWidget`:
 `note-paper.jpg` (fibers/tape) + `note-torn-paper.png` (transparent restrained
 bottom tear), plus `widget-paper-v1.jpg` (quiet seamless fibers from the
-superseded first-pass material study). The crew poll now shares the note/Hall of
-Fame torn-paper surface for a consistent physical family.
+superseded first-pass material study). `daily-question-paper.jpg` is a soft
+cotton-rag worksheet stock; `link-shelf-ledger.jpg` is a cooler speckled receipt
+stock. The crew poll shares the note/Hall of Fame torn-paper surface, while the
+daily question and saved-links card intentionally use different paper families.
 
 **assets/link-card-fallback.jpg** — generated crop-safe paper collage used when
 a Firecrawl link card has no page image.
 
-
 **assets/ui/quote-pushpin.png** — image-generated transparent purple plastic
 pushpin used by the “same moon, both windows” quote scrap.
+
 **assets/stickers/** — twelve generated transparent die-cut crew stickers mixing
 character art, holographic foil, and flash-lit photo cutouts (`hello-cat`,
 `socks-terrier`, `holo-smiley`, `pizza-pals`, `blah-blah`, `matcha-cake`,
@@ -130,8 +132,9 @@ Tokens `@theme` (lines 4–27) → base (~1–1000) → space entrance (~1048) �
 per-widget sections (~1670–6300) → chrome: picker ~6305, threads ~7047,
 navigator ~7357, chat drawer ~8313, action dock ~9744, recap ~9951 → pages:
 block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
-(~11482+), ending with the die-cut sticker pack/picker treatment. New CSS goes
-in a new banner section at the end.
+(~11482+), ending with the "SPACE HEADER — SCROLL-LINKED FADE" section
+(`--header-scroll-fade` var set by the space-scroll onScroll handlers in
+App.tsx/LiveSpace.tsx). New CSS goes in a new banner section at the end.
 
 ## scripts/
 

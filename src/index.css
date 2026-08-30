@@ -85,6 +85,26 @@
   --canvas-grid-major: rgba(120, 83, 255, 0.2);
 }
 
+.paper-bg.space-theme-lagoon {
+  background-color: #12a594;
+  --page-bg: #12a594;
+  background-image: url(https://asset.mmm.page/55/4df91bfe464242812c7dcf75bb4869/1xp26r2.png);
+  background-size: 21%;
+  --canvas-field: #0e9282;
+  --canvas-grid-dot: rgba(255, 255, 255, 0.07);
+  --canvas-grid-major: rgba(201, 255, 61, 0.24);
+}
+
+.paper-bg.space-theme-spruce {
+  background-color: #0f5c50;
+  --page-bg: #0f5c50;
+  background-image: url(https://asset.mmm.page/55/4df91bfe464242812c7dcf75bb4869/1xp26r2.png);
+  background-size: 21%;
+  --canvas-field: #0c5044;
+  --canvas-grid-dot: rgba(255, 255, 255, 0.06);
+  --canvas-grid-major: rgba(201, 255, 61, 0.2);
+}
+
 .paper-bg.space-theme-nightwall {
   background-color: #211922;
   --page-bg: #211922;
@@ -203,10 +223,10 @@
     translate 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Visuals for the away state are scroll-linked now (see SPACE HEADER —
+   SCROLL-LINKED FADE at the end of this file); this only guards clicks. */
 .is-canvas-away .space-title-block {
-  opacity: 0;
   pointer-events: none;
-  translate: 0 -10px;
 }
 
 .paper-bg.has-frame-focus .space-title-block,
@@ -1654,7 +1674,6 @@
   border-bottom-width: 42px;
   border-radius: 5px;
   background: #fffaf7;
-  box-shadow: 0 8px 0 rgba(73, 41, 52, 0.17);
 }
 
 .widget-photo img {
@@ -1948,7 +1967,6 @@
   justify-content: flex-end;
   border-radius: 8px;
   background: var(--cd-bg);
-  box-shadow: 0 8px 0 var(--cd-shadow);
   color: var(--cd-ink);
   padding: 24px 18px 16px;
 }
@@ -2344,7 +2362,6 @@
   --poll-shadow: rgba(83, 59, 68, 0.14);
   border-radius: 14px;
   background: var(--poll-bg);
-  box-shadow: 0 8px 0 var(--poll-shadow);
   color: var(--poll-ink);
 }
 
@@ -2859,7 +2876,6 @@
   isolation: isolate;
   border-radius: 8px 14px 10px 6px;
   background: var(--potluck-bg);
-  box-shadow: 0 8px 0 rgba(83, 59, 68, 0.14);
   color: var(--potluck-ink);
 }
 
@@ -3305,7 +3321,6 @@
   flex-direction: column;
   border-radius: 16px;
   background: var(--color-sticker);
-  box-shadow: 0 8px 0 rgba(17, 17, 20, 0.22);
   color: white;
 }
 
@@ -3521,7 +3536,6 @@
   justify-content: space-between;
   border-radius: 3px 8px 8px 4px;
   background: #ffd377;
-  box-shadow: 0 8px 0 rgba(126, 77, 0, 0.16);
   padding: 22px 20px 17px;
 }
 
@@ -3616,7 +3630,6 @@
   flex-direction: column;
   justify-content: space-between;
   background: #fffaf7;
-  box-shadow: 0 7px 0 rgba(83, 59, 68, 0.14);
   clip-path: polygon(0 4%, 7% 0, 15% 4%, 23% 1%, 34% 3%, 45% 0, 55% 3%, 67% 1%, 78% 4%, 89% 0, 100% 3%, 98% 97%, 89% 100%, 80% 97%, 68% 100%, 57% 97%, 46% 100%, 35% 97%, 23% 100%, 12% 97%, 1% 100%);
   padding: 13px 20px 9px;
 }
@@ -3688,7 +3701,6 @@
   justify-content: space-between;
   border-radius: 7px;
   background: #ef3d99;
-  box-shadow: 0 8px 0 rgba(125, 17, 73, 0.19);
   color: white;
   padding: 17px 18px;
 }
@@ -4196,7 +4208,6 @@
   display: flex;
   flex-direction: column;
   border-radius: 14px;
-  box-shadow: 0 8px 0 var(--dq-shadow);
   color: var(--dq-ink);
   padding: 13px 14px 12px;
 }
@@ -4604,12 +4615,14 @@
 }
 
 /* past-days stack peeking out behind the card */
+/* yesterday's pages under today's — same paper, not gray tints; each sheet
+   separates from the next by its own hard edge */
 .dq-stack {
   position: absolute;
   inset: 0;
   z-index: -2;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--dq-bg), #111114 14%);
+  background: var(--dq-bg);
   transform: rotate(1.6deg) translate(4px, 5px);
 }
 
@@ -4619,7 +4632,7 @@
   inset: 0;
   z-index: -1;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--dq-bg), #111114 26%);
+  background: var(--dq-bg);
   transform: rotate(-1.8deg) translate(-5px, 4px);
 }
 
@@ -4669,7 +4682,6 @@
   flex-direction: column;
   border-radius: 10px;
   background: var(--rsvp-bg);
-  box-shadow: 0 8px 0 var(--rsvp-shadow);
   color: var(--rsvp-ink);
   padding: 16px 14px 18px;
 }
@@ -4695,7 +4707,7 @@
    801px+ paper-bg block) — the quote needs a properly tall card there */
 @media (min-width: 801px) {
   @container (max-height: 252px) {
-    .paper-bg[data-space-id="crew"] .rsvp-waiting-note {
+    .paper-bg[data-space-id^="crew"] .rsvp-waiting-note {
       display: none;
     }
   }
@@ -5185,7 +5197,6 @@
   justify-content: space-between;
   border-radius: 4px;
   background: var(--color-lime);
-  box-shadow: 0 8px 0 rgba(93, 120, 20, 0.2);
   padding: 16px 15px 12px;
   animation: promote-to-wall 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -5231,7 +5242,6 @@
 .widget-availability {
   border-radius: 8px;
   background: #fffaf7;
-  box-shadow: 0 8px 0 rgba(73, 41, 52, 0.14);
   padding: 16px 14px;
 }
 
@@ -5415,7 +5425,6 @@
   margin: 0;
   border-radius: 5px;
   background: var(--color-card);
-  box-shadow: 0 4px 0 rgba(5, 3, 4, 0.4);
 }
 
 .photo-wall-frame {
@@ -6860,7 +6869,6 @@
 .widget-link-shelf {
   border-radius: 6px;
   background: var(--color-card);
-  box-shadow: 0 7px 0 rgba(83, 59, 68, 0.14);
   padding: 14px 14px 10px;
 }
 
@@ -6900,7 +6908,6 @@
   gap: 10px;
   border-radius: 12px;
   background: var(--color-sticker);
-  box-shadow: 0 7px 0 rgba(17, 17, 20, 0.2);
   color: white;
   padding: 12px 14px;
 }
@@ -6955,7 +6962,6 @@
 .widget-joke-registry {
   border-radius: 4px 10px 8px 5px;
   background: var(--color-card);
-  box-shadow: 0 8px 0 rgba(83, 59, 68, 0.14);
   padding: 16px 14px 12px;
 }
 
@@ -7012,7 +7018,6 @@
   flex-direction: column;
   border-radius: 8px 8px 0 0;
   background: var(--color-card);
-  filter: drop-shadow(0 6px 0 rgba(83, 59, 68, 0.14));
   padding: 14px 14px 24px;
   clip-path: polygon(
     0 0,
@@ -7162,7 +7167,6 @@
 .widget-itinerary {
   border-radius: 6px;
   background: var(--color-card);
-  box-shadow: 0 7px 0 rgba(83, 59, 68, 0.14);
   padding: 14px 16px;
 }
 
@@ -7229,7 +7233,6 @@
   width: 140px;
   border-radius: 6px;
   background: white;
-  box-shadow: 0 4px 0 rgba(73, 41, 52, 0.1);
   padding: 6px;
 }
 
@@ -7274,7 +7277,6 @@
   justify-content: space-between;
   border-radius: 6px 6px 0 0;
   background: var(--color-card);
-  filter: drop-shadow(0 5px 0 rgba(83, 59, 68, 0.14));
   padding: 12px 14px 16px;
   clip-path: polygon(
     0 0,
@@ -7363,7 +7365,6 @@
   overflow: hidden;
   border-radius: 10px;
   background: #fffaf7;
-  box-shadow: 0 6px 0 rgba(73, 41, 52, 0.12);
   padding: 7px 7px 6px;
 }
 
@@ -7476,7 +7477,6 @@
   flex-direction: column;
   border-radius: 14px;
   background: var(--color-sticker);
-  box-shadow: 0 10px 0 rgba(17, 17, 20, 0.24);
   color: white;
   padding: 18px 20px;
   overflow: hidden;
@@ -7554,7 +7554,6 @@
   gap: 12px;
   border-radius: 16px;
   background: rgba(17, 17, 20, 0.88);
-  box-shadow: 0 8px 0 rgba(17, 17, 20, 0.2);
   color: white;
   padding: 14px 16px;
 }
@@ -8426,12 +8425,10 @@
   cursor: default;
 }
 
-/* Selected = picked up off the wall: hard offset shadow, scrapbook physics —
-   paper lies flat or it's in your hand, it never hovers in a soft glow.
+/* Selected = picked up off the wall: a small lift, no slab shadow.
    Rings stay reserved for the zoomed/active state. */
 .widget-group.is-managed .widget-shell:not(.widget-frame) {
   translate: -2px -4px;
-  box-shadow: 7px 8px 0 rgba(45, 22, 31, 0.32);
 }
 
 .widget-sticker-group.is-managed .widget-sticker {
@@ -8570,7 +8567,6 @@
   border: 0;
   border-radius: 999px;
   background: var(--color-sticker);
-  box-shadow: 0 4px 0 rgba(17, 17, 20, 0.16);
   color: white;
   opacity: 0;
   padding: 5px 11px;
@@ -12908,7 +12904,6 @@
   justify-content: space-between;
   border-radius: 12px;
   background: var(--decision-bg);
-  box-shadow: 0 8px 0 var(--decision-shadow);
   color: var(--decision-ink);
   padding: 16px 16px 13px;
   animation: decision-receipt-in 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -13204,7 +13199,6 @@
   isolation: isolate;
   border-radius: 12px;
   background: var(--avail-bg);
-  box-shadow: 0 8px 0 rgba(73, 41, 52, 0.14);
   color: var(--avail-ink);
   padding: 14px 15px 11px;
 }
@@ -13554,7 +13548,6 @@
   isolation: isolate;
   border-radius: 12px;
   background: var(--shelf-bg);
-  box-shadow: 0 8px 0 rgba(73, 41, 52, 0.14);
   color: var(--shelf-ink);
   padding: 13px 14px 10px;
 }
@@ -13778,7 +13771,6 @@
   isolation: isolate;
   border-radius: 12px;
   background: var(--playlist-bg);
-  box-shadow: 0 8px 0 rgba(17, 17, 20, 0.2);
   color: var(--playlist-ink);
   padding: 13px 14px 11px;
 }
@@ -14591,7 +14583,7 @@
  * Keep the scrapbook materials, but give the live demo path one unmistakable
  * focal cluster. Everything here is desktop + crew scoped by design. */
 @media (min-width: 801px) {
-  .paper-bg.space-theme-blush[data-space-id="crew"] {
+  .paper-bg.space-theme-blush[data-space-id^="crew"] {
     --canvas-grid-dot: rgba(17, 17, 20, 0.032);
     --canvas-grid-major: rgba(120, 83, 255, 0.12);
     background-image:
@@ -14601,196 +14593,171 @@
     background-size: 100% 100%, 30%;
   }
 
-  .paper-bg[data-space-id="crew"] .widget-frame {
+  .paper-bg[data-space-id^="crew"] .widget-frame {
     border-color: rgba(120, 83, 255, 0.9);
     border-radius: 22px;
     background: rgba(255, 250, 247, 0.22);
     box-shadow: inset 0 0 0 1px rgba(120, 83, 255, 0.08);
   }
 
-  .paper-bg[data-space-id="crew"] .widget-frame.is-focused,
-  .paper-bg[data-space-id="crew"] .widget-frame-group.is-frame-managed .widget-frame {
+  .paper-bg[data-space-id^="crew"] .widget-frame.is-focused,
+  .paper-bg[data-space-id^="crew"] .widget-frame-group.is-frame-managed .widget-frame {
     border-color: var(--space-accent, #7853ff);
     background: rgba(255, 250, 247, 0.28);
   }
 
-  .paper-bg[data-space-id="crew"] .frame-label {
+  .paper-bg[data-space-id^="crew"] .frame-label {
     min-height: 40px;
     padding: 8px 11px 8px 13px;
     font-size: 0.875rem;
   }
 
-  .paper-bg[data-space-id="crew"] .frame-subtitle {
+  .paper-bg[data-space-id^="crew"] .frame-subtitle {
     top: 19px;
     color: rgba(59, 38, 67, 0.72);
     font-size: 0.75rem;
   }
 
-  /* Header: presence and invite lead; add/edit recede until needed. */
-  .paper-bg[data-space-id="crew"] .space-edit-button {
+  /* Header: edit recedes until needed. */
+  .paper-bg[data-space-id^="crew"] .space-edit-button {
     background: transparent;
     opacity: 0.66;
   }
 
-  .paper-bg[data-space-id="crew"] .space-edit-button:hover,
-  .paper-bg[data-space-id="crew"] .space-edit-button:focus-visible,
-  .paper-bg[data-space-id="crew"] .space-edit-button.is-active {
+  .paper-bg[data-space-id^="crew"] .space-edit-button:hover,
+  .paper-bg[data-space-id^="crew"] .space-edit-button:focus-visible,
+  .paper-bg[data-space-id^="crew"] .space-edit-button.is-active {
     background: rgba(17, 17, 20, 0.08);
     opacity: 1;
   }
 
-  .paper-bg[data-space-id="crew"] .add-widget-button {
-    border: 1.5px solid rgba(17, 17, 20, 0.16);
-    background: rgba(255, 250, 247, 0.76);
-    box-shadow: none;
-    color: var(--color-sticker);
-  }
-
-  .paper-bg[data-space-id="crew"] .add-widget-button:hover {
-    background: #fffaf7;
-  }
-
-  .paper-bg[data-space-id="crew"] .add-widget-button .add-widget-icon {
-    color: var(--space-accent, #7853ff);
-  }
-
-  .paper-bg[data-space-id="crew"] .add-widget-button.is-active {
-    border-color: var(--color-sticker);
-    background: var(--color-lime);
-    color: var(--color-sticker);
-  }
-
-  .paper-bg[data-space-id="crew"] .add-widget-button.is-active .add-widget-icon {
-    color: var(--color-sticker);
-  }
-
   /* Dock: chat is the product action; map/reset/sound are utilities. */
-  .paper-bg[data-space-id="crew"] .action-dock-chat {
+  .paper-bg[data-space-id^="crew"] .action-dock-chat {
     background: rgba(255, 255, 255, 0.12);
   }
 
-  .paper-bg[data-space-id="crew"] .action-dock-chat.is-active {
+  .paper-bg[data-space-id^="crew"] .action-dock-chat.is-active {
     background: white;
     color: var(--color-sticker);
   }
 
-  .paper-bg[data-space-id="crew"] .action-dock-count {
+  .paper-bg[data-space-id^="crew"] .action-dock-count {
     background: var(--color-lime);
     color: var(--color-sticker);
   }
 
-  .paper-bg[data-space-id="crew"] .action-dock .canvas-nav-home,
-  .paper-bg[data-space-id="crew"] .action-dock .canvas-nav-map-toggle,
-  .paper-bg[data-space-id="crew"] .action-dock .action-dock-sound {
+  .paper-bg[data-space-id^="crew"] .action-dock .canvas-nav-home,
+  .paper-bg[data-space-id^="crew"] .action-dock .canvas-nav-map-toggle,
+  .paper-bg[data-space-id^="crew"] .action-dock .action-dock-sound {
     opacity: 0.68;
   }
 
-  .paper-bg[data-space-id="crew"] .action-dock .canvas-nav-home:hover,
-  .paper-bg[data-space-id="crew"] .action-dock .canvas-nav-map-toggle:hover,
-  .paper-bg[data-space-id="crew"] .action-dock .canvas-nav-map-toggle.is-active,
-  .paper-bg[data-space-id="crew"] .action-dock .action-dock-sound:hover {
+  .paper-bg[data-space-id^="crew"] .action-dock .canvas-nav-home:hover,
+  .paper-bg[data-space-id^="crew"] .action-dock .canvas-nav-map-toggle:hover,
+  .paper-bg[data-space-id^="crew"] .action-dock .canvas-nav-map-toggle.is-active,
+  .paper-bg[data-space-id^="crew"] .action-dock .action-dock-sound:hover {
     opacity: 1;
   }
 
   /* The four live birthday cards share a physical grammar, not one skin. */
-  .paper-bg[data-space-id="crew"] .widget-countdown,
-  .paper-bg[data-space-id="crew"] .widget-poll,
-  .paper-bg[data-space-id="crew"] .widget-rsvp,
-  .paper-bg[data-space-id="crew"] .widget-potluck {
+  .paper-bg[data-space-id^="crew"] .widget-countdown,
+  .paper-bg[data-space-id^="crew"] .widget-poll,
+  .paper-bg[data-space-id^="crew"] .widget-rsvp,
+  .paper-bg[data-space-id^="crew"] .widget-potluck {
     border-radius: 14px;
   }
 
-  .paper-bg[data-space-id="crew"] .widget-countdown {
+  .paper-bg[data-space-id^="crew"] .widget-countdown {
     padding: 24px 16px 16px;
   }
 
-  .paper-bg[data-space-id="crew"] .poll-content {
+  .paper-bg[data-space-id^="crew"] .poll-content {
     padding: 16px 16px 34px;
   }
 
-  .paper-bg[data-space-id="crew"] .widget-rsvp {
+  .paper-bg[data-space-id^="crew"] .widget-rsvp {
     padding: 16px 16px 18px;
   }
 
-  .paper-bg[data-space-id="crew"] .potluck-content {
+  .paper-bg[data-space-id^="crew"] .potluck-content {
     padding: 12px 16px 8px;
   }
 
-  .paper-bg[data-space-id="crew"] .poll-heading h3 {
+  .paper-bg[data-space-id^="crew"] .poll-heading h3 {
     font-size: 20px;
   }
 
-  .paper-bg[data-space-id="crew"] .rsvp-heading h3,
-  .paper-bg[data-space-id="crew"] .potluck-heading h3 {
+  .paper-bg[data-space-id^="crew"] .rsvp-heading h3,
+  .paper-bg[data-space-id^="crew"] .potluck-heading h3 {
     font-size: 18px;
   }
 
-  .paper-bg[data-space-id="crew"] .countdown-event,
-  .paper-bg[data-space-id="crew"] .countdown-date,
-  .paper-bg[data-space-id="crew"] .countdown-tick,
-  .paper-bg[data-space-id="crew"] .countdown-hype em,
-  .paper-bg[data-space-id="crew"] .poll-footer,
-  .paper-bg[data-space-id="crew"] .rsvp-quiet-group em,
-  .paper-bg[data-space-id="crew"] .rsvp-waiting {
+  .paper-bg[data-space-id^="crew"] .countdown-event,
+  .paper-bg[data-space-id^="crew"] .countdown-date,
+  .paper-bg[data-space-id^="crew"] .countdown-tick,
+  .paper-bg[data-space-id^="crew"] .countdown-hype em,
+  .paper-bg[data-space-id^="crew"] .poll-footer,
+  .paper-bg[data-space-id^="crew"] .rsvp-quiet-group em,
+  .paper-bg[data-space-id^="crew"] .rsvp-waiting {
     font-size: 11px;
   }
 
-  .paper-bg[data-space-id="crew"] .live-label,
-  .paper-bg[data-space-id="crew"] .potluck-kicker,
-  .paper-bg[data-space-id="crew"] .potluck-score small {
+  .paper-bg[data-space-id^="crew"] .live-label,
+  .paper-bg[data-space-id^="crew"] .potluck-kicker,
+  .paper-bg[data-space-id^="crew"] .potluck-score small {
     font-size: 10.5px;
   }
 
-  .paper-bg[data-space-id="crew"] .potluck-item-name,
-  .paper-bg[data-space-id="crew"] .potluck-signature {
+  .paper-bg[data-space-id^="crew"] .potluck-item-name,
+  .paper-bg[data-space-id^="crew"] .potluck-signature {
     font-size: 10.5px;
   }
 
-  .paper-bg[data-space-id="crew"] .rsvp-add,
-  .paper-bg[data-space-id="crew"] .rsvp-choices button {
+  .paper-bg[data-space-id^="crew"] .rsvp-add,
+  .paper-bg[data-space-id^="crew"] .rsvp-choices button {
     background: var(--space-accent, #7853ff);
     color: white;
     font-size: 10.5px;
   }
 
-  .paper-bg[data-space-id="crew"] .rsvp-add:hover,
-  .paper-bg[data-space-id="crew"] .rsvp-choices button:hover {
+  .paper-bg[data-space-id^="crew"] .rsvp-add:hover,
+  .paper-bg[data-space-id^="crew"] .rsvp-choices button:hover {
     background: #5f3fdf;
     color: white;
   }
 
-  .paper-bg[data-space-id="crew"] .rsvp-tone-violet .rsvp-add,
-  .paper-bg[data-space-id="crew"] .rsvp-tone-violet .rsvp-choices button {
+  .paper-bg[data-space-id^="crew"] .rsvp-tone-violet .rsvp-add,
+  .paper-bg[data-space-id^="crew"] .rsvp-tone-violet .rsvp-choices button {
     background: white;
     color: #4e32a4;
   }
 
-  .paper-bg[data-space-id="crew"] .rsvp-tone-violet .rsvp-add:hover,
-  .paper-bg[data-space-id="crew"] .rsvp-tone-violet .rsvp-choices button:hover {
+  .paper-bg[data-space-id^="crew"] .rsvp-tone-violet .rsvp-add:hover,
+  .paper-bg[data-space-id^="crew"] .rsvp-tone-violet .rsvp-choices button:hover {
     background: var(--color-lime);
     color: var(--color-sticker);
   }
 
-  .paper-bg[data-space-id="crew"] .rsvp-add.is-answered i {
+  .paper-bg[data-space-id^="crew"] .rsvp-add.is-answered i {
     color: rgba(255, 255, 255, 0.72);
   }
 
   /* Real peers stay unmistakable against both paper and cards. */
-  .paper-bg[data-space-id="crew"] .cs-pill {
+  .paper-bg[data-space-id^="crew"] .cs-pill {
     border: 1px solid rgba(17, 17, 20, 0.72);
     box-shadow: 0 4px 0 rgba(17, 17, 20, 0.18);
     font-size: 10.5px;
   }
 
   /* The one message that can become durable is visually promoted first. */
-  .paper-bg[data-space-id="crew"] .thread-message.is-promotable {
+  .paper-bg[data-space-id^="crew"] .thread-message.is-promotable {
     border: 1px solid rgba(201, 255, 61, 0.38);
     border-radius: 14px;
     background: rgba(201, 255, 61, 0.08);
     padding: 12px;
   }
 
-  .paper-bg[data-space-id="crew"] .thread-message.is-promotable .promote-button {
+  .paper-bg[data-space-id^="crew"] .thread-message.is-promotable .promote-button {
     display: flex;
     width: calc(100% - 25px);
     min-height: 34px;
@@ -14802,7 +14769,7 @@
     font-size: 11px;
   }
 
-  .paper-bg[data-space-id="crew"] .thread-message.is-promotable .promote-button:disabled {
+  .paper-bg[data-space-id^="crew"] .thread-message.is-promotable .promote-button:disabled {
     background: white;
     color: var(--color-sticker);
     opacity: 1;
@@ -17103,7 +17070,7 @@
    ================================================================ */
 
 .paper-bg.space-theme-blush .widget-poll,
-.paper-bg[data-space-id="crew"] .widget-poll {
+.paper-bg[data-space-id^="crew"] .widget-poll {
   position: relative;
   isolation: isolate;
   overflow: visible;
@@ -17114,7 +17081,7 @@
 }
 
 .paper-bg.space-theme-blush .widget-poll::before,
-.paper-bg[data-space-id="crew"] .widget-poll::before {
+.paper-bg[data-space-id^="crew"] .widget-poll::before {
   position: absolute;
   z-index: 0;
   inset: 0;
@@ -17126,7 +17093,7 @@
 }
 
 .paper-bg.space-theme-blush .widget-poll .poll-content,
-.paper-bg[data-space-id="crew"] .widget-poll .poll-content {
+.paper-bg[data-space-id^="crew"] .widget-poll .poll-content {
   z-index: 1;
   border-radius: 0;
 }
@@ -17506,6 +17473,32 @@
 }
 
 /* ================================================================
+   WIDGET MANAGEMENT — COMPACT ACTION BAR
+   Keep the four verbs visible, but let the selected card remain the focus.
+   ================================================================ */
+
+.widget-management {
+  top: -44px;
+  border-radius: 9px;
+  box-shadow: 0 4px 0 rgba(17, 17, 20, 0.16);
+}
+
+.widget-management button {
+  min-height: 36px;
+  gap: 5px;
+  padding: 6px 10px;
+  font-size: 10px;
+}
+
+.widget-drag-handle > span {
+  font-size: 15px;
+}
+
+.widget-open-button > span {
+  font-size: 13px;
+}
+
+/* ================================================================
    QUOTE SCRAP — GENERATED PUSH PIN
    Matte front cap only; a one-pixel contact shadow seats it into the paper.
    ================================================================ */
@@ -17526,4 +17519,277 @@
 .quote-pin::before,
 .quote-pin::after {
   content: none;
+}
+
+/* ================================================================
+   SPACE HEADER — SCROLL-LINKED FADE
+   --header-scroll-fade (0 at home → 1 by ~150px of canvas scroll) is
+   set on <main> by the space-scroll onScroll handlers in App.tsx and
+   LiveSpace.tsx. The eyebrow bails out first, then the big title
+   lifts, shrinks a touch and blurs away like it's sinking into the
+   distance; scrubbing back reverses it 1:1. The short glide
+   transitions act as a lerp so wheel steps read as silk, not stutter.
+   .is-canvas-away still guards pointer-events past ~72px.
+   ================================================================ */
+
+.space-title-block {
+  --title-fade: var(--header-scroll-fade, 0);
+  transform-origin: left top;
+  opacity: calc(1 - var(--title-fade));
+  translate: 0 calc(var(--title-fade) * -28px);
+  scale: calc(1 - var(--title-fade) * 0.06);
+  filter: blur(calc(var(--title-fade) * 6px));
+  transition:
+    opacity var(--dur-quick) linear,
+    translate var(--dur-quick) var(--ease-glide),
+    scale var(--dur-quick) var(--ease-glide),
+    filter var(--dur-quick) linear;
+}
+
+/* The eyebrow leads the exit at ~1.8x speed — the offset reads as depth. */
+.space-title-block .space-meta {
+  --meta-fade: min(1, var(--header-scroll-fade, 0) * 1.8);
+  opacity: calc(1 - var(--meta-fade));
+  translate: 0 calc(var(--meta-fade) * -10px);
+  transition:
+    opacity var(--dur-quick) linear,
+    translate var(--dur-quick) var(--ease-glide);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-title-block,
+  .space-title-block .space-meta {
+    translate: 0 0;
+    scale: 1;
+    filter: none;
+  }
+}
+
+/* —— Crew lagoon field (the chosen background remix) ———————————————————
+ * The crew's default look: flat teal lagoon field + magenta identity, picked
+ * over blush (washed out white cards) and spruce. The hero pass above still
+ * applies; these rules re-ink the light-blush-tuned bits for the teal. */
+@media (min-width: 801px) {
+  .paper-bg.space-theme-lagoon[data-space-id^="crew"] {
+    --canvas-grid-dot: rgba(255, 255, 255, 0.05);
+    --canvas-grid-major: rgba(201, 255, 61, 0.16);
+    background-image:
+      linear-gradient(rgba(18, 165, 148, 0.94), rgba(18, 165, 148, 0.94)),
+      url(https://asset.mmm.page/55/4df91bfe464242812c7dcf75bb4869/1xp26r2.png);
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 30%;
+  }
+}
+
+.paper-bg.space-theme-lagoon[data-space-id^="crew"] .widget-frame {
+  border-color: rgba(255, 250, 247, 0.85);
+  background: rgba(255, 250, 247, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 250, 247, 0.1);
+}
+
+.paper-bg.space-theme-lagoon[data-space-id^="crew"] .widget-frame.is-focused,
+.paper-bg.space-theme-lagoon[data-space-id^="crew"] .widget-frame-group.is-frame-managed .widget-frame {
+  border-color: #fffaf7;
+  background: rgba(255, 250, 247, 0.2);
+}
+
+.paper-bg.space-theme-lagoon[data-space-id^="crew"] .frame-subtitle {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.paper-bg.space-theme-lagoon[data-space-id^="crew"] .space-edit-button:hover,
+.paper-bg.space-theme-lagoon[data-space-id^="crew"] .space-edit-button:focus-visible,
+.paper-bg.space-theme-lagoon[data-space-id^="crew"] .space-edit-button.is-active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Accent-violet ghost pills vanish on the teal field — re-ink white. */
+.paper-bg.space-theme-lagoon[data-space-id^="crew"] .message-wall-add {
+  border-color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* —— Crew spruce alternate ————————————————————————————————————————————
+ * The runner-up dark remix, kept as a selectable theme preset: deep spruce
+ * field where violet + cream read as jewelry. Applies if the crew (or a
+ * future crew-prefixed space) picks the spruce theme in the editor. */
+@media (min-width: 801px) {
+  .paper-bg.space-theme-spruce[data-space-id^="crew"] {
+    --canvas-grid-dot: rgba(255, 255, 255, 0.045);
+    --canvas-grid-major: rgba(201, 255, 61, 0.14);
+    background-image:
+      linear-gradient(rgba(15, 92, 80, 0.82), rgba(15, 92, 80, 0.82)),
+      url(https://asset.mmm.page/55/4df91bfe464242812c7dcf75bb4869/1xp26r2.png);
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 30%;
+  }
+}
+
+/* Shared dark-field re-inks (the crew hero pass assumes light blush). */
+.paper-bg.space-theme-spruce[data-space-id^="crew"] .frame-subtitle {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* On the dark field the cream frame wash reads milky — thin it, and let the
+ * violet border do the jewelry work. */
+.paper-bg.space-theme-spruce[data-space-id^="crew"] .widget-frame {
+  background: rgba(255, 250, 247, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(120, 83, 255, 0.16);
+}
+
+.paper-bg.space-theme-spruce[data-space-id^="crew"] .message-wall-add {
+  border-color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.paper-bg.space-theme-spruce[data-space-id^="crew"] .space-edit-button:hover,
+.paper-bg.space-theme-spruce[data-space-id^="crew"] .space-edit-button:focus-visible,
+.paper-bg.space-theme-spruce[data-space-id^="crew"] .space-edit-button.is-active {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Retire violet from the field — the accent (magenta) takes over the
+ * floating pills that sit directly on the teal. */
+.paper-bg.space-theme-lagoon[data-space-id^="crew"] .message-wall-label {
+  background: var(--space-accent, #e9369d);
+}
+
+/* —— BDAY FRAME — PARTY PASS ————————————————————————————————————————————
+ * The party corner was the only dashboard on a collage wall: four same-weight
+ * parallel rectangles in rows. Shape stays rectangular (paper objects), but the
+ * composition gets pinboard physics — seed data now staggers/tilts/overlaps the
+ * cards — and this section adds the zone dressing: a pennant garland strung
+ * from the frame's top border, birthday messages as a stack of pastel sticky
+ * notes (column layout keys on widget height via container query, so the wide
+ * guestbook/fridge strips elsewhere keep their row), and the potluck kicker
+ * dropped to sentence case per the one-case rule. */
+
+.frame-party-garland {
+  position: absolute;
+  top: -4px;
+  left: 178px;
+  width: 212px;
+  pointer-events: none;
+}
+
+.frame-party-garland svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Sticky-note material for message walls everywhere — trash talk, guestbook,
+ * fridge notes are all literally notes; they were rendering as white UI chips. */
+.widget-message-wall {
+  container-type: size;
+}
+
+.message-wall-scroll {
+  padding: 3px 4px 8px;
+}
+
+.message-wall-card {
+  border-radius: 2px;
+  background: #fffdf7;
+  padding: 8px 9px;
+  rotate: -1.6deg;
+  box-shadow:
+    0 1px 1px rgba(31, 26, 20, 0.14),
+    0 6px 12px -8px rgba(31, 26, 20, 0.32);
+}
+
+.message-wall-card:nth-child(3n + 2) {
+  rotate: 1.4deg;
+  background: #ffe9a4;
+}
+
+.message-wall-card:nth-child(3n) {
+  rotate: -0.7deg;
+  background: #ffd9e6;
+}
+
+.message-wall-card strong {
+  font-size: 10.5px;
+}
+
+.message-wall-card p {
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+/* Tall wall = the bday stack: notes pile vertically, tucked under the rsvp. */
+@container (min-height: 180px) {
+  .message-wall-scroll {
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    overflow-x: visible;
+    scrollbar-width: none;
+    padding: 3px 8px 8px;
+  }
+
+  .message-wall-card {
+    width: auto;
+  }
+
+  .message-wall-add {
+    align-self: flex-start;
+    margin-top: 0;
+    padding: 6px 11px;
+  }
+}
+
+@media (min-width: 801px) {
+  .paper-bg[data-space-id^="crew"] .message-wall-card strong {
+    font-size: 12px;
+  }
+
+  .paper-bg[data-space-id^="crew"] .message-wall-card p {
+    font-size: 12.5px;
+  }
+}
+
+/* One washi piece on the middle note — three identical stickies read as a
+ * template; one taped corner reads as hands. */
+.message-wall-card {
+  position: relative;
+}
+
+.message-wall-card:nth-child(3n + 2)::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  right: 14px;
+  width: 44px;
+  height: 15px;
+  background: rgba(245, 222, 173, 0.82);
+  box-shadow: 0 2px 0 rgba(90, 65, 40, 0.12);
+  rotate: 4deg;
+  pointer-events: none;
+}
+
+/* Entrance: the stickies land one after another, riding the widget wave. */
+.space-canvas.is-entering .message-wall-card {
+  animation: sticky-note-land var(--dur-arrive, 360ms) var(--ease-pop)
+    calc(var(--enter-delay, 0ms) + 140ms + var(--i, 0) * 70ms) both;
+}
+
+@keyframes sticky-note-land {
+  from {
+    opacity: 0;
+    scale: 0.86;
+    translate: 0 -8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-canvas.is-entering .message-wall-card {
+    animation: none;
+  }
+}
+
+/* Sentence case everywhere — the sheet kicker was the one shouting label. */
+.potluck-kicker {
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
