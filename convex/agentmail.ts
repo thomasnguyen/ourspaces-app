@@ -7,6 +7,7 @@ import {
   internalMutation,
   internalQuery,
 } from "./_generated/server";
+import schema from "./schema";
 
 /**
  * AgentMail via plain REST. The @agentmail/convex component's actions never
@@ -38,8 +39,11 @@ async function am(path: string, init?: RequestInit): Promise<Record<string, unkn
 }
 
 /** Give a space its own email address (idempotent). */
+const inboxResultValidator = v.object({ inboxId: v.string(), address: v.string() });
+
 export const ensureInbox = action({
   args: { spaceId: v.id("spaces"), username: v.optional(v.string()) },
+  returns: inboxResultValidator,
   handler: async (ctx, args): Promise<{ inboxId: string; address: string }> =>
     await ctx.runAction(internal.agentmail.ensureInboxInternal, args),
 });
@@ -47,6 +51,7 @@ export const ensureInbox = action({
 /** The three showcase inboxes (free tier caps at 3). Run after seeding. */
 export const ensureShowcaseInboxes = action({
   args: {},
+  returns: v.record(v.string(), v.string()),
   handler: async (ctx): Promise<Record<string, string>> => {
     // "thecrew" is taken org-wide on agentmail.to; the crew rides the
     // account's default ourspaces@ inbox instead (free tier caps at 3 total).
@@ -72,6 +77,7 @@ export const ensureShowcaseInboxes = action({
 /** Same as ensureInbox but callable from other actions. */
 export const ensureInboxInternal = internalAction({
   args: { spaceId: v.id("spaces"), username: v.optional(v.string()) },
+  returns: inboxResultValidator,
   handler: async (ctx, args): Promise<{ inboxId: string; address: string }> => {
     const space = await ctx.runQuery(internal.agentmail.getSpaceInbox, { spaceId: args.spaceId });
     if (!space) throw new Error("space not found");
@@ -110,6 +116,7 @@ export const sendEmail = internalAction({
     text: v.string(),
     html: v.optional(v.string()),
   },
+  returns: v.null(),
   handler: async (ctx, { spaceId, to, subject, text, html }) => {
     const space = await ctx.runQuery(internal.agentmail.getSpaceInbox, { spaceId });
     if (!space?.inboxId) throw new Error("space has no inbox");
@@ -131,6 +138,15 @@ export const sendEmail = internalAction({
 
 export const getSpaceInbox = internalQuery({
   args: { spaceId: v.id("spaces") },
+  returns: v.union(
+    v.object({
+      slug: v.optional(v.string()),
+      name: v.string(),
+      inboxId: v.optional(v.string()),
+      inboxAddress: v.optional(v.string()),
+    }),
+    v.null(),
+  ),
   handler: async (ctx, { spaceId }) => {
     const s = await ctx.db.get(spaceId);
     return s
@@ -141,6 +157,7 @@ export const getSpaceInbox = internalQuery({
 
 export const getSpaceBySlug = internalQuery({
   args: { slug: v.string() },
+  returns: v.union(schema.doc("spaces"), v.null()),
   handler: async (ctx, { slug }) =>
     await ctx.db
       .query("spaces")
@@ -151,6 +168,7 @@ export const getSpaceBySlug = internalQuery({
 /** Remove the `test-*` inbox stubs so ensureShowcaseInboxes can create real ones. */
 export const clearStubInboxes = internalMutation({
   args: {},
+  returns: v.array(v.string()),
   handler: async (ctx) => {
     const spaces = await ctx.db.query("spaces").collect();
     const cleared: string[] = [];
@@ -166,8 +184,10 @@ export const clearStubInboxes = internalMutation({
 
 export const setSpaceInbox = internalMutation({
   args: { spaceId: v.id("spaces"), inboxId: v.string(), address: v.string() },
+  returns: v.null(),
   handler: async (ctx, { spaceId, inboxId, address }) => {
     await ctx.db.patch(spaceId, { inboxId, inboxAddress: address });
+    return null;
   },
 });
 
@@ -182,6 +202,7 @@ export const logEmailEvent = internalMutation({
     body: v.optional(v.string()),
     widgetId: v.optional(v.id("widgets")),
   },
+  returns: v.id("emailEvents"),
   handler: async (ctx, args) => {
     return await ctx.db.insert("emailEvents", { ...args, createdAt: Date.now() });
   },
@@ -196,6 +217,7 @@ export const onMessageReceived = internalMutation({
     subject: v.string(),
     text: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, { inboxId, from, to, subject, text }) => {
     const space = await ctx.db
       .query("spaces")

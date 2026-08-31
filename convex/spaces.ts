@@ -1,5 +1,6 @@
 import { query, mutation, internalMutation, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
+import schema from "./schema";
 
 const RETIRED_SPACE_SLUGS = ["buildclub", "trip"] as const;
 
@@ -39,6 +40,7 @@ async function deleteSpaceBySlug(ctx: MutationCtx, slug: string) {
 /** Feeds Home and the rail — preview payload plus live member count (PRD §11). */
 export const listSpaces = query({
   args: {},
+  returns: v.array(schema.doc("spaces").extend({ memberCount: v.number() })),
   handler: async (ctx) => {
     const spaces = await ctx.db.query("spaces").collect();
     return await Promise.all(
@@ -56,6 +58,7 @@ export const listSpaces = query({
 /** Stable entry point for the vertical slice. Seed once, then query this on load. */
 export const getDemoSpace = query({
   args: {},
+  returns: v.union(schema.doc("spaces"), v.null()),
   handler: async (ctx) => {
     const bySlug = await ctx.db
       .query("spaces")
@@ -71,6 +74,7 @@ export const getDemoSpace = query({
 
 export const getBySlug = query({
   args: { slug: v.string() },
+  returns: v.union(schema.doc("spaces"), v.null()),
   handler: async (ctx, { slug }) =>
     await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", slug)).unique(),
 });
@@ -78,6 +82,10 @@ export const getBySlug = query({
 /** Load a space and its board in one subscription so room switches do not waterfall. */
 export const getSpaceWithWidgets = query({
   args: { slug: v.string() },
+  returns: v.object({
+    space: v.union(schema.doc("spaces"), v.null()),
+    widgets: v.array(schema.doc("widgets")),
+  }),
   handler: async (ctx, { slug }) => {
     const space = await ctx.db
       .query("spaces")
@@ -101,6 +109,7 @@ export const createSpace = mutation({
     color: v.string(),
     eventAt: v.optional(v.number()),
   },
+  returns: v.id("spaces"),
   handler: async (ctx, args) => {
     const now = Date.now();
     return await ctx.db.insert("spaces", {
@@ -114,6 +123,7 @@ export const createSpace = mutation({
 /** One-off hue swap for a remix space (run via CLI). */
 export const retintSpace = internalMutation({
   args: { slug: v.string(), color: v.string() },
+  returns: v.null(),
   handler: async (ctx, { slug, color }) => {
     const space = await ctx.db
       .query("spaces")
@@ -121,6 +131,7 @@ export const retintSpace = internalMutation({
       .unique();
     if (!space) throw new Error(`no space with slug ${slug}`);
     await ctx.db.patch(space._id, { color });
+    return null;
   },
 });
 
@@ -143,6 +154,7 @@ export const resizeCanvasBySlug = internalMutation({
  * up the background-remix scaffolding once a winner was picked). */
 export const deleteBySlug = internalMutation({
   args: { slug: v.string() },
+  returns: v.union(v.id("spaces"), v.null()),
   handler: async (ctx, { slug }) => deleteSpaceBySlug(ctx, slug),
 });
 
@@ -158,6 +170,7 @@ export async function retireCutSpaceRows(ctx: MutationCtx) {
 /** Drop the hackathon + Tahoe demo rooms from an already-seeded backend. */
 export const retireCutSpaces = internalMutation({
   args: {},
+  returns: v.array(v.string()),
   handler: async (ctx) => retireCutSpaceRows(ctx),
 });
 
@@ -167,6 +180,7 @@ export const retireCutSpaces = internalMutation({
  * keep routing to the original. Idempotent per target slug. */
 export const duplicateBySlug = internalMutation({
   args: { fromSlug: v.string(), toSlug: v.string(), name: v.string() },
+  returns: v.id("spaces"),
   handler: async (ctx, { fromSlug, toSlug, name }) => {
     const existing = await ctx.db
       .query("spaces")
@@ -268,6 +282,7 @@ export const joinDemoSpace = mutation({
     emoji: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
   },
+  returns: v.id("members"),
   handler: async (ctx, { spaceId, userId, name, color, emoji, avatarUrl }) => {
     const existing = await ctx.db
       .query("members")

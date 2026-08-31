@@ -23,6 +23,7 @@ function bareAddress(from: string): string {
 
 export const recipients = internalQuery({
   args: { spaceId: v.id("spaces") },
+  returns: v.array(v.string()),
   handler: async (ctx, { spaceId }) => {
     const events = await ctx.db
       .query("emailEvents")
@@ -97,6 +98,7 @@ async function digestFor(
 /** Cron target: digest every mail-enabled showcase space. */
 export const weekly = internalAction({
   args: {},
+  returns: v.array(v.string()),
   handler: async (ctx) => {
     const results: string[] = [];
     for (const slug of ["crew", "couple", "buildroom"]) {
@@ -114,5 +116,6 @@ export const weekly = internalAction({
 /** Demo trigger: `npx convex run digest:sendNow '{"slug":"crew","to":["you@x.com"]}'` */
 export const sendNow = action({
   args: { slug: v.string(), to: v.optional(v.array(v.string())) },
+  returns: v.string(),
   handler: async (ctx, { slug, to }): Promise<string> => digestFor(ctx, slug, to),
 });

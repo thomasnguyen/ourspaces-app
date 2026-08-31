@@ -19,6 +19,7 @@ const CREW_MEMORY_SOURCES: Record<
 /** Client uploads the image bytes straight to storage via this URL. */
 export const generateUploadUrl = mutation({
   args: {},
+  returns: v.string(),
   handler: async (ctx) => await ctx.storage.generateUploadUrl(),
 });
 
@@ -41,6 +42,7 @@ export const addPhoto = mutation({
     caption: v.string(),
     by: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, { widgetId, storageId, caption, by }) => {
     const widget = await ctx.db.get(widgetId);
     if (!widget || widget.type !== "photoWall") {

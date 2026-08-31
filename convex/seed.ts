@@ -1,4 +1,5 @@
 import { internalMutation, type MutationCtx } from "./_generated/server";
+import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { COUPLE_WIDGETS, CREW_WIDGETS, SPACES_BY_ID } from "../src/data/spaces";
 import { getGlobalThread, getThreadsForSpace } from "../src/data/chat";
@@ -156,11 +157,12 @@ async function seedAll(ctx: MutationCtx) {
     await seedSpaceMessages(ctx, meta, spaceId, widgetIds, now);
   }
 
-  return spaceIds.get("crew");
+  return spaceIds.get("crew") ?? null;
 }
 
 export const demo = internalMutation({
   args: {},
+  returns: v.union(v.id("spaces"), v.null()),
   handler: async (ctx) => {
     await retireCutSpaceRows(ctx);
     await seedMissing(ctx);
@@ -172,6 +174,7 @@ export const demo = internalMutation({
 
 export const reset = internalMutation({
   args: {},
+  returns: v.union(v.id("spaces"), v.null()),
   handler: async (ctx) => {
     for (const table of ["messages", "votes", "paintMarks", "presence", "widgets", "members", "spaces", "recaps"] as const) {
       const rows = await ctx.db.query(table).collect();
@@ -186,6 +189,7 @@ export const reset = internalMutation({
  * canvases pick up the mail demo without a reseed. Idempotent. */
 export const backfillMailDemo = internalMutation({
   args: {},
+  returns: v.array(v.string()),
   handler: async (ctx) => {
     const out: string[] = [];
     const crew = await ctx.db
@@ -273,6 +277,7 @@ export const backfillMailDemo = internalMutation({
  * starters + question threads without wiping anything live. Idempotent. */
 export const backfillLinkQuestions = internalMutation({
   args: {},
+  returns: v.object({ patchedWidgets: v.number(), insertedMessages: v.number() }),
   handler: async (ctx) => {
     const now = Date.now();
     let patchedWidgets = 0;

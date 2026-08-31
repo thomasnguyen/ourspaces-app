@@ -1,10 +1,14 @@
 import { query } from "./_generated/server";
+import { v } from "convex/values";
 
 const PRESENCE_TTL_MS = 30_000;
 
 /** Aggregate counts for the build club "live backend" widget. */
 export const getLiveCounts = query({
   args: {},
+  returns: v.object({
+    counts: v.array(v.object({ label: v.string(), value: v.number() })),
+  }),
   handler: async (ctx) => {
     const [spaces, widgets, messages, presence] = await Promise.all([
       ctx.db.query("spaces").collect(),
