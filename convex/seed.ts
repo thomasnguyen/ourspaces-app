@@ -1,9 +1,10 @@
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { COUPLE_WIDGETS, CREW_WIDGETS, SPACES_BY_ID } from "../src/data/spaces";
 import { getGlobalThread, getThreadsForSpace } from "../src/data/chat";
-import { retireCutSpaceRows } from "./spaces";
+import { retireCutSpaceRows, memberCounts } from "./spaces";
+import { pollTallies } from "./votes";
 import type { ItineraryData, LinkCardData, WidgetData } from "./widgetData";
 
 function seedUserId(slug: string, name: string) {
@@ -46,13 +47,15 @@ async function seedSpace(
   });
 
   for (const member of meta.members) {
-    await ctx.db.insert("members", {
+    const memberId = await ctx.db.insert("members", {
       spaceId,
       userId: seedUserId(slug, member.name),
       name: member.name,
       color: member.color,
       lastSeen: now,
     });
+    const memberDoc = await ctx.db.get(memberId);
+    await memberCounts.insert(ctx, memberDoc!);
   }
 
   const widgetIds = new Map<string, string>();
@@ -75,11 +78,13 @@ async function seedSpace(
     if (widget.type === "poll") {
       for (const option of (widget.data.options as any[]) ?? []) {
         for (const voter of option.voters ?? []) {
-          await ctx.db.insert("votes", {
+          const voteId = await ctx.db.insert("votes", {
             widgetId: id,
             userId: seedUserId(slug, voter),
             optionId: option.id,
           });
+          const voteDoc = await ctx.db.get(voteId);
+          await pollTallies.insert(ctx, voteDoc!);
         }
       }
     }
@@ -178,7 +183,11 @@ export const reset = internalMutation({
   handler: async (ctx) => {
     for (const table of ["messages", "votes", "paintMarks", "presence", "widgets", "members", "spaces", "recaps"] as const) {
       const rows = await ctx.db.query(table).collect();
-      for (const row of rows) await ctx.db.delete(row._id);
+      for (const row of rows) {
+        await ctx.db.delete(row._id);
+        if (table === "votes") await pollTallies.delete(ctx, row as Doc<"votes">);
+        if (table === "members") await memberCounts.delete(ctx, row as Doc<"members">);
+      }
     }
     return seedAll(ctx);
   },
