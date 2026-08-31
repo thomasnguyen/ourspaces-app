@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import schema from "./schema";
 import type { NoteData } from "./widgetData";
 import { widgetsCounter } from "./stats";
+import { rateLimiter } from "./rateLimits";
 
 const tone = v.union(
   v.literal("berry"),
@@ -46,6 +47,10 @@ export const addStroke = mutation({
     if (!widget || widget.spaceId !== args.spaceId || widget.type !== "cozyColor") {
       return null;
     }
+    // rate-limiter: per-user quota on the live paint hot path. Drop silently
+    // rather than throw — a paint stroke isn't worth an error toast.
+    const status = await rateLimiter.limit(ctx, "paintStroke", { key: args.userId });
+    if (!status.ok) return null;
     if (args.regionId) {
       const marks = await ctx.db
         .query("paintMarks")

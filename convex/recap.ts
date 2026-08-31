@@ -12,6 +12,7 @@ import { completeJson } from "./ai";
 import schema from "./schema";
 import { pollTallies } from "./votes";
 import { messagesCounter } from "./stats";
+import { rateLimiter } from "./rateLimits";
 
 /** Follow-up chat rides the existing messages table, hidden from global chat. */
 const THREAD = "recap";
@@ -419,6 +420,9 @@ export const generate = action({
   },
   returns: recapPayload,
   handler: async (ctx, { spaceId, kind }): Promise<RecapPayload> => {
+    // rate-limiter: the user-triggered "catch me up" button hits the LLM
+    // proxy — the daily cron path (generateOne/generateAll) is unmetered.
+    await rateLimiter.limit(ctx, "recapGenerate", { key: spaceId, throws: true });
     const payload = await buildRecap(ctx, spaceId, kind ?? "ask");
     await ctx.runMutation(internal.recap.save, { spaceId, ...payload });
     return payload;
@@ -457,6 +461,7 @@ export const ask = action({
     widgetId?: string;
     messageId?: string;
   }> => {
+    await rateLimiter.limit(ctx, "recapAsk", { key: spaceId, throws: true });
     const snap: Snapshot = await ctx.runQuery(internal.recap.snapshot, { spaceId });
     const generated = (await askOpenAi("ask", snap, question).catch(() => null)) as {
       reply: string;
