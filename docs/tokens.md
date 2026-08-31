@@ -1,4 +1,4 @@
-# Design tokens (from the pre-hack prototype `src/index.css`)
+# Design tokens
 
 ```css
 @theme {

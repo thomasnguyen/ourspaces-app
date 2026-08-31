@@ -1,6 +1,7 @@
 import { v } from "convex/values";
-import { action, env, internalMutation } from "./_generated/server";
+import { action, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { completeJson } from "./ai";
 
 /** OpenAI as a structured decider (never a chatbot UI): an article becomes
  * two short conversation starters the group answers as threads. */
@@ -25,42 +26,17 @@ function canned(seed: string) {
 }
 
 async function askOpenAi(title: string, description: string) {
-  const key = env.OPENAI_API_KEY;
-  if (!key) return null;
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.9,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You write conversation starters for a friend group's shared board. " +
-            'Return JSON {"questions": ["...", "..."]} with exactly 2 questions. ' +
-            "Each is under 12 words, lowercase, casual and direct, no emoji, and " +
-            "answerable even by friends who only skimmed the article.",
-        },
-        {
-          role: "user",
-          content: `Article: ${title}\n\n${description}`.slice(0, 1200),
-        },
-      ],
-    }),
-  });
-  if (!response.ok) return null;
-  const payload = (await response.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
+  const parsed = await completeJson({
+    temperature: 0.9,
+    system:
+      "You write conversation starters for a friend group's shared board. " +
+      'Return JSON {"questions": ["...", "..."]} with exactly 2 questions. ' +
+      "Each is under 12 words, lowercase, casual and direct, no emoji, and " +
+      "answerable even by friends who only skimmed the article.",
+    user: `Article: ${title}\n\n${description}`.slice(0, 1200),
+  }).catch(() => null);
+  if (!parsed) return null;
   try {
-    const parsed = JSON.parse(payload.choices?.[0]?.message?.content ?? "") as {
-      questions?: unknown;
-    };
     const questions = Array.isArray(parsed.questions)
       ? parsed.questions
           .filter((text): text is string => typeof text === "string" && text.trim().length > 0)

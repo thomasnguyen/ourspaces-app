@@ -5,6 +5,92 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Email → canvas is real, end to end** (2026-08-30 evening). Dropped the
+  broken `@agentmail/convex` component; `convex/agentmail.ts` is a plain REST
+  client (create inbox / send / `clearStubInboxes` / `ensureShowcaseInboxes`)
+  and `convex/http.ts` hand-verifies the svix webhook. Inbound mail →
+  `emailEvents` row → `convex/inbox.ts` router, per space personality:
+  **us two** = every email becomes a sealed kraft `letter` widget (new widget
+  type: envelope with flap/seal/stamp, click unfolds the letter — buttons, so
+  WidgetCard's drag capture doesn't eat the click); **build room** = URLs in
+  the body drop into the pile as `dropped` rows + sequential
+  `firecrawl.scrapeLink` enrich (sender shows as "Name ✉"); **crew (default)**
+  = `gpt-oss/4o-mini` reads a widget inventory (expense splits w/ people +
+  totals, itineraries w/ days, frames, countdowns) and files the email —
+  append expense row (matches person, decrements owes), append itinerary day,
+  create a new tracker, unfiled envelope when unsure, discard spam. Verified
+  on dev with self-signed webhook posts: a fake Venmo receipt cleared Jules'
+  exact $42 tahoe IOU; an emailed HN link came back enriched; the letter
+  landed sealed. Weekly digest (`convex/digest.ts`, Fri 16:00 UTC cron +
+  `digest:sendNow`) emails each space's week to everyone who ever wrote to
+  its inbox (recipients mined from `emailEvents`), via the recap snapshot.
+  Header now shows a black `✉ address` chip (click copies) on crew / couple /
+  buildroom; crew got a **japan trip frame** (itinerary rebranded from tahoe,
+  future dates — the router's past-vs-future money/booking demo) via
+  `seed:backfillMailDemo`, already run on dev. **Blocked on one human step:**
+  the AgentMail API key is too scoped (403 on everything) — create an
+  unrestricted key in the console, `env set`, `clearStubInboxes`,
+  `ensureShowcaseInboxes`, and it's live (see
+  `docs/firecrawl-agentmail-setup.md` § Status).
+
+- **Catch-me-up panel redesigned as a real chat** (`ActionDock.tsx` + the two
+  recap CSS sections). Head wears a tilted lime ✦ badge + since-pill; briefing
+  gets a "what moved" kicker; stitch-dash divider before the follow-up thread;
+  friend asks are flat lime bubbles w/ sticker text (global-chat language), AI
+  replies are dark bubbles wearing a pinned lime ✦ spark that pulses while
+  thinking/streaming; typing-dots indicator replaced "looking…"; composer is one
+  capsule whose send button colorizes lime when a draft exists; lime caret +
+  ::selection; thin scrollbar; scroll-driven fade dissolves lines under the head
+  (`@supports animation-timeline`); panel pops in from the dock button. Fixed a
+  real bug: auto-scroll targeted the non-scrolling `<ul>` — now scrolls
+  `.recap-body` (smooth, instant while streaming). Dock chat count badge is now
+  lime. Round 2: member turns show an 18px `MemberFace` beside the name
+  (`RecapTurn` grew `fromEmoji`/`fromAvatarUrl`; live maps them from
+  `authorEmoji`/`authorAvatarUrl`, mock asks use `getIdentity()` so the face
+  matches live), and a ⤢ head button expands the panel to 620×780 via a WAAPI
+  FLIP from the anchored corner (`toggleExpanded` in `ActionDock.tsx` —
+  flushSync + scale delta, reduced-motion guarded; `.is-expanded` caps bubbles
+  at 76%). Driver script: `.context/recap-shot.mjs`; shots `/tmp/recap-*.png`.
+
+- **The build room** (`#/`, slug `buildroom`, orange `torch` theme) — a dev
+  guild space built to the approved concept art in
+  `.context/generated_images/exec-5620b45c-*.png` (canvas) and
+  `exec-fb1d1e00-*.png` (reading room). Five outlined frames
+  (`data.deco === "outline"`, no kraft mat): **the pile**, **hot now**,
+  **keepers**, **shipping wall**, **roundtable**. Four new widget types live in
+  `src/widgets/buildroom.tsx`; keepers reuse `note` with `data.title` +
+  `data.pin` (`.is-keeper` drops the "remember this" affordance).
+  Desktop now opens on a mock/live shared overview camera (frame-fit, max
+  `.84`) with all five zones clear of the compact header, rail, and dock; focus
+  returns there, resize recomputes it while unfocused, and mobile stacking is
+  unchanged. The three pinned links use the local ceramic, violet-collage, and
+  riso covers before falling back to monograms. Shots:
+  `.context/buildroom-{canvas,reading-room,ship-room}.png`.
+- **The attention funnel works end to end, live.** Open the pile card *or its
+  frame label* → full-screen reading room: 47 links grouped by the paste that
+  brought them in, a tag row (article / docs / repo / discussion / video /
+  `#github`) above the `all / new / hot / discussed / kept` filters — tags cut
+  first, so the state counts describe the tagged pile, and circle tag pills set
+  the same filter — first 15 then
+  "show 32 more", and a reading circle (cover, why-it-matters, two question
+  threads, replies, composer). Votes re-rank Hot Now, `pin to hot` overrides the
+  ranking, `keep takeaway` creates a pinned note that **flies onto the canvas**
+  (`flyWidgetIn`, snap + squash) after the room shrinks away. Ship posts open
+  their own full-screen room with the write-up, live replies and image upload.
+- **Dropping links is real.** Paste up to 10 urls → placeholder rows appear
+  instantly with an "N enriching…" pill, then `firecrawl.scrapeLink` fills each
+  one **sequentially** (they read-modify-write one document — do not parallelise
+  them). Bad urls land in a `failed` state with a retry. Verified live with two
+  real urls and one bogus one.
+- **No schema change — deliberately.** Link *content* comes from the
+  `src/data/buildroom.ts` fixtures; votes, pins, keeps and runtime drops persist
+  into the pile widget's own `data.linkState` / `data.dropped` through the
+  existing `widgets.updateWidgetData`, so the whole room is reactive and
+  multiplayer today. Replies ride `messages` under
+  `<pileId>::link:<linkId>` (and `::q:<qid>`), the same namespacing the reading
+  circle already used. Moving to a real `links` table later only has to keep
+  returning a `BuildRoomLink[]` from `pileLinks()`.
+
 - Hold **Space + drag** to pan the canvas (Figma-style), including over
   widgets. Grab cursor while Space is down, grabbing while dragging. Skips
   text fields and chrome. Wired in mock `App.tsx` and live `LiveSpace.tsx`
@@ -312,6 +398,14 @@ Backward-looking history lives in `hackathon.md`.
   live track titles, Convex-synced station so others can tap join.
 - Audio is local (browser autoplay). Pause does not stop the room for
   everyone. Streams are ice2/ice6/ice5 `*-128-mp3` from somafm.com.
+- **Catch me up is live** on the personal Convex dev deployment. Daily cron
+  (8am PT) writes a `recaps` row per space; tap generates if none exists; ↻
+  refreshes now.   Follow-up composer is board-only. Live calls go through RoomDone's
+  Cloudflare Worker (`AI_PROXY_URL` / `AI_PROXY_TOKEN` →
+  `@cf/openai/gpt-oss-120b`); OpenAI is fallback only. Chat rides
+  `messages.widgetId === "recap"`. Never writes the canvas. Mock keeps the
+  scripted Jules/matcha/6pm lines plus local replies. Verified mock + live
+  crew: `.context/recap-live-check.png`, `.context/recap-live-board.png`.
 
 ## Next up
 
@@ -319,11 +413,22 @@ Backward-looking history lives in `hackathon.md`.
   problem-first, "three rooms, three real problems" up top. Fill the
   [bracketed] placeholders (real-event receipts, commons counts, day/commit
   totals) at submit time (Sep 21); cut any line whose feature didn't land
-  (email→action routing, commons, live catch-me-up recap).
+  (email→action routing, commons).
 - Re-seed live Convex (`npx convex run seed:demo` or equivalent) so
   production canvases pick up the SomaFM fields and seeded buildclub/Tahoe
   web-post cards.
-- Surface AgentMail in the UI (email → canvas mutations).
+- ~~Surface AgentMail in the UI (email → canvas mutations)~~ — done 2026-08-30,
+  pending only the unrestricted API key (human, see setup doc).
+- Mail polish, if time: emailed widgets should *arrive* (envelope drop + house
+  motion, not a reactive pop-in); letters could open live for both people
+  (shared `sealed` state) instead of per-tab local state.
+- Build room, still open: the shipping wall uses the old
+  `public/photos/hackathon/*.jpg` people-shots, not product screenshots —
+  generate three dashboard images. OpenAI doesn't write `whyItMatters`/`kind`
+  yet (dropped links fall back to Firecrawl's description + canned questions);
+  wire a structured extractor like `convex/questions.ts` does. No editor forms
+  for the four new types yet (`WidgetEditorPanel`), and Hot Now doesn't FLIP
+  when a vote reorders it.
 - Add the web-post discussion layer: OpenAI creates two direct questions, then
   answers and upvotes sync live. This satisfies the structured
   extractor/decider sponsor beat without a chatbot UI.
@@ -336,6 +441,19 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- 2026-08-30: Live model calls go through RoomDone's shared `ai-proxy`
+  Worker (`https://ai-proxy.corgi-quest.workers.dev/v1`, gpt-oss-120b),
+  not OpenAI. OurSpaces has its own project token; RoomDone's hash map
+  was left untouched (`APP_TOKEN_HASHES`).
+- 2026-08-30: Catch me up is both a daily briefing and an on-demand refresh.
+  Follow-ups live in the recap panel (not a ChatGPT drawer). OpenAI stays a
+  structured decider: recap lines cite widget/message ids; chat replies are
+  about this board only.
+- 2026-08-30: Docs are routed through a public map + skill, not dumped as a
+  set. Index is `docs/doc-map.md`; skill is `/ourspaces-docs` (lives in both
+  `.agents/skills` and `.claude/skills` so it ships in the public repo).
+  Marketing/strategy drafts stay gitignored (`docs/post-skeletons.md`,
+  `docs/local/`, `docs/*.local.md`, `.context/`).
 - 2026-08-29: Organic paper is a material family, not one repeated filter.
   Notes/poll keep the shallow deckled-bottom stock; daily question gets soft
   punched worksheet paper; saved links gets cooler machine-made ledger stock.
@@ -441,3 +559,14 @@ Backward-looking history lives in `hackathon.md`.
   Sep 17–20 with AgentMail as the Sat Sep 19 finale + the single LinkedIn
   post, submit early Sep 21. Build items it creates are in "Next up" (vendor
   pages, commons space); clips get batch-recorded Sep 10–11 as MP4s.
+- 2026-08-30 (reading circle): The circle pane got the editorial layout from
+  the approved shot — uppercase domain link over a display-size title, the
+  cover as a taped polaroid snap in the corner, WHY IT MATTERS, TALK ABOUT IT
+  question cards with take counts, threaded takes. One component
+  (`ReadingRoom.tsx`), so mock and live render it identically (verified both
+  via a driver eval that opens the pile; live needs
+  `sessionStorage["ourspaces:claim-dismissed"]="done"` to skip the claim gate).
+  Follow-up at 1440px: the pile h2 now shrinks instead of wrapping (font
+  clamp + nowrap, drop bar cedes width first) and the row grid caps the title
+  column at `min(290px, 48%)` so the description column never crushes to a
+  sliver.

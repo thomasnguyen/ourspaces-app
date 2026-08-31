@@ -30,6 +30,10 @@ availability · photoWall · linkCard · linkShelf · playlist · jokeRegistry �
 expenseSplit · itinerary · messageWall · quote · weather · sports ·
 backendLive.
 
+**Build room** (`buildroom.tsx`): linkPile · hotLinks · shipPost · roundtable.
+All four are pure and read one `BuildRoomFeed` prop; keepers reuse `note` with
+`data.title` + `data.pin`.
+
 **To build** (the only real engineering left, per PRD §8):
 
 - **paint** — tiny shared pixel canvas, both cursors coloring the same cells
@@ -38,13 +42,66 @@ backendLive.
 - **linkCard discussion layer** — the Firecrawl-powered URL → title, image,
   summary card is built. Add two OpenAI-generated questions and live upvotes
   for the full article-club beat. Distinct from `linkShelf`, which remains a
-  static prop list of links.
+  static prop list of links. *(The build room's pile now does the upvote +
+  discussion half — see §0.)*
 
 ---
 
-## 1. the crew — friend group (hero, `#7c5cff` violet)
+## 0. the build room — dev guild (`#/`, `#ff7c42` orange, `torch` theme)
 
-**Status: done.** Six members, the demo's home base. Don't add — protect.
+**Status: built.** Seven members, 1640×1080. The default demo space; the crew
+stays one click away in the rail.
+
+Desktop opens on a compact overview of all five zones. The shared mock/live
+camera fits the existing frame bounds between the tighter header and dock,
+capped at `.84`; focus still zooms to a widget and returns to that overview.
+Mobile keeps its existing stacked layout. The three pinned links use the local
+ceramic, violet-collage, and riso covers when Firecrawl has no image; scraped
+images and monograms remain the fallbacks for the rest.
+
+The problem it answers: a dev group drops links one at a time all week and ends
+up with 50, and 50 cards on a canvas fails. So it's an **attention funnel** —
+`50 raw links → 3–5 hot → 2–3 keeper takeaways`. Links live *inside* the pile;
+only hot links and keepers graduate into canvas objects.
+
+| Layer | Widgets on canvas |
+|---|---|
+| Identity | the orange field itself — one loud flat color, black objects |
+| Memory | **keepers** frame → pinned `note` takeaways promoted out of the pile |
+| Now | **the pile** frame → `linkPile` (47 links, fanned covers) · **hot now** frame → `hotLinks` (3 ranked rows) |
+| Talk | **roundtable** frame → `roundtable` (threaded, previews its own tail) |
+| Props | **shipping wall** frame → three `shipPost` polaroids |
+
+**The reading room** (`ReadingRoom.tsx`, on the shared `CanvasRoom` shell) is
+the pile's full-screen view — opened by the pile card *or its frame label*,
+since the frame has nothing to zoom into. An always-ready single-link drop bar
+(a multi-url paste still works), a **tag row** above the
+`all / new / hot / discussed / kept` filters (kinds first by count, then the
+top hosts — six chips, kind-tinted, `#host` for the rest; `tagFacets()` in
+`src/lib/linkRanking.ts`), links stitched into *runs* — consecutive drops by the same person within 30
+minutes share one header — first 15 then "show N more", and a reading circle
+down the right: cover, who dropped it, why it matters, two question threads,
+replies, `pin to hot`, `keep takeaway`. Rows carry a kind dot (article / video
+/ repo / docs / tool / discussion) and a 🔥 on the hot-ranked five. The tag is
+the *outer* cut: it narrows the pile first, so the new/hot/kept counts describe
+the tagged set, and the reading circle's own tag pills are buttons that set it
+(a rare tag picked there is carried into the row so it can be undone). Mock mode
+fakes the drop→enrich beat locally (`mockDropped` in `App.tsx`); live mode
+runs Firecrawl.
+
+Demo role: the volume story (47 links that don't wreck the canvas), Firecrawl
+on a live paste, and the **keep takeaway** climax — the note physically flies
+out of the room onto the canvas and lands with a squash.
+
+Data note: link content is fixtures (`src/data/buildroom.ts`); votes, pins,
+keeps and runtime drops persist into the pile widget's own `data`, so there is
+**no new Convex table**. Replies ride `messages` under `<pileId>::link:<linkId>`.
+
+## 1. the crew — friend group (`#7c5cff` violet)
+
+**Status: done.** Six members, and still the most complete space — the anatomy
+above was learned here. Don't add — protect. (It handed `#/` to the build room;
+`DEFAULT_SPACE_SLUG` in `src/lib/routes.ts` is the one place that decides.)
 
 | Layer | Widgets on canvas |
 |---|---|

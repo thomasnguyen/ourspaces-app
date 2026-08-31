@@ -2,7 +2,7 @@
 
 - **Project:** OurSpaces
 - **Event:** Convex All Gas Hackathon
-- **What it does:** Turns a friend group's chat into a live shared canvas of widgets (countdown, polls, potluck, notes) that stays in sync for everyone.
+- **What it does:** Group plans die in the group chat. OurSpaces gives a friend group a persistent shared canvas — countdowns, polls, potluck sheets, photo piles — that every member sees update live, cursor to cursor.
 - **Live app:** https://necessary-cobra-892.convex.site
 - **Repo:** https://github.com/thomasnguyen/ourspaces-app
 - **Frontend:** Convex static hosting
@@ -12,9 +12,63 @@
 - **Auth:** none
 - **AI models:** gpt-4o-mini (OpenAI API)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-08-30T05:37:11Z
+- **Last updated:** 2026-08-30T07:15:48Z
+
+## Highlights
+
+- **107 commits in 4 days**, all inside the hackathon window; every log entry
+  below is pinned to a commit hash so the story is checkable against history.
+- **22 widget types on one live multiplayer canvas** — countdowns, ballot
+  polls, potluck sign-up sheets, expense splits, itineraries, photo walls,
+  daily questions, and more — all driven by Convex realtime queries.
+- **Deep Convex surface, not a demo veneer:** presence with live cursors and a
+  cron that sweeps stale rows, file-storage-backed photo prints with notes on
+  the back, scheduled and internal mutations, HTTP actions for inbound email.
+- **All three sponsors doing real work:** Convex hosts the backend *and* the
+  static frontend, Firecrawl turns any pasted URL into a structured reading
+  card, and AgentMail provisions a real inbox per space with a live webhook.
+- **AI reading circles:** `gpt-4o-mini` reads a saved article and seeds two
+  conversation starters, each wired into the existing reactive message threads.
+- **Collaborative paint-by-number:** 50-region vector boards (traced Starry
+  Night and Great Wave postcards) where fills, palettes, and board-scoped
+  cursors sync live between two people coloring together.
+- **A handmade material language:** torn-paper notes with real fiber texture,
+  frosted-glass reading sheets, die-cut vinyl stickers — built as a design
+  system, not one-off CSS.
+
+## Try it in 60 seconds
+
+1. Open the [live app](https://necessary-cobra-892.convex.site) and claim a
+   name at the identity gate — no signup.
+2. You land in **the crew**: drag the birthday countdown, vote in the cake
+   poll, claim a potluck slot. Open the same space in a second tab and watch
+   cursors and votes move in realtime.
+3. Click the photo pile to enter the **memory wall** — a full-screen room of
+   physical prints; flip one over and leave a note on its back.
+4. Switch to **us two** in the rail and open the coloring postcard: a shared
+   paint-by-number room where both tabs fill regions live.
+
+## Convex + sponsor usage map
+
+| Feature | Where it lives | Commit |
+| --- | --- | --- |
+| Schema, tables, indexes | `convex/schema.ts` | `aa13bde` |
+| Realtime queries (`useLiveSpace`, `usePresence`, `useLivePoll`) | `src/live/` | `2b51882` |
+| Mutations (drag, resize, votes, claims) | `convex/widgets.ts`, `convex/votes.ts` | `6e7b213` |
+| Presence + live cursors | `convex/presence.ts`, `src/cursors/` | `93559a2`, `15a8e39` |
+| Crons (stale-presence sweep) | `convex/crons.ts` | `406367e` |
+| Actions + HTTP actions | `convex/firecrawl.ts`, `convex/http.ts` | `16fa04a` |
+| File storage (photo wall uploads) | `convex/photos.ts` | `f668e0b` |
+| Internal mutations + seeding | `convex/seed.ts` | `ce7f719`, `406367e` |
+| Static hosting component | `convex/convex.config.ts` | `fa9688e` |
+| AgentMail (per-space inboxes, inbound webhook) | `convex/agentmail.ts` | `16fa04a` |
+| Firecrawl (URL → structured reading card) | `convex/firecrawl.ts` | `ec07426`, `9a63ab7` |
+| OpenAI `gpt-4o-mini` (reading-circle starters) | `convex/questions.ts` | `8c20025` |
 
 ## Log
+
+All dates below are UTC (git author dates are US Pacific, so day-boundary
+entries can differ by one calendar day).
 
 ### 2026-08-27 - 074a936
 Scaffolded the Vite + React + TypeScript app with Tailwind v4 design tokens and the Convex client provider, and checked in the product spec, data model plan, design system, and agent instructions (`src/main.tsx`, `src/index.css`, `docs/`, `AGENTS.md`). Built with OpenAI Codex.
@@ -29,7 +83,7 @@ Added typed widget data shapes for notes, polls, countdowns, potlucks, daily que
 Added space and widget functions: list and create spaces; list, create, move, resize, bring-to-front, and update widgets; poll results. Convex features: queries, mutations (`convex/spaces.ts`, `convex/widgets.ts`, `convex/votes.ts`).
 
 ### 2026-08-27 - ce7f719
-Seeded the lived-in "the crew" space with six members, evergreen widgets, and a "Maya's bday" frame holding a countdown, cake poll, and potluck. Convex features: internal mutation (`convex/seed.ts`).
+Seeded the lived-in "the crew" space so the demo opens on a world, not a blank canvas: six members, evergreen widgets, and a "Maya's bday" frame holding a countdown, cake poll, and potluck. Convex features: internal mutation (`convex/seed.ts`).
 
 ### 2026-08-27 - 0c22827
 Built the app shell and the top-left-anchored canvas that renders widgets by type from a live query. Convex features: realtime queries via `useQuery` (`src/App.tsx`, `src/components/Canvas.tsx`, `src/widgets/`).
@@ -41,13 +95,13 @@ Added pointer-based drag and resize that commits positions to Convex mutations, 
 Added a local identity gate, member upserts, throttled presence cursors, live poll votes and potluck claims, a chat widget, and promote-to-canvas (`convex/members.ts`, `convex/presence.ts`, `convex/votes.ts`, `convex/messages.ts`).
 
 ### 2026-08-27 - 406367e
-Replaced the backend with the full model: messages with per-widget threads, presence with drag gestures and a cron that clears stale rows, space stats, and a data-driven seed for every starter space. Convex features: crons, scheduled functions, internal mutations, indexes (`convex/crons.ts`, `convex/presence.ts`, `convex/seed.ts`, `convex/stats.ts`).
+Built out the full backend model: messages with per-widget threads, presence with drag gestures and a cron that clears stale rows, space stats, and a data-driven seed for every starter space. Convex features: crons, scheduled functions, internal mutations, indexes (`convex/crons.ts`, `convex/presence.ts`, `convex/seed.ts`, `convex/stats.ts`).
 
 ### 2026-08-27 - 2b51882
 Added the live data layer: typed widget data, `useLiveSpace`/`usePresence`/`useLivePoll` hooks over realtime queries, cursor registry and styles (`src/live/`, `src/cursors/`, `src/data/types.ts`).
 
 ### 2026-08-27 - c9e04d4
-Added every widget type: sticker, frame, countdown, poll, potluck, chat, note, media, daily question, RSVP, decision, availability, photo wall, link shelf, playlist, joke registry, expense split, itinerary, message wall, quote, weather, sports (`src/widgets/`).
+Shipped all 22 widget types in one pass: sticker, frame, countdown, poll, potluck, chat, note, media, daily question, RSVP, decision, availability, photo wall, link shelf, playlist, joke registry, expense split, itinerary, message wall, quote, weather, sports (`src/widgets/`).
 
 ### 2026-08-27 - ed4cc9f
 Added the shell chrome: floating rail, action dock, widget picker, widget and space editor panels, canvas navigator and edge pan, widget threads, photo wall gallery, onboarding pills (`src/components/`).
@@ -168,7 +222,7 @@ Convex features: file storage, mutation, realtime queries (`convex/photos.ts`,
 Reworked the birthday demo widgets as distinct physical objects: a tear-off
 calendar, ballot poll, sign-up sheet, postal RSVP, receipt, highlighted scrap,
 window weather card, and shelf ledges. Added a generated low-contrast paper
-surface to the crew poll as a one-widget material prototype (`src/widgets/`,
+surface to the crew poll as a one-widget paper-surface trial (`src/widgets/`,
 `src/index.css`, `public/assets/textures/widget-paper-v1.jpg`).
 
 ### 2026-08-30 - 393467a
@@ -234,3 +288,27 @@ Replaced two stale file-storage test uploads in the live crew memory wall with
 the final Roof Dusk and Paint Night JPGs while preserving photo ids and note
 threads. Added an idempotent internal backfill and verified it on the personal
 dev deployment (`convex/photos.ts`).
+
+### 2026-08-30 - c35f26f
+Compacted Firecrawl web-post clippings from 420×360 to 340×280 while preserving
+their typography, so the cover reads as a short backing strip instead of an
+oversized card. Existing live cards at the legacy dimensions adopt the compact
+presentation on reload (`src/lib/widgetDefaults.ts`, `src/live/adapt.ts`).
+
+### 2026-08-30 - 15d3909
+Tightened the web-post clipping again to 300×250 without changing its type
+scale. Cards created at either previous default now adopt the smaller footprint
+on reload (`src/lib/widgetDefaults.ts`, `src/live/adapt.ts`).
+
+### 2026-08-30 - e089d52
+Generated three tactile cut-paper cover alternatives for the Firecrawl web-post
+card: amber/cobalt, teal/magenta, and violet/orange. Staged them beside the
+original on duplicate cards in the personal dev house canvas for a direct visual
+pick (`public/assets/link-card-collage-*.png`).
+
+### 2026-08-30 - e64be0b
+Added three deliberately different material directions for the Firecrawl
+web-post cover: fluorescent risograph ink, chunky woven textile, and handmade
+ceramic mosaic. Extended the personal dev house canvas and staged all seven
+compact cards together for a two-row comparison (`public/assets/link-card-*.png`,
+`convex/spaces.ts`).

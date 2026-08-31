@@ -11,6 +11,7 @@
 import type * as agentmail from "../agentmail.js";
 import type * as ai from "../ai.js";
 import type * as crons from "../crons.js";
+import type * as digest from "../digest.js";
 import type * as firecrawl from "../firecrawl.js";
 import type * as http from "../http.js";
 import type * as inbox from "../inbox.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   agentmail: typeof agentmail;
   ai: typeof ai;
   crons: typeof crons;
+  digest: typeof digest;
   firecrawl: typeof firecrawl;
   http: typeof http;
   inbox: typeof inbox;

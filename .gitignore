@@ -23,6 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 
+.env
 .env.local
 
 .private/
+
+# Conductor workspace scratch (screenshots, local playbooks, eval scripts)
+.context/
+
+# Local marketing / strategy drafts — do not ship in the public repo
+docs/post-skeletons.md
+docs/local/
+docs/*.local.md
+

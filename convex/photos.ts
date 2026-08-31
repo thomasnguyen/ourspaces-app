@@ -21,6 +21,13 @@ export const generateUploadUrl = mutation({
   handler: async (ctx) => await ctx.storage.generateUploadUrl(),
 });
 
+/** Uploaded bytes → a public url any widget can persist in its data. */
+export const storageUrl = mutation({
+  args: { storageId: v.id("_storage") },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { storageId }) => await ctx.storage.getUrl(storageId),
+});
+
 /* Each new print lands with its own tilt so the pile stays organic. */
 const PIN_TILTS = [-3, 2, -2, 3, -4, 4];
 
