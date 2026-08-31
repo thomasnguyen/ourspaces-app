@@ -24,6 +24,7 @@ export default defineSchema({
     tagline: v.optional(v.string()),
     inboxId: v.optional(v.string()), // AgentMail inbox — the space's own email
     inboxAddress: v.optional(v.string()),
+    askThreadId: v.optional(v.string()), // agent component thread for recap.ask
   })
     .index("by_name", ["name"])
     .index("by_slug", ["slug"])

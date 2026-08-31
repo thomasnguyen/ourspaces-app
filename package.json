@@ -11,6 +11,9 @@
     "deploy": "npx @convex-dev/static-hosting deploy"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.41",
+    "@ai-sdk/provider": "^4.0.9",
+    "@ai-sdk/provider-utils": "^5.0.34",
     "@convex-dev/action-cache": "^0.3.1",
     "@convex-dev/action-retrier": "^0.3.1",
     "@convex-dev/agent": "^0.7.1",
@@ -28,10 +31,12 @@
     "@convex-dev/workflow": "^0.4.6",
     "@convex-dev/workpool": "^0.4.10",
     "@firecrawl/firecrawl-convex": "^0.1.1",
+    "ai": "^7.0.85",
     "convex": "^1.45.0",
     "convex-helpers": "^0.1.123",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
