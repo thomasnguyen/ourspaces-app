@@ -11,6 +11,7 @@ import type { Id } from "./_generated/dataModel";
 import { completeJson } from "./ai";
 import schema from "./schema";
 import { pollTallies } from "./votes";
+import { messagesCounter } from "./stats";
 
 /** Follow-up chat rides the existing messages table, hidden from global chat. */
 const THREAD = "recap";
@@ -385,7 +386,7 @@ export const reply = internalMutation({
   args: { spaceId: v.id("spaces"), text: v.string() },
   returns: v.id("messages"),
   handler: async (ctx, { spaceId, text }) => {
-    return await ctx.db.insert("messages", {
+    const id = await ctx.db.insert("messages", {
       spaceId,
       widgetId: THREAD,
       userId: "recap",
@@ -395,6 +396,8 @@ export const reply = internalMutation({
       authorColor: "#C6F750",
       authorEmoji: "✦",
     });
+    await messagesCounter.inc(ctx);
+    return id;
   },
 });
 

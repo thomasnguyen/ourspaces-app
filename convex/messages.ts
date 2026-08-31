@@ -3,6 +3,7 @@ import { paginationOptsValidator, paginationResultValidator } from "convex/serve
 import { v } from "convex/values";
 import schema from "./schema";
 import type { DecisionData } from "./widgetData";
+import { messagesCounter, widgetsCounter } from "./stats";
 
 const messageValidator = schema.doc("messages");
 
@@ -51,11 +52,13 @@ export const sendMessage = mutation({
     const text = args.text.trim();
     if (!text) return null;
 
-    return await ctx.db.insert("messages", {
+    const id = await ctx.db.insert("messages", {
       ...args,
       text,
       createdAt: Date.now(),
     });
+    await messagesCounter.inc(ctx);
+    return id;
   },
 });
 
@@ -89,7 +92,7 @@ export const promoteMessage = mutation({
       0,
     );
 
-    return await ctx.db.insert("widgets", {
+    const id = await ctx.db.insert("widgets", {
       spaceId: message.spaceId,
       type: "decision",
       x,
@@ -108,5 +111,7 @@ export const promoteMessage = mutation({
       createdBy: userId,
       createdAt: Date.now(),
     });
+    await widgetsCounter.inc(ctx);
+    return id;
   },
 });

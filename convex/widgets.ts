@@ -2,6 +2,7 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import type { PotluckData } from "./widgetData";
 import schema from "./schema";
+import { widgetsCounter } from "./stats";
 
 /** Drives the canvas — every widget in a space, rendered by type (PRD §11). */
 export const listWidgets = query({
@@ -30,7 +31,9 @@ export const createWidget = mutation({
   },
   returns: v.id("widgets"),
   handler: async (ctx, args) => {
-    return await ctx.db.insert("widgets", { ...args, createdAt: Date.now() });
+    const id = await ctx.db.insert("widgets", { ...args, createdAt: Date.now() });
+    await widgetsCounter.inc(ctx);
+    return id;
   },
 });
 
@@ -49,6 +52,7 @@ export const deleteWidget = mutation({
   returns: v.null(),
   handler: async (ctx, { id }) => {
     await ctx.db.delete(id);
+    await widgetsCounter.dec(ctx);
     return null;
   },
 });

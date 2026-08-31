@@ -9,6 +9,7 @@ import {
 import type { Doc, Id } from "./_generated/dataModel";
 import { completeJson } from "./ai";
 import schema from "./schema";
+import { widgetsCounter } from "./stats";
 
 /**
  * The space's email brain. Every inbound email (convex/agentmail.ts webhook →
@@ -129,6 +130,7 @@ export const addLetter = internalMutation({
       createdBy: "mail",
       createdAt: Date.now(),
     });
+    await widgetsCounter.inc(ctx);
     await ctx.db.patch(eventId, { widgetId });
     return null;
   },
@@ -364,6 +366,7 @@ export const applyExpense = internalMutation({
         createdBy: "mail",
         createdAt: Date.now(),
       });
+      await widgetsCounter.inc(ctx);
       target = await ctx.db.get(newId);
       if (!target) return null;
     }
@@ -419,6 +422,7 @@ export const applyItinerary = internalMutation({
         createdBy: "mail",
         createdAt: Date.now(),
       });
+      await widgetsCounter.inc(ctx);
       target = await ctx.db.get(newId);
       if (!target) return null;
     }

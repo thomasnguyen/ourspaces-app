@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import schema from "./schema";
 import type { NoteData } from "./widgetData";
+import { widgetsCounter } from "./stats";
 
 const tone = v.union(
   v.literal("berry"),
@@ -130,7 +131,7 @@ export const ensureCozyColorWidget = mutation({
     const existing = widgets.find((widget) => widget.type === "cozyColor");
     if (existing) return existing._id;
 
-    return await ctx.db.insert("widgets", {
+    const id = await ctx.db.insert("widgets", {
       spaceId,
       type: "cozyColor",
       x: 630,
@@ -145,5 +146,7 @@ export const ensureCozyColorWidget = mutation({
       createdBy,
       createdAt: Date.now(),
     });
+    await widgetsCounter.inc(ctx);
+    return id;
   },
 });
