@@ -214,10 +214,9 @@ driver (`driver.mjs`, playwright-core + cached Chromium) for screenshotting
 the app in mock mode. `shot <route>` · `dock` (web post reading circle) ·
 `eval <file>`. See its SKILL.md for the port/mock-flag gotchas.
 
-`.claude/skills/eye-candy/` — `/eye-candy` skill: the hackathon override layer
-on `impeccable`. No accessibility findings (ARIA, screen readers, keyboard nav,
-WCAG ratios, alt text, touch targets); per-command overrides for `audit`,
-`critique`, `polish`, `harden`, `craft`, `adapt`; freed budget goes to motion,
-identity color, liveness. Restated in `PRODUCT.md` § Accessibility & Inclusion
-(impeccable prints that file every run) and `AGENTS.md`. Matching detector
-suppressions in `.impeccable/config.json`.
+`.claude/skills/eye-candy/` — **local-only (gitignored)**, alongside
+`PRODUCT.md` and `.impeccable/`. The design override layer on `impeccable` and
+the home of the house motion system: three easing curves, the six-step duration
+scale, stagger, FLIP, and which moments earn cinematic treatment. Read it
+before any UI work; skip it if a clone doesn't have it. Token names are
+mirrored publicly in `docs/tokens.md`.

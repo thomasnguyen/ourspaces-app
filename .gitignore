@@ -36,3 +36,17 @@ docs/post-skeletons.md
 docs/local/
 docs/*.local.md
 
+# Strategy + demo-positioning docs. The public repo shows the product and how
+# it's built; how we plan to present it to a hackathon audience stays local.
+PRODUCT.md
+docs/ourspaces-prd-v0.6.md
+docs/vibeapps-listing.md
+
+# Internal agent process: the design override layer and its critique output.
+.claude/skills/eye-candy/
+.agents/skills/ourspaces-hackathon/
+.impeccable/
+
+# MCP server config — carries an API key in a header. Never commit.
+.mcp.json
+

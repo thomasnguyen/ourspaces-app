@@ -441,11 +441,10 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Next up
 
-- vibeapps listing description is drafted in `docs/vibeapps-listing.md` —
-  problem-first, "three rooms, three real problems" up top. Fill the
-  [bracketed] placeholders (real-event receipts, commons counts, day/commit
-  totals) at submit time (Sep 21); cut any line whose feature didn't land
-  (email→action routing, commons).
+- vibeapps listing description is drafted in `docs/vibeapps-listing.md`
+  (**local-only / gitignored** — submission copy doesn't ship in the public
+  repo). Fill the [bracketed] placeholders at submit time (Sep 21) and cut any
+  line whose feature didn't land.
 - **Prod mail cutover** — the one thing between "works" and "works in the
   demo": second AgentMail webhook at `necessary-cobra-892.convex.site`, key +
   secret with `--prod`, then `setSpaceInbox` for the three spaces. Do not
@@ -479,6 +478,13 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- 2026-08-30 (night): **The GitHub repo is public, so tracked docs describe the
+  product and how it's built — nothing about how we plan to present it.**
+  `PRODUCT.md`, `docs/ourspaces-prd-v0.6.md`, `docs/vibeapps-listing.md`, the
+  `/eye-candy` skill and `.impeccable/` are now gitignored (still on disk, still
+  read by agents). Same sweep untracked `.mcp.json`, which carried a live
+  AgentMail key in a header — it was never pushed, but the key should be
+  rotated. Doc-map's bottom table is the list; when in doubt, write it local.
 - 2026-08-30 (night): In the reading room, **tags cut before state**. The
   filter row is kinds-first (a stable vocabulary the room learns) plus the
   loudest hosts, capped at six so it stays one line; `new / hot / discussed /
