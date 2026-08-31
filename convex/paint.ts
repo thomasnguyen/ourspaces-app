@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import schema from "./schema";
+import type { NoteData } from "./widgetData";
 
 const tone = v.union(
   v.literal("berry"),
@@ -115,13 +116,14 @@ export const ensureCozyColorWidget = mutation({
       .take(100);
     await ctx.db.patch(spaceId, { canvasW: 1260, canvasH: 980 });
     for (const widget of widgets) {
-      if (widget.type === "note" && String(widget.data?.text ?? "").includes("airport pickup")) {
+      if (widget.type === "note" && (widget.data as NoteData).text.includes("airport pickup")) {
         await ctx.db.patch(widget._id, { x: 650, y: 600 });
       }
-      if (widget.type === "quote" && String(widget.data?.text ?? "").includes("same moon")) {
+      const fallbackData = widget.data as Record<string, unknown>;
+      if (widget.type === "quote" && String(fallbackData.text ?? "").includes("same moon")) {
         await ctx.db.patch(widget._id, { x: 956, y: 602, w: 250 });
       }
-      if (widget.type === "sticker" && widget.data?.stickerId === "double-smile") {
+      if (widget.type === "sticker" && fallbackData.stickerId === "double-smile") {
         await ctx.db.patch(widget._id, { x: 1032, y: 782 });
       }
     }

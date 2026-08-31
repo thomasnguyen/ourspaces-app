@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import type { PotluckData } from "./widgetData";
 
 /** Drives the canvas — every widget in a space, rendered by type (PRD §11). */
 export const listWidgets = query({
@@ -53,16 +54,17 @@ export const claimItem = mutation({
   handler: async (ctx, args) => {
     const widget = await ctx.db.get(args.widgetId);
     if (!widget) throw new Error("Widget not found");
-    const items = Array.isArray(widget.data?.items) ? widget.data.items : [];
-    const nextItems = items.map((item: Record<string, unknown>) => {
+    const potluckData = widget.data as PotluckData;
+    const items = Array.isArray(potluckData?.items) ? potluckData.items : [];
+    const nextItems = items.map((item) => {
       if (item.name !== args.itemName) return item;
       if (item.claimed && item.byUserId === args.claimantUserId) {
         const { byUserId: _byUserId, by: _by, claimed: _claimed, ...rest } = item;
-        return { ...rest, claimed: false, by: undefined, byUserId: undefined };
+        return { ...rest, claimed: false };
       }
       return { ...item, claimed: true, by: args.claimantName, byUserId: args.claimantUserId };
     });
-    await ctx.db.patch(widget._id, { data: { ...widget.data, items: nextItems } });
+    await ctx.db.patch(widget._id, { data: { ...potluckData, items: nextItems } });
   },
 });
 

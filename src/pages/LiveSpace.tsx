@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { useAction, useMutation } from "convex/react";
-import { useQuery } from "convex-helpers/react/cache";
+import { useQuery, usePaginatedQuery } from "convex-helpers/react/cache";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock } from "../components/ActionDock";
@@ -323,7 +323,18 @@ export function LiveSpacePage({
     { x: 72, y: 72 },
   );
   const liveCursors = presence.peers;
-  const allMessages = useQuery(api.messages.listBySpace, space ? { spaceId: space._id } : "skip");
+  // Real cursor pagination server-side; the page auto-loads-more so the demo
+  // still sees full space history without an infinite-scroll UI.
+  const messagesPage = usePaginatedQuery(
+    api.messages.listBySpace,
+    space ? { spaceId: space._id } : "skip",
+    { initialNumItems: 200 },
+  );
+  useEffect(() => {
+    if (messagesPage.status === "CanLoadMore") messagesPage.loadMore(200);
+  }, [messagesPage.status, messagesPage.loadMore]);
+  const allMessages =
+    messagesPage.status === "LoadingFirstPage" ? undefined : messagesPage.results;
   const paintRows = useQuery(api.paint.listBySpace, space ? { spaceId: space._id } : "skip");
   const sparkQuestions = useAction(api.questions.sparkQuestions);
   /** Which web post conversation starter the thread dock is answering. */
