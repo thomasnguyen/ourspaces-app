@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import {
   action,
   internalAction,
@@ -7,6 +7,12 @@ import {
   type ActionCtx,
 } from "./_generated/server";
 import { completeJson } from "./ai";
+import { ActionRetrier } from "@convex-dev/action-retrier";
+
+// action-retrier: AgentMail send is a real REST call to a third-party API —
+// retry transient failures with backoff instead of losing a week's digest
+// to one blip.
+const retrier = new ActionRetrier(components.actionRetrier, { maxFailures: 2 });
 
 /**
  * The weekly digest: once a week each mail-enabled space writes back.
@@ -86,13 +92,23 @@ async function digestFor(
     `reply to this email and it lands on the canvas.`,
   ].join("\n");
 
-  await ctx.runAction(internal.agentmail.sendEmail, {
+  const runId = await retrier.run(ctx, internal.agentmail.sendEmail, {
     spaceId: space._id,
     to,
     subject,
     text,
   });
-  return `${slug}: sent to ${to.length}`;
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const status = await retrier.status(ctx, runId);
+    if (status.type === "completed") {
+      await retrier.cleanup(ctx, runId);
+      if (status.result.type === "success") return `${slug}: sent to ${to.length}`;
+      const reason = status.result.type === "failed" ? status.result.error : "canceled";
+      return `${slug}: send failed — ${reason.slice(0, 120)}`;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  return `${slug}: send timed out`;
 }
 
 /** Cron target: digest every mail-enabled showcase space. */
