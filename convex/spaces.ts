@@ -23,7 +23,7 @@ async function deleteSpaceBySlug(ctx: MutationCtx, slug: string) {
     await ctx.db.delete(widget._id);
   }
 
-  for (const table of ["messages", "members", "presence", "paintMarks", "emailEvents"] as const) {
+  for (const table of ["messages", "members", "presence", "paintMarks", "emailEvents", "recaps"] as const) {
     for (const row of await ctx.db
       .query(table)
       .withIndex("by_space", (q) => q.eq("spaceId", space._id))

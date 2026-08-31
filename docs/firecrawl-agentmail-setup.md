@@ -1,9 +1,9 @@
 # Firecrawl + AgentMail setup
 
-This repo already installs and registers both Convex components. You only need **API keys on the Convex deployment** (not `.env.local`).
+You only need **API keys on the Convex deployment** (not `.env.local`).
 
-- Firecrawl → pasted URLs become web-post cards (`convex/firecrawl.ts`)
-- AgentMail → each space gets an inbox (`convex/agentmail.ts`)
+- Firecrawl → pasted URLs become web-post cards (`convex/firecrawl.ts`, Convex component)
+- AgentMail → each space gets an inbox (`convex/agentmail.ts`, **plain REST — see below**)
 
 Verified 2026-08-29 against:
 
@@ -41,38 +41,54 @@ Web-post scrape (`scrapeLink`) does **not** need the webhook secret. This app mo
 
 ## AgentMail
 
-1. Open the [AgentMail Console](https://console.agentmail.to), sign up / log in.
-2. Left sidebar → **API Keys** → **Create New API Key**. Copy it immediately (shown once). It starts with `am_`.
-3. Put it on Convex:
+**We do NOT use `@agentmail/convex` anymore.** Version 0.1.0 has a real bug:
+its component actions (`createInbox`, send, …) never resolve through
+`ctx.runAction` from app code (its nested workpool subcomponents break the
+reference), and its `convex.config` declares no `env` schema so the API key
+needed a hand-patch in `node_modules`. Removed 2026-08-30; `convex/agentmail.ts`
+now calls the REST API (`https://api.agentmail.to/v0`) directly and
+`convex/http.ts` verifies the svix webhook by hand. Nothing to reinstall.
+
+Setup:
+
+1. [AgentMail Console](https://console.agentmail.to) → **API Keys** → create an
+   **unrestricted / org-scoped** key (a scoped key without `inbox_read` /
+   `inbox_create` / `message_send` breaks everything — this bit us, see status).
+2. `npx convex env set AGENTMAIL_API_KEY am_your_key`
+3. Webhook (Console → **Webhooks → Create**): `message.received` →
+   `https://<deployment>.convex.site/api/agentmail/webhook` (the `/api` prefix is
+   required). Then `npx convex env set AGENTMAIL_WEBHOOK_SECRET whsec_…`.
+4. Create the three showcase inboxes:
 
 ```bash
-npx convex env set AGENTMAIL_API_KEY am_your_key
+npx convex run agentmail:clearStubInboxes        # only if test-* stubs were set
+npx convex run agentmail:ensureShowcaseInboxes   # crew→thecrew@ couple→ustwo@ buildroom→buildroom@
 ```
 
-4. Register the inbound webhook (required for mail to hit the canvas).
+5. Confirm: mail one of the addresses. `emailEvents` gets a row and the router
+   (`convex/inbox.ts`) mutates the canvas: couple → letter widget, buildroom →
+   link pile drop + Firecrawl enrich, crew → AI files it (expense/itinerary/
+   create/unfiled envelope).
 
-   Console → **Webhooks** → **Create Webhook**, or CLI:
+Free tier (no card): 3 inboxes, 3,000 emails/month — exactly our three spaces.
 
-```bash
-npx convex env get CONVEX_SITE_URL   # or copy from the Convex dashboard
-# URL must include /api — this app serves HTTP actions under /api
+### Status as of 2026-08-30 (evening)
 
-agentmail webhooks create \
-  --url https://<deployment>.convex.site/api/agentmail/webhook \
-  --event-types message.received
-```
+**Working (verified on dev via self-signed webhook posts):**
 
-   Subscribe at least to `message.received`. Copy the signing secret (`whsec_…`) from the new webhook (or `agentmail webhooks get --webhook-id <id>`).
+- Full inbound pipeline: signed webhook → `emailEvents` → per-space router.
+  Letter landed in us two; a fake Venmo receipt cleared Jules' exact $42 tahoe
+  IOU on the crew board (AI routing); an emailed HN link dropped into the build
+  room pile and came back Firecrawl-enriched.
+- Weekly digest (`convex/digest.ts`, Friday-16:00-UTC cron + `digest:sendNow`)
+  composes correctly and reaches the AgentMail send call.
 
-5. Put the secret on Convex (required for `handleWebhook`):
-
-```bash
-npx convex env set AGENTMAIL_WEBHOOK_SECRET whsec_your_secret
-```
-
-6. Confirm: call `ensureInbox` for a space, then send mail to that `@agentmail.to` address. A row should land in `emailEvents`.
-
-Free tier (no card): 3 inboxes, 3,000 emails/month. Custom domains need a paid plan; default is `@agentmail.to`.
+**Blocked on ONE thing — the API key is too scoped.** The current
+`AGENTMAIL_API_KEY` (dev) gets `403 missing_permission` on even `inbox_read`,
+and a key cannot mint a stronger key. A human must create an
+unrestricted/org-scoped key in the console, then run step 2 + 4 above. The dev
+spaces currently carry `test-*` inbox stubs so the pipeline could be tested;
+clear them first (step 4).
 
 ---
 

@@ -19,7 +19,7 @@ are not.
 | 1103–1208 | Navigation + panel openers (`selectSpace`, `openPicker`, `openWidgetEditor`, `saveSpace`) |
 | 1221–1394 | Widget CRUD/layout (`addWidget`, `moveWidget`, drag handlers, frame layout) |
 | 1396–1580 | Widget interactions (poll/wheel/rsvp/dailyQ), threads, delete/undo |
-| 1582–1638 | Recap ("catch me up") + sound toggle |
+| 1582–1670 | Recap ("catch me up") + mock follow-up chat + sound toggle |
 | 1640–1717 | Route early-returns → pages (live/join/space → `LiveSpacePage`, home → `(Live)BlockPage`) |
 | 1719–2130 | Mock-mode derived data + the big JSX render (`Rail`, `Canvas` ~1921, panels, docks, toasts) |
 
@@ -31,19 +31,28 @@ are not.
 `WidgetCard.tsx` (widget shell: drag/resize/thread chip) · `WidgetEditorPanel.tsx`
 (per-type edit forms) · `WidgetPicker.tsx` · `WidgetThreadDock.tsx` ·
 `GlobalChatPanel.tsx` · `ThreadContent.tsx` (messages + composer + promote) ·
-`Rail.tsx` (space rail) · `ActionDock.tsx` (bottom dock + recap trigger) ·
+`Rail.tsx` (space rail) · `ActionDock.tsx` (bottom dock + catch-me-up panel:
+briefing, ↻ refresh, follow-up composer) ·
 `CanvasNavigator.tsx` (minimap) · `CanvasEdgePan.tsx` · `SpaceEditorPanel.tsx`
 (theme editor) · `ClaimCard.tsx` (identity claim) · `FirstRunSticky.tsx` ·
 `GhostCanvas.tsx` · `MemberFace.tsx` · `PhotoWallGallery.tsx` · `WelcomePill.tsx` ·
-`LinkQuestionStrip.tsx` (web post conversation starters in the thread dock)
+`LinkQuestionStrip.tsx` (web post conversation starters in the thread dock) ·
+`CanvasRoom.tsx` (shared full-screen `<dialog>` shell: grows out of the card
+that opened it via `--room-origin-*`, shrinks back on close) ·
+`ReadingRoom.tsx` (the pile's full view — single-link drop bar, filters,
+per-person runs, dense rows, reading circle) · `ShipRoom.tsx` (a ship post's
+full view)
 
 **pages/** — `LiveSpace.tsx` (live canvas) · `Block.tsx` (mock `#/home`) ·
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
 `CursorLab.tsx` · `labs.css`
 
-**widgets/** — `core.tsx` (sticker, frame, countdown, poll, note…) ·
+**widgets/** — `buildroom.tsx` (the build room's four: `linkPile`, `hotLinks`,
+`shipPost`, `roundtable`; all pure, fed one `BuildRoomFeed` prop threaded
+Canvas → WidgetCard) · `core.tsx` (sticker, frame, countdown, poll, note…) ·
 `extras.tsx` (rsvp, dailyQ, availability, Firecrawl link card, link shelf, playlist, expense,
-itinerary, quote, weather, sports…) · `CozyColorWidget.tsx` (full-screen
+itinerary, quote, weather, sports, letter — kraft envelope that unfolds; buttons
+inside so WidgetCard's drag capture doesn't eat the click…) · `CozyColorWidget.tsx` (full-screen
 paint-by-number game on an inline SVG board: 50 closed vector regions fill via
 CSS `--paint-*` vars, numbers live in the SVG, tapping a dim number switches
 color; two live palette presets; mock-local or Convex-backed region fills) ·
@@ -68,10 +77,23 @@ switches it back) ·
 **lib/** — `routes.ts` (hash + invite URLs) · `widgetDefaults.ts`
 (`WIDGET_BLUEPRINTS`) · `widgetLabels.ts` · `widgetThreads.ts` · `blockZoom.ts` ·
 `entrance.ts` · `onboarding.ts` · `sounds.ts` · `radio.ts` (SomaFM singleton) ·
-`backendCounts.ts` · `linkQuestions.ts` (web post question threads:
+`backendCounts.ts` · `canvasSpacePan.ts` (hold-Space + drag pans
+`.space-scroll`, Figma-style; used by App.tsx + LiveSpace.tsx) ·
+`linkRanking.ts` (Hot Now's `pinned → voteCount×3 + replyCount×2 → newest`,
+pile counts, per-domain tile tones) · `buildRoomFeed.ts` (link state + thread-id
+namespacing; `pileLinks()` folds the pile widget's `data.linkState`/`data.dropped`
+over the fixtures) · `buildRoomPresentation.ts` (desktop overview scale from
+frame bounds + viewport padding, capped at `.84`; pinned local cover fallback) ·
+`frameMembership.ts` (`widgetIsInsideFrame`, moved out of
+`Canvas.tsx`; `pileInsideFrame` makes the pile's frame open the room instead of
+zooming) · `flipLanding.ts` (`flyWidgetIn` — the kept-takeaway arc) ·
+`routes.ts` also exports `DEFAULT_SPACE_SLUG` (`#/` → `buildroom`) ·
+`linkQuestions.ts` (web post question threads:
 `<widgetId>::q:<id>` ride the normal message pipes; canned fallback generator)
 
-**data/** — `types.ts` (`Widget`/`Space`) · `spaces.ts` (seeded spaces: crew,
+**data/** — `buildroom.ts` (47 seeded links, dropped one at a time — `RAW`
+entries expand into `BUILD_ROOM_LINKS` with jitter-staggered `droppedAt`;
+covers are deliberately absent, rows render a flat monogram tile) · `types.ts` (`Widget`/`Space`) · `spaces.ts` (seeded spaces: crew,
 couple, house, league) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes.ts` ·
 `templates.ts` (`WIDGET_CATALOG`) · `stickers.ts` (stable sticker ids → die-cut
 character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
@@ -126,15 +148,24 @@ generated vector board; kept for history only.
 
 ## convex/
 
-`schema.ts` (spaces, members, widgets, messages, votes, presence; frames are
+`schema.ts` (spaces, members, widgets, messages, votes, recaps, presence; frames are
 widgets) · `spaces.ts` · `widgets.ts` (CRUD/move/resize) · `messages.ts`
 (per-widget threads) · `votes.ts` · `presence.ts` (cursors + gestures, TTLs) ·
-`stats.ts` (live counts) · `seed.ts` · `crons.ts` (presence cleanup) ·
-`http.ts` + `agentmail.ts` (webhook `/api/agentmail/webhook`, per-space inbox) ·
+`stats.ts` (live counts) · `seed.ts` · `crons.ts` (presence cleanup + daily recap) ·
+`http.ts` (hand-rolled svix-verified webhook `/api/agentmail/webhook`) ·
+`agentmail.ts` (AgentMail via plain REST — NOT the broken component: ensure/clear
+inboxes, send, `onMessageReceived` → `emailEvents` → router) ·
+`inbox.ts` (per-space email router: couple→letter widget, buildroom→pile drop +
+Firecrawl enrich, default→AI files into expense/itinerary/create/unfiled) ·
+`digest.ts` (weekly space→members email via recap snapshot; recipients = past
+senders; Fri cron + `sendNow`) ·
 `firecrawl.ts` (`scrapeLink` action) · `questions.ts` (`sparkQuestions`: OpenAI →
 2 conversation starters on a link card, canned fallback without a key) ·
+`ai.ts` (Cloudflare `ai-proxy` first, OpenAI fallback) ·
+`recap.ts` (`generate` / `ask` / daily `generateAll`: catch-me-up from a
+board snapshot; follow-up chat on `messages.widgetId === "recap"`) ·
 `paint.ts` (reactive numbered-region fills + couple-room widget backfill) ·
-`photos.ts` (`generateUploadUrl` + `addPhoto`: file-storage upload prepended to
+`photos.ts` (`generateUploadUrl` + `storageUrl` + `addPhoto`: file-storage upload prepended to
 a photoWall widget's `data.photos`, becomes the pile cover;
 `backfillCrewMemorySources` replaces the two old test-upload sources without
 changing their ids/note threads) ·
@@ -146,9 +177,8 @@ Tokens `@theme` (lines 4–27) → base (~1–1000) → space entrance (~1048) �
 per-widget sections (~1670–6300) → chrome: picker ~6305, threads ~7047,
 navigator ~7357, chat drawer ~8313, action dock ~9744, recap ~9951 → pages:
 block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
-(~11482+), ending with the "SPACE HEADER — SCROLL-LINKED FADE" section
-(`--header-scroll-fade` var set by the space-scroll onScroll handlers in
-App.tsx/LiveSpace.tsx). New CSS goes in a new banner section at the end.
+(~11482+), ending with the "CATCH ME UP — live recap + follow-up" section. New CSS
+goes in a new banner section at the end.
 
 ## scripts/
 
@@ -166,6 +196,10 @@ Source scans live in `.context/art-candidates/` (Wikimedia, PD). Example:
 `node scripts/trace-artwork.mjs in.jpg out 7 560 --id=starry --title="the starry night" --credit="van gogh, 1889"`
 
 ## Agent tooling
+
+`.agents/skills/ourspaces-docs/` + `.claude/skills/ourspaces-docs/` —
+`/ourspaces-docs` skill: read `docs/doc-map.md`, then at most 1–2 files.
+Public map; local drafts stay gitignored.
 
 `.claude/skills/run-ourspaces/` — `/run-ourspaces` skill: headless browser
 driver (`driver.mjs`, playwright-core + cached Chromium) for screenshotting

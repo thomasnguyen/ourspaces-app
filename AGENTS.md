@@ -1,8 +1,7 @@
 # Agent instructions — OurSpaces (Convex All Gas hackathon)
 
 Everyday app for friend groups: a group chat becomes a live shared canvas.
-Convex hackathon entry; deadline Sep 22 2026. Spec: `docs/ourspaces-prd-v0.6.md`.
-Data model: `docs/data-model-plan.md`. Design: `DESIGN.md`, `docs/tokens.md`.
+Convex hackathon entry; deadline Sep 22 2026. Doc index: `docs/doc-map.md`.
 Plan and cut order: `.private/PLAN.md` (local only).
 
 ## Rules
@@ -27,11 +26,18 @@ Plan and cut order: `.private/PLAN.md` (local only).
 - **Don't ask permission.** For reversible changes, just do it and report after.
   Only stop for destructive/irreversible actions or genuine scope changes.
 - **Run `npm run build` before ending a turn.** It's the only check.
+- **Read `docs/doc-map.md` before opening other docs.** Open only the 1–2
+  files it names for the task. Update it when you add, move, or retire a doc.
+  Local-only paths stay gitignored — never commit them.
 - **Read `docs/code-map.md` before searching the codebase.** Update it when you
   add, move, or split files or major `App.tsx` sections.
-- **End of session: update `docs/todos.md`** (works now / broken / next up /
-  decisions made in chat). `hackathon.md` stays the backward-looking log
-  (`/hackathon` skill).
+- **Update `docs/` as you go, not just at the end.** After each working step
+  that lands a feature, moves files, or changes a decision, update
+  `docs/todos.md` (works now / broken / next up / decisions made in chat) and
+  whichever doc the map points at — `docs/code-map.md` for structure,
+  `docs/spaces-and-widgets.md` for a space or widget. Sessions get cut off
+  mid-build; docs are the handoff. `hackathon.md` stays the backward-looking
+  log (`/hackathon` skill).
 - **Splitting `App.tsx` / `index.css` is allowed and encouraged** when a section
   gets hairy — extract to `src/components` or `src/lib`, keep it hacky, update
   the code map.

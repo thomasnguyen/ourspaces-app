@@ -146,6 +146,22 @@ export const getSpaceBySlug = internalQuery({
       .unique(),
 });
 
+/** Remove the `test-*` inbox stubs so ensureShowcaseInboxes can create real ones. */
+export const clearStubInboxes = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const spaces = await ctx.db.query("spaces").collect();
+    const cleared: string[] = [];
+    for (const space of spaces) {
+      if (space.inboxId?.startsWith("test-")) {
+        await ctx.db.patch(space._id, { inboxId: undefined, inboxAddress: undefined });
+        cleared.push(space.slug ?? space.name);
+      }
+    }
+    return cleared;
+  },
+});
+
 export const setSpaceInbox = internalMutation({
   args: { spaceId: v.id("spaces"), inboxId: v.string(), address: v.string() },
   handler: async (ctx, { spaceId, inboxId, address }) => {

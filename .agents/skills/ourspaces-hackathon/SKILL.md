@@ -32,8 +32,9 @@ boring one that works 10/10.
 
 ## Key docs
 
+Start at `docs/doc-map.md` and open only what it names. Do not ingest the
+whole `docs/` folder. `/ourspaces-docs` is the skill for this.
+
 - `AGENTS.md` — agent instructions
-- `CLAUDE.md` — full build context, stack, design language
-- `PRODUCT.md` — product register for design commands (impeccable)
-- `DESIGN.md` — visual system
 - `docs/ourspaces-prd-v0.6.md` — product spec
+- `DESIGN.md` / `docs/the-feel.md` — visual system + taste
