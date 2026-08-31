@@ -36,6 +36,20 @@ export const listBySpace = query({
       .paginate(paginationOpts),
 });
 
+// Full-text search over a space's chat history — the "search_text" index
+// scores by the "text" field, scoped to one space via the filter field.
+export const search = query({
+  args: { spaceId: v.id("spaces"), query: v.string() },
+  returns: v.array(messageValidator),
+  handler: async (ctx, { spaceId, query: text }) => {
+    if (!text.trim()) return [];
+    return await ctx.db
+      .query("messages")
+      .withSearchIndex("search_text", (q) => q.search("text", text).eq("spaceId", spaceId))
+      .take(20);
+  },
+});
+
 export const sendMessage = mutation({
   args: {
     spaceId: v.id("spaces"),

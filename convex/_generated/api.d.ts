@@ -29,6 +29,7 @@ import type * as recap from "../recap.js";
 import type * as seed from "../seed.js";
 import type * as spaces from "../spaces.js";
 import type * as stats from "../stats.js";
+import type * as streaming from "../streaming.js";
 import type * as votes from "../votes.js";
 import type * as widgetData from "../widgetData.js";
 import type * as widgets from "../widgets.js";
@@ -61,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   spaces: typeof spaces;
   stats: typeof stats;
+  streaming: typeof streaming;
   votes: typeof votes;
   widgetData: typeof widgetData;
   widgets: typeof widgets;
