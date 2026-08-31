@@ -26,6 +26,7 @@ import type * as questions from "../questions.js";
 import type * as rag from "../rag.js";
 import type * as rateLimits from "../rateLimits.js";
 import type * as recap from "../recap.js";
+import type * as roomPresence from "../roomPresence.js";
 import type * as seed from "../seed.js";
 import type * as spaces from "../spaces.js";
 import type * as stats from "../stats.js";
@@ -59,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   rag: typeof rag;
   rateLimits: typeof rateLimits;
   recap: typeof recap;
+  roomPresence: typeof roomPresence;
   seed: typeof seed;
   spaces: typeof spaces;
   stats: typeof stats;

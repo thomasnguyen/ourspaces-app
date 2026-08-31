@@ -1,7 +1,19 @@
 import { DEFAULT_SPACE_SLUG } from "../lib/routes";
 import type { CSSProperties } from "react";
+import { useQuery } from "convex-helpers/react/cache";
+import { api } from "../../convex/_generated/api";
 import { SPACES, SPACES_BY_ID } from "../data/spaces";
 import type { SpaceMeta } from "../data/types";
+
+/** presence component: "· N here" in the tooltip, separate from the
+ * hand-rolled canvas presence system — see convex/roomPresence.ts. Its own
+ * component (not a hook called in a .map()) so each space's subscription
+ * is an independent instance, not a variable-length hook call. */
+function OnlineCountSuffix({ spaceId }: { spaceId: string }) {
+  const count = useQuery(api.roomPresence.onlineCountForSpace, { spaceId }) ?? 0;
+  if (count <= 0) return null;
+  return <> · {count} here</>;
+}
 
 const SPACE_COVERS: Record<string, string> = {
   crew: "/assets/the-crew-snapshot-thumb.jpg",
@@ -60,6 +72,7 @@ export function Rail({
               <span className="space-tooltip">
                 {displaySpace.name}
                 {displaySpace.preview ? ` · ${displaySpace.preview}` : ""}
+                {hasSpace && <OnlineCountSuffix spaceId={space.id} />}
               </span>
             </div>
           );
