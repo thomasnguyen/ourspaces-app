@@ -1,4 +1,6 @@
 import { env } from "./_generated/server";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import type { LanguageModelV4 } from "@ai-sdk/provider";
 
 /** RoomDone's shared Cloudflare Worker — OpenAI-shaped /v1 in front of Workers AI. */
 const PROXY_CHAT_MODEL = "@cf/openai/gpt-oss-120b";
@@ -32,6 +34,22 @@ export function chatTarget(): ChatTarget | null {
     };
   }
   return null;
+}
+
+/** Same chat backend as completeJson, wrapped as an AI SDK model for the
+ * agent component. Never throws at construction — an unconfigured target
+ * fails at call time the same way completeJson already degrades. */
+export function languageModel(): LanguageModelV4 {
+  const target = chatTarget();
+  const provider = createOpenAICompatible({
+    baseURL: (target?.url ?? "https://api.openai.com/v1/chat/completions").replace(
+      /\/chat\/completions$/,
+      "",
+    ),
+    name: target?.viaProxy ? "ourspaces-proxy" : "openai",
+    apiKey: target?.token ?? "unconfigured",
+  });
+  return provider(target?.model ?? OPENAI_CHAT_MODEL);
 }
 
 export async function completeJson(args: {

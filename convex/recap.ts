@@ -14,6 +14,8 @@ import { pollTallies } from "./votes";
 import { messagesCounter } from "./stats";
 import { rateLimiter } from "./rateLimits";
 import { Workpool } from "@convex-dev/workpool";
+import { z } from "zod";
+import { askAgent } from "./agent";
 
 // workpool: bound the daily recap fan-out to a few concurrent LLM calls
 // instead of an unbounded Promise.all across every space at once.
@@ -459,6 +461,27 @@ export const generateAll = internalAction({
   },
 });
 
+export const getAskThreadId = internalQuery({
+  args: { spaceId: v.id("spaces") },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { spaceId }) => (await ctx.db.get(spaceId))?.askThreadId ?? null,
+});
+
+export const setAskThreadId = internalMutation({
+  args: { spaceId: v.id("spaces"), threadId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { spaceId, threadId }) => {
+    await ctx.db.patch(spaceId, { askThreadId: threadId });
+    return null;
+  },
+});
+
+const askReplySchema = z.object({
+  reply: z.string(),
+  widgetId: z.string().optional(),
+  messageId: z.string().optional(),
+});
+
 export const ask = action({
   args: { spaceId: v.id("spaces"), question: v.string() },
   returns: askPayload,
@@ -469,11 +492,28 @@ export const ask = action({
   }> => {
     await rateLimiter.limit(ctx, "recapAsk", { key: spaceId, throws: true });
     const snap: Snapshot = await ctx.runQuery(internal.recap.snapshot, { spaceId });
-    const generated = (await askOpenAi("ask", snap, question).catch(() => null)) as {
-      reply: string;
-      widgetId?: string;
-      messageId?: string;
-    } | null;
+
+    let threadId = await ctx.runQuery(internal.recap.getAskThreadId, { spaceId });
+    if (!threadId) {
+      const created = await askAgent.createThread(ctx, {});
+      threadId = created.threadId;
+      await ctx.runMutation(internal.recap.setAskThreadId, { spaceId, threadId });
+    }
+
+    const generated = await askAgent
+      .generateObject(
+        ctx,
+        { threadId },
+        {
+          schema: askReplySchema,
+          prompt:
+            `Space: ${snap.space}\nBoard: ${JSON.stringify(snap.widgets).slice(0, 2500)}\n` +
+            `Chat: ${JSON.stringify(snap.chat).slice(0, 1000)}\n\nQuestion: ${question}`,
+        },
+      )
+      .then((result) => result.object)
+      .catch(() => null);
+
     const answer = generated ?? cannedAsk(snap, question);
     await ctx.runMutation(internal.recap.reply, { spaceId, text: answer.reply });
     return answer;
