@@ -7,18 +7,18 @@
 - **Repo:** https://github.com/thomasnguyen/ourspaces-app
 - **Frontend:** Convex static hosting
 - **Convex deployment:** https://necessary-cobra-892.convex.cloud
-- **Components:** @convex-dev/static-hosting, @agentmail/convex, @firecrawl/firecrawl-convex
-- **Convex features:** schema, tables, indexes, queries, mutations, actions, HTTP actions, realtime queries, crons, scheduled functions, internal mutations, presence
+- **Components:** @convex-dev/static-hosting, @firecrawl/firecrawl-convex (AgentMail is called over plain REST — its component's actions never resolve through ctx.runAction)
+- **Convex features:** schema, tables, indexes, queries, mutations, actions, HTTP actions (svix-verified inbound mail), realtime queries, crons (presence sweep + weekly digest), scheduled functions, internal mutations, file storage, presence
 - **Auth:** none
-- **AI models:** gpt-4o-mini (OpenAI API)
+- **AI models:** gpt-oss-120b via a Cloudflare AI proxy (primary), gpt-4o-mini via the OpenAI API (fallback)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-08-30T07:15:48Z
+- **Last updated:** 2026-08-31T02:30:00Z
 
 ## Highlights
 
-- **107 commits in 4 days**, all inside the hackathon window; every log entry
+- **122 commits in 5 days**, all inside the hackathon window; every log entry
   below is pinned to a commit hash so the story is checkable against history.
-- **22 widget types on one live multiplayer canvas** — countdowns, ballot
+- **32 widget types on one live multiplayer canvas** — countdowns, ballot
   polls, potluck sign-up sheets, expense splits, itineraries, photo walls,
   daily questions, and more — all driven by Convex realtime queries.
 - **Deep Convex surface, not a demo veneer:** presence with live cursors and a
@@ -29,6 +29,11 @@
   card, and AgentMail provisions a real inbox per space with a live webhook.
 - **AI reading circles:** `gpt-4o-mini` reads a saved article and seeds two
   conversation starters, each wired into the existing reactive message threads.
+- **Email that becomes furniture:** every showcase space has a real AgentMail
+  address. A receipt mailed to the crew appends an expense row and clears
+  someone's IOU; a URL mailed to the build room lands in the reading pile
+  Firecrawl-enriched; a note mailed to the couple arrives as a sealed kraft
+  letter you unfold. Friday, each space mails its week back.
 - **Collaborative paint-by-number:** 50-region vector boards (traced Starry
   Night and Great Wave postcards) where fills, palettes, and board-scoped
   cursors sync live between two people coloring together.
@@ -64,6 +69,9 @@
 | AgentMail (per-space inboxes, inbound webhook) | `convex/agentmail.ts` | `16fa04a` |
 | Firecrawl (URL → structured reading card) | `convex/firecrawl.ts` | `ec07426`, `9a63ab7` |
 | OpenAI `gpt-4o-mini` (reading-circle starters) | `convex/questions.ts` | `8c20025` |
+| Inbound-mail router (email → widget mutations) | `convex/inbox.ts` | `653453b` |
+| Weekly digest cron (space → its senders) | `convex/digest.ts`, `convex/crons.ts` | `c1d3855` |
+| Live inboxes, real end-to-end mail | `convex/agentmail.ts` | `353cd24` |
 
 ## Log
 
@@ -312,3 +320,72 @@ web-post cover: fluorescent risograph ink, chunky woven textile, and handmade
 ceramic mosaic. Extended the personal dev house canvas and staged all seven
 compact cards together for a two-row comparison (`public/assets/link-card-*.png`,
 `convex/spaces.ts`).
+
+### 2026-08-30 - cc0621c
+Fixed grabbed cards slipping under widgets that had already been moved: grab
+used `z-index: 55` while stored `z` starts at 1000. Layers are now reserved —
+stickers 100000, the grabbed card 99999, everything else its own `widget.z`
+(`src/components/WidgetCard.tsx`).
+
+### 2026-08-30 - 6669fe1
+Sewed the frame border: an SVG stitch-dash path replaces `border: dashed`, so a
+frame reads as a hand-stitched edge instead of a CSS outline
+(`src/index.css`, `src/widgets/core.tsx`).
+
+### 2026-08-30 - bb70d54
+Gave frames a floor — an ink-deepened fill inside the stitch border, so a frame
+groups its widgets by material instead of by outline alone (`src/index.css`).
+
+### 2026-08-30 - a140aae
+Replaced that fill with a real kraft paper mat (`--color-mat`), and deleted the
+88 lines of gradient scaffolding it made redundant. Frames now look like
+mounted board (`src/index.css`, `src/widgets/core.tsx`).
+
+### 2026-08-30 - 520ff0e
+Darkened the mat to true kraft (`#ddc8ac`) so white cards sitting on it keep
+their edge on camera (`src/index.css`).
+
+### 2026-08-30 - 0feca35
+Drafted the vibeapps listing description — problem-first, "three rooms, three
+real problems" leading, with submit-day numbers left as bracketed placeholders
+(`docs/vibeapps-listing.md`).
+
+### 2026-08-30 - 653453b
+Email became a real input to the canvas. Dropped the `@agentmail/convex`
+component (its actions never resolve through `ctx.runAction`):
+`convex/agentmail.ts` now calls the REST API directly for inbox create + send,
+and `convex/http.ts` hand-verifies the svix webhook. Inbound mail routes per
+space — us two → sealed letter widget, the build room → URLs into the link pile
+plus sequential Firecrawl enrich, everywhere else → the model reads a live
+widget inventory and files the email (expense row / itinerary day / new tracker
+/ unfiled envelope / discard) (`convex/inbox.ts`, 417 lines).
+
+### 2026-08-30 - 9f2c273
+The mail surface: a kraft `letter` widget (sealed envelope with flap, seal and
+stamp; click unfolds it — built from buttons so WidgetCard's drag capture can't
+eat the click), a black address chip under every mail-enabled space title
+(click copies), a japan trip frame in the crew so the router has a future-dated
+booking target, a seeded letter in us two, and an idempotent
+`seed:backfillMailDemo`. Same tree carries the full-screen `CanvasRoom` shell
+and the build room's reading room — including the pile's tag row, where kinds
+rank ahead of hosts and the picked tag becomes the outer cut
+(`src/components/ReadingRoom.tsx`, `src/lib/linkRanking.ts`).
+
+### 2026-08-30 - c1d3855
+Each mail-enabled space now writes back: a Friday 16:00 UTC cron composes the
+week from the recap snapshot and emails it to everyone who ever wrote to that
+inbox (recipients mined from `emailEvents`), with `digest:sendNow` for demos
+(`convex/digest.ts`, `convex/crons.ts`).
+
+### 2026-08-30 - 353cd24
+Live inboxes with an unrestricted key: crew rides the account default
+`ourspaces@agentmail.to` (`thecrew` is taken org-wide, and the 3-inbox free
+tier is shared between dev and prod), plus `ustwo@` and `buildroom@`, on a
+fresh webhook created through the API. Verified with real mail — buildroom's
+inbox → `ustwo@` → a letter appeared in us two, and the digest landed in a real
+Gmail (`convex/agentmail.ts`, `docs/firecrawl-agentmail-setup.md`).
+
+### 2026-08-30 - 7a12cee
+Wrote `docs/mail.md`: the three demo cases, the architecture as shipped, a
+status checklist, and the open goals in priority order (arrival choreography
+first, prod cutover second).

@@ -17,17 +17,23 @@ Gateway) · AgentMail · Firecrawl
 
 ## Convex depth
 
-- **Components:** `@convex-dev/static-hosting`, `@agentmail/convex`,
-  `@firecrawl/firecrawl-convex`
+- **Components:** `@convex-dev/static-hosting`, `@firecrawl/firecrawl-convex`
+  (AgentMail is called over plain REST from `convex/agentmail.ts` — its
+  component's actions don't resolve through `ctx.runAction`)
 - **Schema & data:** tables + indexes for spaces, members, widgets, messages,
-  votes, collaborative paint marks, presence, email events
+  votes, collaborative paint marks, recaps, presence, email events
 - **Realtime:** live queries drive the canvas, presence cursors/gestures, and
   poll + cozy-color results — no hand-rolled sync
 - **Functions:** queries, mutations, internal mutations, actions, HTTP actions
-- **Scheduling:** crons (stale presence cleanup) + scheduled functions
-- **Integrations:** AgentMail per-space inboxes (send/receive via HTTP
-  webhook), Firecrawl turns pasted webpages into reactive rich-post widgets,
-  OpenAI via Convex AI Gateway
+  (svix-verified inbound-mail webhook)
+- **Scheduling:** crons (stale-presence sweep every minute, Friday weekly
+  digest) + scheduled functions
+- **File storage:** photo-wall uploads become prints with notes on the back
+- **Integrations:** AgentMail gives every space a real inbox — inbound mail is
+  routed onto the canvas (sealed letter, link into the reading pile + Firecrawl
+  enrich, or an AI-filed expense row / itinerary day); Firecrawl turns pasted
+  webpages into reactive rich-post widgets; OpenAI-class models via a
+  Cloudflare AI proxy, with the OpenAI API as fallback
 
 ## Run
 

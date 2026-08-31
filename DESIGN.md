@@ -227,6 +227,12 @@ stagger; transitions are quick and physical. No fade-on-scroll, no orchestrated
 page-load choreography for its own sake. All motion **respects
 `prefers-reduced-motion`** (collapses to near-instant).
 
+Motion is tokenized in `src/index.css` `@theme` — three curves (`--ease-glide`
+the default, `--ease-pop` for things arriving, `--ease-snap` for climax beats
+only) and six durations (`--dur-instant` 120ms → `--dur-hero` 900ms). Use the
+token, never the raw curve. Full list: `docs/tokens.md`; when each earns use:
+`.claude/skills/eye-candy/SKILL.md` § The house motion system.
+
 ## 6. Do's and Don'ts
 
 ### Do:
