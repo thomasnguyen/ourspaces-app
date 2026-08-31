@@ -1,8 +1,24 @@
 import { query, mutation, internalMutation, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
+import { TableAggregate } from "@convex-dev/aggregate";
+import { components } from "./_generated/api";
+import type { DataModel, Id } from "./_generated/dataModel";
 import schema from "./schema";
+import { pollTallies } from "./votes";
 
 const RETIRED_SPACE_SLUGS = ["buildclub", "trip"] as const;
+
+// aggregate mirror: live member count per space (namespaced, unsorted — we
+// only need the count). Kills the `.collect().length` in listSpaces.
+export const memberCounts = new TableAggregate<{
+  Namespace: Id<"spaces">;
+  Key: null;
+  DataModel: DataModel;
+  TableName: "members";
+}>(components.memberCounts, {
+  namespace: (doc) => doc.spaceId,
+  sortKey: () => null,
+});
 
 async function deleteSpaceBySlug(ctx: MutationCtx, slug: string) {
   const space = await ctx.db
@@ -20,11 +36,20 @@ async function deleteSpaceBySlug(ctx: MutationCtx, slug: string) {
       .withIndex("by_widget", (q) => q.eq("widgetId", widget._id))
       .collect()) {
       await ctx.db.delete(vote._id);
+      await pollTallies.delete(ctx, vote);
     }
     await ctx.db.delete(widget._id);
   }
 
-  for (const table of ["messages", "members", "presence", "paintMarks", "emailEvents", "recaps"] as const) {
+  for (const member of await ctx.db
+    .query("members")
+    .withIndex("by_space", (q) => q.eq("spaceId", space._id))
+    .collect()) {
+    await ctx.db.delete(member._id);
+    await memberCounts.delete(ctx, member);
+  }
+
+  for (const table of ["messages", "presence", "paintMarks", "emailEvents", "recaps"] as const) {
     for (const row of await ctx.db
       .query(table)
       .withIndex("by_space", (q) => q.eq("spaceId", space._id))
@@ -45,11 +70,8 @@ export const listSpaces = query({
     const spaces = await ctx.db.query("spaces").collect();
     return await Promise.all(
       spaces.map(async (space) => {
-        const members = await ctx.db
-          .query("members")
-          .withIndex("by_space", (q) => q.eq("spaceId", space._id))
-          .collect();
-        return { ...space, memberCount: members.length };
+        const memberCount = await memberCounts.count(ctx, { namespace: space._id });
+        return { ...space, memberCount };
       }),
     );
   },
@@ -213,7 +235,9 @@ export const duplicateBySlug = internalMutation({
       .withIndex("by_space", (q) => q.eq("spaceId", source._id))
       .collect()) {
       const { _id, _creationTime, ...fields } = member;
-      await ctx.db.insert("members", { ...fields, spaceId });
+      const newMemberId = await ctx.db.insert("members", { ...fields, spaceId });
+      const newMember = await ctx.db.get(newMemberId);
+      await memberCounts.insert(ctx, newMember!);
     }
 
     const widgetIds = new Map<string, string>();
@@ -229,11 +253,13 @@ export const duplicateBySlug = internalMutation({
         .query("votes")
         .withIndex("by_widget", (q) => q.eq("widgetId", _id))
         .collect()) {
-        await ctx.db.insert("votes", {
+        const newVoteId = await ctx.db.insert("votes", {
           widgetId: newId,
           userId: vote.userId,
           optionId: vote.optionId,
         });
+        const newVote = await ctx.db.get(newVoteId);
+        await pollTallies.insert(ctx, newVote!);
       }
     }
 
@@ -297,7 +323,7 @@ export const joinDemoSpace = mutation({
       return existing._id;
     }
 
-    return await ctx.db.insert("members", {
+    const memberId = await ctx.db.insert("members", {
       spaceId,
       userId,
       name,
@@ -306,5 +332,8 @@ export const joinDemoSpace = mutation({
       avatarUrl,
       lastSeen,
     });
+    const member = await ctx.db.get(memberId);
+    await memberCounts.insert(ctx, member!);
+    return memberId;
   },
 });

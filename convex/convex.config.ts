@@ -50,7 +50,10 @@ app.use(firecrawl, {
 
 // Data/infra: backfills, tallies, live counters, quotas, resilient externals.
 app.use(migrations);
-app.use(aggregate);
+// Two named instances: poll vote tallies (namespaced by widget) and
+// per-space member counts — separate data structures, same component.
+app.use(aggregate, { name: "pollTallies" });
+app.use(aggregate, { name: "memberCounts" });
 app.use(shardedCounter);
 app.use(rateLimiter);
 app.use(actionRetrier);

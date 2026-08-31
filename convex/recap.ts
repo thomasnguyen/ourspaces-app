@@ -10,6 +10,7 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { completeJson } from "./ai";
 import schema from "./schema";
+import { pollTallies } from "./votes";
 
 /** Follow-up chat rides the existing messages table, hidden from global chat. */
 const THREAD = "recap";
@@ -296,28 +297,28 @@ export const snapshot = internalQuery({
   }),
   handler: async (ctx, { spaceId }): Promise<Snapshot> => {
     const space = await ctx.db.get(spaceId);
-    const [widgets, messages, members] = await Promise.all([
+    const [widgets, messages] = await Promise.all([
       ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).collect(),
       ctx.db.query("messages").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).collect(),
-      ctx.db.query("members").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).collect(),
     ]);
-    const names = new Map(members.map((member) => [member.userId, member.name]));
 
     const summarized: Snapshot["widgets"] = [];
     for (const widget of widgets) {
       let voteLine: string | undefined;
       if (widget.type === "poll") {
-        const votes = await ctx.db
-          .query("votes")
-          .withIndex("by_widget", (q) => q.eq("widgetId", widget._id))
-          .collect();
+        // aggregate mirror: per-option counts in one batched O(log n) call
+        // instead of collecting every vote row for this widget.
         const options = asList(asRecord(widget.data).options);
-        const tallies = options.map((option) => {
-          const voters = votes
-            .filter((vote) => vote.optionId === option.id)
-            .map((vote) => names.get(vote.userId) ?? "someone");
-          return `${option.label ?? option.id}: ${voters.length} (${voters.join(", ") || "nobody"})`;
-        });
+        const counts = await pollTallies.countBatch(
+          ctx,
+          options.map((option) => ({
+            namespace: widget._id,
+            bounds: { eq: String(option.id) },
+          })),
+        );
+        const tallies = options.map(
+          (option, index) => `${option.label ?? option.id}: ${counts[index]}`,
+        );
         voteLine = `${asRecord(widget.data).question ?? "poll"} — ${tallies.join("; ")}`;
       }
       const summary = summarizeWidget(widget.type, asRecord(widget.data), voteLine);

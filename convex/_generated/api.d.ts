@@ -16,6 +16,7 @@ import type * as firecrawl from "../firecrawl.js";
 import type * as http from "../http.js";
 import type * as inbox from "../inbox.js";
 import type * as messages from "../messages.js";
+import type * as migrations from "../migrations.js";
 import type * as paint from "../paint.js";
 import type * as photos from "../photos.js";
 import type * as presence from "../presence.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   inbox: typeof inbox;
   messages: typeof messages;
+  migrations: typeof migrations;
   paint: typeof paint;
   photos: typeof photos;
   presence: typeof presence;
@@ -86,7 +88,8 @@ export declare const components: {
   staticHosting: import("@convex-dev/static-hosting/_generated/component.js").ComponentApi<"staticHosting">;
   firecrawl: import("@firecrawl/firecrawl-convex/_generated/component.js").ComponentApi<"firecrawl">;
   migrations: import("@convex-dev/migrations/_generated/component.js").ComponentApi<"migrations">;
-  aggregate: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"aggregate">;
+  pollTallies: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"pollTallies">;
+  memberCounts: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"memberCounts">;
   shardedCounter: import("@convex-dev/sharded-counter/_generated/component.js").ComponentApi<"shardedCounter">;
   rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
   actionRetrier: import("@convex-dev/action-retrier/_generated/component.js").ComponentApi<"actionRetrier">;
