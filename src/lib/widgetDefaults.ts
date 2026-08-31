@@ -24,12 +24,52 @@ export const WIDGET_BLUEPRINTS: Widget[] = [
     },
   },
   {
+    id: "blueprint-link-pile",
+    type: "linkPile",
+    x: 120,
+    y: 120,
+    w: 470,
+    h: 300,
+    z: 6,
+    data: { title: "the pile", cta: "open reading room" },
+  },
+  {
+    id: "blueprint-hot-links",
+    type: "hotLinks",
+    x: 640,
+    y: 120,
+    w: 470,
+    h: 300,
+    z: 6,
+    data: { title: "hot now", limit: 3 },
+  },
+  {
+    id: "blueprint-ship-post",
+    type: "shipPost",
+    x: 120,
+    y: 460,
+    w: 250,
+    h: 240,
+    z: 6,
+    data: { title: "what did you ship?", body: "", imageUrl: "", by: "you", date: "" },
+  },
+  {
+    id: "blueprint-roundtable",
+    type: "roundtable",
+    x: 640,
+    y: 460,
+    w: 460,
+    h: 250,
+    z: 6,
+    data: { category: "topic", title: "what should we talk about?", body: "" },
+  },
+  {
     id: "blueprint-link-card",
     type: "linkCard",
     x: 328,
     y: 204,
-    w: 300,
-    h: 250,
+    w: 260,
+    h: 220,
     z: 4,
     data: {
       url: "",
@@ -55,7 +95,7 @@ export const WIDGET_SIZES: Partial<Record<WidgetType, { w: number; h: number }>>
   frame: { w: 680, h: 360 },
   itinerary: { w: 310, h: 190 },
   jokeRegistry: { w: 300, h: 200 },
-  linkCard: { w: 300, h: 250 },
+  linkCard: { w: 260, h: 220 },
   linkShelf: { w: 320, h: 210 },
   media: { w: 300, h: 220 },
   messageWall: { w: 520, h: 110 },
@@ -71,6 +111,10 @@ export const WIDGET_SIZES: Partial<Record<WidgetType, { w: number; h: number }>>
   wheel: { w: 280, h: 330 },
   dualClock: { w: 340, h: 150 },
   cozyColor: { w: 560, h: 500 },
+  linkPile: { w: 470, h: 300 },
+  hotLinks: { w: 470, h: 300 },
+  shipPost: { w: 250, h: 240 },
+  roundtable: { w: 460, h: 250 },
 };
 
 export function getWidgetBlueprint(type: WidgetType): Widget | undefined {
@@ -217,6 +261,25 @@ export function freshWidgetData(type: WidgetType, source: Widget["data"]): Widge
       return {
         title: "same moon, both windows",
         src: "/assets/cozy-color-same-moon.png",
+      };
+    case "linkPile":
+      return { title: "the pile", cta: "open reading room" };
+    case "hotLinks":
+      return { title: "hot now", limit: 3 };
+    case "shipPost":
+      return {
+        title: "what did you ship?",
+        body: "",
+        imageUrl: "",
+        by: "you",
+        date: "",
+        feedbackWanted: false,
+      };
+    case "roundtable":
+      return {
+        category: "topic",
+        title: "what should we talk about?",
+        body: "",
       };
     default:
       return { ...source };

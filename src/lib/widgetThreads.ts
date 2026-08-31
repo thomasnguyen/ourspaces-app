@@ -8,6 +8,8 @@ export const THREADLESS_WIDGET_TYPES: WidgetType[] = [
   "messageWall",
   "dualClock",
   "cozyColor",
+  "linkPile",
+  "hotLinks",
 ];
 
 export function widgetSupportsThread(widget: Widget): boolean {

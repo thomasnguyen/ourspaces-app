@@ -12,6 +12,7 @@ export type SpaceThemeId =
   | "mint"
   | "midnight"
   | "butter"
+  | "torch"
   | "custom";
 
 export type SpaceCustomization = Pick<SpaceMeta, "name" | "tagline" | "icon" | "kind"> & {
@@ -36,6 +37,7 @@ export const SPACE_THEME_PRESETS: {
   { id: "mint", name: "mint", background: "#bfe9dc", ink: "#102e27" },
   { id: "midnight", name: "midnight", background: "#1f1b2d", ink: "#ffffff" },
   { id: "butter", name: "butter", background: "#ffe9c2", ink: "#111114" },
+  { id: "torch", name: "torch", background: "#f4610f", ink: "#111114" },
 ];
 
 export const SPACE_ACCENTS = [
@@ -47,17 +49,16 @@ export const SPACE_ACCENTS = [
   { name: "lime", value: "#c9ff3d" },
 ];
 
+const SPACE_DEFAULT_THEMES: Record<string, SpaceThemeId> = {
+  buildroom: "torch",
+  crew: "lagoon",
+  league: "mint",
+  couple: "violet",
+  house: "butter",
+};
+
 export function defaultSpaceCustomization(space: SpaceMeta): SpaceCustomization {
-  const theme =
-    space.id === "crew"
-      ? "lagoon"
-      : space.id === "league"
-        ? "mint"
-        : space.id === "couple"
-          ? "violet"
-          : space.id === "house"
-            ? "butter"
-            : "blush";
+  const theme = SPACE_DEFAULT_THEMES[space.id] ?? "blush";
 
   return {
     name: space.name,

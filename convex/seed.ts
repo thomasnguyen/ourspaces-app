@@ -1,6 +1,6 @@
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { SPACES_BY_ID } from "../src/data/spaces";
+import { COUPLE_WIDGETS, CREW_WIDGETS, SPACES_BY_ID } from "../src/data/spaces";
 import { getGlobalThread, getThreadsForSpace } from "../src/data/chat";
 import { retireCutSpaceRows } from "./spaces";
 
@@ -172,11 +172,97 @@ export const demo = internalMutation({
 export const reset = internalMutation({
   args: {},
   handler: async (ctx) => {
-    for (const table of ["messages", "votes", "paintMarks", "presence", "widgets", "members", "spaces"] as const) {
+    for (const table of ["messages", "votes", "paintMarks", "presence", "widgets", "members", "spaces", "recaps"] as const) {
       const rows = await ctx.db.query(table).collect();
       for (const row of rows) await ctx.db.delete(row._id);
     }
     return seedAll(ctx);
+  },
+});
+
+/** Non-destructive: rebrand the crew's tahoe itinerary into the upcoming
+ * japan trip (in its own frame) and seed the couple's letter, so live
+ * canvases pick up the mail demo without a reseed. Idempotent. */
+export const backfillMailDemo = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const out: string[] = [];
+    const crew = await ctx.db
+      .query("spaces")
+      .withIndex("by_slug", (q) => q.eq("slug", "crew"))
+      .unique();
+    if (crew) {
+      const widgets = await ctx.db
+        .query("widgets")
+        .withIndex("by_space", (q) => q.eq("spaceId", crew._id))
+        .collect();
+      const itinerary = widgets.find((w) => w.type === "itinerary");
+      if (itinerary && String(itinerary.data?.title ?? "").startsWith("tahoe")) {
+        const mock = CREW_WIDGETS.find((w) => w.id === "itinerary");
+        if (mock) {
+          await ctx.db.patch(itinerary._id, {
+            x: mock.x,
+            y: mock.y,
+            w: mock.w,
+            h: mock.h,
+            rotate: mock.rotate,
+            data: mock.data,
+          });
+          out.push("crew itinerary → japan");
+        }
+      }
+      const hasJapanFrame = widgets.some(
+        (w) => w.type === "frame" && String(w.data?.title ?? "") === "japan trip",
+      );
+      if (!hasJapanFrame) {
+        const mockFrame = CREW_WIDGETS.find((w) => w.id === "frame-japan");
+        if (mockFrame) {
+          await ctx.db.insert("widgets", {
+            spaceId: crew._id,
+            type: "frame",
+            x: mockFrame.x,
+            y: mockFrame.y,
+            w: mockFrame.w,
+            h: mockFrame.h,
+            z: mockFrame.z,
+            data: mockFrame.data,
+            createdBy: "seed",
+            createdAt: Date.now(),
+          });
+          out.push("crew japan frame");
+        }
+      }
+    }
+    const couple = await ctx.db
+      .query("spaces")
+      .withIndex("by_slug", (q) => q.eq("slug", "couple"))
+      .unique();
+    if (couple) {
+      const widgets = await ctx.db
+        .query("widgets")
+        .withIndex("by_space", (q) => q.eq("spaceId", couple._id))
+        .collect();
+      if (!widgets.some((w) => w.type === "letter")) {
+        const mock = COUPLE_WIDGETS.find((w) => w.id === "us-letter");
+        if (mock) {
+          await ctx.db.insert("widgets", {
+            spaceId: couple._id,
+            type: "letter",
+            x: mock.x,
+            y: mock.y,
+            w: mock.w,
+            h: mock.h,
+            z: mock.z,
+            rotate: mock.rotate,
+            data: mock.data,
+            createdBy: "seed",
+            createdAt: Date.now(),
+          });
+          out.push("couple letter");
+        }
+      }
+    }
+    return out;
   },
 });
 

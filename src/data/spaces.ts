@@ -447,19 +447,33 @@ export const CREW_WIDGETS: Widget[] = [
     },
   },
   {
+    id: "frame-japan",
+    type: "frame",
+    x: 952,
+    y: 700,
+    w: 430,
+    h: 272,
+    z: 1,
+    data: {
+      title: "japan trip",
+      subtitle: "email bookings to thecrew@ ✉",
+    },
+  },
+  {
     id: "itinerary",
     type: "itinerary",
-    x: 636,
-    y: 640,
+    x: 986,
+    y: 748,
     w: 300,
-    h: 185,
+    h: 200,
     z: 2,
+    rotate: 1,
     data: {
-      title: "tahoe · aug 14–17",
+      title: "japan · nov 6–14",
       days: [
-        { day: "Thu", plan: "drive up · check in 4pm" },
-        { day: "Fri", plan: "kayak AM · tacos PM" },
-        { day: "Sat", plan: "hike · hot tub · poker" },
+        { day: "nov 6", plan: "land HND · ramen night" },
+        { day: "nov 8", plan: "kyoto day trip" },
+        { day: "nov 11", plan: "??? — forward a booking" },
       ],
     },
   },
@@ -748,6 +762,23 @@ export const COUPLE_WIDGETS: Widget[] = [
     },
   },
   {
+    id: "us-letter",
+    type: "letter",
+    x: 64,
+    y: 626,
+    w: 250,
+    h: 168,
+    z: 20,
+    rotate: -2,
+    data: {
+      from: "ren",
+      subject: "day 49",
+      text: "hey you,\n\nI walked past the bakery on Sokcho street and it smelled like that morning we got lost. 47 days now. I keep counting.\n\nMail one back: ustwo@agentmail.to — it lands right here.\n\nlove, ren",
+      receivedAt: Date.now() - 2 * 86_400_000,
+      sealed: true,
+    },
+  },
+  {
     id: "us-sticker",
     type: "sticker",
     x: 1032,
@@ -871,7 +902,218 @@ export const HOUSE_WIDGETS: Widget[] = [
   },
 ];
 
+
+const BUILD_ROOM_MEMBERS = [
+  { name: "Maya", color: "#7c5cff", online: true },
+  { name: "Sam", color: "#3d6eff", online: true },
+  { name: "Alex", color: "#ff7c42", online: true },
+  { name: "Jordan", color: "#13b8a6", online: true },
+  { name: "Priya", color: "#e9369d", online: false },
+  { name: "Marco", color: "#ffb02e", online: true },
+  { name: "Riley", color: "#c9ff3d", online: false },
+];
+
+/** "may 5" style, but evergreen — ship posts shouldn't rot. */
+function shortDaysAgo(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d
+    .toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    .toLowerCase();
+}
+
+/* Five outlined frames on a 1640×1080 canvas: the pile fills the left column,
+   hot now / keepers / roundtable stack down the right, shipping wall sits
+   under the pile. Matches the approved concept. */
+export const BUILD_ROOM_WIDGETS: Widget[] = [
+  {
+    id: "br-frame-pile",
+    type: "frame",
+    x: 48,
+    y: 64,
+    w: 760,
+    h: 420,
+    z: 0,
+    data: { title: "the pile", subtitle: "everything anyone dropped", deco: "outline" },
+  },
+  {
+    id: "br-pile",
+    type: "linkPile",
+    x: 88,
+    y: 148,
+    w: 680,
+    h: 300,
+    z: 8,
+    data: { title: "the pile", cta: "open reading room" },
+  },
+  {
+    id: "br-frame-hot",
+    type: "frame",
+    x: 850,
+    y: 48,
+    w: 700,
+    h: 400,
+    z: 0,
+    data: { title: "hot now", subtitle: "what the room is actually reading", deco: "outline" },
+  },
+  {
+    id: "br-hot",
+    type: "hotLinks",
+    x: 886,
+    y: 112,
+    w: 628,
+    h: 300,
+    z: 8,
+    data: { title: "hot now", limit: 3 },
+  },
+  {
+    id: "br-frame-keepers",
+    type: "frame",
+    x: 850,
+    y: 470,
+    w: 700,
+    h: 210,
+    z: 0,
+    data: { title: "keepers", subtitle: "what we actually learned", deco: "outline" },
+  },
+  {
+    id: "br-keeper-1",
+    type: "note",
+    x: 886,
+    y: 512,
+    w: 320,
+    h: 150,
+    z: 8,
+    rotate: -1.2,
+    data: {
+      kicker: "rule of thumb",
+      title: "dual-write before you backfill",
+      text: "four phases, never a big-bang cutover: dual write, backfill, dual read, drop.",
+      author: "Maya",
+      tone: "white",
+      pin: true,
+    },
+  },
+  {
+    id: "br-keeper-2",
+    type: "note",
+    x: 1222,
+    y: 512,
+    w: 320,
+    h: 150,
+    z: 8,
+    rotate: 1.4,
+    data: {
+      kicker: "mental model",
+      title: "sqlite until the network says no",
+      text: "postgres is usually a network decision, not a data one.",
+      author: "Sam",
+      tone: "white",
+      pin: true,
+    },
+  },
+  {
+    id: "br-frame-ship",
+    type: "frame",
+    x: 48,
+    y: 570,
+    w: 760,
+    h: 380,
+    z: 0,
+    data: { title: "shipping wall", subtitle: "show the thing", deco: "outline" },
+  },
+  {
+    id: "br-ship-1",
+    type: "shipPost",
+    x: 84,
+    y: 632,
+    w: 222,
+    h: 282,
+    z: 8,
+    rotate: -1.4,
+    data: {
+      title: "perf dashboard v2",
+      by: "priya",
+      date: shortDaysAgo(4),
+      imageUrl: "/photos/hackathon/demo-day.jpg",
+      body: "Rebuilt the latency panel on the new rollup table. p95 query went 1.4s → 90ms, and the whole page now paints before the spinner would have shown.\n\nStill rough: the date picker resets on refresh.",
+    },
+  },
+  {
+    id: "br-ship-2",
+    type: "shipPost",
+    x: 328,
+    y: 626,
+    w: 222,
+    h: 282,
+    z: 8,
+    rotate: 0.9,
+    data: {
+      title: "search revamp",
+      by: "jordan",
+      date: shortDaysAgo(5),
+      imageUrl: "/photos/hackathon/hack-weekend.jpg",
+      feedbackWanted: true,
+      body: "Ripped out the LIKE query and put a real index behind it. Typo tolerance is in, ranking is not.\n\nWould love a second opinion on whether recency should outrank relevance here.",
+    },
+  },
+  {
+    id: "br-ship-3",
+    type: "shipPost",
+    x: 572,
+    y: 634,
+    w: 222,
+    h: 282,
+    z: 8,
+    rotate: -0.8,
+    data: {
+      title: "v2.3.0 shipped",
+      by: "sam",
+      date: shortDaysAgo(6),
+      imageUrl: "/photos/hackathon/shipped-v01.jpg",
+      body: "Migration ran clean on the first try, which has never happened before.\n\nDual-write was on for six days and the backfill took forty minutes.",
+    },
+  },
+  {
+    id: "br-frame-table",
+    type: "frame",
+    x: 850,
+    y: 705,
+    w: 700,
+    h: 310,
+    z: 0,
+    data: { title: "roundtable", subtitle: "the long threads", deco: "outline" },
+  },
+  {
+    id: "br-table",
+    type: "roundtable",
+    x: 886,
+    y: 752,
+    w: 628,
+    h: 250,
+    z: 8,
+    data: {
+      category: "career",
+      title: "how did you break into tech?",
+      body: "nobody's answered yet. go first.",
+    },
+  },
+];
+
 export const SPACES: SpaceMeta[] = [
+  {
+    id: "buildroom",
+    name: "the build room",
+    color: "#ff7c42",
+    icon: "</>",
+    canvasSize: { width: 1640, height: 1080 },
+    activity: true,
+    kind: "ongoing",
+    tagline: "drop it, argue it, keep it",
+    preview: "47 links · 3 hot",
+    showcase: "dev guild · links, ships, roundtables",
+    inboxAddress: "buildroom@agentmail.to",
+  },
   {
     id: "crew",
     name: "the crew",
@@ -882,6 +1124,7 @@ export const SPACES: SpaceMeta[] = [
     tagline: "your people, in one place",
     preview: "daily q · 3 answered",
     showcase: "birthday HQ · plans, polls, memories",
+    inboxAddress: "thecrew@agentmail.to",
   },
   {
     id: "couple",
@@ -894,6 +1137,7 @@ export const SPACES: SpaceMeta[] = [
     tagline: "an ocean apart",
     preview: "47 days to SFO",
     showcase: "long distance · clocks, countdowns, color together",
+    inboxAddress: "ustwo@agentmail.to",
   },
   {
     id: "house",
@@ -922,23 +1166,28 @@ export const SPACES: SpaceMeta[] = [
 ];
 
 export const SPACES_BY_ID: Record<string, Space> = {
-  crew: {
+  buildroom: {
     ...SPACES[0],
+    members: BUILD_ROOM_MEMBERS,
+    widgets: BUILD_ROOM_WIDGETS,
+  },
+  crew: {
+    ...SPACES[1],
     members: CREW_MEMBERS,
     widgets: CREW_WIDGETS,
   },
   couple: {
-    ...SPACES[1],
+    ...SPACES[2],
     members: COUPLE_MEMBERS,
     widgets: COUPLE_WIDGETS,
   },
   house: {
-    ...SPACES[2],
+    ...SPACES[3],
     members: HOUSE_MEMBERS,
     widgets: HOUSE_WIDGETS,
   },
   league: {
-    ...SPACES[3],
+    ...SPACES[4],
     members: CREW_MEMBERS,
     widgets: LEAGUE_WIDGETS,
   },
@@ -948,6 +1197,11 @@ export const SPACE_CURSORS: Record<
   string,
   { name: string; color: string; x: number; y: number }[]
 > = {
+  buildroom: [
+    { name: "Alex", color: "#ff7c42", x: 1180, y: 250 },
+    { name: "Marco", color: "#ffb02e", x: 300, y: 700 },
+    { name: "Jordan", color: "#13b8a6", x: 960, y: 640 },
+  ],
   crew: [
     { name: "Jules", color: "#e63da8", x: 792, y: 430 },
     { name: "Sam", color: "#3d6eff", x: 1096, y: 578 },

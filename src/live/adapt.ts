@@ -39,15 +39,16 @@ export function toWidget(row: {
   const supersededLinkCardSize =
     row.type === "linkCard" &&
     ((row.w === 420 && (row.h === 340 || row.h === 360)) ||
-      (row.w === 340 && row.h === 280));
+      (row.w === 340 && row.h === 280) ||
+      (row.w === 300 && row.h === 250));
 
   return {
     id: row._id,
     type: row.type as WidgetType,
     x: row.x,
     y: row.y,
-    w: sticker?.width ?? (supersededLinkCardSize ? 300 : row.w),
-    h: sticker?.height ?? (supersededLinkCardSize ? 250 : row.h),
+    w: sticker?.width ?? (supersededLinkCardSize ? 260 : row.w),
+    h: sticker?.height ?? (supersededLinkCardSize ? 220 : row.h),
     z: row.z,
     rotate: sticker?.rotate ?? row.rotate,
     data,

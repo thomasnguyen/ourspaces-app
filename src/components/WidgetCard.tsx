@@ -22,6 +22,14 @@ import { WIDGET_CATALOG } from "../data/templates";
 import { widgetLabel } from "../lib/widgetLabels";
 import { widgetSupportsThread } from "../lib/widgetThreads";
 import {
+  HotLinksWidget,
+  LinkPileWidget,
+  RoundtableWidget,
+  ShipPostWidget,
+  type BuildRoomFeed,
+  type RoundtableReply,
+} from "../widgets/buildroom";
+import {
   ChatWidget,
   CountdownWidget,
   FrameWidget,
@@ -40,6 +48,7 @@ import {
   JokeRegistryWidget,
   LinkCardWidget,
   LinkShelfWidget,
+  LetterWidget,
   MessageWallWidget,
   PhotoWallWidget,
   PlaylistWidget,
@@ -251,6 +260,8 @@ function WidgetCardComponent({
   claimantId,
   onWheelSpin,
   onPlaylistTune,
+  buildRoomFeed,
+  roundtableReplies,
   paintStrokes,
   paintIdentity,
   paintPeers,
@@ -308,6 +319,8 @@ function WidgetCardComponent({
   claimantId?: string;
   onWheelSpin?: (widgetId: string, spin: { spinNonce: number; resultIndex: number }) => void;
   onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
+  buildRoomFeed?: BuildRoomFeed;
+  roundtableReplies?: RoundtableReply[];
   paintStrokes?: CozyColorStroke[];
   paintIdentity?: CozyColorIdentity;
   onPaintStroke?: (
@@ -724,6 +737,9 @@ function WidgetCardComponent({
     case "messageWall":
       content = <MessageWallWidget widget={widget} style={inner} />;
       break;
+    case "letter":
+      content = <LetterWidget widget={widget} style={inner} />;
+      break;
     case "quote":
       content = <QuoteWidget widget={widget} style={inner} />;
       break;
@@ -760,6 +776,32 @@ function WidgetCardComponent({
           onClear={onPaintClear ? (regionPrefix?: string) => onPaintClear(widget.id, regionPrefix) : undefined}
           peers={paintPeers}
           onCursor={onPaintCursor}
+        />
+      );
+      break;
+    case "linkPile":
+      content = (
+        <LinkPileWidget widget={widget} style={inner} feed={buildRoomFeed} />
+      );
+      break;
+    case "hotLinks":
+      content = (
+        <HotLinksWidget widget={widget} style={inner} feed={buildRoomFeed} />
+      );
+      break;
+    case "shipPost":
+      content = (
+        <ShipPostWidget widget={widget} style={inner} />
+      );
+      break;
+    case "roundtable":
+      content = (
+        <RoundtableWidget
+          widget={widget}
+          style={inner}
+          replies={roundtableReplies}
+          replyCount={commentCount}
+          onOpen={() => onSelect?.(widget)}
         />
       );
       break;
@@ -825,6 +867,7 @@ function WidgetCardComponent({
      only its paper clipping / read pill opens the article. */
   const zoomsOnClick =
     widget.type === "photoWall" ||
+    widget.type === "shipPost" ||
     (widget.type === "linkCard" && String(widget.data.url ?? "").trim() !== "");
 
   const beginWidgetMove = () => {

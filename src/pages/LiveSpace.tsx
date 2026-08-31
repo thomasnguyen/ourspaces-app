@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useAction, useMutation } from "convex/react";
 import { useQuery } from "convex-helpers/react/cache";
 import { api } from "../../convex/_generated/api";
@@ -8,6 +15,9 @@ import { Canvas, SpaceHeader } from "../components/Canvas";
 import { ClaimCard, type InviteContext } from "../components/ClaimCard";
 import { MemberFace } from "../components/MemberFace";
 import { PhotoWallGallery } from "../components/PhotoWallGallery";
+import { ReadingRoom, type RoomReply } from "../components/ReadingRoom";
+import { ShipRoom } from "../components/ShipRoom";
+import type { RoomOrigin } from "../components/CanvasRoom";
 import { GhostCanvas } from "../components/GhostCanvas";
 import { GlobalChatPanel } from "../components/GlobalChatPanel";
 import { Rail } from "../components/Rail";
@@ -30,8 +40,21 @@ import {
   spaceCustomizationStyle,
   type SpaceCustomization,
 } from "../data/spaceThemes";
-import { RECAP_LINES, type RecapLine } from "../data/recap";
+import { cleanRecapText, RECAP_THREAD_ID, type RecapLine, type RecapTurn } from "../data/recap";
+import { flyWidgetIn } from "../lib/flipLanding";
+import { pileInsideFrame } from "../lib/frameMembership";
 import { relTime, toChatMessage } from "../live/adapt";
+import type { RoundtableReply } from "../widgets/buildroom";
+import {
+  buildRoomFeedFrom,
+  linkReplyCounts,
+  pileLinks,
+  readPileData,
+  toggledVoters,
+  type PileData,
+} from "../lib/buildRoomFeed";
+import type { BuildRoomLink } from "../data/buildroom";
+import { cannedLinkQuestions } from "../lib/linkQuestions";
 import type { PhotoComment } from "../components/PhotoWallGallery";
 import { useIdentity } from "../live/identity";
 import { useLiveHandlers } from "../live/useLiveHandlers";
@@ -45,7 +68,14 @@ import { widgetSupportsThread } from "../lib/widgetThreads";
 import { RSVP_CHOICES, type RsvpStatus } from "../widgets/extras";
 import type { CozyColorStroke } from "../widgets/CozyColorWidget";
 import type { CanvasLayout, LivePeer } from "../live/presenceTypes";
-import { normalSpaceHash } from "../lib/routes";
+import { DEFAULT_SPACE_SLUG, normalSpaceHash } from "../lib/routes";
+import { useCanvasSpacePan } from "../lib/canvasSpacePan";
+import {
+  buildRoomOverviewScale,
+  withBuildRoomCover,
+} from "../lib/buildRoomPresentation";
+
+const EMPTY_RECAP_LINES: RecapLine[] = [];
 
 const emptyWidget = {
   id: "",
@@ -89,6 +119,29 @@ type PhotoGalleryState = {
   printOrigins?: Array<{ x: number; y: number; w: number; h: number } | null>;
 };
 
+/** The on-screen rect of a canvas card, as inset from each viewport edge —
+ *  the room grows out of it and shrinks back into it. */
+function roomOriginFor(widgetId: string): RoomOrigin {
+  const element = Array.from(
+    document.querySelectorAll<HTMLElement>(".widget-group[data-widget-id]"),
+  ).find((candidate) => candidate.dataset.widgetId === widgetId);
+  const rect = element?.getBoundingClientRect();
+  if (!rect) {
+    return {
+      top: window.innerHeight * 0.25,
+      right: window.innerWidth * 0.25,
+      bottom: window.innerHeight * 0.25,
+      left: window.innerWidth * 0.25,
+    };
+  }
+  return {
+    top: Math.max(0, rect.top),
+    right: Math.max(0, window.innerWidth - rect.right),
+    bottom: Math.max(0, window.innerHeight - rect.bottom),
+    left: Math.max(0, rect.left),
+  };
+}
+
 const CAMERA_MS = 360;
 const CAMERA_EXIT_MS = 280;
 const FRAME_FIT_GUTTER = 24;
@@ -100,8 +153,8 @@ const MAX_WIDGET_SCALE = 1.8;
 const WIDGET_FOCUS_GUTTER = 48;
 const THREAD_DOCK_GAP = 16;
 const DEFAULT_THREAD_DOCK_SIZE: ThreadDockSize = {
-  width: 348,
-  height: 276,
+  width: 680,
+  height: 540,
 };
 const CLAIM_DISMISSED_KEY = "ourspaces:claim-dismissed";
 
@@ -165,7 +218,7 @@ function useGhostLifecycle(showGhosts: boolean, status: string): GhostLifecycle 
 }
 
 export function LiveSpacePage({
-  slug = "crew",
+  slug = DEFAULT_SPACE_SLUG,
   onSelectSpace,
   isInviteEntry = false,
 }: {
@@ -211,6 +264,12 @@ export function LiveSpacePage({
   const [selectedWidgetId, setSelectedWidgetId] = useState("");
   const [managedWidgetId, setManagedWidgetId] = useState("");
   const [photoGallery, setPhotoGallery] = useState<PhotoGalleryState | null>(null);
+  /** The pile / a ship post opened full screen, with the rect it grew from. */
+  const [openRoom, setOpenRoom] = useState<
+    { kind: "pile" | "ship"; widgetId: string; origin: RoomOrigin } | null
+  >(null);
+  /** A hot-now row asked the reading room to open on one specific link. */
+  const [pendingLinkId, setPendingLinkId] = useState<string | null>(null);
   const [rsvpSelections, setRsvpSelections] = useState<Record<string, RsvpStatus>>({});
   const [dailyAnswers, setDailyAnswers] = useState<Record<string, string>>({});
   const [dailyReactions, setDailyReactions] = useState<Record<string, Record<string, string>>>({});
@@ -228,6 +287,7 @@ export function LiveSpacePage({
   const join = useMutation(api.spaces.joinDemoSpace);
   const generatePhotoUploadUrl = useMutation(api.photos.generateUploadUrl);
   const pinPhoto = useMutation(api.photos.addPhoto);
+  const shipImageUrl = useMutation(api.photos.storageUrl);
   const addPaintStroke = useMutation(api.paint.addStroke);
   const clearPaint = useMutation(api.paint.clear);
   const ensureCozyColorWidget = useMutation(api.paint.ensureCozyColorWidget);
@@ -251,6 +311,7 @@ export function LiveSpacePage({
     setCustomization(defaultSpaceCustomization(mockSpace));
     setSpaceDraft(null);
     setPhotoGallery(null);
+    setOpenRoom(null);
   }, [mockSpace, slug]);
   const activeCustomization = spaceDraft ?? customization;
   const members = mockSpace.members;
@@ -268,6 +329,26 @@ export function LiveSpacePage({
   /** Which web post conversation starter the thread dock is answering. */
   const [activeQuestionId, setActiveQuestionId] = useState("");
   const handlers = useLiveHandlers(space?._id, identity, presence, widgets);
+  /* Roundtable cards preview the tail of their own thread — same subscription
+     the thread dock reads, grouped by widget. */
+  const roundtableRepliesByWidget = useMemo(() => {
+    const grouped: Record<string, RoundtableReply[]> = {};
+    if (!allMessages) return grouped;
+    for (const widget of widgets ?? []) {
+      if (widget.type !== "roundtable") continue;
+      grouped[widget.id] = allMessages
+        .filter((message) => message.widgetId === widget.id)
+        .map((message) => ({
+          id: message._id,
+          from: message.authorName,
+          fromColor: message.authorColor,
+          fromAvatarUrl: message.authorAvatarUrl,
+          text: message.text,
+          time: relTime(message.createdAt),
+        }));
+    }
+    return grouped;
+  }, [allMessages, widgets]);
   const paintStrokesByWidget = useMemo(() => {
     const grouped: Record<string, CozyColorStroke[]> = {};
     for (const row of paintRows ?? []) {
@@ -374,6 +455,277 @@ export function LiveSpacePage({
     }),
     [handlers.overrides, livePoll, widgets],
   );
+  const overviewWidgetsRef = useRef<Widget[]>(mockSpace.widgets);
+  overviewWidgetsRef.current = adaptedWidgets.length
+    ? adaptedWidgets
+    : mockSpace.widgets;
+  /* ── the build room ──────────────────────────────────────────────────────
+     Link content comes from the fixtures; votes, pins, keeps and runtime drops
+     live in the pile widget's own `data`, so the whole room is reactive and
+     multiplayer over the existing `widgets.updateWidgetData` mutation. */
+  const pileWidget = useMemo(
+    () => adaptedWidgets.find((widget) => widget.type === "linkPile") ?? null,
+    [adaptedWidgets],
+  );
+  const buildRoomLinks = useMemo(
+    () => pileLinks(pileWidget).map(withBuildRoomCover),
+    [pileWidget],
+  );
+  /** Every message in the space, bucketed by its thread id. */
+  const messagesByThread = useMemo(() => {
+    const grouped: Record<string, RoomReply[]> = {};
+    for (const message of allMessages ?? []) {
+      (grouped[message.widgetId] ??= []).push({
+        id: message._id,
+        from: message.authorName,
+        color: message.authorColor,
+        avatarUrl: message.authorAvatarUrl,
+        text: message.text,
+        time: relTime(message.createdAt),
+      });
+    }
+    return grouped;
+  }, [allMessages]);
+  const buildRoomReplyCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const [threadId, list] of Object.entries(messagesByThread)) {
+      counts[threadId] = list.length;
+    }
+    return linkReplyCounts(counts);
+  }, [messagesByThread]);
+  const openReadingRoom = useCallback(
+    (linkId?: string) => {
+      if (!pileWidget) return;
+      playSound("tap");
+      setManagedWidgetId("");
+      setEditingWidgetId("");
+      setSelectedWidgetId("");
+      setPickerOpen(false);
+      setRecapOpen(false);
+      setChatOpen(false);
+      setPendingLinkId(linkId ?? null);
+      setOpenRoom({
+        kind: "pile",
+        widgetId: pileWidget.id,
+        origin: roomOriginFor(pileWidget.id),
+      });
+    },
+    [pileWidget],
+  );
+  const buildRoomFeed = useMemo(
+    () =>
+      pileWidget
+        ? {
+            ...buildRoomFeedFrom(buildRoomLinks, buildRoomReplyCounts, members),
+            onOpenPile: openReadingRoom,
+          }
+        : undefined,
+    [buildRoomLinks, buildRoomReplyCounts, members, openReadingRoom, pileWidget],
+  );
+  /* Every pile write is a patch of the pile widget's own data. Reads come from
+     the live subscription, so two windows stay in step. */
+  const pileWidgetRef = useRef<Widget | null>(null);
+  pileWidgetRef.current = pileWidget;
+  const patchPile = useCallback(
+    (mutate: (data: PileData) => PileData) => {
+      const pile = pileWidgetRef.current;
+      if (!pile) return;
+      const next = mutate(readPileData(pile));
+      handlers.onUpdate(pile.id, { ...pile.data, ...next });
+    },
+    [handlers],
+  );
+
+  const voteOnLink = useCallback(
+    (linkId: string) => {
+      const link = buildRoomLinks.find((candidate) => candidate.id === linkId);
+      if (!link) return;
+      const voters = toggledVoters(link, identity.userId);
+      patchPile((data) => ({
+        ...data,
+        linkState: {
+          ...data.linkState,
+          [linkId]: { ...data.linkState?.[linkId], voters },
+        },
+      }));
+    },
+    [buildRoomLinks, identity.userId, patchPile],
+  );
+
+  const pinLink = useCallback(
+    (linkId: string) => {
+      const link = buildRoomLinks.find((candidate) => candidate.id === linkId);
+      if (!link) return;
+      patchPile((data) => ({
+        ...data,
+        linkState: {
+          ...data.linkState,
+          [linkId]: { ...data.linkState?.[linkId], pinned: !link.pinned },
+        },
+      }));
+    },
+    [buildRoomLinks, patchPile],
+  );
+
+  /* The climax: a takeaway leaves the reading room and lands on the canvas as
+     a pinned note inside the keepers frame. Idempotent — keeping twice is a
+     no-op, so a double click can't spawn two cards. */
+  const keepTakeaway = useCallback(
+    async (linkId: string) => {
+      const link = buildRoomLinks.find((candidate) => candidate.id === linkId);
+      const pile = pileWidgetRef.current;
+      if (!link || !pile || link.keptAt !== undefined) return;
+      const keepers = widgets?.find(
+        (widget) => widget.type === "frame" && widget.data.title === "keepers",
+      );
+      /* Every pinned note in the keepers frame, seeded or kept — new ones fan
+         off the stack instead of landing on top of one. */
+      const slot =
+        widgets?.filter((widget) => widget.type === "note" && widget.data.pin).length ?? 0;
+      /* Measured before the room closes — the note flies in from the card the
+         takeaway was read on. */
+      const from =
+        document.querySelector(".rr-cover")?.getBoundingClientRect() ?? null;
+      const created = await handlers.onCreate({
+        type: "note",
+        x: (keepers?.x ?? 850) + 36 + (slot % 2) * 336 + Math.floor(slot / 2) * 20,
+        y: (keepers?.y ?? 470) + 42 + Math.floor(slot / 2) * 18,
+        w: 320,
+        h: 150,
+        z: 1000 + slot,
+        rotate: slot % 2 === 0 ? -1.2 : 1.4,
+        data: {
+          kicker: link.kind === "docs" ? "reference" : "rule of thumb",
+          title: link.title,
+          text: link.whyItMatters || link.description,
+          author: identity.name,
+          tone: "white",
+          pin: true,
+          keptLinkId: link.id,
+        },
+      });
+      patchPile((data) => ({
+        ...data,
+        linkState: {
+          ...data.linkState,
+          [linkId]: {
+            ...data.linkState?.[linkId],
+            keptAt: Date.now(),
+            keptWidgetId: created ? String(created) : undefined,
+          },
+        },
+      }));
+      /* After the room's 480ms exit cue plus its 300ms shrink. */
+      if (created) {
+        window.setTimeout(() => void flyWidgetIn(String(created), from), 860);
+      }
+    },
+    [buildRoomLinks, handlers, identity.name, patchPile, widgets],
+  );
+
+  /* Paste 1–10 urls: placeholder rows appear immediately, then Firecrawl fills
+     them in one at a time — the patches are read-modify-write on one document,
+     so they must not race each other. */
+  const dropLinks = useCallback(
+    async (urls: string[]) => {
+      const pile = pileWidgetRef.current;
+      if (!pile) return;
+      const existing = new Set(buildRoomLinks.map((link) => link.url));
+      const fresh = urls.filter((url) => !existing.has(url));
+      if (fresh.length === 0) return;
+      const batchKey = `drop-${Date.now()}`;
+      const pending: BuildRoomLink[] = fresh.map((url, index) => ({
+        id: `${batchKey}-${index}`,
+        url,
+        domain: url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0],
+        title: "",
+        description: "",
+        imageUrl: "",
+        kind: "article",
+        whyItMatters: "",
+        questions: [],
+        status: "pending",
+        batchKey,
+        droppedBy: identity.userId,
+        droppedByName: identity.name,
+        droppedAt: Date.now(),
+        voters: [],
+      }));
+      patchPile((data) => ({ ...data, dropped: [...pending, ...(data.dropped ?? [])] }));
+
+      for (const link of pending) {
+        let patch: Partial<BuildRoomLink>;
+        try {
+          const scraped = await handlers.onResolveLink(link.url);
+          patch = {
+            title: scraped.title,
+            description: scraped.description,
+            imageUrl: scraped.imageUrl,
+            domain: scraped.siteName || link.domain,
+            whyItMatters: scraped.description,
+            questions: cannedLinkQuestions(scraped.title || link.url),
+            status: "ready",
+          };
+        } catch {
+          patch = { status: "failed", title: link.domain };
+        }
+        patchPile((data) => ({
+          ...data,
+          dropped: (data.dropped ?? []).map((entry) =>
+            entry.id === link.id ? { ...entry, ...patch } : entry,
+          ),
+        }));
+      }
+    },
+    [buildRoomLinks, handlers, identity.name, identity.userId, patchPile],
+  );
+
+  const retryLink = useCallback(
+    (linkId: string) => {
+      const link = buildRoomLinks.find((candidate) => candidate.id === linkId);
+      if (!link) return;
+      patchPile((data) => ({
+        ...data,
+        dropped: (data.dropped ?? []).filter((entry) => entry.id !== linkId),
+      }));
+      void dropLinks([link.url]);
+    },
+    [buildRoomLinks, dropLinks, patchPile],
+  );
+
+  const shipRoomWidget = useMemo(
+    () =>
+      openRoom?.kind === "ship"
+        ? adaptedWidgets.find((widget) => widget.id === openRoom.widgetId) ?? null
+        : null,
+    [adaptedWidgets, openRoom],
+  );
+
+  /** Same two-step upload the memory wall uses: bytes to storage, url to data. */
+  const attachShipImage = useCallback(
+    async (widgetId: string, file: File) => {
+      const widget = widgets?.find((candidate) => candidate.id === widgetId);
+      if (!widget) return;
+      const uploadUrl = await generatePhotoUploadUrl();
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "image/png" },
+        body: file,
+      });
+      if (!response.ok) throw new Error("ship image upload failed");
+      const { storageId } = (await response.json()) as { storageId: string };
+      const url = await shipImageUrl({ storageId: storageId as Id<"_storage"> });
+      if (url) handlers.onUpdate(widgetId, { ...widget.data, imageUrl: url });
+    },
+    [generatePhotoUploadUrl, handlers, shipImageUrl, widgets],
+  );
+
+  const closeRoom = useCallback(() => {
+    setOpenRoom(null);
+    setPendingLinkId(null);
+    setManagedWidgetId("");
+  }, []);
+
   const photoGalleryWidget = useMemo(
     () => adaptedWidgets.find(
       (widget) => widget.id === photoGallery?.widgetId && widget.type === "photoWall",
@@ -443,7 +795,7 @@ export function LiveSpacePage({
   const commentCounts = useMemo(
     () => Object.fromEntries(
       (allMessages ?? [])
-        .filter((message) => message.widgetId !== "global")
+        .filter((message) => message.widgetId !== "global" && message.widgetId !== RECAP_THREAD_ID)
         .reduce(
           // Question threads ("<widget>::q:<id>") count toward their widget's chip.
           (counts, message) => {
@@ -456,17 +808,35 @@ export function LiveSpacePage({
     [allMessages],
   );
   const promotable = globalMessages.find((message) => message.promotable);
-  const recapLines = useMemo<RecapLine[]>(() => {
-    const potluck = widgets.find((widget) => widget.type === "potluck");
-    const pollWidget = widgets.find((widget) => widget.type === "poll");
-    const chatOnlyMessage = globalMessages.find((message) => /6pm/i.test(message.text));
-
-    return RECAP_LINES.map((line, index) => ({
-      ...line,
-      widgetId: index < 2 ? (index === 0 ? potluck?.id : pollWidget?.id) : undefined,
-      messageId: index === 2 ? chatOnlyMessage?.id : undefined,
-    }));
-  }, [globalMessages, widgets]);
+  const generateRecap = useAction(api.recap.generate);
+  const askRecap = useAction(api.recap.ask);
+  const latestRecap = useQuery(api.recap.latest, space ? { spaceId: space._id } : "skip");
+  const recapLines = useMemo<RecapLine[]>(
+    () =>
+      latestRecap
+        ? latestRecap.lines.map((line) => ({ ...line, text: cleanRecapText(line.text) }))
+        : EMPTY_RECAP_LINES,
+    [latestRecap],
+  );
+  const recapSince = latestRecap?.since ?? "cached";
+  const recapTurns = useMemo<RecapTurn[]>(
+    () =>
+      (allMessages ?? [])
+        .filter((message) => message.widgetId === RECAP_THREAD_ID)
+        .map((message) => ({
+          id: message._id,
+          from: message.authorName,
+          fromColor: message.authorColor,
+          fromEmoji: message.authorEmoji,
+          fromAvatarUrl: message.authorAvatarUrl,
+          text: message.text,
+          isRecap: message.userId === "recap",
+        })),
+    [allMessages],
+  );
+  const [recapBusy, setRecapBusy] = useState(false);
+  const [recapAsking, setRecapAsking] = useState(false);
+  const recapGenerating = useRef(false);
   const promotePosition = slug === "crew"
     ? { x: 1072, y: 660 }
     : { x: 1080, y: 448 };
@@ -849,6 +1219,12 @@ export function LiveSpacePage({
 
   const focusFrame = useCallback((targetFrame: Widget) => {
     if (window.matchMedia("(max-width: 800px)").matches) return;
+    /* The pile's frame has nothing to zoom into — the links live in the
+       reading room, so opening the frame opens the room. */
+    if (pileInsideFrame(targetFrame, adaptedWidgets)) {
+      openReadingRoom();
+      return;
+    }
     if (focusedTarget?.kind === "frame" && focusedTarget.id === targetFrame.id) {
       leaveFocus();
       return;
@@ -874,7 +1250,7 @@ export function LiveSpacePage({
       type: "frame",
       label: String(targetFrame.data.title ?? "frame"),
     });
-  }, [focusedTarget, leaveFocus]);
+  }, [adaptedWidgets, focusedTarget, leaveFocus, openReadingRoom]);
 
   const focusWidgetThread = useCallback((widget: Widget) => {
     if (!widgetSupportsThread(widget)) return;
@@ -923,6 +1299,19 @@ export function LiveSpacePage({
       setRecapOpen(false);
       setChatOpen(false);
       setPhotoGallery({ widgetId: widget.id, origin, printOrigins });
+      return;
+    }
+
+    if (widget.type === "shipPost") {
+      if (focusedTarget) leaveFocus(false);
+      playSound("tap");
+      setManagedWidgetId("");
+      setEditingWidgetId("");
+      setSelectedWidgetId("");
+      setPickerOpen(false);
+      setRecapOpen(false);
+      setChatOpen(false);
+      setOpenRoom({ kind: "ship", widgetId: widget.id, origin: roomOriginFor(widget.id) });
       return;
     }
 
@@ -976,7 +1365,7 @@ export function LiveSpacePage({
     canvasScaleLayerRef.current?.style.removeProperty("will-change");
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     window.cancelAnimationFrame(canvasCameraAnimation.current);
     canvasScaleLayerRef.current?.style.removeProperty("will-change");
     setEditingWidgetId("");
@@ -984,15 +1373,42 @@ export function LiveSpacePage({
     setManagedWidgetId("");
     setFocusedTarget(null);
     setThreadDockPlacement("below");
-    setCanvasScale(1);
     canvasReturnView.current = null;
     chatReturnView.current = null;
-    const frame = window.requestAnimationFrame(() => {
-      applyCanvasScale(1);
-      viewportRef.current?.scrollTo({ left: 0, top: 0, behavior: "auto" });
-    });
-    return () => window.cancelAnimationFrame(frame);
+
+    const viewport = viewportRef.current;
+    const scale = viewport
+      ? buildRoomOverviewScale(slug, viewport, overviewWidgetsRef.current)
+      : 1;
+    applyCanvasScale(scale);
+    setCanvasScale(scale);
+    viewport?.scrollTo({ left: 0, top: 0, behavior: "auto" });
   }, [applyCanvasScale, slug]);
+
+  useEffect(() => {
+    if (slug !== "buildroom" || focusedTarget) return;
+    let frame = 0;
+    const refitOverview = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const viewport = viewportRef.current;
+        if (!viewport) return;
+        const scale = buildRoomOverviewScale(
+          slug,
+          viewport,
+          overviewWidgetsRef.current,
+        );
+        applyCanvasScale(scale);
+        setCanvasScale(scale);
+        viewport.scrollTo({ left: 0, top: 0, behavior: "auto" });
+      });
+    };
+    window.addEventListener("resize", refitOverview);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", refitOverview);
+    };
+  }, [applyCanvasScale, focusedTarget, slug]);
 
   useEffect(() => {
     if (!focusedTarget) return;
@@ -1038,6 +1454,22 @@ export function LiveSpacePage({
     setRecapCites([]);
     setRecapHover(null);
   };
+  useEffect(() => {
+    recapGenerating.current = false;
+  }, [space?._id]);
+  useEffect(() => {
+    if (latestRecap?._id) setRecapRunId((id) => id + 1);
+  }, [latestRecap?._id]);
+  const refreshRecap = () => {
+    if (!space || recapBusy) return;
+    recapGenerating.current = true;
+    setRecapBusy(true);
+    setRecapCites([]);
+    void generateRecap({ spaceId: space._id, kind: "ask" }).finally(() => {
+      recapGenerating.current = false;
+      setRecapBusy(false);
+    });
+  };
   const revealRecap = (count: number) => {
     const widgetId = recapLines[count - 1]?.widgetId;
     if (!widgetId) return;
@@ -1055,6 +1487,23 @@ export function LiveSpacePage({
     setChatOpen(true);
     setHighlightMessageId(messageId);
     window.setTimeout(() => setHighlightMessageId(""), 2600);
+  };
+  const onRecapAsk = (text: string) => {
+    handlers.onSend(RECAP_THREAD_ID, text);
+    if (!space) return;
+    setRecapAsking(true);
+    void askRecap({ spaceId: space._id, question: text })
+      .then((result) => {
+        if (result.widgetId) {
+          setRecapCites((current) => [...current, result.widgetId!]);
+          requestAnimationFrame(() => {
+            document
+              .querySelector(`[data-widget-id="${result.widgetId}"]`)
+              ?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+          });
+        }
+      })
+      .finally(() => setRecapAsking(false));
   };
 
   const selectSpace = (id: string) => {
@@ -1190,9 +1639,19 @@ export function LiveSpacePage({
     }
   }, [focusedTarget, handlers.onFrameLayoutCommit, refitFocusedTarget]);
   const ignorePromote = useCallback(() => {}, []);
+  const spacePan = useCanvasSpacePan(
+    viewportRef,
+    gateOpen ||
+      focusedTarget?.kind === "widget" ||
+      canvasCameraAnimating ||
+      pickerOpen ||
+      Boolean(spaceDraft) ||
+      Boolean(editingWidgetId) ||
+      Boolean(photoGallery),
+  );
 
   return (
-    <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
+    <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""} ${spacePan.panning ? "is-canvas-panning" : ""} ${spacePan.spaceHeld ? "is-space-panning" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
       <Rail activeId={slug} onSelectSpace={selectSpace} onCreateClick={openWidgetPicker} />
       <SpaceHeader
         key={boardKey}
@@ -1207,6 +1666,7 @@ export function LiveSpacePage({
         onSelfClick={() => setClaimOpen(true)}
         livePeers={liveCursors}
         arrivalPeerId={arrivalPeer?.userId}
+        inboxAddress={space?.inboxAddress}
         addOpen={pickerOpen}
         onAddClick={() => {
           if (pickerOpen) {
@@ -1247,7 +1707,9 @@ export function LiveSpacePage({
       )}
       <div
         ref={viewportRef}
-        className="space-scroll h-full overflow-auto"
+        className={`space-scroll h-full overflow-auto ${
+          spacePan.panning ? "is-canvas-panning" : ""
+        } ${spacePan.spaceHeld ? "is-space-panning" : ""}`}
         onScroll={(event) => {
           const el = event.currentTarget;
           setCanvasAwayFromHome(el.scrollLeft > 48 || el.scrollTop > 72);
@@ -1304,6 +1766,8 @@ export function LiveSpacePage({
                 onPollVote={handlers.onVote}
                 onWheelSpin={handlers.onWheelSpin}
                 onPlaylistTune={handlers.onPlaylistTune}
+                buildRoomFeed={buildRoomFeed}
+                roundtableRepliesByWidget={roundtableRepliesByWidget}
                 paintStrokesByWidget={paintStrokesByWidget}
                 paintIdentity={identity}
                 onPaintStroke={paintStroke}
@@ -1358,6 +1822,38 @@ export function LiveSpacePage({
           onComment={sendPhotoComment}
           onAddPhoto={addPhotoToWall}
           onClose={closePhotoGallery}
+        />
+      )}
+      {openRoom?.kind === "pile" && pileWidget && (
+        <ReadingRoom
+          key={pileWidget.id}
+          pileId={pileWidget.id}
+          links={buildRoomLinks}
+          replyCounts={buildRoomReplyCounts}
+          messagesByThread={messagesByThread}
+          faces={members}
+          userId={identity.userId}
+          origin={openRoom.origin}
+          initialLinkId={pendingLinkId ?? undefined}
+          onDrop={dropLinks}
+          onVote={voteOnLink}
+          onPin={pinLink}
+          onKeep={keepTakeaway}
+          onReply={handlers.onSend}
+          onRetry={retryLink}
+          onZone={presence.reportZone}
+          onClose={closeRoom}
+        />
+      )}
+      {openRoom?.kind === "ship" && shipRoomWidget && (
+        <ShipRoom
+          key={shipRoomWidget.id}
+          widget={shipRoomWidget}
+          replies={messagesByThread[shipRoomWidget.id] ?? []}
+          origin={openRoom.origin}
+          onReply={(text) => handlers.onSend(shipRoomWidget.id, text)}
+          onAddImage={(file) => attachShipImage(shipRoomWidget.id, file)}
+          onClose={closeRoom}
         />
       )}
       {activeThreadWidget && (
@@ -1514,6 +2010,14 @@ export function LiveSpacePage({
         recapOpen={recapOpen}
         recapRunId={recapRunId}
         recapLines={recapLines}
+        recapSince={recapSince}
+        recapTurns={recapTurns}
+        recapLoading={recapBusy || (recapOpen && latestRecap === undefined)}
+        recapAsking={recapAsking}
+        recapCached={latestRecap != null}
+        recapTurnsReady={allMessages !== undefined}
+        onRecapRefresh={refreshRecap}
+        onRecapAsk={onRecapAsk}
         onRecapReveal={revealRecap}
         onRecapClose={closeRecap}
         onRecapHover={setRecapHover}

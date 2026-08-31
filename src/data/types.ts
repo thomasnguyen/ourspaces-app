@@ -27,7 +27,12 @@ export type WidgetType =
   | "backendLive"
   | "wheel"
   | "dualClock"
-  | "cozyColor";
+  | "cozyColor"
+  | "linkPile"
+  | "hotLinks"
+  | "shipPost"
+  | "roundtable"
+  | "letter";
 
 export type Widget = {
   id: string;
@@ -72,6 +77,8 @@ export type SpaceMeta = {
   preview?: string;
   showcase?: string;
   visitorCount?: number;
+  /** The space's own AgentMail address — email in, widgets out. */
+  inboxAddress?: string;
 };
 
 export type Space = SpaceMeta & {

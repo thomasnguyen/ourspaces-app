@@ -27,6 +27,10 @@ export const WIDGET_CATALOG: WidgetTemplate[] = [
   { type: "wheel", label: "spin wheel", emoji: "🎡" },
   { type: "dualClock", label: "two clocks", emoji: "🕰", pickerHidden: true },
   { type: "cozyColor", label: "color together", emoji: "🎨" },
+  { type: "linkPile", label: "link pile", emoji: "🗂" },
+  { type: "hotLinks", label: "hot now", emoji: "🔥" },
+  { type: "shipPost", label: "ship post", emoji: "🚀" },
+  { type: "roundtable", label: "roundtable", emoji: "🗣" },
 ];
 
 export const SPACE_TEMPLATES: SpaceTemplate[] = [

@@ -7,7 +7,10 @@
  * that — and only that — is what this answers.
  *
  * It never writes to the canvas. It reports, and points at where things moved.
- * Scripted for the look prototype; no model behind it.
+ * Live mode reads the cached row from convex/recap.ts. ↻ regenerates on
+ * demand. The daily cron is paused until closer to the hackathon deadline.
+ * Follow-up chat rides the `recap` message thread. Mock mode keeps the
+ * scripted lines.
  */
 
 export type RecapLine = {
@@ -18,7 +21,28 @@ export type RecapLine = {
   messageId?: string;
 };
 
+/** Shared follow-up thread — rides `messages.widgetId`, hidden from global chat. */
+export const RECAP_THREAD_ID = "recap";
+
+export type RecapTurn = {
+  id: string;
+  from: string;
+  fromColor?: string;
+  fromEmoji?: string;
+  fromAvatarUrl?: string;
+  text: string;
+  isRecap: boolean;
+};
+
 export const RECAP_SINCE = "since friday";
+
+/** Models sometimes echo Convex ids into the sentence. Never show those. */
+export function cleanRecapText(text: string) {
+  return text
+    .replace(/\s*\(([a-z0-9]{16,})\)/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 export const RECAP_LINES: RecapLine[] = [
   {
@@ -38,3 +62,5 @@ export const RECAP_LINES: RecapLine[] = [
 /** How the reveal is paced — the sequence is what makes it feel considered. */
 export const RECAP_THINKING_MS = 900;
 export const RECAP_LINE_MS = 300;
+export const RECAP_STREAM_MS = 16;
+export const RECAP_STREAM_CHARS = 2;

@@ -12,6 +12,8 @@ import type {
 } from "../live/presenceTypes";
 import { FirstRunSticky, type CanvasPoint } from "./FirstRunSticky";
 import { MemberFace } from "./MemberFace";
+import type { BuildRoomFeed, RoundtableReply } from "../widgets/buildroom";
+import { widgetIsInsideFrame } from "../lib/frameMembership";
 import { WidgetCard } from "./WidgetCard";
 import type { RsvpStatus, PlaylistTune } from "../widgets/extras";
 import type {
@@ -33,22 +35,6 @@ type CanvasCursor = {
   zone?: string;
   gesture?: LiveGesture;
 };
-
-function widgetIsInsideFrame(widget: Widget, frame: Widget) {
-  if (widget.id === frame.id) return true;
-  if (widget.type === "frame") return false;
-
-  // Center containment, not full containment — collage pieces deliberately
-  // breach the frame border (the bday cake sticker) and still belong to it.
-  const cx = widget.x + widget.w / 2;
-  const cy = widget.y + widget.h / 2;
-  return (
-    cx >= frame.x &&
-    cy >= frame.y &&
-    cx <= frame.x + frame.w &&
-    cy <= frame.y + frame.h
-  );
-}
 
 export function Canvas({
   spaceId,
@@ -100,6 +86,8 @@ export function Canvas({
   claimantId,
   onWheelSpin,
   onPlaylistTune,
+  buildRoomFeed,
+  roundtableRepliesByWidget = {},
   paintStrokesByWidget = {},
   paintIdentity,
   onPaintStroke,
@@ -164,6 +152,8 @@ export function Canvas({
   claimantId?: string;
   onWheelSpin?: (widgetId: string, spin: { spinNonce: number; resultIndex: number }) => void;
   onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
+  buildRoomFeed?: BuildRoomFeed;
+  roundtableRepliesByWidget?: Record<string, RoundtableReply[]>;
   paintStrokesByWidget?: Record<string, CozyColorStroke[]>;
   paintIdentity?: CozyColorIdentity;
   onPaintStroke?: (
@@ -303,6 +293,8 @@ export function Canvas({
         onPollVote={onPollVote}
         onWheelSpin={onWheelSpin}
         onPlaylistTune={onPlaylistTune}
+        buildRoomFeed={buildRoomFeed}
+        roundtableReplies={roundtableRepliesByWidget[widget.id]}
         paintStrokes={paintStrokesByWidget[widget.id]}
         paintIdentity={paintIdentity}
         onPaintStroke={onPaintStroke}
@@ -352,6 +344,8 @@ export function Canvas({
       onWidgetMove,
       onWidgetSelect,
       pollSelections,
+      buildRoomFeed,
+      roundtableRepliesByWidget,
       paintIdentity,
       paintStrokesByWidget,
       promoted,
@@ -432,11 +426,13 @@ export function SpaceHeader({
   onSelfClick,
   livePeers = [],
   arrivalPeerId,
+  inboxAddress,
 }: {
   spaceId: string;
   addOpen?: boolean;
   onAddClick?: () => void;
   spaceMeta?: Pick<SpaceMeta, "name" | "tagline" | "kind">;
+  inboxAddress?: string;
   roomEditing?: boolean;
   onEditSpace?: () => void;
   visitorCount?: number;
@@ -451,6 +447,7 @@ export function SpaceHeader({
 }) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [mailCopied, setMailCopied] = useState(false);
   const [invitePosition, setInvitePosition] = useState({ top: 120, right: 28 });
   const inviteButtonRef = useRef<HTMLButtonElement>(null);
   const invitePopoverRef = useRef<HTMLElement>(null);
@@ -461,6 +458,7 @@ export function SpaceHeader({
   const online = (membersProp ?? space.members).filter((member) => member.online);
   const name = spaceName ?? spaceMeta?.name ?? space.name;
   const tagline = spaceMeta?.tagline ?? space.tagline;
+  const mailAddress = inboxAddress ?? space.inboxAddress;
   const kind = spaceMeta?.kind ?? space.kind;
   const visibleLivePeers = livePeers.slice(0, 3);
   const visibleOnline = online.slice(0, Math.max(0, 4 - visibleLivePeers.length));
@@ -629,6 +627,27 @@ export function SpaceHeader({
               <span className="space-edit-label">edit</span>
             </button>
           </div>
+          {mailAddress && (
+            <button
+              type="button"
+              className={`space-mail-chip ${mailCopied ? "is-copied" : ""}`}
+              title="email this space — mail becomes widgets"
+              onClick={() => {
+                navigator.clipboard
+                  ?.writeText(mailAddress)
+                  .then(() => {
+                    setMailCopied(true);
+                    window.setTimeout(() => setMailCopied(false), 1600);
+                  })
+                  .catch(() => {});
+              }}
+            >
+              <span className="space-mail-mark" aria-hidden="true">✉</span>
+              <span className="space-mail-address">
+                {mailCopied ? "copied!" : mailAddress}
+              </span>
+            </button>
+          )}
         </div>
 
         <div className="space-header-side">
