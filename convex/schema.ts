@@ -36,6 +36,7 @@ export default defineSchema({
     to: v.string(),
     subject: v.string(),
     summary: v.string(),
+    body: v.optional(v.string()), // full text, for the router + letters
     widgetId: v.optional(v.id("widgets")),
     createdAt: v.number(),
   }).index("by_space", ["spaceId"]),
@@ -113,6 +114,22 @@ export default defineSchema({
   })
     .index("by_space", ["spaceId"])
     .index("by_space_and_widget", ["spaceId", "widgetId"]),
+
+  recaps: defineTable({
+    spaceId: v.id("spaces"),
+    kind: v.union(v.literal("daily"), v.literal("ask")),
+    since: v.string(),
+    lines: v.array(
+      v.object({
+        text: v.string(),
+        widgetId: v.optional(v.string()),
+        messageId: v.optional(v.string()),
+      }),
+    ),
+    createdAt: v.number(),
+  })
+    .index("by_space", ["spaceId"])
+    .index("by_space_created", ["spaceId", "createdAt"]),
 
   presence: defineTable({
     spaceId: v.id("spaces"),
