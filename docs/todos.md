@@ -5,6 +5,19 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **The pile filters by tag** (2026-08-30 night). The reading room's filter bar
+  leads with six tag chips — kinds first by count (`article 31`, `docs 6`,
+  `repo 6`, `discussion 2`, `video 2`) then the top hosts (`#github 6`),
+  kind-tinted, crooked sticker pills that stand straight and go full strength
+  when picked. The tag is the **outer** cut: `all / new / hot / discussed /
+  kept` re-count against the tagged pile (article → all 31, new 4, hot 5), and
+  the reading circle's own tag pills are now buttons that set the same filter —
+  a rare one picked there (`#oreilly`) is carried into the row so it can be
+  undone. `tagFacets()` / `linkHasTag()` / `isKindTag()` in
+  `src/lib/linkRanking.ts`; kind synonyms ("watch" for video) are dropped from
+  the row because they'd be a second chip with an identical count and result.
+  Verified headless in mock mode — `/tmp/rr-tags-{1,2,3}.png`.
+
 - **Email → canvas is real, end to end** (2026-08-30 evening). Dropped the
   broken `@agentmail/convex` component; `convex/agentmail.ts` is a plain REST
   client (create inbox / send / `clearStubInboxes` / `ensureShowcaseInboxes`)
@@ -398,7 +411,18 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Broken / known issues
 
-- (none recorded yet)
+- **Mail is dev-only until the prod cutover.** Inboxes, webhook and secret are
+  bound on the dev deployment (`dusty-condor-648`); production
+  (`necessary-cobra-892`) has no AgentMail webhook yet, so email → canvas does
+  nothing on the live URL. Steps (second webhook, `setSpaceInbox` binds, do
+  **not** create inboxes again) are in `docs/firecrawl-agentmail-setup.md`
+  § Prod. The 3-inbox free tier is per **org** and shared dev↔prod, which is
+  why prod has to reuse the same three addresses.
+- **The daily recap cron is commented out** in `convex/crons.ts` — deliberate,
+  re-enable `recap.generateAll` closer to the deadline. Only the presence
+  sweep (1 min) and the Friday digest run today.
+- **Live Convex still needs a re-seed** for the SomaFM playlist fields and the
+  seeded buildclub / Tahoe web-post cards (`npx convex run seed:demo`).
 
 ## Now also working
 
@@ -422,11 +446,17 @@ Backward-looking history lives in `hackathon.md`.
   [bracketed] placeholders (real-event receipts, commons counts, day/commit
   totals) at submit time (Sep 21); cut any line whose feature didn't land
   (email→action routing, commons).
+- **Prod mail cutover** — the one thing between "works" and "works in the
+  demo": second AgentMail webhook at `necessary-cobra-892.convex.site`, key +
+  secret with `--prod`, then `setSpaceInbox` for the three spaces. Do not
+  create inboxes again (org-wide 3-inbox cap). Recipe in the setup doc § Prod.
 - Re-seed live Convex (`npx convex run seed:demo` or equivalent) so
   production canvases pick up the SomaFM fields and seeded buildclub/Tahoe
   web-post cards.
 - ~~Surface AgentMail in the UI (email → canvas mutations)~~ — done 2026-08-30,
-  pending only the unrestricted API key (human, see setup doc).
+  live on dev with real mail (crew `ourspaces@`, couple `ustwo@`, buildroom
+  `buildroom@`).
+- ~~Reading-room tag filters~~ — done 2026-08-30 night.
 - Mail polish, if time: emailed widgets should *arrive* (envelope drop + house
   motion, not a reactive pop-in); letters could open live for both people
   (shared `sealed` state) instead of per-tab local state.
@@ -449,6 +479,12 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- 2026-08-30 (night): In the reading room, **tags cut before state**. The
+  filter row is kinds-first (a stable vocabulary the room learns) plus the
+  loudest hosts, capped at six so it stays one line; `new / hot / discussed /
+  kept` are a second, quieter cut *inside* the picked tag. Kind synonyms are
+  never chips. Tag pills in the reading circle are the same control, so a tag
+  seen on a card is a tag you can pull.
 - 2026-08-30: Live model calls go through RoomDone's shared `ai-proxy`
   Worker (`https://ai-proxy.corgi-quest.workers.dev/v1`, gpt-oss-120b),
   not OpenAI. OurSpaces has its own project token; RoomDone's hash map

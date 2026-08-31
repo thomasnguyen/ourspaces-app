@@ -28,22 +28,27 @@ note · media.
 **Extras** (`extras.tsx`): wheel · dualClock · dailyQ · rsvp · decision ·
 availability · photoWall · linkCard · linkShelf · playlist · jokeRegistry ·
 expenseSplit · itinerary · messageWall · quote · weather · sports ·
-backendLive.
+backendLive · letter (kraft envelope — an email that landed; click unfolds it).
+
+**Rooms** (`CozyColorWidget.tsx`): cozyColor — the shared paint-by-number
+postcard, fills and palette synced through the `paintMarks` table.
 
 **Build room** (`buildroom.tsx`): linkPile · hotLinks · shipPost · roundtable.
 All four are pure and read one `BuildRoomFeed` prop; keepers reuse `note` with
 `data.title` + `data.pin`.
 
-**To build** (the only real engineering left, per PRD §8):
+**Both PRD §8 "to build" items have shipped:**
 
-- **paint** — tiny shared pixel canvas, both cursors coloring the same cells
-  live. The couple-space demo beat and the purest Convex flex. Fixed grid,
-  few colors, one mutation per stroke. No brushes, layers, or undo.
-- **linkCard discussion layer** — the Firecrawl-powered URL → title, image,
-  summary card is built. Add two OpenAI-generated questions and live upvotes
-  for the full article-club beat. Distinct from `linkShelf`, which remains a
-  static prop list of links. *(The build room's pile now does the upvote +
-  discussion half — see §0.)*
+- ~~**paint**~~ — shipped as the cozy-color room: 50 closed vector regions on
+  generated + traced boards, region fills and palette presets reactive through
+  `paintMarks`, board-scoped cursors (`reportZone(x, y, "cozy:<boardId>")`).
+- ~~**linkCard discussion layer**~~ — shipped: `convex/questions.ts`
+  (`sparkQuestions`, OpenAI → two starters, canned fallback) +
+  `LinkQuestionStrip.tsx` in the thread dock; threads ride
+  `<widgetId>::q:<id>`. `linkShelf` stays the static prop list.
+
+Left on the widget layer: no editor forms yet for the four build-room types
+(`WidgetEditorPanel`), and Hot Now doesn't FLIP when a vote reorders it.
 
 ---
 
@@ -93,6 +98,10 @@ Demo role: the volume story (47 links that don't wreck the canvas), Firecrawl
 on a live paste, and the **keep takeaway** climax — the note physically flies
 out of the room onto the canvas and lands with a squash.
 
+Mail: `buildroom@agentmail.to` is the pile's other mouth — any URL in an
+email body drops in as a `dropped` row and gets Firecrawl-enriched, with the
+sender shown as "Name ✉" (`convex/inbox.ts`, `docs/mail.md`).
+
 Data note: link content is fixtures (`src/data/buildroom.ts`); votes, pins,
 keeps and runtime drops persist into the pile widget's own `data`, so there is
 **no new Convex table**. Replies ride `messages` under `<pileId>::link:<linkId>`.
@@ -111,27 +120,35 @@ above was learned here. Don't add — protect. (It handed `#/` to the build room
 | Talk | daily question (3 answered) · chat threads |
 | Props | SomaFM room radio · weather · link shelf · expense split · itinerary · availability |
 
+Also: a **japan trip frame** (itinerary rebranded from tahoe, future dates —
+the router's past-vs-future money/booking test), and a black `✉ ourspaces@…`
+chip under the title (click copies). Mail here is **AI-filed**: a receipt
+appends an expense row and decrements what someone owes, a booking appends an
+itinerary day, anything unsure becomes an unfiled envelope (`convex/inbox.ts`,
+spec in `docs/mail.md`).
+
 Demo role: two-window liveness (votes, potluck claims, cursors), the promote
 climax, the AgentMail follow-up sequence.
 
 ## 2. us two — long-distance couple (`#e63da8` magenta, "an ocean apart")
 
-**Status: identity layer done, needs its demo beat.** Two members (ren + sky),
-smaller canvas (1120×760).
+**Status: has its demo beat.** Two members (ren + sky), smaller canvas
+(1120×760).
 
 Has today: countdown to next visit · "47 days to SFO" countdown · dual
 clocks (two timezones — a great long-distance detail) · playlist · media ·
-note · quote · sticker.
+note · quote · sticker · the **cozy-color room** (the shared paint-by-number
+postcard: both windows filling the same board live) · **letters** — mail to
+`ustwo@agentmail.to` lands as a sealed kraft envelope that unfolds on click.
 
 Needs, in priority order:
 
-1. **paint** — the demo beat. The cameo shot is the two of them coloring the
-   same canvas from two windows. This is the "something to *do* together"
-   answer for long distance.
-2. **daily question** — the talk layer is empty; a two-person daily q ("what
+1. **daily question** — the talk layer is empty; a two-person daily q ("what
    did you eat today") is the cheapest liveness.
-3. **photo wall** — the memory layer is thin; one small wall of crooked
+2. **photo wall** — the memory layer is thin; one small wall of crooked
    polaroids covers it.
+3. **shared letter opening** — `sealed` is per-tab local state; flipping it
+   through `updateWidgetData` would let both people watch it open.
 
 Skin note: same widgets, softer register — fewer, larger objects, more
 whitespace than the crew's clutter. Two people, not six.

@@ -4,7 +4,7 @@ For agents: read this before searching the codebase. Update it when structure
 changes. Stale line numbers are fine (treat them as landmarks); missing files
 are not.
 
-## src/App.tsx (~2150 lines, one giant `App()`) — the MOCK/demo canvas path
+## src/App.tsx (~2470 lines, one giant `App()`) — the MOCK/demo canvas path
 
 | ~Lines | Section |
 |---|---|
@@ -23,7 +23,7 @@ are not.
 | 1640–1717 | Route early-returns → pages (live/join/space → `LiveSpacePage`, home → `(Live)BlockPage`) |
 | 1719–2130 | Mock-mode derived data + the big JSX render (`Rail`, `Canvas` ~1921, panels, docks, toasts) |
 
-`src/pages/LiveSpace.tsx` (~1375 lines) is the LIVE twin of App.tsx's inline canvas.
+`src/pages/LiveSpace.tsx` (~2060 lines) is the LIVE twin of App.tsx's inline canvas.
 
 ## src/ directories
 
@@ -39,8 +39,9 @@ briefing, ↻ refresh, follow-up composer) ·
 `LinkQuestionStrip.tsx` (web post conversation starters in the thread dock) ·
 `CanvasRoom.tsx` (shared full-screen `<dialog>` shell: grows out of the card
 that opened it via `--room-origin-*`, shrinks back on close) ·
-`ReadingRoom.tsx` (the pile's full view — single-link drop bar, filters,
-per-person runs, dense rows, reading circle) · `ShipRoom.tsx` (a ship post's
+`ReadingRoom.tsx` (the pile's full view — single-link drop bar, a tag row over
+the `all / new / hot / discussed / kept` filters, per-person runs, dense rows,
+reading circle whose tag pills set the same tag filter) · `ShipRoom.tsx` (a ship post's
 full view)
 
 **pages/** — `LiveSpace.tsx` (live canvas) · `Block.tsx` (mock `#/home`) ·
@@ -80,7 +81,9 @@ switches it back) ·
 `backendCounts.ts` · `canvasSpacePan.ts` (hold-Space + drag pans
 `.space-scroll`, Figma-style; used by App.tsx + LiveSpace.tsx) ·
 `linkRanking.ts` (Hot Now's `pinned → voteCount×3 + replyCount×2 → newest`,
-pile counts, per-domain tile tones) · `buildRoomFeed.ts` (link state + thread-id
+pile counts, per-domain tile tones, and the pile's tag vocabulary —
+`linkTags` / `tagFacets` (kinds first, then top hosts, synonyms dropped) /
+`linkHasTag` / `isKindTag`) · `buildRoomFeed.ts` (link state + thread-id
 namespacing; `pileLinks()` folds the pile widget's `data.linkState`/`data.dropped`
 over the fixtures) · `buildRoomPresentation.ts` (desktop overview scale from
 frame bounds + viewport padding, capped at `.84`; pinned local cover fallback) ·
@@ -148,10 +151,12 @@ generated vector board; kept for history only.
 
 ## convex/
 
-`schema.ts` (spaces, members, widgets, messages, votes, recaps, presence; frames are
+`schema.ts` (spaces — carries `inboxId`/`inboxAddress` — plus emailEvents,
+members, widgets, messages, votes, paintMarks, recaps, presence; frames are
 widgets) · `spaces.ts` · `widgets.ts` (CRUD/move/resize) · `messages.ts`
 (per-widget threads) · `votes.ts` · `presence.ts` (cursors + gestures, TTLs) ·
-`stats.ts` (live counts) · `seed.ts` · `crons.ts` (presence cleanup + daily recap) ·
+`stats.ts` (live counts) · `seed.ts` · `crons.ts` (presence sweep every minute + Friday 16:00 UTC digest; the daily
+recap cron is commented out until closer to the deadline) ·
 `http.ts` (hand-rolled svix-verified webhook `/api/agentmail/webhook`) ·
 `agentmail.ts` (AgentMail via plain REST — NOT the broken component: ensure/clear
 inboxes, send, `onMessageReceived` → `emailEvents` → router) ·
@@ -171,14 +176,17 @@ a photoWall widget's `data.photos`, becomes the pile cover;
 changing their ids/note threads) ·
 `convex.config.ts` (components, env)
 
-## src/index.css (~17.3k lines, hand-written, banner comments)
+## src/index.css (~21.1k lines, hand-written, banner comments)
 
 Tokens `@theme` (lines 4–27) → base (~1–1000) → space entrance (~1048) →
 per-widget sections (~1670–6300) → chrome: picker ~6305, threads ~7047,
 navigator ~7357, chat drawer ~8313, action dock ~9744, recap ~9951 → pages:
 block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
-(~11482+), ending with the "CATCH ME UP — live recap + follow-up" section. New CSS
-goes in a new banner section at the end.
+(~11482+): catch-me-up recap, the kraft-mat frames, the full-screen rooms
+(`.canvas-room` shell → `.reading-room` / `.rr-*` incl. the tag row, ship room
+`.sr-*`), the quote pushpin (~17882), the scroll-linked header fade (~17905),
+the letter envelope + mail chip, and "BUILD ROOM — COMPACT OVERVIEW" (~20762)
+last. New CSS goes in a new banner section at the end.
 
 ## scripts/
 

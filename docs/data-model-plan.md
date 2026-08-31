@@ -62,6 +62,20 @@ identical. That's the entire reason for the `v.string()` call above.
 
 ---
 
+> **As built (2026-08-30).** This file is the *plan*; `convex/schema.ts` is the
+> truth, and it drifted deliberately. Live today: **spaces** (+ `slug`,
+> `canvasW/H`, `tagline`, `inboxId`/`inboxAddress`, indexed `by_slug` /
+> `by_inbox`) · **emailEvents** (every mail in/out, with `body` for the router
+> and the digest's recipient mining) · **members** · **widgets** (+ `rotate`) ·
+> **messages** (+ `authorEmoji`, `authorAvatarUrl`, `promotable`,
+> `promotedWidgetId`) · **votes** · **paintMarks** (cozy-color region fills,
+> tone + preset) · **recaps** (daily / ask, cited lines) · **presence**
+> (+ `emoji`, `avatarUrl`, `zone`, and an embedded `gesture` object for live
+> move/resize). Two plan calls were **not** taken: there are no `authTables`
+> (identity is local + claimed, `userId` stays a plain string), and the AI
+> layer in §8 runs on a Cloudflare `ai-proxy` (gpt-oss-120b) with OpenAI as
+> fallback, not Anthropic. Everything else below still describes what shipped.
+
 ## 2. Convex tables (backend)
 
 PRD §11's sketch is the spine. Below is that spine plus the refinements this doc

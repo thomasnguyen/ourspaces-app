@@ -26,7 +26,7 @@ A public space for this hackathon's builders: drop your project link and it beco
 
 ## the space you can email
 
-Every space has its own email address. The one person who'll never install the app — grandma, the busy friend — just emails it: "I'll bring drinks" claims a potluck slot on the wall, live.
+Every space has its own email address, and mail doesn't land in an inbox — it becomes furniture. Forward the crew a receipt and the expense split adds the row and clears what you owed; forward a booking and it becomes a day on the itinerary. Mail the build room a link and it drops into the reading pile, Firecrawl-enriched. Mail the couple anything and it arrives as a sealed letter you unfold. Every Friday each space mails its week back to everyone who ever wrote to it.
 
 ## the questions each widget kills
 
@@ -39,8 +39,8 @@ Every space has its own email address. The one person who'll never install the a
 
 ## the stack doing real work
 
-- **Convex** is the entire backend and the frontend host: realtime queries drive all 22 widget types, presence powers live cursors, crons sweep stale rows, file storage holds the memory wall, HTTP actions catch inbound email.
-- **AgentMail** provisions a real inbox per space; its webhook turns replies into canvas mutations.
+- **Convex** is the entire backend and the frontend host: realtime queries drive all 32 widget types, presence powers live cursors, crons sweep stale rows, file storage holds the memory wall, HTTP actions catch inbound email.
+- **AgentMail** provisions a real inbox per space; its webhook turns inbound mail into canvas mutations, and a Friday cron mails each space's week back out.
 - **Firecrawl** turns any pasted URL into a structured reading card (Hacker News links resolve to the article plus live points and the thread).
 - **OpenAI gpt-4o-mini** works as a structured extractor/decider, never a chatbot: it routes inbound email to the right action and seeds two conversation starters on every saved article.
 
