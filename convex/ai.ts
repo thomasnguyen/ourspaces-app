@@ -1,10 +1,14 @@
 import { env } from "./_generated/server";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModelV4 } from "@ai-sdk/provider";
 
 /** RoomDone's shared Cloudflare Worker — OpenAI-shaped /v1 in front of Workers AI. */
 const PROXY_CHAT_MODEL = "@cf/openai/gpt-oss-120b";
 const OPENAI_CHAT_MODEL = "gpt-4o-mini";
+// The shared proxy is chat-only (no /v1/embeddings) — rag needs real OpenAI.
+export const EMBEDDING_MODEL = "text-embedding-3-small";
+export const EMBEDDING_DIMENSIONS = 1536;
 
 type ChatTarget = {
   url: string;
@@ -50,6 +54,15 @@ export function languageModel(): LanguageModelV4 {
     apiKey: target?.token ?? "unconfigured",
   });
   return provider(target?.model ?? OPENAI_CHAT_MODEL);
+}
+
+/** rag's embedding model — real OpenAI only, since the shared chat proxy has
+ * no embeddings route. Null when unconfigured; callers should skip
+ * indexing/search rather than call rag with a broken model. */
+export function embeddingModel() {
+  const openaiKey = env.OPENAI_API_KEY?.trim();
+  if (!openaiKey) return null;
+  return createOpenAI({ apiKey: openaiKey }).embedding(EMBEDDING_MODEL);
 }
 
 export async function completeJson(args: {

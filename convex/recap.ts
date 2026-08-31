@@ -492,6 +492,12 @@ export const ask = action({
   }> => {
     await rateLimiter.limit(ctx, "recapAsk", { key: spaceId, throws: true });
     const snap: Snapshot = await ctx.runQuery(internal.recap.snapshot, { spaceId });
+    // rag: retrieve the widgets/messages most relevant to this specific
+    // question (vector search) instead of dumping the whole board every
+    // time — falls back to "" (snapshot-only grounding) if unconfigured.
+    const retrieved = await ctx
+      .runAction(internal.rag.groundQuestion, { spaceId, question })
+      .catch(() => "");
 
     let threadId = await ctx.runQuery(internal.recap.getAskThreadId, { spaceId });
     if (!threadId) {
@@ -508,7 +514,9 @@ export const ask = action({
           schema: askReplySchema,
           prompt:
             `Space: ${snap.space}\nBoard: ${JSON.stringify(snap.widgets).slice(0, 2500)}\n` +
-            `Chat: ${JSON.stringify(snap.chat).slice(0, 1000)}\n\nQuestion: ${question}`,
+            `Chat: ${JSON.stringify(snap.chat).slice(0, 1000)}` +
+            (retrieved ? `\n\nMost relevant to this question:\n${retrieved.slice(0, 2000)}` : "") +
+            `\n\nQuestion: ${question}`,
         },
       )
       .then((result) => result.object)

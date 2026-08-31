@@ -23,6 +23,7 @@ import type * as paint from "../paint.js";
 import type * as photos from "../photos.js";
 import type * as presence from "../presence.js";
 import type * as questions from "../questions.js";
+import type * as rag from "../rag.js";
 import type * as rateLimits from "../rateLimits.js";
 import type * as recap from "../recap.js";
 import type * as seed from "../seed.js";
@@ -54,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   photos: typeof photos;
   presence: typeof presence;
   questions: typeof questions;
+  rag: typeof rag;
   rateLimits: typeof rateLimits;
   recap: typeof recap;
   seed: typeof seed;
