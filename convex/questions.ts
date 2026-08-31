@@ -1,8 +1,9 @@
 import { v } from "convex/values";
-import { action, internalMutation } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { action, internalAction, internalMutation } from "./_generated/server";
+import { components, internal } from "./_generated/api";
 import { completeJson } from "./ai";
 import { rateLimiter } from "./rateLimits";
+import { ActionCache } from "@convex-dev/action-cache";
 
 /** OpenAI as a structured decider (never a chatbot UI): an article becomes
  * two short conversation starters the group answers as threads. */
@@ -50,6 +51,22 @@ async function askOpenAi(title: string, description: string) {
   }
 }
 
+export const generateQuestions = internalAction({
+  args: { title: v.string(), description: v.string() },
+  returns: questionsValidator,
+  handler: async (_ctx, { title, description }) =>
+    (await askOpenAi(title, description).catch(() => null)) ?? canned(title),
+});
+
+// action-cache: the same link gets re-saved across spaces (or re-edited
+// without changing title/description) — skip the LLM round trip on a
+// repeat (title, description) pair. No TTL: conversation starters for the
+// same article don't go stale.
+const questionsCache = new ActionCache(components.actionCache, {
+  action: internal.questions.generateQuestions,
+  name: "sparkQuestions-v1",
+});
+
 export const setQuestions = internalMutation({
   args: { widgetId: v.id("widgets"), questions: questionsValidator },
   returns: v.null(),
@@ -69,12 +86,13 @@ export const sparkQuestions = action({
     description: v.string(),
   },
   returns: questionsValidator,
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ id: string; text: string }[]> => {
     // rate-limiter: guard the LLM proxy from a runaway loop of link saves.
     await rateLimiter.limit(ctx, "sparkQuestions", { key: args.spaceId, throws: true });
-    const questions =
-      (await askOpenAi(args.title, args.description).catch(() => null)) ??
-      canned(args.title);
+    const questions = await questionsCache.fetch(ctx, {
+      title: args.title,
+      description: args.description,
+    });
     await ctx.runMutation(internal.questions.setQuestions, {
       widgetId: args.widgetId,
       questions,
