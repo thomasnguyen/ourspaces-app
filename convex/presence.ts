@@ -2,6 +2,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
+import schema from "./schema";
 
 const PRESENCE_TTL_MS = 30_000;
 const GESTURE_TTL_MS = 1_500;
@@ -129,6 +130,7 @@ function gestureIdentity(args: {
 
 export const heartbeat = mutation({
   args: identityArgs,
+  returns: v.id("presence"),
   handler: async (ctx, identity) => {
     return await upsertPresence(ctx, identity, Date.now());
   },
@@ -140,6 +142,15 @@ export const claimGesture = mutation({
     sessionId: v.string(),
     ...gestureLayoutArgs,
   },
+  returns: v.union(
+    v.object({ accepted: v.literal(false), reason: v.literal("missing") }),
+    v.object({
+      accepted: v.literal(false),
+      reason: v.literal("locked"),
+      owner: v.object({ userId: v.string(), name: v.string(), color: v.string() }),
+    }),
+    v.object({ accepted: v.literal(true) }),
+  ),
   handler: async (ctx, args) => {
     const now = Date.now();
     const widget = await ctx.db.get(args.widgetId);
@@ -201,6 +212,7 @@ export const updateGesture = mutation({
     sessionId: v.string(),
     ...gestureLayoutArgs,
   },
+  returns: v.boolean(),
   handler: async (ctx, args) => {
     const existing = await findPresence(ctx, args.spaceId, args.userId);
     const now = Date.now();
@@ -256,6 +268,7 @@ export const finishGesture = mutation({
     sessionId: v.string(),
     ...gestureLayoutArgs,
   },
+  returns: v.boolean(),
   handler: async (ctx, args) => {
     const existing = await findPresence(ctx, args.spaceId, args.userId);
     const now = Date.now();
@@ -317,6 +330,7 @@ export const cancelGesture = mutation({
     userId: v.string(),
     sessionId: v.string(),
   },
+  returns: v.boolean(),
   handler: async (ctx, args) => {
     const existing = await findPresence(ctx, args.spaceId, args.userId);
     if (!existing?.gesture || existing.gesture.sessionId !== args.sessionId) {
@@ -332,6 +346,7 @@ export const cancelGesture = mutation({
 
 export const listHereNow = query({
   args: { spaceId: v.id("spaces") },
+  returns: v.array(schema.doc("presence")),
   handler: async (ctx, { spaceId }) => {
     const staleBefore = Date.now() - PRESENCE_TTL_MS;
     return await ctx.db
@@ -344,11 +359,13 @@ export const listHereNow = query({
 
 export const cleanup = internalMutation({
   args: {},
+  returns: v.null(),
   handler: async (ctx) => {
     const staleBefore = Date.now() - 120_000;
     const rows = await ctx.db.query("presence").collect();
     for (const row of rows) {
       if (row.updatedAt < staleBefore) await ctx.db.delete(row._id);
     }
+    return null;
   },
 });

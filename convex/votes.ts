@@ -1,8 +1,10 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import schema from "./schema";
 
 export const getResults = query({
   args: { widgetId: v.id("widgets") },
+  returns: v.array(schema.doc("votes").extend({ voterName: v.string() })),
   handler: async (ctx, { widgetId }) => {
     const widget = await ctx.db.get(widgetId);
     if (!widget) return [];
@@ -34,6 +36,7 @@ export const vote = mutation({
     userId: v.string(),
     optionId: v.string(),
   },
+  returns: v.id("votes"),
   handler: async (ctx, { widgetId, userId, optionId }) => {
     const existing = await ctx.db
       .query("votes")

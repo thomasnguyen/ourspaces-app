@@ -9,6 +9,7 @@ import {
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { completeJson } from "./ai";
+import schema from "./schema";
 
 /** Follow-up chat rides the existing messages table, hidden from global chat. */
 const THREAD = "recap";
@@ -349,6 +350,7 @@ export const snapshot = internalQuery({
 
 export const latest = query({
   args: { spaceId: v.id("spaces") },
+  returns: v.union(schema.doc("recaps"), v.null()),
   handler: async (ctx, { spaceId }) => {
     return await ctx.db
       .query("recaps")

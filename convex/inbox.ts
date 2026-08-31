@@ -8,6 +8,7 @@ import {
 } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { completeJson } from "./ai";
+import schema from "./schema";
 
 /**
  * The space's email brain. Every inbound email (convex/agentmail.ts webhook →
@@ -42,6 +43,14 @@ function extractUrls(text: string): string[] {
 
 export const getEventContext = internalQuery({
   args: { eventId: v.id("emailEvents") },
+  returns: v.union(
+    v.object({
+      event: schema.doc("emailEvents"),
+      space: schema.doc("spaces"),
+      widgets: v.array(schema.doc("widgets")),
+    }),
+    v.null(),
+  ),
   handler: async (ctx, { eventId }) => {
     const event = await ctx.db.get(eventId);
     if (!event) return null;
@@ -57,6 +66,7 @@ export const getEventContext = internalQuery({
 
 export const processInbound = internalAction({
   args: { eventId: v.id("emailEvents") },
+  returns: v.null(),
   handler: async (ctx, { eventId }) => {
     const context = await ctx.runQuery(internal.inbox.getEventContext, { eventId });
     if (!context) return null;
@@ -86,6 +96,7 @@ export const processInbound = internalAction({
 
 export const addLetter = internalMutation({
   args: { eventId: v.id("emailEvents"), unfiled: v.boolean() },
+  returns: v.null(),
   handler: async (ctx, { eventId, unfiled }) => {
     const event = await ctx.db.get(eventId);
     if (!event) return null;
@@ -184,6 +195,7 @@ async function routeBuildRoom(
 
 export const prependDroppedLinks = internalMutation({
   args: { pileId: v.id("widgets"), dropped: v.array(v.any()) },
+  returns: v.null(),
   handler: async (ctx, { pileId, dropped }) => {
     const pile = await ctx.db.get(pileId);
     if (!pile) return null;
@@ -198,6 +210,7 @@ export const prependDroppedLinks = internalMutation({
 
 export const patchDroppedLink = internalMutation({
   args: { pileId: v.id("widgets"), linkId: v.string(), patch: v.any() },
+  returns: v.null(),
   handler: async (ctx, { pileId, linkId, patch }) => {
     const pile = await ctx.db.get(pileId);
     if (!pile) return null;
@@ -328,6 +341,7 @@ export const applyExpense = internalMutation({
     amount: v.number(),
     label: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, { eventId, widgetId, title, who, amount, label }) => {
     const event = await ctx.db.get(eventId);
     if (!event) return null;
@@ -383,6 +397,7 @@ export const applyItinerary = internalMutation({
     day: v.string(),
     plan: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, { eventId, widgetId, title, day, plan }) => {
     const event = await ctx.db.get(eventId);
     if (!event) return null;

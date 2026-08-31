@@ -1,10 +1,12 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import type { PotluckData } from "./widgetData";
+import schema from "./schema";
 
 /** Drives the canvas — every widget in a space, rendered by type (PRD §11). */
 export const listWidgets = query({
   args: { spaceId: v.id("spaces") },
+  returns: v.array(schema.doc("widgets")),
   handler: async (ctx, { spaceId }) => {
     return await ctx.db
       .query("widgets")
@@ -26,6 +28,7 @@ export const createWidget = mutation({
     createdBy: v.string(),
     rotate: v.optional(v.number()),
   },
+  returns: v.id("widgets"),
   handler: async (ctx, args) => {
     return await ctx.db.insert("widgets", { ...args, createdAt: Date.now() });
   },
@@ -34,14 +37,20 @@ export const createWidget = mutation({
 /** Committed on drop, optimistic on the client (PRD §11). */
 export const moveWidget = mutation({
   args: { id: v.id("widgets"), x: v.number(), y: v.number(), z: v.optional(v.number()) },
+  returns: v.null(),
   handler: async (ctx, { id, x, y, z }) => {
     await ctx.db.patch(id, z === undefined ? { x, y } : { x, y, z });
+    return null;
   },
 });
 
 export const deleteWidget = mutation({
   args: { id: v.id("widgets") },
-  handler: async (ctx, { id }) => ctx.db.delete(id),
+  returns: v.null(),
+  handler: async (ctx, { id }) => {
+    await ctx.db.delete(id);
+    return null;
+  },
 });
 
 export const claimItem = mutation({
@@ -51,6 +60,7 @@ export const claimItem = mutation({
     claimantName: v.string(),
     claimantUserId: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const widget = await ctx.db.get(args.widgetId);
     if (!widget) throw new Error("Widget not found");
@@ -76,10 +86,12 @@ export const spinWheel = mutation({
     resultIndex: v.number(),
     spunBy: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, { widgetId, ...spin }) => {
     const widget = await ctx.db.get(widgetId);
-    if (!widget) return;
+    if (!widget) return null;
     await ctx.db.patch(widget._id, { data: { ...widget.data, ...spin } });
+    return null;
   },
 });
 
@@ -91,23 +103,29 @@ export const tuneRadio = mutation({
     playing: v.boolean(),
     playedBy: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, { widgetId, ...tune }) => {
     const widget = await ctx.db.get(widgetId);
-    if (!widget) return;
+    if (!widget) return null;
     await ctx.db.patch(widget._id, { data: { ...widget.data, ...tune } });
+    return null;
   },
 });
 
 export const resizeWidget = mutation({
   args: { id: v.id("widgets"), w: v.number(), h: v.number() },
+  returns: v.null(),
   handler: async (ctx, { id, w, h }) => {
     await ctx.db.patch(id, { w, h });
+    return null;
   },
 });
 
 export const updateWidgetData = mutation({
   args: { id: v.id("widgets"), data: v.any() },
+  returns: v.null(),
   handler: async (ctx, { id, data }) => {
     await ctx.db.patch(id, { data });
+    return null;
   },
 });
