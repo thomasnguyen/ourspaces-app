@@ -15,11 +15,12 @@ export function LiveBlockPage({
   ...zoomProps
 }: { onEnterSpace: (id: string) => void } & LiveBlockZoomProps) {
   const liveCounts = useQuery(api.stats.getLiveCounts);
+  const buildroom = useSpaceData("buildroom");
   const crew = useSpaceData("crew");
   const couple = useSpaceData("couple");
   const house = useSpaceData("house");
   const league = useSpaceData("league");
-  const data = { crew, couple, house, league };
+  const data = { buildroom, crew, couple, house, league };
   const liveWidgets = Object.fromEntries(
     Object.entries(data).map(([slug, item]) => [slug, item.widgets]),
   );

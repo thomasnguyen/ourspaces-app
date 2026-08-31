@@ -53,12 +53,13 @@ export function FrameWidget({
 }) {
   const title = String(widget.data.title ?? "frame");
   const isParty = widget.data.deco === "party";
+  const isOutline = widget.data.deco === "outline";
 
   return (
     <div
-      className={`widget-shell widget-frame ${focused ? "is-focused" : ""} ${
-        editing ? "is-editing" : ""
-      }`}
+      className={`widget-shell widget-frame ${isOutline ? "is-outline" : ""} ${
+        focused ? "is-focused" : ""
+      } ${editing ? "is-editing" : ""}`}
       style={style}
     >
       <svg className="frame-stitch" aria-hidden="true">
@@ -719,6 +720,9 @@ export function NoteWidget({ widget, style }: { widget: Widget; style: Style }) 
               : "summer maybe?"),
       );
 
+  const headline = String(widget.data.title ?? "").trim();
+  const pinned = Boolean(widget.data.pin);
+
   const toggleRemembered = () => {
     setRemembered((current) => !current);
     playSound("tap");
@@ -737,20 +741,25 @@ export function NoteWidget({ widget, style }: { widget: Widget; style: Style }) 
 
   return (
     <div
-      className={`widget-shell widget-paper-note note-paper-${paperTone}${promoted ? " is-promoted" : ""}${remembered ? " is-remembered" : ""}`}
+      className={`widget-shell widget-paper-note note-paper-${paperTone}${promoted ? " is-promoted" : ""}${remembered ? " is-remembered" : ""}${pinned ? " is-keeper" : ""}`}
       style={style}
     >
       <span className="note-paper-backing" aria-hidden="true" />
       <div className="note-paper-sheet">
         <span className="note-paper-fold" aria-hidden="true" />
         <span className="note-kicker">{kicker}</span>
+        {headline && <h3 className="note-headline">{headline}</h3>}
         <p>{String(widget.data.text)}</p>
         <div className="note-footer">
           <span className="note-author">— {author}</span>
           {rememberButton}
         </div>
       </div>
-      <span className="note-paper-tape" aria-hidden="true" />
+      {pinned ? (
+        <span className="note-paper-pin" aria-hidden="true" />
+      ) : (
+        <span className="note-paper-tape" aria-hidden="true" />
+      )}
       <span className="note-paper-doodle" aria-hidden="true">♡</span>
     </div>
   );

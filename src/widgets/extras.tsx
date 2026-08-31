@@ -1440,6 +1440,66 @@ export function ItineraryWidget({ widget, style }: { widget: Widget; style: Styl
   );
 }
 
+/** An emailed letter: sealed kraft envelope → click → the letter unfolds. */
+export function LetterWidget({ widget, style }: { widget: Widget; style: Style }) {
+  const [open, setOpen] = useState(false);
+  const data = widget.data as {
+    from?: string;
+    subject?: string;
+    text?: string;
+    receivedAt?: number;
+    unfiled?: boolean;
+  };
+  const received = data.receivedAt
+    ? new Date(data.receivedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    : "";
+  return (
+    <div
+      className={`widget-shell widget-letter ${open ? "is-open" : ""} ${data.unfiled ? "is-unfiled" : ""}`}
+      style={style}
+    >
+      <button
+        type="button"
+        className="letter-envelope"
+        onClick={() => {
+          playSound("tap");
+          setOpen(true);
+        }}
+      >
+        <span className="letter-flap" aria-hidden="true" />
+        <span className="letter-stamp" aria-hidden="true">✉</span>
+        <span className="letter-seal" aria-hidden="true">✦</span>
+        {data.unfiled && <span className="letter-unfiled-tag">unfiled mail</span>}
+        <span className="letter-meta">
+          <strong>from {data.from ?? "someone"}</strong>
+          <span>{data.subject ?? ""}</span>
+          <em>{received}</em>
+        </span>
+      </button>
+      <article className="letter-paper">
+        <header className="letter-paper-head">
+          <strong>{data.subject ?? "(no subject)"}</strong>
+          <span>
+            from {data.from ?? "someone"}
+            {received ? ` · ${received}` : ""}
+          </span>
+        </header>
+        <p>{data.text ?? ""}</p>
+        <button
+          type="button"
+          className="letter-fold-hint"
+          onClick={() => {
+            playSound("tap");
+            setOpen(false);
+          }}
+        >
+          fold it back
+        </button>
+      </article>
+    </div>
+  );
+}
+
 export function MessageWallWidget({ widget, style }: { widget: Widget; style: Style }) {
   const messages = widget.data.messages as { from: string; text: string }[];
 

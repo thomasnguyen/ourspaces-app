@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -26,9 +27,10 @@ import { WelcomePill } from "./components/WelcomePill";
 import {
   getGlobalThread,
   getThread,
+  getThreadsForSpace,
   type ChatMessage,
 } from "./data/chat";
-import { RECAP_LINES } from "./data/recap";
+import { RECAP_LINES, type RecapTurn } from "./data/recap";
 import { DECISION_WIDGET, canvasSizeFor, getSpace } from "./data/spaces";
 import { getStickerDefinition } from "./data/stickers";
 import {
@@ -58,7 +60,7 @@ import {
   WIDGET_SIZES,
 } from "./lib/widgetDefaults";
 import { widgetSupportsThread } from "./lib/widgetThreads";
-import { linkCardQuestions, questionThreadId } from "./lib/linkQuestions";
+import { cannedLinkQuestions, linkCardQuestions, questionThreadId } from "./lib/linkQuestions";
 import { LinkQuestionStrip } from "./components/LinkQuestionStrip";
 import { LiveSpacePage } from "./pages/LiveSpace";
 import {
@@ -67,6 +69,24 @@ import {
   type BlockZoomMode,
 } from "./lib/blockZoom";
 import { getDataMode } from "./live/dataMode";
+import { getIdentity } from "./live/identity";
+import { useCanvasSpacePan } from "./lib/canvasSpacePan";
+import {
+  buildRoomOverviewScale,
+  withBuildRoomCover,
+} from "./lib/buildRoomPresentation";
+import { DEFAULT_SPACE_SLUG } from "./lib/routes";
+import { pileInsideFrame } from "./lib/frameMembership";
+import {
+  linkReplyCounts,
+  mockBuildRoomFeed,
+  mockRoundtableReplies,
+  toggledVoters,
+} from "./lib/buildRoomFeed";
+import { ReadingRoom, type RoomReply } from "./components/ReadingRoom";
+import { ShipRoom } from "./components/ShipRoom";
+import type { RoomOrigin } from "./components/CanvasRoom";
+import type { BuildRoomLink } from "./data/buildroom";
 
 const CursorLab = lazy(() =>
   import("./pages/CursorLab").then((module) => ({ default: module.CursorLab })),
@@ -145,8 +165,8 @@ const MAX_WIDGET_SCALE = 1.8;
 const WIDGET_FOCUS_GUTTER = 48;
 const THREAD_DOCK_GAP = 16;
 const DEFAULT_THREAD_DOCK_SIZE: ThreadDockSize = {
-  width: 348,
-  height: 276,
+  width: 680,
+  height: 540,
 };
 
 function defaultCanvasSize(spaceId: string): CanvasSize {
@@ -204,6 +224,28 @@ function elementIsVisible(element: HTMLElement) {
   );
 }
 
+/** The on-screen rect of a canvas card, as inset from each viewport edge. */
+function roomOriginFor(widgetId: string): RoomOrigin {
+  const element = Array.from(
+    document.querySelectorAll<HTMLElement>(".widget-group[data-widget-id]"),
+  ).find((candidate) => candidate.dataset.widgetId === widgetId);
+  const rect = element?.getBoundingClientRect();
+  if (!rect) {
+    return {
+      top: window.innerHeight * 0.25,
+      right: window.innerWidth * 0.25,
+      bottom: window.innerHeight * 0.25,
+      left: window.innerWidth * 0.25,
+    };
+  }
+  return {
+    top: Math.max(0, rect.top),
+    right: Math.max(0, window.innerWidth - rect.right),
+    bottom: Math.max(0, window.innerHeight - rect.bottom),
+    left: Math.max(0, rect.left),
+  };
+}
+
 function routeFromHash(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "test") return "test";
@@ -219,6 +261,14 @@ function mockModeRequested() {
   return getDataMode() === "mock";
 }
 
+/** A readable title for a mock-dropped url: the last path segment, de-slugged. */
+function mockLinkTitle(url: string) {
+  const path = url.replace(/^https?:\/\/[^/]+/, "").replace(/[?#].*$/, "");
+  const segment = path.split("/").filter(Boolean).pop() ?? "";
+  const words = segment.replace(/\.\w+$/, "").replace(/[-_+]+/g, " ").trim();
+  return words || url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+}
+
 function demoModeRequested() {
   return new URLSearchParams(window.location.search).get("demo") === "1" ||
     new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("demo") === "1" ||
@@ -227,7 +277,7 @@ function demoModeRequested() {
 
 function spaceFromHash(): string {
   const hash = window.location.hash.replace(/^#\/?/, "");
-  if (hash.startsWith("space/")) return hash.slice("space/".length) || "crew";
+  if (hash.startsWith("space/")) return hash.slice("space/".length) || DEFAULT_SPACE_SLUG;
   if (hash === "join") return "__invalid_invite__";
   if (hash.startsWith("join/")) {
     const slug = hash.slice("join/".length);
@@ -237,7 +287,7 @@ function spaceFromHash(): string {
       return slug || "__invalid_invite__";
     }
   }
-  return "crew";
+  return DEFAULT_SPACE_SLUG;
 }
 
 /**
@@ -258,8 +308,21 @@ export default function App() {
   const [recapRunId, setRecapRunId] = useState(0);
   const [recapCites, setRecapCites] = useState<string[]>([]);
   const [recapHover, setRecapHover] = useState<string | null>(null);
+  const [recapTurns, setRecapTurns] = useState<RecapTurn[]>([]);
+  const [recapAsking, setRecapAsking] = useState(false);
   const [highlightMessageId, setHighlightMessageId] = useState("");
   const [activeThreadId, setActiveThreadId] = useState("global");
+  /** Mock-mode room state: which room is open, and local vote/keep overrides. */
+  const [openRoom, setOpenRoom] = useState<
+    { kind: "pile" | "ship"; widgetId: string; origin: RoomOrigin; linkId?: string } | null
+  >(null);
+  /* focusFrame fires long before visibleWidgets is derived — read it live. */
+  const visibleWidgetsRef = useRef<Widget[]>([]);
+  const [mockLinkState, setMockLinkState] = useState<
+    Record<string, Partial<BuildRoomLink>>
+  >({});
+  /* Links dropped in mock mode — pending on arrival, "enriched" a beat later. */
+  const [mockDropped, setMockDropped] = useState<BuildRoomLink[]>([]);
   const [localThreadMessages, setLocalThreadMessages] = useState<
     Record<string, Record<string, ChatMessage[]>>
   >({});
@@ -646,6 +709,18 @@ export default function App() {
     (frame: Widget) => {
       if (window.matchMedia("(max-width: 800px)").matches) return;
 
+      /* The pile's frame has nothing to zoom into — opening it opens the room. */
+      const pile = pileInsideFrame(frame, visibleWidgetsRef.current);
+      if (pile) {
+        playSound("tap");
+        setOpenRoom({
+          kind: "pile",
+          widgetId: pile.id,
+          origin: roomOriginFor(pile.id),
+        });
+        return;
+      }
+
       if (focusedTarget?.kind === "frame" && focusedTarget.id === frame.id) {
         leaveFocus();
         return;
@@ -776,7 +851,7 @@ export default function App() {
       setCanvasAwayFromHome(false);
       setRoute("space");
       setSpaceId(id);
-      window.location.hash = id === "crew" ? "#/" : `#/space/${id}`;
+      window.location.hash = id === DEFAULT_SPACE_SLUG ? "#/" : `#/space/${id}`;
     },
     [restoreFrameEdit, zoom.completeZoomIn],
   );
@@ -1023,27 +1098,53 @@ export default function App() {
     return () => mobile.removeEventListener("change", ensureMobileCamera);
   }, [animateCanvasCamera, focusedTarget]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     window.cancelAnimationFrame(canvasCameraAnimation.current);
     canvasCameraAnimation.current = 0;
     canvasScaleLayerRef.current?.style.removeProperty("will-change");
     const nextSize = defaultCanvasSize(spaceId);
     canvasWorldSizeRef.current = nextSize;
-    canvasScaleRef.current = 1;
     canvasReturnView.current = null;
     chatReturnView.current = null;
     setCanvasWorldSize(nextSize);
-    setCanvasScale(1);
     setFocusedTarget(null);
     setCanvasCameraAnimating(false);
 
-    const frame = window.requestAnimationFrame(() => {
-      applyCanvasScale(1);
-      canvasViewportRef.current?.scrollTo({ left: 0, top: 0 });
-      setCanvasAwayFromHome(false);
-    });
-    return () => window.cancelAnimationFrame(frame);
+    const viewport = canvasViewportRef.current;
+    const scale = viewport
+      ? buildRoomOverviewScale(spaceId, viewport, visibleWidgetsRef.current)
+      : 1;
+    applyCanvasScale(scale);
+    setCanvasScale(scale);
+    viewport?.scrollTo({ left: 0, top: 0 });
+    setCanvasAwayFromHome(false);
   }, [applyCanvasScale, route, spaceId]);
+
+  useEffect(() => {
+    if (route !== "space" || spaceId !== "buildroom" || focusedTarget) return;
+    let frame = 0;
+    const refitOverview = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const viewport = canvasViewportRef.current;
+        if (!viewport) return;
+        const scale = buildRoomOverviewScale(
+          spaceId,
+          viewport,
+          visibleWidgetsRef.current,
+        );
+        applyCanvasScale(scale);
+        setCanvasScale(scale);
+        viewport.scrollTo({ left: 0, top: 0, behavior: "auto" });
+        setCanvasAwayFromHome(false);
+      });
+    };
+    window.addEventListener("resize", refitOverview);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", refitOverview);
+    };
+  }, [applyCanvasScale, focusedTarget, route, spaceId]);
 
   useEffect(() => () => {
     window.cancelAnimationFrame(canvasCameraAnimation.current);
@@ -1062,7 +1163,7 @@ export default function App() {
     setManagedWidgetId("");
     setEditingWidgetId("");
     setSpaceDraft(null);
-    window.location.hash = id === "crew" ? "#/" : `#/space/${id}`;
+    window.location.hash = id === DEFAULT_SPACE_SLUG ? "#/" : `#/space/${id}`;
   };
 
   const openWidgetThread = (widget: Widget) => {
@@ -1592,6 +1693,43 @@ export default function App() {
     }
   }, []);
 
+  const mockRecapReply = (text: string) => {
+    const q = text.toLowerCase();
+    if (/(cake|poll|vote|flavor|matcha)/.test(q)) return "matcha is still ahead, 3 to 1. ash hasn't voted.";
+    if (/(potluck|bring|claim|balloon)/.test(q)) return "jules claimed balloons, so playlist and candles are still open.";
+    if (/(rsvp|coming|who)/.test(q)) return "maya, jules, sam, and kenji are in. rio's the maybe.";
+    if (/(chat|6pm|time|when)/.test(q)) return "sam said 6pm at their place — still only in chat.";
+    return "the birthday cluster moved: cake poll, potluck, and sam's 6pm note in chat.";
+  };
+
+  const onMockRecapAsk = (text: string) => {
+    // Same persisted persona live mode shows, so the face matches everywhere.
+    const me = getIdentity();
+    const you: RecapTurn = {
+      id: `you-${Date.now()}`,
+      from: me.name,
+      fromColor: me.color,
+      fromEmoji: me.emoji,
+      fromAvatarUrl: me.avatarUrl,
+      text,
+      isRecap: false,
+    };
+    setRecapTurns((current) => [...current, you]);
+    setRecapAsking(true);
+    window.setTimeout(() => {
+      setRecapTurns((current) => [
+        ...current,
+        {
+          id: `recap-${Date.now()}`,
+          from: "catch me up",
+          text: mockRecapReply(text),
+          isRecap: true,
+        },
+      ]);
+      setRecapAsking(false);
+    }, 700);
+  };
+
   // The one change nobody rescued — walk them to it so they can promote it.
   const jumpToRecapMessage = (messageId: string) => {
     playSound("tap");
@@ -1609,6 +1747,17 @@ export default function App() {
     setSoundEnabled(nextEnabled);
     if (nextEnabled) playSound("tap");
   };
+
+  const spacePan = useCanvasSpacePan(
+    canvasViewportRef,
+    route !== "space" ||
+      firstRunActive ||
+      focusedTarget?.kind === "widget" ||
+      canvasCameraAnimating ||
+      pickerOpen ||
+      Boolean(editingWidgetId) ||
+      Boolean(spaceDraft),
+  );
 
   if (route === "cursors") {
     return <DeferredRoute><CursorLab /></DeferredRoute>;
@@ -1632,14 +1781,14 @@ export default function App() {
         slug={spaceId}
         isInviteEntry
         onSelectSpace={(id) => {
-          window.location.hash = id === "crew" ? "#/" : `#/space/${id}`;
+          window.location.hash = id === DEFAULT_SPACE_SLUG ? "#/" : `#/space/${id}`;
         }}
       />
     );
   }
 
   if (route === "space" && !mockModeRequested()) {
-    return <LiveSpacePage slug={spaceId} onSelectSpace={(id) => { window.location.hash = id === "crew" ? "#/" : `#/space/${id}`; }} />;
+    return <LiveSpacePage slug={spaceId} onSelectSpace={(id) => { window.location.hash = id === DEFAULT_SPACE_SLUG ? "#/" : `#/space/${id}`; }} />;
   }
 
   if (route === "home") {
@@ -1705,15 +1854,93 @@ export default function App() {
       ...widgetPlacements[spaceId]?.[widget.id],
       data: widgetDataOverrides[spaceId]?.[widget.id] ?? widget.data,
     }));
+  visibleWidgetsRef.current = visibleWidgets;
   const editingWidget = editingWidgetId
     ? visibleWidgets.find((widget) => widget.id === editingWidgetId) ?? null
     : null;
+  const isCanvasPanning = canvasPanning || spacePan.panning;
   const activeThreadWidget =
     visibleWidgets.find((widget) => widget.id === activeThreadId) ?? null;
   const activeThreadLabel = activeThreadWidget
     ? widgetLabel(activeThreadWidget)
     : undefined;
   const currentLocalMessages = localThreadMessages[spaceId] ?? {};
+  /* Mock mode gets the same rooms, with votes and keeps held in local state —
+     the live path persists them into the pile widget instead. */
+  const baseFeed = mockBuildRoomFeed(spaceId);
+  const mockLinks = useMemo<BuildRoomLink[]>(
+    () =>
+      [...mockDropped, ...(baseFeed?.links ?? [])].map((link) => {
+        const state = mockLinkState[link.id];
+        return withBuildRoomCover(state ? { ...link, ...state } : link);
+      }),
+    [baseFeed?.links, mockDropped, mockLinkState],
+  );
+  const mockReplyCounts = useMemo(() => {
+    const counts: Record<string, number> = { ...(baseFeed ? {} : {}) };
+    for (const [threadId, list] of Object.entries(currentLocalMessages)) {
+      counts[threadId] = (counts[threadId] ?? 0) + list.length;
+    }
+    for (const [threadId, count] of Object.entries(
+      Object.fromEntries(
+        Object.entries(getThreadsForSpace(spaceId)).map(([id, thread]) => [
+          id,
+          thread.messages.length,
+        ]),
+      ),
+    )) {
+      counts[threadId] = (counts[threadId] ?? 0) + count;
+    }
+    return linkReplyCounts(counts);
+  }, [baseFeed, currentLocalMessages, spaceId]);
+  const mockPile = visibleWidgets.find((widget) => widget.type === "linkPile");
+  const buildRoomFeed = baseFeed
+    ? {
+        ...baseFeed,
+        links: mockLinks,
+        replyCounts: mockReplyCounts,
+        onOpenPile: (linkId?: string) => {
+          if (!mockPile) return;
+          playSound("tap");
+          setOpenRoom({
+            kind: "pile",
+            widgetId: mockPile.id,
+            origin: roomOriginFor(mockPile.id),
+            linkId,
+          });
+        },
+      }
+    : undefined;
+  const roundtableReplies = mockRoundtableReplies(spaceId);
+  const mockMessagesByThread = useMemo(() => {
+    const grouped: Record<string, RoomReply[]> = {};
+    for (const [threadId, thread] of Object.entries(getThreadsForSpace(spaceId))) {
+      grouped[threadId] = thread.messages.map((message) => ({
+        id: message.id,
+        from: message.from,
+        color: message.fromColor,
+        text: message.text,
+        time: message.time,
+      }));
+    }
+    for (const [threadId, list] of Object.entries(currentLocalMessages)) {
+      grouped[threadId] = [
+        ...(grouped[threadId] ?? []),
+        ...list.map((message) => ({
+          id: message.id,
+          from: message.from,
+          color: message.fromColor,
+          text: message.text,
+          time: message.time,
+        })),
+      ];
+    }
+    return grouped;
+  }, [currentLocalMessages, spaceId]);
+  const shipRoomWidget =
+    openRoom?.kind === "ship"
+      ? visibleWidgets.find((widget) => widget.id === openRoom.widgetId) ?? null
+      : null;
   const threadMessageCount = (threadId: string) =>
     getThread(spaceId, threadId).messages.length +
     (currentLocalMessages[threadId]?.length ?? 0);
@@ -1772,8 +1999,10 @@ export default function App() {
       } ${editingWidget || spaceDraft ? "has-editor-open" : ""} ${
         spaceDraft ? "is-room-editing" : ""
       } ${canvasAwayFromHome ? "is-canvas-away" : ""} ${
-        canvasPanning ? "is-canvas-panning" : ""
-      } ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${
+        isCanvasPanning ? "is-canvas-panning" : ""
+      } ${spacePan.spaceHeld ? "is-space-panning" : ""} ${
+        focusedTarget?.kind === "frame" ? "has-frame-focus" : ""
+      } ${
         focusedTarget?.kind === "widget" ? "has-widget-focus" : ""
       } ${
         canvasCameraAnimating ? "is-canvas-camera-animating" : ""
@@ -1852,8 +2081,8 @@ export default function App() {
         className={`space-scroll h-full overflow-auto ${
           spaceId === "league" ? "space-scroll-league" : ""
         } ${spaceId === "buildclub" ? "space-scroll-buildclub" : ""} ${
-          canvasPanning ? "is-canvas-panning" : ""
-        }`}
+          isCanvasPanning ? "is-canvas-panning" : ""
+        } ${spacePan.spaceHeld ? "is-space-panning" : ""}`}
         onScroll={(event) => {
           const el = event.currentTarget;
           setCanvasAwayFromHome(el.scrollLeft > 48 || el.scrollTop > 72);
@@ -1952,6 +2181,8 @@ export default function App() {
               onFrameFocus={focusFrame}
               onFrameLayoutChange={updateFrameLayout}
               onFrameLayoutCommit={finishFrameLayout}
+              buildRoomFeed={buildRoomFeed}
+              roundtableRepliesByWidget={roundtableReplies}
               onPollVote={voteOnPoll}
               onWheelSpin={spinWheel}
               onPlaylistTune={tunePlaylist}
@@ -1985,6 +2216,95 @@ export default function App() {
           </div>
         </div>
       </div>
+      {openRoom?.kind === "pile" && mockPile && buildRoomFeed && (
+        <ReadingRoom
+          key={mockPile.id}
+          pileId={mockPile.id}
+          links={mockLinks}
+          replyCounts={mockReplyCounts}
+          messagesByThread={mockMessagesByThread}
+          faces={baseSpace.members}
+          userId="you"
+          origin={openRoom.origin}
+          initialLinkId={openRoom.linkId}
+          onDrop={(urls) => {
+            const now = Date.now();
+            const batchKey = `mock-drop-${now}`;
+            setMockDropped((current) => [
+              ...urls.map((url, index) => ({
+                id: `${batchKey}-${index}`,
+                url,
+                domain: url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0],
+                title: "",
+                description: "",
+                imageUrl: "",
+                kind: "article" as const,
+                whyItMatters: "",
+                questions: [],
+                status: "pending" as const,
+                batchKey,
+                droppedBy: "you",
+                droppedByName: "you",
+                droppedAt: now,
+                voters: [],
+              })),
+              ...current,
+            ]);
+            /* No Firecrawl in mock mode — fake the enrichment beat. */
+            window.setTimeout(() => {
+              setMockDropped((current) =>
+                current.map((link) =>
+                  link.batchKey === batchKey
+                    ? {
+                        ...link,
+                        status: "ready" as const,
+                        title: mockLinkTitle(link.url),
+                        description: "fresh drop — the room hasn't read this one yet.",
+                        whyItMatters:
+                          "you just dropped this. tell the room why it matters.",
+                        questions: cannedLinkQuestions(mockLinkTitle(link.url)),
+                      }
+                    : link,
+                ),
+              );
+            }, 1600);
+          }}
+          onVote={(linkId) => {
+            const link = mockLinks.find((candidate) => candidate.id === linkId);
+            if (!link) return;
+            setMockLinkState((current) => ({
+              ...current,
+              [linkId]: { ...current[linkId], voters: toggledVoters(link, "you") },
+            }));
+          }}
+          onPin={(linkId) => {
+            const link = mockLinks.find((candidate) => candidate.id === linkId);
+            if (!link) return;
+            setMockLinkState((current) => ({
+              ...current,
+              [linkId]: { ...current[linkId], pinned: !link.pinned },
+            }));
+          }}
+          onKeep={(linkId) =>
+            setMockLinkState((current) => ({
+              ...current,
+              [linkId]: { ...current[linkId], keptAt: Date.now() },
+            }))
+          }
+          onReply={sendThreadMessage}
+          onClose={() => setOpenRoom(null)}
+        />
+      )}
+      {openRoom?.kind === "ship" && shipRoomWidget && (
+        <ShipRoom
+          key={shipRoomWidget.id}
+          widget={shipRoomWidget}
+          replies={mockMessagesByThread[shipRoomWidget.id] ?? []}
+          origin={openRoom.origin}
+          onReply={(text) => sendThreadMessage(shipRoomWidget.id, text)}
+          onClose={() => setOpenRoom(null)}
+        />
+      )}
       {focusedTarget?.kind === "widget" && (
         <WidgetThreadDock
           viewportRef={canvasViewportRef}
@@ -2038,7 +2358,7 @@ export default function App() {
       <CanvasEdgePan
         viewportRef={canvasViewportRef}
         disabled={
-          canvasPanning ||
+          isCanvasPanning ||
           canvasCameraAnimating ||
           focusedTarget?.kind === "widget" ||
           pickerOpen ||
@@ -2076,6 +2396,13 @@ export default function App() {
       <ActionDock
         recapOpen={recapOpen}
         recapRunId={recapRunId}
+        recapTurns={recapTurns}
+        recapAsking={recapAsking}
+        onRecapRefresh={() => {
+          setRecapCites([]);
+          setRecapRunId((id) => id + 1);
+        }}
+        onRecapAsk={onMockRecapAsk}
         onRecapReveal={revealRecap}
         onRecapClose={closeRecap}
         onRecapHover={setRecapHover}

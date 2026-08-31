@@ -37,10 +37,11 @@ export type BlockSlot = {
 };
 
 export const BLOCK_SLOTS: BlockSlot[] = [
-  { spaceId: "crew", x: 8, y: 96, scale: 0.21, tilt: -1.2, tier: "near", pillTilt: -1, enterDelay: 40 },
-  { spaceId: "league", x: 468, y: 76, scale: 0.19, tilt: 1.6, tier: "near", pillTilt: 1.6, enterDelay: 90 },
-  { spaceId: "couple", x: 60, y: 830, scale: 0.13, tilt: -3.5, tier: "far", pillTilt: -3.5, enterDelay: 240 },
-  { spaceId: "house", x: 420, y: 856, scale: 0.13, tilt: 2.5, tier: "far", pillTilt: 2.5, enterDelay: 290 },
+  { spaceId: "buildroom", x: 8, y: 96, scale: 0.21, tilt: -1.2, tier: "near", pillTilt: -1, enterDelay: 40 },
+  { spaceId: "crew", x: 468, y: 76, scale: 0.19, tilt: 1.6, tier: "near", pillTilt: 1.6, enterDelay: 90 },
+  { spaceId: "league", x: 60, y: 830, scale: 0.13, tilt: -3.5, tier: "far", pillTilt: -3.5, enterDelay: 240 },
+  { spaceId: "couple", x: 420, y: 856, scale: 0.13, tilt: 2.5, tier: "far", pillTilt: 2.5, enterDelay: 290 },
+  { spaceId: "house", x: 780, y: 840, scale: 0.13, tilt: -2.2, tier: "far", pillTilt: -2.2, enterDelay: 340 },
 ];
 
 type BlockSessionState = {

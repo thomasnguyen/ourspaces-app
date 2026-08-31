@@ -1,3 +1,4 @@
+import { DEFAULT_SPACE_SLUG } from "../lib/routes";
 import type { CSSProperties } from "react";
 import { SPACES, SPACES_BY_ID } from "../data/spaces";
 import type { SpaceMeta } from "../data/types";
@@ -10,7 +11,7 @@ const SPACE_COVERS: Record<string, string> = {
 };
 
 export function Rail({
-  activeId = "crew",
+  activeId = DEFAULT_SPACE_SLUG,
   activeSpaceOverride,
   onSelectSpace,
   onCreateClick,
