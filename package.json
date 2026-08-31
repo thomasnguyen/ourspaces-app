@@ -11,6 +11,7 @@
     "deploy": "npx @convex-dev/static-hosting deploy"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.52",
     "@ai-sdk/openai-compatible": "^3.0.41",
     "@ai-sdk/provider": "^4.0.9",
     "@ai-sdk/provider-utils": "^5.0.34",
