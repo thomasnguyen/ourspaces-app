@@ -8,6 +8,7 @@ import {
   internalQuery,
 } from "./_generated/server";
 import schema from "./schema";
+import { rateLimiter } from "./rateLimits";
 
 /**
  * AgentMail via plain REST. The @agentmail/convex component's actions never
@@ -118,6 +119,9 @@ export const sendEmail = internalAction({
   },
   returns: v.null(),
   handler: async (ctx, { spaceId, to, subject, text, html }) => {
+    // rate-limiter: AgentMail's free tier caps at 3 inboxes total — guard
+    // send volume so a retry loop or a chatty digest can't burn the quota.
+    await rateLimiter.limit(ctx, "mailSend", { key: spaceId, throws: true });
     const space = await ctx.runQuery(internal.agentmail.getSpaceInbox, { spaceId });
     if (!space?.inboxId) throw new Error("space has no inbox");
     await am(`/inboxes/${encodeURIComponent(space.inboxId)}/messages/send`, {

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { action, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { completeJson } from "./ai";
+import { rateLimiter } from "./rateLimits";
 
 /** OpenAI as a structured decider (never a chatbot UI): an article becomes
  * two short conversation starters the group answers as threads. */
@@ -63,11 +64,14 @@ export const setQuestions = internalMutation({
 export const sparkQuestions = action({
   args: {
     widgetId: v.id("widgets"),
+    spaceId: v.id("spaces"),
     title: v.string(),
     description: v.string(),
   },
   returns: questionsValidator,
   handler: async (ctx, args) => {
+    // rate-limiter: guard the LLM proxy from a runaway loop of link saves.
+    await rateLimiter.limit(ctx, "sparkQuestions", { key: args.spaceId, throws: true });
     const questions =
       (await askOpenAi(args.title, args.description).catch(() => null)) ??
       canned(args.title);

@@ -1476,10 +1476,12 @@ export function LiveSpacePage({
     recapGenerating.current = true;
     setRecapBusy(true);
     setRecapCites([]);
-    void generateRecap({ spaceId: space._id, kind: "ask" }).finally(() => {
-      recapGenerating.current = false;
-      setRecapBusy(false);
-    });
+    void generateRecap({ spaceId: space._id, kind: "ask" })
+      .catch(() => {})
+      .finally(() => {
+        recapGenerating.current = false;
+        setRecapBusy(false);
+      });
   };
   const revealRecap = (count: number) => {
     const widgetId = recapLines[count - 1]?.widgetId;
@@ -1514,6 +1516,7 @@ export function LiveSpacePage({
           });
         }
       })
+      .catch(() => {})
       .finally(() => setRecapAsking(false));
   };
 
@@ -1955,9 +1958,10 @@ export function LiveSpacePage({
           // A saved link gets OpenAI conversation starters; canned ones from
           // the editor hold the spot until the action lands.
           const saved = widgets.find((item) => item.id === widgetId);
-          if (saved?.type === "linkCard" && typeof data.url === "string" && data.url) {
+          if (saved?.type === "linkCard" && typeof data.url === "string" && data.url && space) {
             void sparkQuestions({
               widgetId: widgetId as Id<"widgets">,
+              spaceId: space._id,
               title: String(data.title ?? ""),
               description: String(data.description ?? ""),
             }).catch(() => {});
