@@ -70,8 +70,8 @@
 | Firecrawl (URL → structured reading card) | `convex/firecrawl.ts` | `ec07426`, `9a63ab7` |
 | OpenAI `gpt-4o-mini` (reading-circle starters) | `convex/questions.ts` | `8c20025` |
 | Inbound-mail router (email → widget mutations) | `convex/inbox.ts` | `653453b` |
-| Weekly digest cron (space → its senders) | `convex/digest.ts`, `convex/crons.ts` | `c1d3855` |
-| Live inboxes, real end-to-end mail | `convex/agentmail.ts` | `353cd24` |
+| Weekly digest cron (space → its senders) | `convex/digest.ts`, `convex/crons.ts` | `c2e2c43` |
+| Live inboxes, real end-to-end mail | `convex/agentmail.ts` | `8c42502` |
 
 ## Log
 
@@ -371,13 +371,13 @@ and the build room's reading room — including the pile's tag row, where kinds
 rank ahead of hosts and the picked tag becomes the outer cut
 (`src/components/ReadingRoom.tsx`, `src/lib/linkRanking.ts`).
 
-### 2026-08-30 - c1d3855
+### 2026-08-30 - c2e2c43
 Each mail-enabled space now writes back: a Friday 16:00 UTC cron composes the
 week from the recap snapshot and emails it to everyone who ever wrote to that
 inbox (recipients mined from `emailEvents`), with `digest:sendNow` for demos
 (`convex/digest.ts`, `convex/crons.ts`).
 
-### 2026-08-30 - 353cd24
+### 2026-08-30 - 8c42502
 Live inboxes with an unrestricted key: crew rides the account default
 `ourspaces@agentmail.to` (`thecrew` is taken org-wide, and the 3-inbox free
 tier is shared between dev and prod), plus `ustwo@` and `buildroom@`, on a
@@ -385,7 +385,7 @@ fresh webhook created through the API. Verified with real mail — buildroom's
 inbox → `ustwo@` → a letter appeared in us two, and the digest landed in a real
 Gmail (`convex/agentmail.ts`, `docs/firecrawl-agentmail-setup.md`).
 
-### 2026-08-30 - 7a12cee
+### 2026-08-30 - f701b82
 Wrote `docs/mail.md`: the three demo cases, the architecture as shipped, a
 status checklist, and the open goals in priority order (arrival choreography
 first, prod cutover second).

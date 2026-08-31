@@ -104,4 +104,4 @@ outbound digest cron (convex/crons.ts) → recap snapshot → AI lines
 
 - 2026-08-30: planned in chat (3 cases + digest), built, verified on dev with
   signed webhook posts, then unblocked with an unrestricted key and verified
-  with real mail. Commits `653453b` → `353cd24`.
+  with real mail. Commits `653453b` → `8c42502`.
