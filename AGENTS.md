@@ -12,14 +12,14 @@ Plan and cut order: `.private/PLAN.md` (local only).
 - **Demo path over edge cases.** Happy path + empty state. No defensive code,
   refactors, a11y audits, i18n, or abstractions "for later."
 - **Design work goes through `/eye-candy`.** Before any `/impeccable` command or
-  freeform UI work, read `.claude/skills/eye-candy/SKILL.md`. It's the override
-  layer on impeccable: no accessibility findings (ARIA, screen readers, keyboard
-  nav, WCAG ratios, alt text, touch targets), effort goes to motion, identity
-  color, liveness, and the promote climax instead. Same rule is restated in
-  `PRODUCT.md` § Accessibility & Inclusion, which impeccable prints every run.
-- **Hacked-together is fine.** No one will read this code — B/C-grade quality is
-  good enough. Don't polish or over-optimize for "production". The one exception:
-  keep TypeScript types decent, since they make vibe coding work.
+  freeform UI work, read `.claude/skills/eye-candy/SKILL.md` (local-only, like
+  `PRODUCT.md` — both are gitignored; skip if a clone doesn't have them). It is
+  the override layer on impeccable and carries the house motion system: the
+  three easing curves, the duration scale, stagger, and which moments earn
+  cinematic treatment.
+- **Prototype quality is fine.** This is a 4-week build, not a system anyone
+  inherits — don't over-optimize for "production". The one exception: keep
+  TypeScript types decent, since they make vibe coding work.
 - **This is 100% vibe-coded.** The human never edits code directly. Add or
   update docs (`AGENTS.md`, `docs/`, `hackathon.md`) whenever it would help the
   next chat session pick up where you left off.
@@ -57,7 +57,10 @@ Plan and cut order: `.private/PLAN.md` (local only).
 - **Replies to the human: ≤3 bullets, no paragraphs, no preamble.** Lead with
   the result. They're on a phone — only what matters; they'll dive in as
   needed. **Bold** anything needing their input, tagged **(question)**.
-- Secrets only in `.env.local` / Convex env vars. Never commit keys.
+- **Secrets only in `.env.local` / Convex env vars. Never commit keys** — that
+  includes tool config that carries a key in a header (`.mcp.json` is
+  gitignored for exactly this reason). The GitHub repo is **public**: before
+  tracking any new file, ask whether it should be readable by strangers.
 
 ## Commands
 

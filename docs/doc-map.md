@@ -23,10 +23,11 @@ commit it.
 
 | Need | Open |
 |---|---|
-| Product spec, demo priorities, scope | `docs/ourspaces-prd-v0.6.md` |
-| Positioning for design commands (impeccable) | `PRODUCT.md` |
 | Public one-pager | `README.md` |
-| vibeapps listing paste (fill brackets before submit) | `docs/vibeapps-listing.md` |
+| What each space is and what it still needs | `docs/spaces-and-widgets.md` |
+
+Product spec, positioning and submission copy are **local-only** — see the
+bottom table.
 
 ## Design
 
@@ -35,7 +36,7 @@ commit it.
 | Visual system, materials, type, motion | `DESIGN.md` |
 | Taste / "not a dashboard" | `docs/the-feel.md` |
 | Token names (keep in sync with `src/index.css` `@theme`) | `docs/tokens.md` |
-| UI work (override layer on impeccable) | `.claude/skills/eye-candy/SKILL.md` |
+| UI work + house motion system (local-only) | `.claude/skills/eye-candy/SKILL.md` |
 
 ## Spaces, widgets, backend
 
@@ -55,13 +56,22 @@ These are gitignored or excluded. Skip if the file is not on disk.
 | Need | Open |
 |---|---|
 | Cut order / private plan | `.private/PLAN.md` |
+| Product spec, scope, demo priorities | `docs/ourspaces-prd-v0.6.md` |
+| Positioning for design commands (impeccable prints it) | `PRODUCT.md` |
+| Design override layer + house motion system | `.claude/skills/eye-candy/SKILL.md` |
+| Impeccable's config + critique output | `.impeccable/` |
+| Submission listing copy | `docs/vibeapps-listing.md` |
 | Marketing playbook (calendar, objectives) | `.context/ourspaces-marketing-playbook-v2.md` |
 | X / Threads post drafts | `docs/post-skeletons.md` |
 | More local drafts (drop here) | `docs/local/` |
 | Conductor scratch (shots, eval scripts) | `.context/` |
 
-Do not put strategy, outreach lists, or judge notes in tracked files.
-If you draft that kind of thing, write it under `.context/` or `docs/local/`.
+**The GitHub repo is public.** Tracked docs describe the product and how it's
+built. Anything about how we plan to *present* it — audience strategy, demo
+choreography, outreach lists, submission copy, competitive framing — stays
+local (`.context/`, `docs/local/`, or a gitignored path). Same for tool config
+carrying an API key (`.mcp.json`). When in doubt, write it local; promoting a
+file to tracked later is easy, un-publishing it is not.
 
 ## When you add a doc
 

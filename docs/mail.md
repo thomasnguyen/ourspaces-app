@@ -95,10 +95,8 @@ outbound digest cron (convex/crons.ts) → recap snapshot → AI lines
 4. **Guardrail check before going public** — the inboxes are printed in the
    UI; the router already discards spam and defaults to unfiled, but eyeball
    the first day of strangers' mail (commons space plan, playbook §5).
-5. **Demo beats** (for the video, from the discussion): lead the *story* with
-   the crew (intelligence), do the *live* send on the build room (deterministic
-   sponsor chain), close on the letter (heart). Digest shown as a real email in
-   Gmail.
+5. **What to show, and in what order** — kept with the rest of the demo
+   planning in the local playbook (`.context/`), not here.
 6. Nice-to-have: reply-to-thread → the reply lands in the widget's message
    thread; expense widget shows the `lastEmail` receipt line it already stores.
 
