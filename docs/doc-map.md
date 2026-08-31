@@ -44,6 +44,7 @@ commit it.
 | Demo rooms, widget catalog, what each space still needs | `docs/spaces-and-widgets.md` |
 | The build room / reading room (widgets, funnel, where link state lives) | `docs/spaces-and-widgets.md` §0 |
 | Schema, auth, Convex-as-state | `docs/data-model-plan.md` |
+| Email → canvas: the 3 mail cases, router, digest, status, open goals | `docs/mail.md` |
 | Firecrawl + AgentMail keys and webhooks | `docs/firecrawl-agentmail-setup.md` |
 | Running / screenshotting the app | `.claude/skills/run-ourspaces/SKILL.md` |
 
