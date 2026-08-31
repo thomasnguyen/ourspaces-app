@@ -5,6 +5,7 @@ import { COUPLE_WIDGETS, CREW_WIDGETS, SPACES_BY_ID } from "../src/data/spaces";
 import { getGlobalThread, getThreadsForSpace } from "../src/data/chat";
 import { retireCutSpaceRows, memberCounts } from "./spaces";
 import { pollTallies } from "./votes";
+import { messagesCounter, spacesCounter, widgetsCounter } from "./stats";
 import type { ItineraryData, LinkCardData, WidgetData } from "./widgetData";
 
 function seedUserId(slug: string, name: string) {
@@ -45,6 +46,7 @@ async function seedSpace(
     createdAt: now,
     lastActivityAt: now,
   });
+  await spacesCounter.inc(ctx);
 
   for (const member of meta.members) {
     const memberId = await ctx.db.insert("members", {
@@ -73,6 +75,7 @@ async function seedSpace(
       createdBy: seedUserId(slug, meta.members[0]?.name ?? "guest"),
       createdAt: now,
     });
+    await widgetsCounter.inc(ctx);
     widgetIds.set(`${slug}:${widget.id}`, id);
 
     if (widget.type === "poll") {
@@ -124,6 +127,7 @@ async function seedSpaceMessages(
         authorColor: member?.color ?? "#8b8b8b",
         promotable: message.promotable,
       });
+      await messagesCounter.inc(ctx);
     }
     offset -= thread.messages.length;
   }
@@ -181,6 +185,11 @@ export const reset = internalMutation({
   args: {},
   returns: v.union(v.id("spaces"), v.null()),
   handler: async (ctx) => {
+    // Wiping every table means every sharded-counter total goes to zero too
+    // — reset directly instead of decrementing per deleted row.
+    await spacesCounter.reset(ctx);
+    await widgetsCounter.reset(ctx);
+    await messagesCounter.reset(ctx);
     for (const table of ["messages", "votes", "paintMarks", "presence", "widgets", "members", "spaces", "recaps"] as const) {
       const rows = await ctx.db.query(table).collect();
       for (const row of rows) {
@@ -245,6 +254,7 @@ export const backfillMailDemo = internalMutation({
             createdBy: "seed",
             createdAt: Date.now(),
           });
+          await widgetsCounter.inc(ctx);
           out.push("crew japan frame");
         }
       }
@@ -274,6 +284,7 @@ export const backfillMailDemo = internalMutation({
             createdBy: "seed",
             createdAt: Date.now(),
           });
+          await widgetsCounter.inc(ctx);
           out.push("couple letter");
         }
       }
@@ -345,6 +356,7 @@ export const backfillLinkQuestions = internalMutation({
               authorColor: member?.color ?? "#8b8b8b",
               promotable: message.promotable,
             });
+            await messagesCounter.inc(ctx);
             insertedMessages += 1;
           }
         }

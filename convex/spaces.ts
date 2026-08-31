@@ -5,6 +5,7 @@ import { components } from "./_generated/api";
 import type { DataModel, Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { pollTallies } from "./votes";
+import { messagesCounter, spacesCounter, widgetsCounter } from "./stats";
 
 const RETIRED_SPACE_SLUGS = ["buildclub", "trip"] as const;
 
@@ -39,6 +40,7 @@ async function deleteSpaceBySlug(ctx: MutationCtx, slug: string) {
       await pollTallies.delete(ctx, vote);
     }
     await ctx.db.delete(widget._id);
+    await widgetsCounter.dec(ctx);
   }
 
   for (const member of await ctx.db
@@ -55,10 +57,12 @@ async function deleteSpaceBySlug(ctx: MutationCtx, slug: string) {
       .withIndex("by_space", (q) => q.eq("spaceId", space._id))
       .collect()) {
       await ctx.db.delete(row._id);
+      if (table === "messages") await messagesCounter.dec(ctx);
     }
   }
 
   await ctx.db.delete(space._id);
+  await spacesCounter.dec(ctx);
   return space._id;
 }
 
@@ -134,11 +138,13 @@ export const createSpace = mutation({
   returns: v.id("spaces"),
   handler: async (ctx, args) => {
     const now = Date.now();
-    return await ctx.db.insert("spaces", {
+    const id = await ctx.db.insert("spaces", {
       ...args,
       createdAt: now,
       lastActivityAt: now,
     });
+    await spacesCounter.inc(ctx);
+    return id;
   },
 });
 
@@ -229,6 +235,7 @@ export const duplicateBySlug = internalMutation({
       createdAt: now,
       lastActivityAt: now,
     });
+    await spacesCounter.inc(ctx);
 
     for (const member of await ctx.db
       .query("members")
@@ -248,6 +255,7 @@ export const duplicateBySlug = internalMutation({
       const { _id, _creationTime, ...fields } = widget;
       const newId = await ctx.db.insert("widgets", { ...fields, spaceId });
       widgetIds.set(String(_id), newId);
+      await widgetsCounter.inc(ctx);
 
       for (const vote of await ctx.db
         .query("votes")
@@ -278,6 +286,7 @@ export const duplicateBySlug = internalMutation({
         widgetId: [mappedBase, ...suffix].join("::"),
         promotedWidgetId: undefined,
       });
+      await messagesCounter.inc(ctx);
     }
 
     for (const mark of await ctx.db
