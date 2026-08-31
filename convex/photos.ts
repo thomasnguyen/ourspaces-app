@@ -1,5 +1,6 @@
 import { internalMutation, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import type { PhotoWallData } from "./widgetData";
 
 const CREW_MEMORY_SOURCES: Record<
   string,
@@ -48,7 +49,8 @@ export const addPhoto = mutation({
     const src = await ctx.storage.getUrl(storageId);
     if (!src) throw new Error("Uploaded file not found");
 
-    const photos = Array.isArray(widget.data?.photos) ? widget.data.photos : [];
+    const photoWallData = widget.data as PhotoWallData;
+    const photos = Array.isArray(photoWallData?.photos) ? photoWallData.photos : [];
     const date = new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
@@ -67,7 +69,7 @@ export const addPhoto = mutation({
       addedAt: Date.now(),
     };
     await ctx.db.patch(widget._id, {
-      data: { ...widget.data, photos: [photo, ...photos] },
+      data: { ...photoWallData, photos: [photo, ...photos] },
     });
     return null;
   },
@@ -94,28 +96,24 @@ export const backfillCrewMemorySources = internalMutation({
 
     for (const widget of widgets) {
       if (widget.type !== "photoWall") continue;
-      const photos = Array.isArray(widget.data?.photos) ? widget.data.photos : [];
+      const photoWallData = widget.data as PhotoWallData;
+      const photos = Array.isArray(photoWallData?.photos) ? photoWallData.photos : [];
       let changed = false;
-      const nextPhotos = photos.map((photo: unknown) => {
-        if (!photo || typeof photo !== "object") return photo;
-        const fields = photo as Record<string, unknown>;
-        const caption = String(fields.caption ?? "").trim().toLowerCase();
+      const nextPhotos = photos.map((photo) => {
+        const caption = photo.caption.trim().toLowerCase();
         const source = CREW_MEMORY_SOURCES[caption];
         if (!source) return photo;
-        if (
-          fields.src === source.src &&
-          fields.thumbnailSrc === source.thumbnailSrc
-        ) {
+        if (photo.src === source.src && photo.thumbnailSrc === source.thumbnailSrc) {
           return photo;
         }
         changed = true;
         patchedPhotos += 1;
-        return { ...fields, ...source };
+        return { ...photo, ...source };
       });
 
       if (!changed) continue;
       await ctx.db.patch(widget._id, {
-        data: { ...widget.data, photos: nextPhotos },
+        data: { ...photoWallData, photos: nextPhotos },
       });
       patchedWidgets += 1;
     }

@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { widgetDataValidator } from "./widgetData";
 
 /**
  * OurSpaces data model — PRD §11.
@@ -62,7 +63,7 @@ export default defineSchema({
     w: v.number(),
     h: v.number(),
     z: v.number(),
-    data: v.any(), // type-specific: countdown target, poll options, note text, frame title…
+    data: widgetDataValidator, // type-specific: countdown target, poll options, note text, frame title…
     createdBy: v.string(),
     createdAt: v.number(),
     rotate: v.optional(v.number()),
@@ -82,7 +83,8 @@ export default defineSchema({
     promotedWidgetId: v.optional(v.id("widgets")),
   }).index("by_widget", ["widgetId"])
     .index("by_space", ["spaceId"])
-    .index("by_space_widget", ["spaceId", "widgetId"]),
+    .index("by_space_widget", ["spaceId", "widgetId"])
+    .searchIndex("search_text", { searchField: "text", filterFields: ["spaceId"] }),
 
   votes: defineTable({
     widgetId: v.id("widgets"),
@@ -157,5 +159,8 @@ export default defineSchema({
         updatedAt: v.number(),
       }),
     ),
-  }).index("by_space", ["spaceId"]),
+  })
+    .index("by_space", ["spaceId"])
+    .index("by_space_user", ["spaceId", "userId"])
+    .index("by_space_updated", ["spaceId", "updatedAt"]),
 });

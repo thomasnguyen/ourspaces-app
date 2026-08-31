@@ -3,6 +3,7 @@ import type { Id } from "./_generated/dataModel";
 import { COUPLE_WIDGETS, CREW_WIDGETS, SPACES_BY_ID } from "../src/data/spaces";
 import { getGlobalThread, getThreadsForSpace } from "../src/data/chat";
 import { retireCutSpaceRows } from "./spaces";
+import type { ItineraryData, LinkCardData, WidgetData } from "./widgetData";
 
 function seedUserId(slug: string, name: string) {
   return `seed:${slug}:${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
@@ -64,7 +65,7 @@ async function seedSpace(
       h: widget.h,
       z: widget.z,
       rotate: widget.rotate,
-      data: convexSafe(widget.data),
+      data: convexSafe(widget.data) as WidgetData,
       createdBy: seedUserId(slug, meta.members[0]?.name ?? "guest"),
       createdAt: now,
     });
@@ -197,7 +198,7 @@ export const backfillMailDemo = internalMutation({
         .withIndex("by_space", (q) => q.eq("spaceId", crew._id))
         .collect();
       const itinerary = widgets.find((w) => w.type === "itinerary");
-      if (itinerary && String(itinerary.data?.title ?? "").startsWith("tahoe")) {
+      if (itinerary && (itinerary.data as ItineraryData).title.startsWith("tahoe")) {
         const mock = CREW_WIDGETS.find((w) => w.id === "itinerary");
         if (mock) {
           await ctx.db.patch(itinerary._id, {
@@ -212,7 +213,9 @@ export const backfillMailDemo = internalMutation({
         }
       }
       const hasJapanFrame = widgets.some(
-        (w) => w.type === "frame" && String(w.data?.title ?? "") === "japan trip",
+        (w) =>
+          w.type === "frame" &&
+          String((w.data as Record<string, unknown>).title ?? "") === "japan trip",
       );
       if (!hasJapanFrame) {
         const mockFrame = CREW_WIDGETS.find((w) => w.id === "frame-japan");
@@ -291,12 +294,12 @@ export const backfillLinkQuestions = internalMutation({
         const live = liveWidgets.find(
           (widget) =>
             widget.type === "linkCard" &&
-            widget.data?.url === seedWidget.data.url &&
-            widget.data?.savedBy === seedWidget.data.savedBy,
+            (widget.data as LinkCardData).url === seedWidget.data.url &&
+            (widget.data as LinkCardData).savedBy === seedWidget.data.savedBy,
         );
         if (!live) continue;
         await ctx.db.patch(live._id, {
-          data: { ...live.data, questions: convexSafe(questions) },
+          data: { ...(live.data as LinkCardData), questions: convexSafe(questions) as LinkCardData["questions"] },
         });
         patchedWidgets += 1;
 

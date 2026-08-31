@@ -25,6 +25,7 @@ import type * as seed from "../seed.js";
 import type * as spaces from "../spaces.js";
 import type * as stats from "../stats.js";
 import type * as votes from "../votes.js";
+import type * as widgetData from "../widgetData.js";
 import type * as widgets from "../widgets.js";
 
 import type {
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   spaces: typeof spaces;
   stats: typeof stats;
   votes: typeof votes;
+  widgetData: typeof widgetData;
   widgets: typeof widgets;
 }>;
 

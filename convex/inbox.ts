@@ -187,9 +187,10 @@ export const prependDroppedLinks = internalMutation({
   handler: async (ctx, { pileId, dropped }) => {
     const pile = await ctx.db.get(pileId);
     if (!pile) return null;
-    const existing = Array.isArray(pile.data?.dropped) ? pile.data.dropped : [];
+    const pileData = pile.data as Record<string, unknown>;
+    const existing = Array.isArray(pileData.dropped) ? pileData.dropped : [];
     await ctx.db.patch(pileId, {
-      data: { ...pile.data, dropped: [...dropped, ...existing] },
+      data: { ...pileData, dropped: [...dropped, ...existing] },
     });
     return null;
   },
@@ -200,10 +201,11 @@ export const patchDroppedLink = internalMutation({
   handler: async (ctx, { pileId, linkId, patch }) => {
     const pile = await ctx.db.get(pileId);
     if (!pile) return null;
-    const dropped = Array.isArray(pile.data?.dropped) ? pile.data.dropped : [];
+    const pileData = pile.data as Record<string, unknown>;
+    const dropped = Array.isArray(pileData.dropped) ? pileData.dropped : [];
     await ctx.db.patch(pileId, {
       data: {
-        ...pile.data,
+        ...pileData,
         dropped: dropped.map((entry: Record<string, unknown>) =>
           entry.id === linkId ? { ...entry, ...patch } : entry,
         ),

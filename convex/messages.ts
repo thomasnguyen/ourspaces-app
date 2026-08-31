@@ -1,21 +1,38 @@
 import { mutation, query } from "./_generated/server";
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
+import schema from "./schema";
+import type { DecisionData } from "./widgetData";
 
+const messageValidator = schema.doc("messages");
+
+// Indexed + paginated: the "by_space_widget" scan is bounded per page
+// instead of an unbounded `.collect()` over a chat widget's full history.
 export const listMessages = query({
-  args: { spaceId: v.id("spaces"), widgetId: v.string() },
-  handler: async (ctx, { spaceId, widgetId }) => {
+  args: {
+    spaceId: v.id("spaces"),
+    widgetId: v.string(),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(messageValidator),
+  handler: async (ctx, { spaceId, widgetId, paginationOpts }) => {
     return await ctx.db
       .query("messages")
       .withIndex("by_space_widget", (q) => q.eq("spaceId", spaceId).eq("widgetId", widgetId))
       .order("asc")
-      .collect();
+      .paginate(paginationOpts);
   },
 });
 
 export const listBySpace = query({
-  args: { spaceId: v.id("spaces") },
-  handler: async (ctx, { spaceId }) =>
-    await ctx.db.query("messages").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("asc").collect(),
+  args: { spaceId: v.id("spaces"), paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(messageValidator),
+  handler: async (ctx, { spaceId, paginationOpts }) =>
+    await ctx.db
+      .query("messages")
+      .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
+      .order("asc")
+      .paginate(paginationOpts),
 });
 
 export const sendMessage = mutation({
@@ -29,6 +46,7 @@ export const sendMessage = mutation({
     authorEmoji: v.optional(v.string()),
     authorAvatarUrl: v.optional(v.string()),
   },
+  returns: v.union(v.id("messages"), v.null()),
   handler: async (ctx, args) => {
     const text = args.text.trim();
     if (!text) return null;
@@ -49,6 +67,7 @@ export const promoteMessage = mutation({
     x: v.number(),
     y: v.number(),
   },
+  returns: v.id("widgets"),
   handler: async (ctx, { messageId, userId, x, y }) => {
     const message = await ctx.db.get(messageId);
     if (!message) throw new Error("Message not found");
@@ -60,7 +79,7 @@ export const promoteMessage = mutation({
     const existing = widgets.find(
       (widget) =>
         widget.type === "decision" &&
-        widget.data?.promotedFromMessageId === messageId,
+        (widget.data as DecisionData).promotedFromMessageId === messageId,
     );
 
     if (existing) return existing._id;
