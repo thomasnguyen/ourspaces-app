@@ -10,6 +10,7 @@
 
 import type * as agentmail from "../agentmail.js";
 import type * as ai from "../ai.js";
+import type * as batch from "../batch.js";
 import type * as crons from "../crons.js";
 import type * as digest from "../digest.js";
 import type * as firecrawl from "../firecrawl.js";
@@ -39,6 +40,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   agentmail: typeof agentmail;
   ai: typeof ai;
+  batch: typeof batch;
   crons: typeof crons;
   digest: typeof digest;
   firecrawl: typeof firecrawl;

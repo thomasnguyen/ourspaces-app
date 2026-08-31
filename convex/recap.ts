@@ -6,13 +6,18 @@ import {
   internalQuery,
   query,
 } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { completeJson } from "./ai";
 import schema from "./schema";
 import { pollTallies } from "./votes";
 import { messagesCounter } from "./stats";
 import { rateLimiter } from "./rateLimits";
+import { Workpool } from "@convex-dev/workpool";
+
+// workpool: bound the daily recap fan-out to a few concurrent LLM calls
+// instead of an unbounded Promise.all across every space at once.
+const recapPool = new Workpool(components.workpool, { maxParallelism: 3 });
 
 /** Follow-up chat rides the existing messages table, hidden from global chat. */
 const THREAD = "recap";
@@ -444,11 +449,12 @@ export const generateAll = internalAction({
   returns: v.null(),
   handler: async (ctx) => {
     const spaceIds = await ctx.runQuery(internal.recap.listSpaceIds, {});
-    await Promise.all(
-      spaceIds.map((spaceId: Id<"spaces">) =>
-        ctx.runAction(internal.recap.generateOne, { spaceId, kind: "daily" }),
-      ),
-    );
+    for (const spaceId of spaceIds) {
+      await recapPool.enqueueAction(ctx, internal.recap.generateOne, {
+        spaceId,
+        kind: "daily",
+      });
+    }
     return null;
   },
 });

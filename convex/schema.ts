@@ -163,4 +163,10 @@ export default defineSchema({
     .index("by_space", ["spaceId"])
     .index("by_space_user", ["spaceId", "userId"])
     .index("by_space_updated", ["spaceId", "updatedAt"]),
+
+  // batch-worker queue: stale linkCard widgets pending a Firecrawl refresh.
+  linkRefreshQueue: defineTable({
+    widgetId: v.id("widgets"),
+    queuedAt: v.commitTs(), // commit-order cursor, not a wall-clock read
+  }).index("queuedAt", ["queuedAt"]),
 });
