@@ -72,23 +72,36 @@ npx convex run agentmail:ensureShowcaseInboxes   # crew→thecrew@ couple→ustw
 
 Free tier (no card): 3 inboxes, 3,000 emails/month — exactly our three spaces.
 
-### Status as of 2026-08-30 (evening)
+### Status as of 2026-08-30 (night) — LIVE on dev
 
-**Working (verified on dev via self-signed webhook posts):**
+- Unrestricted key + fresh webhook secret set on **dev** (`dusty-condor-648`).
+  Webhook `ep_3Ietya3ktQeby8N6rBz64dAu0Ry`: `message.received` →
+  `https://dusty-condor-648.convex.site/api/agentmail/webhook`.
+- Real inboxes bound: crew → **ourspaces@agentmail.to**, couple →
+  **ustwo@agentmail.to**, buildroom → **buildroom@agentmail.to**.
+- **Verified with real mail:** buildroom's inbox sent to ustwo@ → delivered →
+  webhook → letter widget appeared in us two. `digest:sendNow` delivered the
+  crew digest to a real Gmail. (Router behaviors — receipt→IOU, booking→japan
+  itinerary, link→pile+Firecrawl, unfiled envelope — verified earlier via
+  signed webhook posts; same code path.)
 
-- Full inbound pipeline: signed webhook → `emailEvents` → per-space router.
-  Letter landed in us two; a fake Venmo receipt cleared Jules' exact $42 tahoe
-  IOU on the crew board (AI routing); an emailed HN link dropped into the build
-  room pile and came back Firecrawl-enriched.
-- Weekly digest (`convex/digest.ts`, Friday-16:00-UTC cron + `digest:sendNow`)
-  composes correctly and reaches the AgentMail send call.
+**Gotchas learned:**
 
-**Blocked on ONE thing — the API key is too scoped.** The current
-`AGENTMAIL_API_KEY` (dev) gets `403 missing_permission` on even `inbox_read`,
-and a key cannot mint a stronger key. A human must create an
-unrestricted/org-scoped key in the console, then run step 2 + 4 above. The dev
-spaces currently carry `test-*` inbox stubs so the pipeline could be tested;
-clear them first (step 4).
+- The 3-inbox free-tier cap is **per org, shared by dev and prod**. `thecrew`
+  as a username is taken org-wide on agentmail.to, so the crew rides the
+  account's default `ourspaces@` inbox.
+- Creating a webhook via API returns the `whsec_…` secret in the response —
+  no console needed with an unrestricted key.
+
+**Prod cutover (before demo/submission):**
+
+1. `npx convex env set AGENTMAIL_API_KEY … --prod` and create a **second**
+   webhook pointing at `https://necessary-cobra-892.convex.site/api/agentmail/webhook`,
+   set its secret with `--prod`. (Two webhooks = dev AND prod both mirror
+   inbound mail into their own data — decide if dev should stay subscribed.)
+2. Bind the same three inbox addresses to the **prod** space ids via
+   `agentmail:setSpaceInbox` (don't run `ensureShowcaseInboxes` on prod — the
+   inboxes already exist, creation would 403 `resource_taken`).
 
 ---
 

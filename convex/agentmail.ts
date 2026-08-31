@@ -48,8 +48,10 @@ export const ensureInbox = action({
 export const ensureShowcaseInboxes = action({
   args: {},
   handler: async (ctx): Promise<Record<string, string>> => {
+    // "thecrew" is taken org-wide on agentmail.to; the crew rides the
+    // account's default ourspaces@ inbox instead (free tier caps at 3 total).
     const wanted: Record<string, string> = {
-      crew: "thecrew",
+      crew: "ourspaces",
       couple: "ustwo",
       buildroom: "buildroom",
     };

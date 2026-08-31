@@ -32,6 +32,14 @@ Backward-looking history lives in `hackathon.md`.
   unrestricted key in the console, `env set`, `clearStubInboxes`,
   `ensureShowcaseInboxes`, and it's live (see
   `docs/firecrawl-agentmail-setup.md` § Status).
+  **Update, same evening: UNBLOCKED and live on dev with real mail.** Human
+  supplied an unrestricted key; inboxes are crew→`ourspaces@agentmail.to`
+  (`thecrew` is taken org-wide; 3-inbox cap is org-wide too, shared with
+  prod), couple→`ustwo@`, buildroom→`buildroom@`; fresh webhook + secret on
+  dev. Proven with real email: buildroom's inbox → ustwo@ → letter widget in
+  us two; `digest:sendNow` delivered to the human's Gmail. Prod cutover steps
+  (second webhook + `setSpaceInbox` binds, do NOT create inboxes again) are in
+  the setup doc.
 
 - **Catch-me-up panel redesigned as a real chat** (`ActionDock.tsx` + the two
   recap CSS sections). Head wears a tilted lime ✦ badge + since-pill; briefing

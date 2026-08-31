@@ -456,7 +456,7 @@ export const CREW_WIDGETS: Widget[] = [
     z: 1,
     data: {
       title: "japan trip",
-      subtitle: "email bookings to thecrew@ ✉",
+      subtitle: "email bookings to ourspaces@ ✉",
     },
   },
   {
@@ -1124,7 +1124,7 @@ export const SPACES: SpaceMeta[] = [
     tagline: "your people, in one place",
     preview: "daily q · 3 answered",
     showcase: "birthday HQ · plans, polls, memories",
-    inboxAddress: "thecrew@agentmail.to",
+    inboxAddress: "ourspaces@agentmail.to",
   },
   {
     id: "couple",
