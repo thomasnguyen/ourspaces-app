@@ -61,6 +61,7 @@ import { useLiveHandlers } from "../live/useLiveHandlers";
 import { useLivePoll } from "../live/useLivePoll";
 import { useLiveSpace } from "../live/useLiveSpace";
 import { usePresence } from "../live/usePresence";
+import useRoomPresence from "@convex-dev/presence/react";
 import { useShowAfter } from "../lib/entrance";
 import { freshWidgetData, getWidgetBlueprint, WIDGET_SIZES } from "../lib/widgetDefaults";
 import { widgetLabel } from "../lib/widgetLabels";
@@ -215,6 +216,15 @@ function useGhostLifecycle(showGhosts: boolean, status: string): GhostLifecycle 
   }, [showGhosts, status]);
 
   return lifecycle;
+}
+
+/** presence component: "I have this space open" — a room-occupancy signal
+ * for the space-list badge (Rail.tsx), independent of the hand-rolled
+ * cursor/gesture presence system above. Its own component so mounting it
+ * only once a room is entered doesn't touch hook call order elsewhere. */
+function RoomPresenceHeartbeat({ roomId, userId }: { roomId: string; userId: string }) {
+  useRoomPresence(api.roomPresence, roomId, userId);
+  return null;
 }
 
 export function LiveSpacePage({
@@ -1667,6 +1677,9 @@ export function LiveSpacePage({
   return (
     <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""} ${spacePan.panning ? "is-canvas-panning" : ""} ${spacePan.spaceHeld ? "is-space-panning" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
       <Rail activeId={slug} onSelectSpace={selectSpace} onCreateClick={openWidgetPicker} />
+      {roomEntered && space?.slug && (
+        <RoomPresenceHeartbeat roomId={space.slug} userId={identity.userId} />
+      )}
       <SpaceHeader
         key={boardKey}
         spaceId={slug}
