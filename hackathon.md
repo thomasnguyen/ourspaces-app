@@ -7,15 +7,29 @@
 - **Repo:** https://github.com/thomasnguyen/ourspaces-app
 - **Frontend:** Convex static hosting
 - **Convex deployment:** https://necessary-cobra-892.convex.cloud
-- **Components:** @convex-dev/static-hosting, @firecrawl/firecrawl-convex (AgentMail is called over plain REST — its component's actions never resolve through ctx.runAction)
-- **Convex features:** schema, tables, indexes, queries, mutations, actions, HTTP actions (svix-verified inbound mail), realtime queries, crons (presence sweep + weekly digest), scheduled functions, internal mutations, file storage, presence
+- **Components (16):** @convex-dev/static-hosting, @firecrawl/firecrawl-convex (scrape + web search + durable site crawl), `agentMail` (our own first-party local component — `convex/components/agentMail/`, every space's inbox: create/send/reply/label + inbound store & webhook dedup; the published @agentmail/convex 0.1.0 is unusable), @convex-dev/migrations, @convex-dev/aggregate (two named instances), @convex-dev/sharded-counter, @convex-dev/rate-limiter, @convex-dev/action-retrier, @convex-dev/action-cache, @convex-dev/workpool, @convex-dev/workflow, @convex-dev/batch-worker, @convex-dev/agent, @convex-dev/rag, @convex-dev/persistent-text-streaming, @convex-dev/presence
+- **Convex features:** schema (typed discriminated union on `widgets.data`), tables, indexes, full-text search index, queries, mutations, actions, HTTP actions (svix-verified inbound mail, token-streaming ask endpoint), realtime queries, real cursor pagination, crons (presence sweep, daily recap via workpool, Friday weekly digest via a durable workflow, Friday stale-link refresh), scheduled functions, internal mutations, file storage, presence (canvas cursors/gestures, hand-rolled; room occupancy, component), agent threads, vector search (via rag), `returns:` validators on all 78 functions
 - **Auth:** none
-- **AI models:** gpt-oss-120b via a Cloudflare AI proxy (primary), gpt-4o-mini via the OpenAI API (fallback)
+- **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, primary), gpt-4o-mini via the OpenAI API (chat fallback), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-08-31T02:30:00Z
+- **Last updated:** 2026-08-31T19:19:23Z
 
 ## Highlights
 
+- **15 Convex components, each doing a real job** — migrations backfill
+  legacy data, two named aggregate instances replace `.collect()` counting
+  for poll tallies and member counts, a sharded counter drives the landing
+  page's live totals, a rate limiter guards every LLM/mail/paint hot path,
+  action-retrier + action-cache wrap every Firecrawl/AgentMail call, workpool
+  bounds the daily recap fan-out, workflow makes the weekly digest durable,
+  batch-worker drains a stale-link refresh queue, an agent thread gives
+  "ask the space" real conversational memory, rag grounds it with real
+  vector search, persistent-text-streaming streams answers over HTTP, and
+  presence tracks room occupancy for the space list — layered on top of a
+  typed `widgets.data` schema, real cursor pagination, full-text search, and
+  `returns:` validators on all 78 functions. Went from 1 component in use to
+  15 in a single session; every one verified live against the dev
+  deployment, not just deployed.
 - **122 commits in 5 days**, all inside the hackathon window; every log entry
   below is pinned to a commit hash so the story is checkable against history.
 - **32 widget types on one live multiplayer canvas** — countdowns, ballot
@@ -72,6 +86,21 @@
 | Inbound-mail router (email → widget mutations) | `convex/inbox.ts` | `653453b` |
 | Weekly digest cron (space → its senders) | `convex/digest.ts`, `convex/crons.ts` | `c2e2c43` |
 | Live inboxes, real end-to-end mail | `convex/agentmail.ts` | `8c42502` |
+| Typed `widgets.data` union, real pagination, full-text search index | `convex/widgetData.ts`, `convex/schema.ts`, `convex/messages.ts` | `602fff6` |
+| `returns:` validators on all 78 functions | every `convex/*.ts` | `495584a` |
+| migrations (legacy letter backfill) | `convex/migrations.ts` | `45ff2a3` |
+| aggregate — poll tallies + member counts | `convex/votes.ts`, `convex/spaces.ts` | `45ff2a3` |
+| sharded-counter — landing page live totals | `convex/stats.ts` | `0e5ca3c` |
+| rate-limiter — LLM, mail, paint quotas | `convex/rateLimits.ts` | `4237f63` |
+| action-retrier + action-cache — Firecrawl/AgentMail retries + caching | `convex/firecrawl.ts`, `convex/digest.ts`, `convex/questions.ts` | `6a44811` |
+| workpool — bounded daily recap fan-out | `convex/recap.ts` | `67d5452` |
+| workflow — durable weekly digest | `convex/digest.ts` | `67d5452` |
+| batch-worker — stale-linkCard refresh queue | `convex/batch.ts` | `67d5452` |
+| agent — "ask the space" conversational threads | `convex/agent.ts`, `convex/recap.ts` | `b1173c7` |
+| rag — vector search grounding `recap.ask` | `convex/rag.ts` | `a7db717` |
+| persistent-text-streaming — HTTP token streaming | `convex/streaming.ts` | `d017eb7` |
+| messages full-text search | `convex/messages.ts` | `d017eb7` |
+| presence — space-list room occupancy | `convex/roomPresence.ts`, `src/components/Rail.tsx` | `fc2418b` |
 
 ## Log
 
@@ -354,7 +383,10 @@ real problems" leading, with submit-day numbers left as bracketed placeholders
 Email became a real input to the canvas. Dropped the `@agentmail/convex`
 component (its actions never resolve through `ctx.runAction`):
 `convex/agentmail.ts` now calls the REST API directly for inbox create + send,
-and `convex/http.ts` hand-verifies the svix webhook. Inbound mail routes per
+and `convex/http.ts` hand-verifies the svix webhook. *(Superseded 2026-08-31:
+the REST calls moved behind our own first-party `components.agentMail`
+component, which also adds reply-in-thread + labels — see the components list
+up top.)* Inbound mail routes per
 space — us two → sealed letter widget, the build room → URLs into the link pile
 plus sequential Firecrawl enrich, everywhere else → the model reads a live
 widget inventory and files the email (expense row / itinerary day / new tracker
@@ -389,3 +421,109 @@ Gmail (`convex/agentmail.ts`, `docs/firecrawl-agentmail-setup.md`).
 Wrote `docs/mail.md`: the three demo cases, the architecture as shipped, a
 status checklist, and the open goals in priority order (arrival choreography
 first, prod cutover second).
+
+### 2026-08-31 - 470c840
+Installed and wired all 15 planned components in `convex.config.ts` in one
+pass (migrations, aggregate, sharded-counter, rate-limiter, action-retrier,
+action-cache, workpool, workflow, batch-worker, agent, rag,
+persistent-text-streaming, presence, prosemirror-sync, better-auth) —
+foundations for giving each one a genuine job, one at a time, instead of the
+single component (`firecrawl`) the app used until now.
+
+### 2026-08-31 - 602fff6
+`widgets.data` went from a bare `v.any()` to a discriminated union of the 12
+core widget shapes (poll, note, decision, countdown, linkCard, letter,
+photoWall, expenseSplit, itinerary, potluck, rsvp, dailyQ) plus a permissive
+record fallback for the rest — shapes reverse-engineered from every real
+producer, not guessed, and verified clean against the live dev deployment.
+`messages.listMessages`/`listBySpace` moved from an unbounded `.collect()` to
+real cursor pagination; `messages` got a full-text search index
+(`convex/widgetData.ts`, `convex/schema.ts`, `convex/messages.ts`).
+
+### 2026-08-31 - 495584a
+Mechanical sweep: `returns:` validators on all 78 Convex functions (was 18),
+verified with a clean `tsc` build and a real `convex dev` deploy that
+validated every declared shape against actual handler behavior.
+
+### 2026-08-31 - 45ff2a3
+migrations (`convex/migrations.ts`) backfills the `unfiled` field on letters
+seeded before the mail router set it explicitly. aggregate, two named
+instances, replaces `.collect()`-based counting: pollTallies gives O(log n)
+per-option vote counts (`votes.ts`, `recap.ts`'s poll summary), memberCounts
+gives O(log n) live member counts per space (`spaces.ts listSpaces`) — both
+wired into every insert/delete site for their tables and backfilled against
+the live dev database (11 votes, 116 members).
+
+### 2026-08-31 - 0e5ca3c
+sharded-counter (`convex/stats.ts`) replaces the "live backend" widget's
+full-table `.collect()` reads with global spaces/widgets/messages counters,
+wired into all 10 widget, 5 message, and 3 space insert/delete sites so the
+counts never drift. Verified with a live create-then-delete round trip
+against the dev database (69 → 70 → 69).
+
+### 2026-08-31 - 4237f63
+rate-limiter (`convex/rateLimits.ts`) puts token-bucket quotas on the LLM
+proxy (spark questions, recap generate/ask), AgentMail sends, and paint
+strokes — space-scoped since there's no authenticated identity yet. Paint
+strokes fail soft (drop silently) instead of throwing, since it's a live
+drawing hot path, not a one-off action.
+
+### 2026-08-31 - 6a44811
+action-retrier wraps Firecrawl scrapes and AgentMail sends with
+retry-with-backoff, keeping both callers' existing sync-looking contracts
+unchanged. action-cache caches scrape-by-URL (1h TTL) and
+questions-by-(title,description) (no TTL). Verified live: a real scrape
+(6.4s) then an identical one (1.1s, cache hit); a real question-gen call
+(8.4s) then an identical one returning the same cached questions (1.0s).
+
+### 2026-08-31 - 67d5452
+workpool bounds the daily recap fan-out to 3 concurrent LLM calls and
+re-enables the paused daily cron (`recap.ts`). workflow rebuilds the weekly
+digest's cron path as a durable multi-step flow — recipients → snapshot →
+LLM compose → send, each independently retried (`digest.ts`); the manual
+`sendNow` demo trigger keeps the simpler action-retrier path. batch-worker
+(new `linkRefreshQueue` table, `convex/batch.ts`) drains stale linkCards
+through the cached/retried scraper a few at a time. Verified live end to end,
+including a real enqueue → drain → re-scrape → patch round trip.
+
+### 2026-08-31 - b1173c7
+agent (`convex/agent.ts`) gives `recap.ask` a real per-space thread with
+conversational memory, replacing a stateless `completeJson` call —
+backed by an AI SDK provider pointed at the same Cloudflare proxy `ai.ts`
+already used. Verified live: two sequential asks against the crew space
+share one persisted thread id.
+
+### 2026-08-31 - a7db717
+rag (`convex/rag.ts`) indexes each space's widgets + recent chat and
+semantic-searches for the chunks most relevant to the asked question,
+grounding the agent prompt instead of dumping the whole board every time.
+Needed a real embedding model — the shared chat proxy has no
+`/v1/embeddings` route — so this is the one place the app calls OpenAI's
+`text-embedding-3-small` directly (`OPENAI_API_KEY` set as a Convex env var,
+never committed). Verified live: indexed 14 items, a semantic search for
+"what poll is happening?" correctly surfaced the cake-poll chat message.
+
+### 2026-08-31 - d017eb7
+persistent-text-streaming (`convex/streaming.ts`) streams "ask the space"
+answers token-by-token over a real HTTP endpoint (`POST /ask-stream`),
+verified live with curl watching real incremental tokens arrive and persist
+— deliberately not wired into `ActionDock`'s UI, which already has a
+delicate working fake-reveal animation not worth the regression risk for a
+cosmetic change. `messages.search` adds real full-text search over a
+space's chat using the Phase-0 search index.
+
+### 2026-08-31 - fc2418b
+presence (`convex/roomPresence.ts`) tracks "who has this space open right
+now" for a "· N here" tooltip on the space rail — deliberately separate from
+the hand-rolled canvas cursor/gesture system in `convex/presence.ts`, whose
+~90ms writes drive live widget dragging and double as the actual
+gesture-lock arbitration mechanism (confirmed too tangled to safely swap
+before writing any code). `src/live/usePresence.ts` and the gesture system
+are untouched.
+
+### 2026-08-31 - 87aa0d3
+Fixed a self-contradicting `README.md`: the Stack line claimed "OpenAI (via
+Convex AI Gateway)" while the Convex-depth section further down correctly
+said Cloudflare proxy + OpenAI fallback — the app never used Convex's AI
+Gateway. Brought the Components/Schema/Scheduling bullets up to date with
+all 15 components now in real use.

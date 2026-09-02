@@ -17,12 +17,14 @@ Worker proxy, direct OpenAI as fallback) · AgentMail · Firecrawl
 
 ## Convex depth
 
-- **Components (15):** `static-hosting`, `firecrawl` (AgentMail is called over
-  plain REST from `convex/agentmail.ts` — its component's actions don't
-  resolve through `ctx.runAction`), `migrations` (widget-data backfills),
-  `aggregate` (poll tallies + member counts, two named instances),
-  `sharded-counter` (global live totals), `rate-limiter` (LLM/mail/paint
-  quotas), `action-retrier` (Firecrawl + AgentMail retries),
+- **Components (16):** `static-hosting`, `firecrawl` (single-URL scrape + web
+  search + durable site crawl), `agentMail` (our own first-party component in
+  `convex/components/agentMail/` — every space's inbox: create/send/reply/label
+  over the AgentMail REST API, plus an inbound-message store + webhook dedup;
+  the published `@agentmail/convex` 0.1.0 is unusable), `migrations`
+  (widget-data backfills), `aggregate` (poll tallies + member counts, two named
+  instances), `sharded-counter` (global live totals), `rate-limiter`
+  (LLM/mail/paint quotas), `action-retrier` (Firecrawl + AgentMail retries),
   `action-cache` (scrape + question-gen caching), `workpool` (bounded recap
   fan-out), `workflow` (durable weekly digest), `batch-worker` (stale-link
   refresh queue), `agent` (ask-the-space threads), `rag` (semantic search
@@ -43,10 +45,13 @@ Worker proxy, direct OpenAI as fallback) · AgentMail · Firecrawl
 - **File storage:** photo-wall uploads become prints with notes on the back
 - **Integrations:** AgentMail gives every space a real inbox — inbound mail is
   routed onto the canvas (sealed letter, link into the reading pile + Firecrawl
-  enrich, or an AI-filed expense row / itinerary day); Firecrawl turns pasted
-  webpages into reactive rich-post widgets; OpenAI-class models via a
-  Cloudflare AI proxy, with the OpenAI API as fallback (real OpenAI embeddings
-  for rag, since the proxy has no embeddings route)
+  enrich, or an AI-filed expense row / itinerary day), and the space **replies
+  in-thread + labels** each message with what it did; Firecrawl turns pasted
+  webpages into reactive rich-post widgets, and also powers **research a topic**
+  (web search → cards) and **crawl a site** (durable crawl whose pages stream
+  live into the reading room); OpenAI-class models via a Cloudflare AI proxy,
+  with the OpenAI API as fallback (real OpenAI embeddings for rag, since the
+  proxy has no embeddings route)
 
 ## Run
 

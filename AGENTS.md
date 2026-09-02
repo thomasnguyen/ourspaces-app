@@ -45,9 +45,16 @@ Plan and cut order: `.private/PLAN.md` (local only).
   queries. Never hand-roll state sync. Use components (presence, workflow,
   AgentMail, Firecrawl), crons, scheduled functions, HTTP actions, file storage,
   AI Gateway where they fit — and list each in README under "Convex depth".
+  **Auth:** guest (Anonymous, silent) or join (Passkey). Never a login wall.
+  Spec in `docs/data-model-plan.md` §1. Don't wire it until brain-play B1 is
+  green.
 - **Sponsors do core work:** OpenAI = structured extractor/decider (never a
-  chatbot UI), AgentMail = the space's inbox (send, receive, replies mutate
-  canvas), Firecrawl = link → structured widget.
+  chatbot UI). The space has a brain: mail or a URL in → it files against the
+  live canvas and the reason is visible on the object (letter flap, torn slip,
+  recap strip on the board). AgentMail = the space's inbox. Firecrawl = URL →
+  furniture on the board (recipe → potluck slots, not just a pretty card).
+  Next build: `docs/todos.md` § Next up (B1→B4→B2→B3). Do not add a chatbot,
+  a medical space, or more reading-circle questions.
 - **Design is locked:** tokens in `src/index.css` `@theme`; use them, no hex.
   Near-black base, loud flat identity colors, black sticker pills, lime only as
   a tiny pop, Plus Jakarta Sans only, punchy motion, reduced-motion respected.

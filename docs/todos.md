@@ -5,6 +5,99 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **AgentMail is now a real Convex component + Firecrawl went deep** (2026-08-31).
+  Deepened both sponsor integrations. `npm run build` green.
+  - **`components.agentMail`** — our OWN first-party component at
+    `convex/components/agentMail/` (the published `@agentmail/convex` 0.1.0 is
+    broken: nested-workpool hang, no env schema — see setup doc). No nested
+    workpool; API key passed in from the app (components can't read env). Wraps
+    `createInbox`/`sendMessage`/`replyToMessage`/`addLabels`/`ingestWebhook`/
+    `listInbound`; owns inbound store + webhook dedup. `convex/agentmail.ts` are
+    the app wrappers; `convex/http.ts` verifies svix then calls
+    `components.agentMail.lib.ingestWebhook`. AgentMail now lives behind a
+    real component boundary instead of raw REST scattered through app code.
+  - **Reply-in-thread + labels** — the space email brain now replies to the
+    sender ("Logged $84 from Sam on the expense tracker.", "Dropped 3 links…")
+    and labels the message with the router's verdict (receipt/booking/letter/
+    links/spam/filed). Needed `emailEvents.messageId/threadId` (new, optional)
+    captured from the webhook. Router ack logic in `convex/inbox.ts`
+    (`routeSmart` now returns `{label, reply}`), helper `ackInbound` in
+    `convex/agentmail.ts`.
+  - **Firecrawl search ("research a topic")** — `firecrawl.searchTopic`
+    (`convex/firecrawl.ts`) → web results as ready pile cards. UI: the research
+    bar in `ReadingRoom.tsx` → `searchTopic` in `LiveSpace.tsx`.
+  - **Firecrawl streaming crawl ("crawl a site")** — durable `firecrawl.crawlSite`
+    + reactive `getCrawlStatus`/`listCrawlPages` wrappers; pages stream live into
+    the new `src/components/CrawlStrip.tsx` (usePaginatedQuery), each keepable to
+    the pile. Firecrawl now covers scrape, search, and durable crawl.
+  - **Left for later:** AgentMail attachments/parse-PDF, mail full-text search,
+    drafts/human-in-loop, threads view; Firecrawl screenshot covers, map,
+    change-tracking/monitor.
+
+- **14 Convex components landed, each doing a real job** (2026-08-31). Went
+  from 1 used component (`firecrawl`) to 15 real `components.X` references
+  across 14 commits. Also: 78/78 functions have `returns:` validators
+  (was 18), `widgets.data` went from `v.any()` to a typed discriminated
+  union, and `messages` got real cursor pagination + a full-text search
+  index.
+  - **migrations** (`convex/migrations.ts`): backfills legacy letter widgets.
+  - **aggregate**, two named instances (`convex/votes.ts`, `convex/spaces.ts`):
+    O(log n) poll tallies + member counts, replacing `.collect()` counting.
+  - **sharded-counter** (`convex/stats.ts`): global live spaces/widgets/
+    messages totals for the landing widget, wired into every insert/delete.
+  - **rate-limiter** (`convex/rateLimits.ts`): quotas on LLM calls, mail
+    sends, paint strokes.
+  - **action-retrier** + **action-cache** (`convex/firecrawl.ts`,
+    `convex/questions.ts`, `convex/digest.ts`): Firecrawl scrapes and
+    AgentMail sends retry with backoff; scrape-by-URL and questions-by-
+    (title,description) are cached — verified live, repeat calls ~7x faster.
+  - **workpool** (`convex/recap.ts`): bounds the daily recap fan-out;
+    re-enabled the paused daily cron.
+  - **workflow** (`convex/digest.ts`): the weekly digest cron is now a
+    durable multi-step flow (recipients → snapshot → LLM → send).
+  - **batch-worker** (`convex/batch.ts`, new `linkRefreshQueue` table):
+    drains stale linkCards through the cached/retried scraper.
+  - **agent** (`convex/agent.ts`): `recap.ask` runs through a real
+    per-space thread with conversational memory (was stateless).
+  - **rag** (`convex/rag.ts`): real vector search grounds `recap.ask` —
+    needed `OPENAI_API_KEY` as a Convex env var since the shared chat proxy
+    has no embeddings route; the proxy stays the chat backend.
+  - **persistent-text-streaming** (`convex/streaming.ts`): real HTTP token
+    streaming for ask answers, verified live via curl — not wired into
+    ActionDock's UI (that has a working fake-reveal animation; real
+    streaming is a genuinely different data flow and wasn't worth the
+    regression risk for a cosmetic change).
+  - **presence** (`convex/roomPresence.ts`): "N here" on the space-list
+    tooltip (`Rail.tsx`) — deliberately separate from the hand-rolled
+    canvas cursor/gesture system in `convex/presence.ts`, which stays
+    untouched (its `claimGesture`/`updateGesture`/`finishGesture` calls
+    double as the actual widget-commit + lock-arbitration mechanism; no
+    component equivalent exists for that).
+  - **Not done, by choice**: `prosemirror-sync` (collaborative note editor —
+    real new styled UI, not just backend wiring; stopped before this one)
+    and Better Auth (auth is still unwired). Note that rag's vector search
+    lives inside the component's own tables — there is no hand-rolled
+    `.vectorIndex()` in `schema.ts`, and adding one we don't need would be
+    dead weight.
+  - `README.md` Stack + Convex-depth sections updated to match (was
+    claiming "Convex AI Gateway", which was never true — always the
+    Cloudflare proxy / OpenAI fallback already described further down).
+
+
+- **Guest or join** (2026-08-31, decided — not built). Canvas stays open.
+  Guest = silent Convex Auth Anonymous + today's claim-a-name. Join =
+  Passkey, same person, same `members` row. Never a login wall, never
+  email+password. Spec: `docs/data-model-plan.md` §1. Wire after B1 so
+  auth can't break the inbound demo; guest must still work if join is
+  half-done.
+
+- **The brain play** (2026-08-31, decided — not built yet). Mail filing and
+  catch-me-up exist but stay invisible. Make the reason visible in the
+  group's voice: `because` on the flap, recap strip on the canvas. Build
+  order **B1 → B4 → B2 → B3** (see Next up). Pitch: *the space has a brain.
+  mail it something it would recognize.* No chatbot, no medical space, no
+  more reading-circle questions. Do B1+B4 before reshooting tape.
+
 - **The pile filters by tag** (2026-08-30 night). The reading room's filter bar
   leads with six tag chips — kinds first by count (`article 31`, `docs 6`,
   `repo 6`, `discussion 2`, `video 2`) then the top hosts (`#github 6`),
@@ -19,9 +112,10 @@ Backward-looking history lives in `hackathon.md`.
   Verified headless in mock mode — `/tmp/rr-tags-{1,2,3}.png`.
 
 - **Email → canvas is real, end to end** (2026-08-30 evening). Dropped the
-  broken `@agentmail/convex` component; `convex/agentmail.ts` is a plain REST
-  client (create inbox / send / `clearStubInboxes` / `ensureShowcaseInboxes`)
-  and `convex/http.ts` hand-verifies the svix webhook. Inbound mail →
+  broken `@agentmail/convex`; `convex/agentmail.ts` was a plain REST client
+  (create inbox / send / `clearStubInboxes` / `ensureShowcaseInboxes`) — **since
+  replaced by our own `components.agentMail`, see the top entry** — and
+  `convex/http.ts` verifies the svix webhook. Inbound mail →
   `emailEvents` row → `convex/inbox.ts` router, per space personality:
   **us two** = every email becomes a sealed kraft `letter` widget (new widget
   type: envelope with flap/seal/stamp, click unfolds the letter — buttons, so
@@ -441,6 +535,32 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Next up
 
+- **Brain play B1** — half done (2026-09-01). **Shipped:** `because` on
+  `routeSmart` (`convex/inbox.ts`) — one lowercase sentence, ≤10 words,
+  banned from naming anything on the board; `cleanBecause()` strips convex
+  ids and trailing punctuation; persisted on `emailEvents.because`,
+  `letterData.because`, and `lastEmail.because` for expense + itinerary.
+  `BecauseSlip` (`src/widgets/extras.tsx`) renders it two ways: **tucked**
+  (a paper chip hanging off the letter envelope) and **pinned** (the
+  receipt's own footer line — cards carry a clip-path/fixed height, and a
+  padded chip overruns it by 4.2px; measured with
+  `.context/measure-because.mjs`). Verified live on dev with real routed
+  mail. **Still to build:** catch-me-up lands on the canvas as a dated
+  strip, tap a line → pan to the widget (`docs/mail.md` goal 0,
+  `docs/spaces-and-widgets.md` §1).
+  - Open for review: the sentence voice (three runs of the same email gave
+    "this clears jules' tahoe iou" / "jules' tahoe cabin half is settled" /
+    "jules cleared his tahoe half"), and the crew canvas seats a decorative
+    sticker over the tahoe receipt's footer, which covers the pinned line.
+- **Auth: guest or join** — after B1 is green on the live URL.
+  `docs/data-model-plan.md` §1. Anonymous silent + Passkey on the claim
+  card. Guest path is the rollback.
+- **Brain play B4** — crew frame *"jules is out this week"* (meal train).
+  With B1; enough to reshoot tape.
+- **Brain play B2** — vision writes the note on the back of a photo-wall
+  print; receipt photos file through the same router.
+- **Brain play B3** — Firecrawl writes widgets (recipe → potluck slots,
+  booking → itinerary day), not just a card.
 - vibeapps listing description is drafted in `docs/vibeapps-listing.md`
   (**local-only / gitignored** — submission copy doesn't ship in the public
   repo). Fill the [bracketed] placeholders at submit time (Sep 21) and cut any
@@ -467,8 +587,9 @@ Backward-looking history lives in `hackathon.md`.
   for the four new types yet (`WidgetEditorPanel`), and Hot Now doesn't FLIP
   when a vote reorders it.
 - Add the web-post discussion layer: OpenAI creates two direct questions, then
-  answers and upvotes sync live. This satisfies the structured
-  extractor/decider sponsor beat without a chatbot UI.
+  answers and upvotes sync live. **Superseded 2026-08-31** — questions stay;
+  do not grow them. Ground them in the canvas snapshot as part of B3, or
+  leave them. The OpenAI beat is the visible filing, not more starters.
 - Build four static vendor pages in `public/` (convex / agentmail / firecrawl /
   openai) from one shared template: per-page OG tags, hero clip,
   what-it-does-in-OurSpaces, code peek, deep link into the live app. Needed
@@ -478,6 +599,19 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- 2026-08-31: **Guest or join, never a wall.** Real Convex Auth. Guest =
+  Anonymous (silent) + claim a name — the demo path, a complete product.
+  Join = Passkey on the same claim card; upgrades the same `members` row.
+  Showcase spaces stay open. No email+password, no ClaimHero-style gate.
+  Wire after brain-play B1. Spec: `docs/data-model-plan.md` §1.
+- 2026-08-31: **The space has a brain. Mail it something it would recognize.**
+  Filing, recap, digest, and reading-circle questions already exist; they
+  are invisible. Next work makes one decision visible in the group's voice
+  (flap sentence, recap strip on the canvas, Firecrawl that writes widgets,
+  vision notes on prints). Catch-me-up *does* write to the canvas (reverses
+  the 2026-08-30 recap-panel decision). Care lives as a meal-train frame on
+  the crew, not a new health product. Kill: chatbot, medical space, more
+  reading-circle questions. Spec: `docs/mail.md` goals, this file Next up.
 - 2026-08-30 (night): **The GitHub repo is public, so tracked docs describe the
   product and how it's built — nothing about how we plan to present it.**
   `PRODUCT.md`, `docs/ourspaces-prd-v0.6.md`, `docs/vibeapps-listing.md`, the

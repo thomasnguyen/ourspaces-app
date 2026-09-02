@@ -16,7 +16,7 @@ that survives the 3-minute demo.
 
 | Question | Call | Why |
 |---|---|---|
-| Auth | Convex Auth, **Anonymous provider only** | Zero UI, zero accounts, gives us a stable `users` id per browser. |
+| Auth | Convex Auth, **guest or join** | Guest = Anonymous (silent, current claim-a-name). Join = Passkey (upgrade the same person). Never a login wall. |
 | Global state lib | **None.** Convex queries + React `useState`/`useRef` | The platform already gives reactive shared state for free. |
 | `userId` column type | **`v.string()`** (store the auth id's string form) | Lets us seed fake crew with `"seed:maya"` ids without minting real `users` rows. `v.id("users")` is the post-hackathon hardening. |
 | Poll tallies | Separate **`votes`** table, aggregated in a query | One-vote-per-user via index; bars recompute live for free. |
@@ -27,54 +27,94 @@ that survives the 3-minute demo.
 
 ---
 
-## 1. Auth — Convex Auth, anonymous (the bare minimum)
+## 1. Auth — guest or join (never a wall)
 
-The whole identity story is "open the app, you silently become a user." No login
-screen, no provider buttons.
+Decided 2026-08-31. Identity is worth having, but a login wall would kill the
+one thing that makes the app work: **you can always walk in.**
 
-**Setup (one-time, when we wire it up):**
-1. `npm i @convex-dev/auth @auth/core`
-2. `npx @convex-dev/auth` — scaffolds `convex/auth.ts`, `convex/auth.config.ts`,
-   `convex/http.ts`, and the server env keys.
-3. `convex/auth.ts`:
-   ```ts
-   import Anonymous from "@convex-dev/auth/providers/Anonymous";
-   import { convexAuth } from "@convex-dev/auth/server";
-   export const { auth, signIn, signOut, store, isAuthenticated } =
-     convexAuth({ providers: [Anonymous] });
-   ```
-4. `schema.ts`: spread `...authTables` (adds `users` + session/account tables).
-5. Client: swap `ConvexProvider` for `ConvexAuthProvider` in `main.tsx`, then on
-   first load call `signIn("anonymous")` if `!isAuthenticated`.
+Two modes, one person:
 
-**What we actually use from it:** just the `users` table, for its id. Everything
-human-readable (name, color) lives in our own `members` table, not on `users`.
+| | **Guest** (default, demo path) | **Join** |
+|---|---|---|
+| Who | Anyone who opens a space | Someone who wants to come back as themselves |
+| Auth | Convex Auth **Anonymous** — silent `signIn("anonymous")` on first load | Convex Auth **Passkey** (one tap, no email form). Google only if passkeys flake on the demo machine. Never email+password. |
+| UI | Existing claim card: name, color, face, **just visiting** | Same card, second CTA: **join**. Name/face already picked travel with you. |
+| `userId` | Anonymous `users` id (replaces today's `crypto.randomUUID()` in sessionStorage) | Real `users` id. Same `members` row — upgrade, don't fork. |
+| What they can do | Everything on showcase spaces: vote, claim, paint, mail-in still works | Same, plus they persist across browsers/devices. Creating a *new* space can require join later; not required for the tape. |
 
-**Seed vs. live user — the one subtlety.** The hero crew is 5–6 people but only
-*one* real visitor (you, driving the demo). So:
-- **Seeded crew** (Maya, etc.) = `members` + `votes` rows with synthetic
-  `userId`s like `"seed:maya"`. They never authenticate; they're texture.
-- **The live user** = a real anonymous `users` id from `getAuthUserId(ctx)`,
-  joined into the crew as a `members` row on first visit.
+**Hard rules**
 
-Both are plain strings in the same column, so seeding and live writes look
-identical. That's the entire reason for the `v.string()` call above.
+- The canvas is never behind a sign-in screen. Guest is a complete product.
+- Seeded people (`seed:maya`, etc.) stay fake ids. They never authenticate.
+- Showcase spaces stay world-writable for guests. No ACL theater for the hack.
+- Join is "I'm this person," not "unlock the app."
+- If Convex Auth v2 is usable without burning a day, use it (the hackathon
+  page asked people to try it). Else `@convex-dev/auth` Anonymous + Passkey.
+- Account linking: guest → join keeps votes, presence color, claimed name.
+  If linking is gnarly, join mints a new id and we copy the `members` patch
+  — but try linking first.
+- Human-readable name/color/emoji stay on `members`, not on `users`.
+
+**Claim card copy (gate variant)**
+
+```
+you're walking into the crew
+[name] [face] [color]
+[ just visiting ]   [ join ]
+```
+
+`just visiting` dismisses the gate (today's path). `join` runs passkey, then
+dismisses. Popover (already in) can grow a "join so you come back" link;
+don't nag.
+
+**Setup when we wire it** (do not run the interactive `npx @convex-dev/auth`
+wizard — it hangs headless). Skill: `.agents/skills/convex-auth/SKILL.md`.
+
+1. `npm i @convex-dev/auth @auth/core jose`
+2. Generate JWT_PRIVATE_KEY + JWKS with `jose` (see the skill). Set
+   `SITE_URL`, keys on the deployment via `npx convex env set "NAME=value"`.
+3. `convex/auth.ts`: Anonymous + Passkey providers.
+4. Always write `convex/auth.config.ts` (missing = silently always signed out).
+5. `schema.ts`: `...authTables`. `members.userId` stays `v.string()`.
+6. Client: `ConvexAuthProvider`. First load: if `!isAuthenticated`,
+   `signIn("anonymous")`. Claim card "join" → `signIn("passkey")`.
+7. Verify a guest round-trip *and* a join round-trip before calling it done.
+
+**Seed vs live** — unchanged: seeded crew = `"seed:maya"` strings; the visitor
+is a real auth id joined as a `members` row on first visit.
+
+Build after brain-play B1 (don't let auth break the inbound demo). Guest path
+must still work if Join is half-broken — that's the rollback.
 
 ---
 
-> **As built (2026-08-30).** This file is the *plan*; `convex/schema.ts` is the
+> **As built (2026-08-31).** This file is the *plan*; `convex/schema.ts` is the
 > truth, and it drifted deliberately. Live today: **spaces** (+ `slug`,
-> `canvasW/H`, `tagline`, `inboxId`/`inboxAddress`, indexed `by_slug` /
-> `by_inbox`) · **emailEvents** (every mail in/out, with `body` for the router
-> and the digest's recipient mining) · **members** · **widgets** (+ `rotate`) ·
-> **messages** (+ `authorEmoji`, `authorAvatarUrl`, `promotable`,
-> `promotedWidgetId`) · **votes** · **paintMarks** (cozy-color region fills,
-> tone + preset) · **recaps** (daily / ask, cited lines) · **presence**
-> (+ `emoji`, `avatarUrl`, `zone`, and an embedded `gesture` object for live
-> move/resize). Two plan calls were **not** taken: there are no `authTables`
-> (identity is local + claimed, `userId` stays a plain string), and the AI
-> layer in §8 runs on a Cloudflare `ai-proxy` (gpt-oss-120b) with OpenAI as
-> fallback, not Anthropic. Everything else below still describes what shipped.
+> `canvasW/H`, `tagline`, `inboxId`/`inboxAddress`, `askThreadId` [agent
+> component thread for `recap.ask`], `ragIndexedAt` [rag reindex staleness],
+> indexed `by_slug` / `by_inbox`) · **emailEvents** (+ optional `messageId`/
+> `threadId` — AgentMail ids so the router can reply in-thread + label) ·
+> **members** ·
+> **widgets** (+ `rotate`; `data` is a typed discriminated union — 12 real
+> shapes + a permissive fallback, not `v.any()` — see `convex/widgetData.ts`)
+> · **messages** (real cursor pagination + a full-text search index) ·
+> **votes** · **paintMarks** · **recaps** · **presence** (the hand-rolled
+> canvas cursor/gesture table — a *second*, component-backed presence system
+> in `convex/roomPresence.ts` tracks room occupancy separately, see
+> `docs/code-map.md`) · **linkRefreshQueue** (batch-worker's stale-linkCard
+> queue). All functions carry `returns:` validators. 16 real Convex
+> components are wired with genuine jobs (migrations, aggregate ×2,
+> sharded-counter, rate-limiter, action-retrier, action-cache, workpool,
+> workflow, batch-worker, agent, rag, persistent-text-streaming, presence,
+> plus firecrawl/static-hosting) — plus our own first-party **agentMail**
+> component (`convex/components/agentMail/`, owns inbound store + dedup, wraps
+> the AgentMail REST API) since the published `@agentmail/convex` 0.1.0 is
+> broken. See `hackathon.md`'s usage-map table for the full list with hashes.
+> Identity is still **local + claimed** (`src/live/identity.ts` session UUID) —
+> no `authTables` yet. Guest-or-join (this §1) is decided, not wired. The AI
+> layer runs on a Cloudflare `ai-proxy` (gpt-oss-120b) with OpenAI as fallback
+> for chat; `rag`'s embeddings are real-OpenAI-only (`text-embedding-3-small`)
+> since the proxy has no `/v1/embeddings` route.
 
 ## 2. Convex tables (backend)
 
@@ -116,6 +156,13 @@ for frames, no join tables.
 ---
 
 ## 3. `widgets.data` shapes (the part worth nailing)
+
+> **Superseded (2026-08-31).** The backend *does* now validate `data` — see
+> `convex/widgetData.ts` for the real, shipped discriminated union (12 typed
+> shapes + a permissive fallback for the rest, reverse-engineered from every
+> actual producer) and the "As built" note above. The plan below is kept for
+> the original per-type field reasoning; treat `widgetData.ts` as the source
+> of truth for exact fields, not this section.
 
 Backend keeps `data: v.any()` (least friction — no per-type validators). The
 frontend gives it teeth with a discriminated union keyed by `widget.type`. This
