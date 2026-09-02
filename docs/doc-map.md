@@ -26,8 +26,7 @@ commit it.
 | Public one-pager | `README.md` |
 | What each space is and what it still needs | `docs/spaces-and-widgets.md` |
 
-Product spec, positioning and submission copy are **local-only** — see the
-bottom table.
+Product spec and positioning are **local-only** — see the bottom table.
 
 ## Design
 
@@ -56,27 +55,24 @@ These are gitignored or excluded. Skip if the file is not on disk.
 
 | Need | Open |
 |---|---|
-| Cut order / private plan | `.private/PLAN.md` |
-| Product spec, scope, demo priorities | `docs/ourspaces-prd-v0.6.md` |
+| Product spec, scope, priorities | `docs/ourspaces-prd-v0.6.md` |
 | Positioning for design commands (impeccable prints it) | `PRODUCT.md` |
 | Design override layer + house motion system | `.claude/skills/eye-candy/SKILL.md` |
 | Impeccable's config + critique output | `.impeccable/` |
-| Submission listing copy | `docs/vibeapps-listing.md` |
-| Marketing playbook (calendar, objectives) | `.context/ourspaces-marketing-playbook-v2.md` |
-| X / Threads post drafts | `docs/post-skeletons.md` |
-| More local drafts (drop here) | `docs/local/` |
 | Conductor scratch (shots, eval scripts) | `.context/` |
+| Index of the remaining local files | `docs/local/doc-map.local.md` |
 
 **The GitHub repo is public.** Tracked docs describe the product and how it's
-built. Anything about how we plan to *present* it — audience strategy, demo
-choreography, outreach lists, submission copy, competitive framing — stays
-local (`.context/`, `docs/local/`, or a gitignored path). Same for tool config
-carrying an API key (`.mcp.json`). When in doubt, write it local; promoting a
-file to tracked later is easy, un-publishing it is not.
+built. Working notes about how we plan to present it are indexed in the local
+map above, not here — the point is that a public clone gets the product, not a
+half-readable set of drafts. Same for tool config carrying an API key
+(`.mcp.json`). When in doubt, write it local; promoting a file to tracked
+later is easy, un-publishing it is not.
 
 ## When you add a doc
 
 1. Decide public vs local-only **before** writing.
 2. Public → add a row here. Local → put it in `.context/` or `docs/local/`
-   (or add the path to `.gitignore`) and add a row under **Local only**.
+   (or add the path to `.gitignore`), then add a row under **Local only** if
+   it's build-relevant, or in `docs/local/doc-map.local.md` if it isn't.
 3. Do not also summarize the new doc in `AGENTS.md` — the map is the index.
