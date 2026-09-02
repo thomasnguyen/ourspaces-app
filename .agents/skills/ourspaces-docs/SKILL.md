@@ -21,5 +21,5 @@ There are many markdown files. Do not open them as a set.
 ## Do not
 
 - Glob-read `docs/*.md` or dump root `*.md` into context
-- Copy private strategy (playbook, outreach, judge notes) into a tracked file
+- Copy private strategy (playbook, outreach, positioning notes) into a tracked file
 - Recite this skill or the map back to the human — just use them
