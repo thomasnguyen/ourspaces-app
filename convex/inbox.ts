@@ -8,8 +8,12 @@ import {
 } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { completeJson } from "./ai";
+import { ackInbound } from "./agentmail";
 import schema from "./schema";
 import { widgetsCounter } from "./stats";
+
+/** What to reply + how to label an inbound email once the router has filed it. */
+type InboundAck = { label?: string; reply?: string };
 
 /**
  * The space's email brain. Every inbound email (convex/agentmail.ts webhook →
@@ -34,6 +38,24 @@ function hashJitter(seed: string, span: number): number {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   return h % span;
+}
+
+/**
+ * The router's one-line reason, in house voice: lowercase, short, no ids.
+ * Models like to echo Convex ids and say "the email" — strip both. Returns
+ * undefined when there's nothing worth showing, so the flap stays bare.
+ */
+function cleanBecause(raw: unknown): string | undefined {
+  let text = String(raw ?? "")
+    .replace(/\b[a-z0-9]{24,}\b/gi, "") // convex ids
+    .replace(/["`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/[.\s]+$/, "");
+  if (text.length < 4) return undefined;
+  if (text.length > 88) text = `${text.slice(0, 87).trimEnd()}…`;
+  return text;
 }
 
 function extractUrls(text: string): string[] {
@@ -74,21 +96,32 @@ export const processInbound = internalAction({
     const { event, space, widgets } = context;
     const slug = space.slug ?? "";
 
+    let ack: InboundAck = {};
+
     if (slug === "couple") {
       await ctx.runMutation(internal.inbox.addLetter, { eventId, unfiled: false });
-      return null;
-    }
-
-    if (slug === "buildroom") {
+      ack = { label: "letter", reply: "Sealed your letter onto the canvas. 💌" };
+    } else if (slug === "buildroom") {
       const urls = extractUrls(`${event.subject}\n${event.body ?? event.summary}`);
-      if (urls.length === 0) return null;
       const pile = widgets.find((widget) => widget.type === "linkPile");
-      if (!pile) return null;
-      await routeBuildRoom(ctx, { event, pileId: pile._id, urls });
-      return null;
+      if (urls.length > 0 && pile) {
+        await routeBuildRoom(ctx, { event, pileId: pile._id, urls });
+        ack = {
+          label: "links",
+          reply: `Dropped ${urls.length} link${urls.length === 1 ? "" : "s"} into the build room pile.`,
+        };
+      }
+    } else {
+      ack = await routeSmart(ctx, { event, space, widgets });
     }
 
-    await routeSmart(ctx, { event, space, widgets });
+    // reply in-thread + label the message with what the space did with it
+    await ackInbound(ctx, {
+      inboxId: space.inboxId,
+      messageId: event.messageId,
+      label: ack.label,
+      reply: ack.reply,
+    });
     return null;
   },
 });
@@ -96,9 +129,13 @@ export const processInbound = internalAction({
 /* ── us two: letters ────────────────────────────────────────────────────── */
 
 export const addLetter = internalMutation({
-  args: { eventId: v.id("emailEvents"), unfiled: v.boolean() },
+  args: {
+    eventId: v.id("emailEvents"),
+    unfiled: v.boolean(),
+    because: v.optional(v.string()),
+  },
   returns: v.null(),
-  handler: async (ctx, { eventId, unfiled }) => {
+  handler: async (ctx, { eventId, unfiled, because }) => {
     const event = await ctx.db.get(eventId);
     if (!event) return null;
     const widgets = await ctx.db
@@ -126,12 +163,13 @@ export const addLetter = internalMutation({
         receivedAt: event.createdAt,
         sealed: true,
         unfiled,
+        because,
       },
       createdBy: "mail",
       createdAt: Date.now(),
     });
     await widgetsCounter.inc(ctx);
-    await ctx.db.patch(eventId, { widgetId });
+    await ctx.db.patch(eventId, { widgetId, because });
     return null;
   },
 });
@@ -270,7 +308,7 @@ function widgetInventory(widgets: Doc<"widgets">[]): string {
 async function routeSmart(
   ctx: ActionCtx,
   { event, space, widgets }: { event: Doc<"emailEvents">; space: Doc<"spaces">; widgets: Doc<"widgets">[] },
-) {
+): Promise<InboundAck> {
   const today = new Date(event.createdAt).toISOString().slice(0, 10);
   const decision = await completeJson({
     system: [
@@ -283,8 +321,25 @@ async function routeSmart(
       "- Obvious spam, marketing, or automated junk → action \"discard\".",
       "- Anything else, or if you are not confident → action \"unfiled\".",
       `Today is ${today}.`,
+      "",
+      "ALSO write \"because\": one short sentence the group reads on the canvas,",
+      "in the voice of a friend who just moved something for them.",
+      "- all lowercase, no period, 10 words or fewer, ordinary grammar",
+      "- state what is now TRUE for the group, not what you did",
+      "- use first names from the canvas when it is about someone",
+      "- never name a thing on the board: no widget, tracker, itinerary, list,",
+      "  poll, countdown, potluck, canvas, board",
+      "- never say: email, message, sender, filed, logged, added, updated",
+      "- never include ids",
+      "Good: \"this clears jules' tahoe iou\" · \"sam covered maya's half too\"",
+      "· \"nov 8 has a dinner now\" · \"the cabin is booked for nov 7\"",
+      "· \"deb says hi, nothing to do\" · \"not sure who this one is for\"",
+      "Bad: \"bar nonna dinner now on japan itinerary\" (names the board) ·",
+      "\"filed the receipt to the expense widget\" (says what you did) ·",
+      "\"An email from Jules was processed.\" (not a person talking)",
+      "",
       "Reply with ONLY a JSON object:",
-      `{"action":"expense"|"itinerary"|"create"|"unfiled"|"discard","widgetId":"<id from inventory or empty>","kind":"expenseSplit"|"itinerary"|"","title":"<for create>","expense":{"who":"<person the money came from>","amount":<number>,"label":"<what for, 2-5 words>"},"day":"<short day label e.g. 'nov 8'>","plan":"<itinerary entry, 3-8 words>"}`,
+      `{"action":"expense"|"itinerary"|"create"|"unfiled"|"discard","widgetId":"<id from inventory or empty>","kind":"expenseSplit"|"itinerary"|"","title":"<for create>","expense":{"who":"<person the money came from>","amount":<number>,"label":"<what for, 2-5 words>"},"day":"<short day label e.g. 'nov 8'>","plan":"<itinerary entry, 3-8 words>","because":"<one lowercase sentence>"}`,
       "Include only the fields the action needs. Amounts are numbers, no $.",
     ].join("\n"),
     user: [
@@ -295,7 +350,8 @@ async function routeSmart(
   });
 
   const action = String(decision?.action ?? "unfiled");
-  if (action === "discard") return;
+  if (action === "discard") return { label: "spam" };
+  const because = cleanBecause(decision?.because);
 
   if (action === "expense" || (action === "create" && decision?.kind === "expenseSplit")) {
     const expense = (decision?.expense ?? {}) as Record<string, unknown>;
@@ -310,8 +366,12 @@ async function routeSmart(
         who,
         amount,
         label,
+        because,
       });
-      return;
+      return {
+        label: "receipt",
+        reply: `Logged $${amount} from ${who}${label ? ` for ${label}` : ""} on the expense tracker.`,
+      };
     }
   }
 
@@ -325,13 +385,19 @@ async function routeSmart(
         title: String(decision?.title ?? "trip plan"),
         day,
         plan,
+        because,
       });
-      return;
+      return { label: "booking", reply: `Added "${plan}" to the ${day} plan.` };
     }
   }
 
   // Unfiled (or the model was unsure/unavailable): a sealed envelope on canvas.
-  await ctx.runMutation(internal.inbox.addLetter, { eventId: event._id, unfiled: true });
+  await ctx.runMutation(internal.inbox.addLetter, {
+    eventId: event._id,
+    unfiled: true,
+    because,
+  });
+  return { label: "filed", reply: "Left it on your canvas as a sealed envelope." };
 }
 
 export const applyExpense = internalMutation({
@@ -342,9 +408,10 @@ export const applyExpense = internalMutation({
     who: v.string(),
     amount: v.number(),
     label: v.string(),
+    because: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, { eventId, widgetId, title, who, amount, label }) => {
+  handler: async (ctx, { eventId, widgetId, title, who, amount, label, because }) => {
     const event = await ctx.db.get(eventId);
     if (!event) return null;
     const rounded = Math.round(amount * 100) / 100;
@@ -385,9 +452,14 @@ export const applyExpense = internalMutation({
     }
     const total = Math.round(((Number(data.total) || 0) + rounded) * 100) / 100;
     await ctx.db.patch(target._id, {
-      data: { ...data, splits, total, lastEmail: { who, amount: rounded, label } },
+      data: {
+        ...data,
+        splits,
+        total,
+        lastEmail: { who, amount: rounded, label, because },
+      },
     });
-    await ctx.db.patch(eventId, { widgetId: target._id });
+    await ctx.db.patch(eventId, { widgetId: target._id, because });
     return null;
   },
 });
@@ -399,9 +471,10 @@ export const applyItinerary = internalMutation({
     title: v.string(),
     day: v.string(),
     plan: v.string(),
+    because: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, { eventId, widgetId, title, day, plan }) => {
+  handler: async (ctx, { eventId, widgetId, title, day, plan, because }) => {
     const event = await ctx.db.get(eventId);
     if (!event) return null;
     let target = widgetId ? await ctx.db.get(widgetId as Id<"widgets">) : null;
@@ -431,8 +504,10 @@ export const applyItinerary = internalMutation({
       ? [...(data.days as { day: string; plan: string }[])]
       : [];
     days.push({ day, plan });
-    await ctx.db.patch(target._id, { data: { ...data, days } });
-    await ctx.db.patch(eventId, { widgetId: target._id });
+    await ctx.db.patch(target._id, {
+      data: { ...data, days, lastEmail: { day, plan, because } },
+    });
+    await ctx.db.patch(eventId, { widgetId: target._id, because });
     return null;
   },
 });

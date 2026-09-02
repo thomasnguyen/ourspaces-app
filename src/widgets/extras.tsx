@@ -1385,12 +1385,35 @@ export function JokeRegistryWidget({ widget, style }: { widget: Widget; style: S
   );
 }
 
+/**
+ * The router's reason, torn off and tucked onto whatever it touched (B1).
+ * The material carries the "handwritten" read — same torn-paper mask the
+ * notes use — so no script face is needed. Absent `because` renders nothing.
+ */
+export function BecauseSlip({
+  because,
+  tone = "tucked",
+}: {
+  because?: string;
+  tone?: "tucked" | "pinned";
+}) {
+  if (!because) return null;
+  return (
+    <span className={`because-slip is-${tone}`}>
+      <span className="because-slip-text">{because}</span>
+    </span>
+  );
+}
+
 export function ExpenseSplitWidget({ widget, style }: { widget: Widget; style: Style }) {
   const splits = widget.data.splits as {
     name: string;
     owes: number;
     paid: number;
   }[];
+  // mail just moved money here → the receipt's footer says why, in place of
+  // the canned line (the card's clip-path eats anything hung outside it)
+  const because = (widget.data.lastEmail as { because?: string } | undefined)?.because;
 
   return (
     <div className="widget-shell widget-expense" style={style}>
@@ -1417,7 +1440,11 @@ export function ExpenseSplitWidget({ widget, style }: { widget: Widget; style: S
         <i className="expense-dots" aria-hidden="true" />
         <strong>${String(widget.data.total)}</strong>
       </div>
-      <span className="expense-thanks">settle up soon ♥</span>
+      {because ? (
+        <BecauseSlip because={because} tone="pinned" />
+      ) : (
+        <span className="expense-thanks">settle up soon ♥</span>
+      )}
     </div>
   );
 }
@@ -1436,6 +1463,10 @@ export function ItineraryWidget({ widget, style }: { widget: Widget; style: Styl
           </li>
         ))}
       </ul>
+      <BecauseSlip
+        because={(widget.data.lastEmail as { because?: string } | undefined)?.because}
+        tone="pinned"
+      />
     </div>
   );
 }
@@ -1449,6 +1480,7 @@ export function LetterWidget({ widget, style }: { widget: Widget; style: Style }
     text?: string;
     receivedAt?: number;
     unfiled?: boolean;
+    because?: string;
   };
   const received = data.receivedAt
     ? new Date(data.receivedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
@@ -1476,6 +1508,7 @@ export function LetterWidget({ widget, style }: { widget: Widget; style: Style }
           <em>{received}</em>
         </span>
       </button>
+      <BecauseSlip because={data.because} />
       <article className="letter-paper">
         <header className="letter-paper-head">
           <strong>{data.subject ?? "(no subject)"}</strong>

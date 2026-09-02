@@ -62,6 +62,8 @@ export function useLiveHandlers(
   const remove = useMutation(api.widgets.deleteWidget);
   const updateData = useMutation(api.widgets.updateWidgetData);
   const scrapeLink = useAction(api.firecrawl.scrapeLink);
+  const searchTopic = useAction(api.firecrawl.searchTopic);
+  const crawlSite = useAction(api.firecrawl.crawlSite);
   const [overrides, setOverrides] = useState<Record<string, Partial<Widget>>>({});
   const [deleted, setDeleted] = useState<Widget | null>(null);
   const latest = useRef<Record<string, Partial<Widget>>>({});
@@ -364,6 +366,18 @@ export function useLiveHandlers(
     [scrapeLink],
   );
 
+  // Firecrawl web search → link-card-shaped hits for the pile.
+  const onSearchTopic = useCallback(
+    async (query: string) => await searchTopic({ query }),
+    [searchTopic],
+  );
+
+  // Firecrawl durable crawl → a crawlId the UI subscribes to for live pages.
+  const onCrawlSite = useCallback(
+    async (url: string): Promise<{ crawlId: string }> => await crawlSite({ url }),
+    [crawlSite],
+  );
+
   return {
     overrides,
     deleted,
@@ -403,6 +417,8 @@ export function useLiveHandlers(
     onWheelSpin,
     onPlaylistTune,
     onResolveLink,
+    onSearchTopic,
+    onCrawlSite,
     onCreate: async (widget: Omit<Widget, "id">) => {
       if (!spaceId) return undefined;
       playSound("place");

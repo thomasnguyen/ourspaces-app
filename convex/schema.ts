@@ -41,6 +41,11 @@ export default defineSchema({
     summary: v.string(),
     body: v.optional(v.string()), // full text, for the router + letters
     widgetId: v.optional(v.id("widgets")),
+    // AgentMail ids on inbound mail — let the router reply in-thread + label it.
+    messageId: v.optional(v.string()),
+    threadId: v.optional(v.string()),
+    // One lowercase sentence from the router: why it landed where it did (B1).
+    because: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_space", ["spaceId"]),
 

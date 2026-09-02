@@ -98,6 +98,7 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   staticHosting: import("@convex-dev/static-hosting/_generated/component.js").ComponentApi<"staticHosting">;
+  agentMail: import("../components/agentMail/_generated/component.js").ComponentApi<"agentMail">;
   firecrawl: import("@firecrawl/firecrawl-convex/_generated/component.js").ComponentApi<"firecrawl">;
   migrations: import("@convex-dev/migrations/_generated/component.js").ComponentApi<"migrations">;
   pollTallies: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"pollTallies">;

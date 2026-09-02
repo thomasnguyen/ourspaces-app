@@ -17,6 +17,7 @@ import persistentTextStreaming from "@convex-dev/persistent-text-streaming/conve
 import presence from "@convex-dev/presence/convex.config";
 import prosemirrorSync from "@convex-dev/prosemirror-sync/convex.config";
 import betterAuth from "@convex-dev/better-auth/convex.config";
+import agentMail from "./components/agentMail/convex.config";
 
 // Our own HTTP endpoints (convex/http.ts) are served under /api so the
 // static site can own the root.
@@ -35,9 +36,11 @@ const app = defineApp({
 
 app.use(staticHosting, { httpPrefix: "/" });
 
-// AgentMail is called via plain REST from convex/agentmail.ts (the
-// @agentmail/convex component's actions don't resolve — see
-// docs/firecrawl-agentmail-setup.md). Webhook lives in convex/http.ts.
+// AgentMail: the space's inbox. Our own first-party component (the published
+// @agentmail/convex 0.1.0 hangs on nested workpools — see
+// docs/firecrawl-agentmail-setup.md). Owns inbound store + dedup and wraps the
+// REST API; the app passes the key in and mounts the webhook (convex/http.ts).
+app.use(agentMail);
 
 // Firecrawl: links become structured cards. Webhook at /api/firecrawl/webhook.
 app.use(firecrawl, {
