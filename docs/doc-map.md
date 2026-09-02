@@ -16,6 +16,7 @@ commit it.
 | Convex pointer (read `AGENTS.md` first) | `CLAUDE.md` |
 | Which file to read next | this map |
 | Where code lives | `docs/code-map.md` |
+| How the whole system works (readable with no code open) | `docs/architecture.md` |
 | Session handoff (works / broken / next) | `docs/todos.md` |
 | What shipped (backward-looking log) | `hackathon.md` |
 
@@ -43,6 +44,7 @@ Product spec and positioning are **local-only** — see the bottom table.
 |---|---|
 | Demo rooms, widget catalog, what each space still needs | `docs/spaces-and-widgets.md` |
 | The build room / reading room (widgets, funnel, where link state lives) | `docs/spaces-and-widgets.md` §0 |
+| Every subsystem explained: mail brain, Firecrawl, AI layer, components | `docs/architecture.md` |
 | Schema, auth (guest or join), Convex-as-state | `docs/data-model-plan.md` |
 | Email → canvas: the 3 mail cases, router, digest, status, open goals | `docs/mail.md` |
 | Next OpenAI / Firecrawl work (visible filing, recap strip, meal train) | `docs/todos.md` § Next up + `docs/mail.md` goals |
