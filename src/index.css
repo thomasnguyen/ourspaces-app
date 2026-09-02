@@ -19516,6 +19516,134 @@
   scale: 0.92;
 }
 
+/* The research bar's crawl button is the quieter, outlined sibling. */
+.rr-research-bar .rr-crawl-btn {
+  background: transparent;
+  color: #fff;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3);
+}
+.rr-research-bar .rr-crawl-btn:not(:disabled):hover {
+  box-shadow: inset 0 0 0 1.5px var(--space-accent, #ff7c42);
+}
+
+/* Streaming crawl results — pages land live as Firecrawl finds them. */
+.crawl-strip {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 60;
+  width: min(360px, calc(100vw - 40px));
+  max-height: 52vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-sticker, #111);
+  color: #fff;
+  border-radius: var(--radius-lg, 18px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: crawl-strip-in var(--dur-quick, 0.2s) var(--ease-pop, ease);
+}
+@keyframes crawl-strip-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.crawl-strip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.82rem;
+}
+.crawl-strip-head em {
+  opacity: 0.6;
+  font-style: normal;
+}
+.crawl-strip-head .is-live {
+  display: inline-block;
+  animation: crawl-spin 1s linear infinite;
+}
+@keyframes crawl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.crawl-strip-head button {
+  flex: none;
+  padding: 6px 13px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-sticker);
+  font-weight: 700;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.crawl-strip-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.crawl-strip-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.crawl-strip-row {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.crawl-strip-row strong {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.crawl-strip-row em {
+  font-style: normal;
+  font-size: 0.72rem;
+  opacity: 0.55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.crawl-strip-list li button {
+  flex: none;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.crawl-strip-list li button:active {
+  scale: 0.92;
+}
+.crawl-strip-empty {
+  justify-content: center;
+  opacity: 0.5;
+  font-size: 0.78rem;
+}
+
 .rr-enriching {
   display: inline-flex;
   align-items: center;
@@ -21069,5 +21197,108 @@
   .letter-seal,
   .letter-paper {
     transition: none;
+  }
+}
+
+/* ── the because slip (B1) ────────────────────────────────────────────────
+ * The mail router's one-line reason, torn off and tucked onto whatever it
+ * touched. A paper chip, not a tooltip: warm stock, a hair of rotation, and
+ * a lifted shadow. (The torn-paper mask is deliberately NOT used here — at
+ * ~24px tall its teeth squash to nothing and it reads as a grey box.)
+ * Two tones: `tucked` hangs off a letter envelope, `pinned` rides the bottom
+ * edge of a widget the mail just changed. */
+.because-slip {
+  position: absolute;
+  z-index: 4;
+  display: block;
+  padding: 5px 10px 6px;
+  border-radius: 3px 4px 3px 5px;
+  background: linear-gradient(
+    174deg,
+    color-mix(in srgb, var(--color-card) 96%, #f7ecd8),
+    color-mix(in srgb, var(--color-card) 88%, #efe0c6)
+  );
+  box-shadow:
+    0 1px 0 rgba(17, 17, 20, 0.14),
+    0 4px 10px -3px rgba(17, 17, 20, 0.34);
+  pointer-events: none;
+}
+
+/* a hairline of shadow along the top edge sells "tucked under, not floating" */
+.because-slip::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(rgba(17, 17, 20, 0.13), transparent);
+  border-radius: inherit;
+}
+
+.because-slip-text {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.006em;
+  color: color-mix(in srgb, var(--color-ink) 88%, #6b5a3f);
+  text-wrap: balance;
+}
+
+/* tucked: clears the envelope's meta block entirely and hangs below it */
+.because-slip.is-tucked {
+  left: 13px;
+  bottom: -24px;
+  width: max-content;
+  max-width: calc(100% - 34px);
+  rotate: -1.5deg;
+  transform-origin: left center;
+}
+
+/* pinned: INSIDE the card. Receipt/itinerary cards carry a clip-path or
+ * overflow that eats anything hanging off the edge, so this one sits in the
+ * card's own footer slot — same chip, tipped the other way so a board with
+ * several never reads as a grid. */
+.because-slip.is-pinned {
+  position: static;
+  align-self: center;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 4px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* no chip inside a card: these have a fixed seed height and a clipped bottom
+ * edge, and a padded chip overruns it (measured: 27.5px into a 24px footer).
+ * The reason reads as the card's own last line instead. */
+.because-slip.is-pinned::before {
+  display: none;
+}
+
+.because-slip.is-pinned .because-slip-text {
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  color: color-mix(in srgb, var(--color-ink) 76%, var(--color-card));
+}
+
+/* the slip arrives with the mail rather than blinking into place */
+@media (prefers-reduced-motion: no-preference) {
+  .because-slip {
+    animation: because-slip-in var(--dur-slow) var(--ease-pop) both;
+  }
+}
+
+@keyframes because-slip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-7px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

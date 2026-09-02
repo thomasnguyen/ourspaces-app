@@ -74,6 +74,7 @@ const linkCardData = v.object({
 });
 
 // Mail-sourced letters set fromAddress + unfiled; seeded ones don't.
+// `because` is the router's one-line reason, shown on the flap (B1).
 const letterData = v.object({
   from: v.optional(v.string()),
   fromAddress: v.optional(v.string()),
@@ -82,6 +83,7 @@ const letterData = v.object({
   receivedAt: v.optional(v.number()),
   sealed: v.optional(v.boolean()),
   unfiled: v.optional(v.boolean()),
+  because: v.optional(v.string()),
 });
 
 const photoWallData = v.object({
@@ -109,13 +111,21 @@ const expenseSplitData = v.object({
   splits: v.array(v.object({ name: v.string(), owes: v.number(), paid: v.number() })),
   kicker: v.optional(v.string()),
   lastEmail: v.optional(
-    v.object({ who: v.string(), amount: v.number(), label: v.string() }),
+    v.object({
+      who: v.string(),
+      amount: v.number(),
+      label: v.string(),
+      because: v.optional(v.string()),
+    }),
   ),
 });
 
 const itineraryData = v.object({
   title: v.string(),
   days: v.array(v.object({ day: v.string(), plan: v.string() })),
+  lastEmail: v.optional(
+    v.object({ day: v.string(), plan: v.string(), because: v.optional(v.string()) }),
+  ),
 });
 
 // claimItem (convex/widgets.ts) toggles claimed/by/byUserId per item.

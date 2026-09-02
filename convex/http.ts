@@ -1,6 +1,6 @@
 import { httpRouter } from "convex/server";
 import { env, httpAction } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { streamAsk } from "./streaming";
 
 const http = httpRouter();
@@ -94,13 +94,35 @@ http.route({
     const type = str(event.event_type ?? event.type);
     if (type !== "message.received") return new Response("ignored", { status: 200 });
     const message = (event.message ?? {}) as Record<string, unknown>;
-    await ctx.runMutation(internal.agentmail.onMessageReceived, {
-      inboxId: str(message.inbox_id),
-      from: str(message.from_ ?? message.from),
-      to: str(message.to),
-      subject: str(message.subject),
-      text: str(message.text ?? message.preview),
+    const inboxId = str(message.inbox_id);
+    const messageId = str(message.message_id);
+    const threadId = str(message.thread_id);
+    const from = str(message.from_ ?? message.from);
+    const to = str(message.to);
+    const subject = str(message.subject);
+    const text = str(message.text ?? message.preview);
+    // Component owns dedup (AgentMail can redeliver) + the inbound store.
+    const { isNew } = await ctx.runMutation(components.agentMail.lib.ingestWebhook, {
+      eventId: str(event.event_id ?? event.id) || messageId,
+      inboxId,
+      messageId,
+      threadId: threadId || undefined,
+      from,
+      to,
+      subject,
+      text,
     });
+    if (isNew) {
+      await ctx.runMutation(internal.agentmail.onMessageReceived, {
+        inboxId,
+        messageId: messageId || undefined,
+        threadId: threadId || undefined,
+        from,
+        to,
+        subject,
+        text,
+      });
+    }
     return new Response("ok", { status: 200 });
   }),
 });

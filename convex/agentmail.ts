@@ -1,41 +1,57 @@
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import {
   action,
   env,
   internalAction,
   internalMutation,
   internalQuery,
+  type ActionCtx,
 } from "./_generated/server";
 import schema from "./schema";
 import { rateLimiter } from "./rateLimits";
 
 /**
- * AgentMail via plain REST. The @agentmail/convex component's actions never
- * resolve through ctx.runAction (nested-workpool bug, see
- * docs/firecrawl-agentmail-setup.md), so we own the three calls we need:
- * create inbox, send message, and the inbound webhook (convex/http.ts).
+ * AgentMail = the space's inbox. Every REST call goes through our first-party
+ * `agentMail` component (convex/components/agentMail) — create inbox, send,
+ * reply-in-thread, label — with the key passed in from here (components can't
+ * read env). The inbound webhook lands in convex/http.ts.
  */
 const API = "https://api.agentmail.to/v0";
 
-async function am(path: string, init?: RequestInit): Promise<Record<string, unknown>> {
-  const key = env.AGENTMAIL_API_KEY;
-  const response = await fetch(`${API}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-  });
-  const text = await response.text();
-  if (!response.ok) {
-    throw new Error(`AgentMail ${path} → ${response.status}: ${text.slice(0, 300)}`);
-  }
+/**
+ * Best-effort acknowledgement of an inbound email: label it with the router's
+ * verdict and reply in-thread so the sender sees what the space did with it.
+ * Non-critical — a mail-send hiccup must not undo the filing that already
+ * committed, so failures are swallowed.
+ */
+export async function ackInbound(
+  ctx: ActionCtx,
+  args: { inboxId?: string; messageId?: string; label?: string; reply?: string },
+): Promise<void> {
+  const { inboxId, messageId, label, reply } = args;
+  if (!inboxId || !messageId) return;
   try {
-    return JSON.parse(text) as Record<string, unknown>;
+    if (label) {
+      await ctx.runAction(components.agentMail.lib.addLabels, {
+        apiKey: env.AGENTMAIL_API_KEY,
+        baseUrl: API,
+        inboxId,
+        messageId,
+        addLabels: [label],
+      });
+    }
+    if (reply) {
+      await ctx.runAction(components.agentMail.lib.replyToMessage, {
+        apiKey: env.AGENTMAIL_API_KEY,
+        baseUrl: API,
+        inboxId,
+        messageId,
+        text: reply,
+      });
+    }
   } catch {
-    return {};
+    // ignore — the email was already filed onto the canvas
   }
 }
 
@@ -88,17 +104,13 @@ export const ensureInboxInternal = internalAction({
     const wanted = (args.username ?? space.slug ?? "space")
       .replace(/[^a-z0-9-]/gi, "-")
       .toLowerCase();
-    const inbox = await am("/inboxes", {
-      method: "POST",
-      body: JSON.stringify({
-        username: wanted,
-        display_name: space.name ?? "OurSpaces",
-        client_id: `ourspaces-${space.slug ?? wanted}`,
-      }),
+    const { inboxId, address } = await ctx.runAction(components.agentMail.lib.createInbox, {
+      apiKey: env.AGENTMAIL_API_KEY,
+      baseUrl: API,
+      username: wanted,
+      displayName: space.name ?? "OurSpaces",
+      clientId: `ourspaces-${space.slug ?? wanted}`,
     });
-    const inboxId = String(inbox.inbox_id ?? "");
-    const address = String(inbox.email ?? inboxId);
-    if (!inboxId) throw new Error(`AgentMail create inbox returned no inbox_id: ${JSON.stringify(inbox)}`);
     await ctx.runMutation(internal.agentmail.setSpaceInbox, {
       spaceId: args.spaceId,
       inboxId,
@@ -124,9 +136,14 @@ export const sendEmail = internalAction({
     await rateLimiter.limit(ctx, "mailSend", { key: spaceId, throws: true });
     const space = await ctx.runQuery(internal.agentmail.getSpaceInbox, { spaceId });
     if (!space?.inboxId) throw new Error("space has no inbox");
-    await am(`/inboxes/${encodeURIComponent(space.inboxId)}/messages/send`, {
-      method: "POST",
-      body: JSON.stringify({ to, subject, text, ...(html ? { html } : {}) }),
+    await ctx.runAction(components.agentMail.lib.sendMessage, {
+      apiKey: env.AGENTMAIL_API_KEY,
+      baseUrl: API,
+      inboxId: space.inboxId,
+      to,
+      subject,
+      text,
+      ...(html ? { html } : {}),
     });
     await ctx.runMutation(internal.agentmail.logEmailEvent, {
       spaceId,
@@ -212,17 +229,20 @@ export const logEmailEvent = internalMutation({
   },
 });
 
-/** Inbound mail (from the webhook) → emailEvents row → the space's router. */
+/** Inbound mail (from the webhook) → emailEvents row → the space's router.
+ *  messageId/threadId are kept so the router can reply in-thread + label. */
 export const onMessageReceived = internalMutation({
   args: {
     inboxId: v.string(),
+    messageId: v.optional(v.string()),
+    threadId: v.optional(v.string()),
     from: v.string(),
     to: v.string(),
     subject: v.string(),
     text: v.string(),
   },
   returns: v.null(),
-  handler: async (ctx, { inboxId, from, to, subject, text }) => {
+  handler: async (ctx, { inboxId, messageId, threadId, from, to, subject, text }) => {
     const space = await ctx.db
       .query("spaces")
       .withIndex("by_inbox", (q) => q.eq("inboxId", inboxId))
@@ -236,6 +256,8 @@ export const onMessageReceived = internalMutation({
       subject,
       summary: text.slice(0, 400),
       body: text.slice(0, 20_000),
+      messageId,
+      threadId,
       createdAt: Date.now(),
     });
     await ctx.scheduler.runAfter(0, internal.inbox.processInbound, { eventId });

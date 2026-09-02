@@ -16,6 +16,7 @@ import { ClaimCard, type InviteContext } from "../components/ClaimCard";
 import { MemberFace } from "../components/MemberFace";
 import { PhotoWallGallery } from "../components/PhotoWallGallery";
 import { ReadingRoom, type RoomReply } from "../components/ReadingRoom";
+import { CrawlStrip } from "../components/CrawlStrip";
 import { ShipRoom } from "../components/ShipRoom";
 import type { RoomOrigin } from "../components/CanvasRoom";
 import { GhostCanvas } from "../components/GhostCanvas";
@@ -699,6 +700,86 @@ export function LiveSpacePage({
       }
     },
     [buildRoomLinks, handlers, identity.name, identity.userId, patchPile],
+  );
+
+  /* Firecrawl web search: one topic → a batch of ready cards straight into the
+     pile (search already returns title + summary, so no pending pass). */
+  const searchTopic = useCallback(
+    async (query: string) => {
+      const pile = pileWidgetRef.current;
+      if (!pile) return;
+      const hits = await handlers.onSearchTopic(query);
+      if (hits.length === 0) return;
+      const existing = new Set(buildRoomLinks.map((link) => link.url));
+      const batchKey = `search-${Date.now()}`;
+      const fresh: BuildRoomLink[] = hits
+        .filter((hit) => !existing.has(hit.url))
+        .map((hit, index) => ({
+          id: `${batchKey}-${index}`,
+          url: hit.url,
+          domain: hit.siteName || hit.url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0],
+          title: hit.title,
+          description: hit.description,
+          imageUrl: hit.imageUrl,
+          kind: "article",
+          whyItMatters: hit.description,
+          questions: cannedLinkQuestions(hit.title || hit.url),
+          status: "ready",
+          batchKey,
+          droppedBy: identity.userId,
+          droppedByName: `${identity.name} 🔎`,
+          droppedAt: Date.now(),
+          voters: [],
+        }));
+      if (fresh.length === 0) return;
+      patchPile((data) => ({ ...data, dropped: [...fresh, ...(data.dropped ?? [])] }));
+    },
+    [buildRoomLinks, handlers, identity.name, identity.userId, patchPile],
+  );
+
+  /* Firecrawl durable crawl: kick it off, then subscribe to live pages in the
+     CrawlStrip (rendered below) instead of racing many patches onto the pile. */
+  const [activeCrawl, setActiveCrawl] = useState<string | null>(null);
+  const crawlSiteHandler = useCallback(
+    async (url: string) => {
+      try {
+        const { crawlId } = await handlers.onCrawlSite(url);
+        setActiveCrawl(crawlId);
+      } catch {
+        /* bad URL / crawl refused — nothing to show */
+      }
+    },
+    [handlers],
+  );
+
+  /* "+ pile" on a crawled page: one card, same shape as a search hit. */
+  const keepCrawlPage = useCallback(
+    (hit: { url: string; title: string; description: string }) => {
+      const pile = pileWidgetRef.current;
+      if (!pile) return;
+      if (buildRoomLinks.some((link) => link.url === hit.url)) return;
+      const id = `crawl-${Date.now()}`;
+      const domain = hit.url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+      const row: BuildRoomLink = {
+        id,
+        url: hit.url,
+        domain,
+        title: hit.title || domain,
+        description: hit.description,
+        imageUrl: "",
+        kind: "article",
+        whyItMatters: hit.description,
+        questions: cannedLinkQuestions(hit.title || hit.url),
+        status: "ready",
+        batchKey: id,
+        droppedBy: identity.userId,
+        droppedByName: `${identity.name} 🕸`,
+        droppedAt: Date.now(),
+        voters: [],
+      };
+      patchPile((data) => ({ ...data, dropped: [row, ...(data.dropped ?? [])] }));
+    },
+    [buildRoomLinks, identity.name, identity.userId, patchPile],
   );
 
   const retryLink = useCallback(
@@ -1868,8 +1949,17 @@ export function LiveSpacePage({
           onKeep={keepTakeaway}
           onReply={handlers.onSend}
           onRetry={retryLink}
+          onSearch={searchTopic}
+          onCrawl={crawlSiteHandler}
           onZone={presence.reportZone}
           onClose={closeRoom}
+        />
+      )}
+      {activeCrawl && (
+        <CrawlStrip
+          crawlId={activeCrawl}
+          onKeep={keepCrawlPage}
+          onClose={() => setActiveCrawl(null)}
         />
       )}
       {openRoom?.kind === "ship" && shipRoomWidget && (

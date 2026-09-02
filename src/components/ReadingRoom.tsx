@@ -67,6 +67,8 @@ export function ReadingRoom({
   onKeep,
   onReply,
   onRetry,
+  onSearch,
+  onCrawl,
   onZone,
   onClose,
 }: {
@@ -84,6 +86,8 @@ export function ReadingRoom({
   onKeep?: (linkId: string) => void;
   onReply?: (threadId: string, text: string) => void;
   onRetry?: (linkId: string) => void;
+  onSearch?: (query: string) => void;
+  onCrawl?: (url: string) => void;
   onZone?: (x: number, y: number, zone?: string) => void;
   onClose: () => void;
 }) {
@@ -101,6 +105,7 @@ export function ReadingRoom({
   const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [paste, setPaste] = useState("");
+  const [research, setResearch] = useState("");
   const closeRoomRef = useRef<(() => void) | null>(null);
 
   const matches = (link: BuildRoomLink, cut: Filter) => {
@@ -296,6 +301,49 @@ export function ReadingRoom({
                   {dropCount > 1 ? `drop ${dropCount}` : "drop it"}
                 </button>
               </form>
+              {(onSearch || onCrawl) && (
+                <form
+                  className="rr-drop-bar rr-research-bar"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const value = research.trim();
+                    if (!value) return;
+                    playSound("place");
+                    onSearch?.(value);
+                    setResearch("");
+                  }}
+                >
+                  <span className="rr-drop-clip" aria-hidden="true">
+                    🔎
+                  </span>
+                  <input
+                    value={research}
+                    onChange={(event) => setResearch(event.target.value)}
+                    placeholder="research a topic, or a site to crawl…"
+                  />
+                  {onSearch && (
+                    <button type="submit" disabled={research.trim().length === 0}>
+                      research
+                    </button>
+                  )}
+                  {onCrawl && (
+                    <button
+                      type="button"
+                      className="rr-crawl-btn"
+                      disabled={research.trim().length === 0}
+                      onClick={() => {
+                        const value = research.trim();
+                        if (!value) return;
+                        playSound("place");
+                        onCrawl(value);
+                        setResearch("");
+                      }}
+                    >
+                      crawl
+                    </button>
+                  )}
+                </form>
+              )}
               {enriching > 0 && (
                 <span className="rr-enriching">
                   <i aria-hidden="true">✦</i> {enriching} link
