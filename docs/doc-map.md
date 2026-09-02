@@ -44,8 +44,9 @@ bottom table.
 |---|---|
 | Demo rooms, widget catalog, what each space still needs | `docs/spaces-and-widgets.md` |
 | The build room / reading room (widgets, funnel, where link state lives) | `docs/spaces-and-widgets.md` §0 |
-| Schema, auth, Convex-as-state | `docs/data-model-plan.md` |
+| Schema, auth (guest or join), Convex-as-state | `docs/data-model-plan.md` |
 | Email → canvas: the 3 mail cases, router, digest, status, open goals | `docs/mail.md` |
+| Next OpenAI / Firecrawl work (visible filing, recap strip, meal train) | `docs/todos.md` § Next up + `docs/mail.md` goals |
 | Firecrawl + AgentMail keys and webhooks | `docs/firecrawl-agentmail-setup.md` |
 | Running / screenshotting the app | `.claude/skills/run-ourspaces/SKILL.md` |
 

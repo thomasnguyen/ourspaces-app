@@ -31,7 +31,10 @@ are not.
 `WidgetCard.tsx` (widget shell: drag/resize/thread chip) · `WidgetEditorPanel.tsx`
 (per-type edit forms) · `WidgetPicker.tsx` · `WidgetThreadDock.tsx` ·
 `GlobalChatPanel.tsx` · `ThreadContent.tsx` (messages + composer + promote) ·
-`Rail.tsx` (space rail) · `ActionDock.tsx` (bottom dock + catch-me-up panel:
+`Rail.tsx` (space rail; `OnlineCountSuffix` shows "· N here" per space via the
+presence component's `roomPresence.onlineCountForSpace`, mounted by
+`LiveSpace.tsx`'s `RoomPresenceHeartbeat` once a room is entered) ·
+`ActionDock.tsx` (bottom dock + catch-me-up panel:
 briefing, ↻ refresh, follow-up composer) ·
 `CanvasNavigator.tsx` (minimap) · `CanvasEdgePan.tsx` · `SpaceEditorPanel.tsx`
 (theme editor) · `ClaimCard.tsx` (identity claim) · `FirstRunSticky.tsx` ·
@@ -39,10 +42,12 @@ briefing, ↻ refresh, follow-up composer) ·
 `LinkQuestionStrip.tsx` (web post conversation starters in the thread dock) ·
 `CanvasRoom.tsx` (shared full-screen `<dialog>` shell: grows out of the card
 that opened it via `--room-origin-*`, shrinks back on close) ·
-`ReadingRoom.tsx` (the pile's full view — single-link drop bar, a tag row over
-the `all / new / hot / discussed / kept` filters, per-person runs, dense rows,
-reading circle whose tag pills set the same tag filter) · `ShipRoom.tsx` (a ship post's
-full view)
+`ReadingRoom.tsx` (the pile's full view — single-link drop bar + a research bar
+[`onSearch` topic / `onCrawl` site], a tag row over the `all / new / hot /
+discussed / kept` filters, per-person runs, dense rows, reading circle whose tag
+pills set the same tag filter) · `CrawlStrip.tsx` (live Firecrawl crawl panel —
+usePaginatedQuery over `firecrawl.listCrawlPages`, pages stream in, each keepable
+to the pile) · `ShipRoom.tsx` (a ship post's full view)
 
 **pages/** — `LiveSpace.tsx` (live canvas) · `Block.tsx` (mock `#/home`) ·
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
@@ -151,30 +156,81 @@ generated vector board; kept for history only.
 
 ## convex/
 
-`schema.ts` (spaces — carries `inboxId`/`inboxAddress` — plus emailEvents,
-members, widgets, messages, votes, paintMarks, recaps, presence; frames are
-widgets) · `spaces.ts` · `widgets.ts` (CRUD/move/resize) · `messages.ts`
-(per-widget threads) · `votes.ts` · `presence.ts` (cursors + gestures, TTLs) ·
-`stats.ts` (live counts) · `seed.ts` · `crons.ts` (presence sweep every minute + Friday 16:00 UTC digest; the daily
-recap cron is commented out until closer to the deadline) ·
-`http.ts` (hand-rolled svix-verified webhook `/api/agentmail/webhook`) ·
-`agentmail.ts` (AgentMail via plain REST — NOT the broken component: ensure/clear
-inboxes, send, `onMessageReceived` → `emailEvents` → router) ·
+15 real components in use (`grep -rE '\bcomponents\.' convex --include='*.ts'`
+lists every one) — installed + `app.use()`-wired in `convex.config.ts`, each
+with a real job below, not just mounted.
+
+`schema.ts` (spaces — carries `inboxId`/`inboxAddress`/`askThreadId`/
+`ragIndexedAt` — plus emailEvents, members, widgets [`data`: typed
+discriminated union, see `widgetData.ts`], messages [+ full-text search
+index], votes, paintMarks, recaps, presence, `linkRefreshQueue`
+[batch-worker queue]; frames are widgets) · `widgetData.ts` (the 12 typed
+widget-data shapes + permissive record fallback, reverse-engineered from
+every real producer) · `spaces.ts` (CRUD + `memberCounts` aggregate) ·
+`widgets.ts` (CRUD/move/resize + `widgetsCounter` sharded-counter) ·
+`messages.ts` (per-widget threads, real cursor pagination, `search` full-text
+query, `messagesCounter`) · `votes.ts` (`pollTallies` aggregate + `vote`) ·
+`presence.ts` (hand-rolled canvas cursors + gesture-lock arbitration, TTLs —
+the ~90ms hot path; `finishGesture` commits the widget layout server-side.
+**Do not** try to replace this with `@convex-dev/presence` — see
+`roomPresence.ts`) · `roomPresence.ts` (`@convex-dev/presence`: "who has this
+space open" room-occupancy signal for the space-rail tooltip, deliberately
+separate from `presence.ts`) ·
+`stats.ts` (`spacesCounter`/`widgetsCounter`/`messagesCounter` sharded
+counters for the "live backend" widget's global totals) ·
+`rateLimits.ts` (token-bucket quotas: LLM calls, mail sends, paint strokes) ·
+`migrations.ts` (`@convex-dev/migrations`: one-off backfills — currently
+normalizes legacy letter widgets) · `seed.ts` ·
+`crons.ts` (presence sweep every minute, daily recap via the `recap.ts`
+workpool, Friday 16:00 UTC digest via the `digest.ts` durable workflow,
+Friday 17:00 UTC stale-link refresh via `batch.ts`) ·
+`http.ts` (svix-verified inbound-mail webhook `/api/agentmail/webhook` → dedup
+via `components.agentMail.lib.ingestWebhook` → router; persistent-text-streaming's
+`/ask-stream`) ·
+`components/agentMail/` (OUR first-party AgentMail component — `convex.config.ts`,
+`schema.ts` [events dedup + inboundMessages], `lib.ts` [createInbox/sendMessage/
+replyToMessage/addLabels/ingestWebhook/listInbound]; no nested workpool, key
+passed in from app. Replaces the broken published `@agentmail/convex` 0.1.0) ·
+`agentmail.ts` (app wrappers over `components.agentMail`: ensure/clear inboxes,
+send [rate-limiter wrapped], `ackInbound` [reply-in-thread + label], and
+`onMessageReceived` → `emailEvents` [now carries messageId/threadId] → router) ·
 `inbox.ts` (per-space email router: couple→letter widget, buildroom→pile drop +
-Firecrawl enrich, default→AI files into expense/itinerary/create/unfiled) ·
-`digest.ts` (weekly space→members email via recap snapshot; recipients = past
-senders; Fri cron + `sendNow`) ·
-`firecrawl.ts` (`scrapeLink` action) · `questions.ts` (`sparkQuestions`: OpenAI →
-2 conversation starters on a link card, canned fallback without a key) ·
-`ai.ts` (Cloudflare `ai-proxy` first, OpenAI fallback) ·
-`recap.ts` (`generate` / `ask` / daily `generateAll`: catch-me-up from a
+Firecrawl enrich, default→AI files into expense/itinerary/create/unfiled — each
+branch returns an `{label, reply}` ack the space mails back) ·
+`digest.ts` (`weeklyDigestWorkflow`: durable multi-step weekly digest —
+recipients → snapshot → LLM compose → send, each independently retried;
+cron calls `start()` fire-and-forget with an `onComplete` logger; manual
+`sendNow` demo trigger keeps the simpler action-retrier `digestFor` path) ·
+`firecrawl.ts` (`scrapeLink`: action-cache-wrapped [1h TTL] around
+`scrapeLinkRetried`, which retries `scrapeLinkOnce` via action-retrier —
+callers see one plain action. Plus `searchTopic` [web search → pile cards],
+`crawlSite` [durable startCrawl] + `getCrawlStatus`/`listCrawlPages` reactive
+wrappers + `crawlComplete` onComplete) ·
+`questions.ts` (`sparkQuestions`: action-cache-wrapped [by title+description]
+OpenAI → 2 conversation starters on a link card, canned fallback) ·
+`ai.ts` (Cloudflare `ai-proxy` first, OpenAI fallback for chat;
+`languageModel()`/`embeddingModel()` wrap the same targets as AI SDK models
+for `agent.ts`/`rag.ts` — embeddings are real-OpenAI-only, the proxy has no
+`/v1/embeddings` route) ·
+`agent.ts` (`askAgent`: `@convex-dev/agent` thread per space, backs
+`recap.ask`'s conversational memory) ·
+`rag.ts` (`@convex-dev/rag`: indexes a space's widgets + recent chat,
+semantic-searches to ground `recap.ask`; lazy 5min-staleness reindex) ·
+`streaming.ts` (`@convex-dev/persistent-text-streaming`: real HTTP token
+streaming for ask answers at `POST /ask-stream` — not wired into
+`ActionDock`'s UI, which keeps its own fake-reveal animation) ·
+`recap.ts` (`generate` / `ask` [agent + rag grounded, rate-limited] / daily
+`generateAll` [workpool-bounded, `maxParallelism: 3`]: catch-me-up from a
 board snapshot; follow-up chat on `messages.widgetId === "recap"`) ·
-`paint.ts` (reactive numbered-region fills + couple-room widget backfill) ·
+`batch.ts` (`@convex-dev/batch-worker`: drains `linkRefreshQueue` — stale
+linkCards re-scraped a few at a time through the cached/retried scraper) ·
+`paint.ts` (reactive numbered-region fills + couple-room widget backfill,
+rate-limited per user) ·
 `photos.ts` (`generateUploadUrl` + `storageUrl` + `addPhoto`: file-storage upload prepended to
 a photoWall widget's `data.photos`, becomes the pile cover;
 `backfillCrewMemorySources` replaces the two old test-upload sources without
 changing their ids/note threads) ·
-`convex.config.ts` (components, env)
+`convex.config.ts` (all 15 components + env)
 
 ## src/index.css (~21.1k lines, hand-written, banner comments)
 

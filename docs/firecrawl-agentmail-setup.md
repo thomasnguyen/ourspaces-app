@@ -3,7 +3,8 @@
 You only need **API keys on the Convex deployment** (not `.env.local`).
 
 - Firecrawl → pasted URLs become web-post cards (`convex/firecrawl.ts`, Convex component)
-- AgentMail → each space gets an inbox (`convex/agentmail.ts`, **plain REST — see below**)
+- AgentMail → each space gets an inbox (`convex/agentmail.ts` → our own
+  `components.agentMail` component — **see below**)
 
 Verified 2026-08-29 against:
 
@@ -41,13 +42,20 @@ Web-post scrape (`scrapeLink`) does **not** need the webhook secret. This app mo
 
 ## AgentMail
 
-**We do NOT use `@agentmail/convex` anymore.** Version 0.1.0 has a real bug:
-its component actions (`createInbox`, send, …) never resolve through
-`ctx.runAction` from app code (its nested workpool subcomponents break the
-reference), and its `convex.config` declares no `env` schema so the API key
-needed a hand-patch in `node_modules`. Removed 2026-08-30; `convex/agentmail.ts`
-now calls the REST API (`https://api.agentmail.to/v0`) directly and
-`convex/http.ts` verifies the svix webhook by hand. Nothing to reinstall.
+**We use our OWN AgentMail component, not `@agentmail/convex`.** The published
+`@agentmail/convex` 0.1.0 has a real bug: its component actions (`createInbox`,
+send, …) never resolve through `ctx.runAction` (its nested workpool
+subcomponents break the reference), and its `convex.config` declares no `env`
+schema so the API key needed a hand-patch in `node_modules`. It was removed
+2026-08-30 and there's no fixed version.
+
+Instead, `convex/components/agentMail/` is a first-party local component that
+wraps the REST API (`createInbox`, `sendMessage`, `replyToMessage`, `addLabels`,
+`ingestWebhook`, `listInbound`) and owns the inbound-message store + webhook
+dedup. It deliberately has **no nested workpool** (that was the 0.1.0 hang) and
+takes the API key/secret **as args** from the app (components can't read
+`process.env`). `convex/agentmail.ts` are the thin app wrappers; `convex/http.ts`
+verifies the svix webhook and hands the body to `components.agentMail.lib.ingestWebhook`.
 
 Setup:
 

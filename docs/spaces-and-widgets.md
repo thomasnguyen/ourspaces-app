@@ -80,7 +80,9 @@ only hot links and keepers graduate into canvas objects.
 **The reading room** (`ReadingRoom.tsx`, on the shared `CanvasRoom` shell) is
 the pile's full-screen view — opened by the pile card *or its frame label*,
 since the frame has nothing to zoom into. An always-ready single-link drop bar
-(a multi-url paste still works), a **tag row** above the
+(a multi-url paste still works) with a **research bar** under it (type a topic →
+`firecrawl.search` drops ready cards into the pile; or hit **crawl** on a site →
+`firecrawl.startCrawl`), a **tag row** above the
 `all / new / hot / discussed / kept` filters (kinds first by count, then the
 top hosts — six chips, kind-tinted, `#host` for the rest; `tagFacets()` in
 `src/lib/linkRanking.ts`), links stitched into *runs* — consecutive drops by the same person within 30
@@ -96,7 +98,12 @@ runs Firecrawl.
 
 Demo role: the volume story (47 links that don't wreck the canvas), Firecrawl
 on a live paste, and the **keep takeaway** climax — the note physically flies
-out of the room onto the canvas and lands with a squash.
+out of the room onto the canvas and lands with a squash. Two more Firecrawl
+surfaces beyond the single scrape: **research a topic** (web search → a batch of
+ready cards) and **crawl a site** — a durable crawl whose pages stream live into
+the `CrawlStrip` (`src/components/CrawlStrip.tsx`, `usePaginatedQuery` over the
+Firecrawl component's own `listPages`), each keepable into the pile. The crawl
+is the realtime showcase: pages appear as Firecrawl finds them.
 
 Mail: `buildroom@agentmail.to` is the pile's other mouth — any URL in an
 email body drops in as a `dropped` row and gets Firecrawl-enriched, with the
@@ -108,9 +115,12 @@ keeps and runtime drops persist into the pile widget's own `data`, so there is
 
 ## 1. the crew — friend group (`#7c5cff` violet)
 
-**Status: done.** Six members, and still the most complete space — the anatomy
-above was learned here. Don't add — protect. (It handed `#/` to the build room;
-`DEFAULT_SPACE_SLUG` in `src/lib/routes.ts` is the one place that decides.)
+**Status: done, plus one allowed add.** Six members, and still the most
+complete space — the anatomy above was learned here. Don't clutter it.
+The one add (brain play, 2026-08-31): make the existing mail brain *visible*,
+and a meal-train frame so care lives here instead of a new space. (It handed
+`#/` to the build room; `DEFAULT_SPACE_SLUG` in `src/lib/routes.ts` is the one
+place that decides.)
 
 | Layer | Widgets on canvas |
 |---|---|
@@ -125,10 +135,23 @@ the router's past-vs-future money/booking test), and a black `✉ ourspaces@…`
 chip under the title (click copies). Mail here is **AI-filed**: a receipt
 appends an expense row and decrements what someone owes, a booking appends an
 itinerary day, anything unsure becomes an unfiled envelope (`convex/inbox.ts`,
-spec in `docs/mail.md`).
+spec in `docs/mail.md`). The filing is silent today — next is a `because`
+sentence on the flap.
+
+**Allowed next (do not sprawl past this):**
+
+1. **B1** — `because` on the flap / torn slip; catch-me-up as a dated strip
+   that lands on the canvas (tap pans to the widget).
+2. **B4** — Now-layer frame *"jules is out this week"* (meal train on the
+   potluck). No fourth space, no medical product. An emailed "I can do
+   tuesday soup" files onto a slot.
+3. **B2** — vision writes the note on the back of a new photo-wall print;
+   a receipt photo also files, same router as email.
+4. **B3** — a recipe URL in the mail becomes potluck slots, not a link card.
 
 Demo role: two-window liveness (votes, potluck claims, cursors), the promote
-climax, the AgentMail follow-up sequence.
+climax, then the inbound brain beat (phone send → flap sentence → board
+moves on the second tab).
 
 ## 2. us two — long-distance couple (`#e63da8` magenta, "an ocean apart")
 
