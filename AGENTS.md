@@ -1,8 +1,8 @@
 # Agent instructions — OurSpaces (Convex All Gas hackathon)
 
 Everyday app for friend groups: a group chat becomes a live shared canvas.
-Convex hackathon entry; deadline Sep 22 2026. Doc index: `docs/doc-map.md`.
-Plan and cut order: `.private/PLAN.md` (local only).
+Convex hackathon entry; deadline Sep 22 2026. Doc index: `docs/doc-map.md`
+(it points at the local-only index for anything not tracked).
 
 ## Rules
 

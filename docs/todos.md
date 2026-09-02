@@ -593,7 +593,7 @@ Backward-looking history lives in `hackathon.md`.
 - Build four static vendor pages in `public/` (convex / agentmail / firecrawl /
   openai) from one shared template: per-page OG tags, hero clip,
   what-it-does-in-OurSpaces, code peek, deep link into the live app. Needed
-  live by Sep 16. Spec in `.context/ourspaces-marketing-playbook-v2.md` §5.
+  live by Sep 16. Spec in the local marketing playbook §5.
 - Stand up the public "commons" space for hackathon builders (separate from
   the demo spaces — strangers get write access) around Sep 16.
 
@@ -736,13 +736,10 @@ Backward-looking history lives in `hackathon.md`.
   selectable preset (its crew re-inks kept). crew2/crew3 removed from mock data
   and deleted live via new `spaces:deleteBySlug`; live crew retinted with
   `spaces:retintSpace`. Rail is back to six spaces.
-- 2026-08-29 (marketing): Playbook v2 finalized in chat; canonical doc is
-  `.context/ourspaces-marketing-playbook-v2.md` (gitignored — marketing
-  strategy stays out of the public repo). Shape: quiet until Sep 12, then a
-  10-day build-in-public arc on X (one post/day), sponsor posts staggered
-  Sep 17–20 with AgentMail as the Sat Sep 19 finale + the single LinkedIn
-  post, submit early Sep 21. Build items it creates are in "Next up" (vendor
-  pages, commons space); clips get batch-recorded Sep 10–11 as MP4s.
+- 2026-08-29 (marketing): Playbook v2 finalized; the canonical doc is
+  gitignored and indexed in the local doc map — marketing strategy stays out
+  of the public repo, including its calendar. The build items it creates are
+  in "Next up" (vendor pages, commons space).
 - 2026-08-30 (reading circle): The circle pane got the editorial layout from
   the approved shot — uppercase domain link over a display-size title, the
   cover as a taped polaroid snap in the corner, WHY IT MATTERS, TALK ABOUT IT
