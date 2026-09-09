@@ -7,16 +7,16 @@
 - **Repo:** https://github.com/thomasnguyen/ourspaces-app
 - **Frontend:** Convex static hosting
 - **Convex deployment:** https://necessary-cobra-892.convex.cloud
-- **Components (16):** @convex-dev/static-hosting, @firecrawl/firecrawl-convex (scrape + web search + durable site crawl), `agentMail` (our own first-party local component — `convex/components/agentMail/`, every space's inbox: create/send/reply/label + inbound store & webhook dedup; the published @agentmail/convex 0.1.0 is unusable), @convex-dev/migrations, @convex-dev/aggregate (two named instances), @convex-dev/sharded-counter, @convex-dev/rate-limiter, @convex-dev/action-retrier, @convex-dev/action-cache, @convex-dev/workpool, @convex-dev/workflow, @convex-dev/batch-worker, @convex-dev/agent, @convex-dev/rag, @convex-dev/persistent-text-streaming, @convex-dev/presence
-- **Convex features:** schema (typed discriminated union on `widgets.data`), tables, indexes, full-text search index, queries, mutations, actions, HTTP actions (svix-verified inbound mail, token-streaming ask endpoint), realtime queries, real cursor pagination, crons (presence sweep, daily recap via workpool, Friday weekly digest via a durable workflow, Friday stale-link refresh), scheduled functions, internal mutations, file storage, presence (canvas cursors/gestures, hand-rolled; room occupancy, component), agent threads, vector search (via rag), `returns:` validators on all 78 functions
+- **Components:** static-hosting, firecrawl, agentMail, migrations, aggregate, sharded-counter, rate-limiter, action-retrier, action-cache, workpool, workflow, batch-worker, agent, rag, persistent-text-streaming, presence
+- **Convex features:** schema (typed discriminated union on `widgets.data`), tables, indexes, full-text search index, queries, mutations, actions, HTTP actions (svix-verified inbound mail, token-streaming ask endpoint), realtime queries, real cursor pagination, crons (presence sweep, daily recap via workpool, Friday weekly digest via a durable workflow, Friday stale-link refresh), scheduled functions, internal mutations, file storage, presence (canvas cursors/gestures, hand-rolled; room occupancy, component), agent threads, semantic retrieval (the `rag` component owns the vector index; no hand-rolled `.vectorIndex()` in our schema), `returns:` validators on all 115 functions
 - **Auth:** none
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, primary), gpt-4o-mini via the OpenAI API (chat fallback), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-08-31T19:19:23Z
+- **Last updated:** 2026-09-09T01:33:02Z
 
 ## Highlights
 
-- **15 Convex components, each doing a real job** — migrations backfill
+- **16 Convex components, each doing a real job** — migrations backfill
   legacy data, two named aggregate instances replace `.collect()` counting
   for poll tallies and member counts, a sharded counter drives the landing
   page's live totals, a rate limiter guards every LLM/mail/paint hot path,
@@ -30,7 +30,7 @@
   `returns:` validators on all 78 functions. Went from 1 component in use to
   15 in a single session; every one verified live against the dev
   deployment, not just deployed.
-- **122 commits in 5 days**, all inside the hackathon window; every log entry
+- **144 commits in 7 days**, all inside the hackathon window; every log entry
   below is pinned to a commit hash so the story is checkable against history.
 - **32 widget types on one live multiplayer canvas** — countdowns, ballot
   polls, potluck sign-up sheets, expense splits, itineraries, photo walls,

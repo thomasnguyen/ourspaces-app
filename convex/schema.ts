@@ -27,9 +27,9 @@ export default defineSchema({
     askThreadId: v.optional(v.string()), // agent component thread for recap.ask
     ragIndexedAt: v.optional(v.number()), // last rag.add sweep, see convex/rag.ts
   })
-    .index("by_name", ["name"])
-    .index("by_slug", ["slug"])
-    .index("by_inbox", ["inboxId"]),
+    .index("by_name", ["name"]) // seed/demo lookup by display name
+    .index("by_slug", ["slug"]) // every /:slug page load — the hot read
+    .index("by_inbox", ["inboxId"]), // inbound webhook → which space owns this inbox
 
   // Every email the space sends or receives — feeds the activity log widget.
   emailEvents: defineTable({
@@ -47,7 +47,7 @@ export default defineSchema({
     // One lowercase sentence from the router: why it landed where it did (B1).
     because: v.optional(v.string()),
     createdAt: v.number(),
-  }).index("by_space", ["spaceId"]),
+  }).index("by_space", ["spaceId"]), // activity-log widget, newest first
 
   members: defineTable({
     spaceId: v.id("spaces"),
@@ -58,8 +58,8 @@ export default defineSchema({
     avatarUrl: v.optional(v.string()),
     lastSeen: v.number(),
   })
-    .index("by_space", ["spaceId"])
-    .index("by_space_user", ["spaceId", "userId"]),
+    .index("by_space", ["spaceId"]) // roster + memberCounts aggregate
+    .index("by_space_user", ["spaceId", "userId"]), // is this person already a member
 
   widgets: defineTable({
     spaceId: v.id("spaces"),
@@ -74,6 +74,8 @@ export default defineSchema({
     createdBy: v.string(),
     createdAt: v.number(),
     rotate: v.optional(v.number()),
+    // The canvas subscription. Every widget for a space in one indexed read —
+    // no per-widget fan-out, so a drag re-renders one query for everyone.
   }).index("by_space", ["spaceId"]),
 
   messages: defineTable({
@@ -88,9 +90,9 @@ export default defineSchema({
     authorAvatarUrl: v.optional(v.string()),
     promotable: v.optional(v.boolean()),
     promotedWidgetId: v.optional(v.id("widgets")),
-  }).index("by_widget", ["widgetId"])
-    .index("by_space", ["spaceId"])
-    .index("by_space_widget", ["spaceId", "widgetId"])
+  }).index("by_widget", ["widgetId"]) // a widget's own comment thread
+    .index("by_space", ["spaceId"]) // paginated space thread (messages.listBySpace)
+    .index("by_space_widget", ["spaceId", "widgetId"]) // thread dock, scoped to one widget
     .searchIndex("search_text", { searchField: "text", filterFields: ["spaceId"] }),
 
   votes: defineTable({
@@ -98,7 +100,7 @@ export default defineSchema({
     userId: v.string(),
     optionId: v.string(),
   })
-    .index("by_widget", ["widgetId"])
+    .index("by_widget", ["widgetId"]) // tally a poll (also feeds the pollTallies aggregate)
     .index("by_widget_user", ["widgetId", "userId"]), // one vote per user
 
   paintMarks: defineTable({
@@ -121,8 +123,8 @@ export default defineSchema({
     preset: v.optional(v.union(v.literal("electric"), v.literal("sunset"))),
     createdAt: v.number(),
   })
-    .index("by_space", ["spaceId"])
-    .index("by_space_and_widget", ["spaceId", "widgetId"]),
+    .index("by_space", ["spaceId"]) // paint marks for the whole canvas
+    .index("by_space_and_widget", ["spaceId", "widgetId"]), // one paint-by-number board
 
   recaps: defineTable({
     spaceId: v.id("spaces"),
@@ -137,8 +139,8 @@ export default defineSchema({
     ),
     createdAt: v.number(),
   })
-    .index("by_space", ["spaceId"])
-    .index("by_space_created", ["spaceId", "createdAt"]),
+    .index("by_space", ["spaceId"]) // all recaps for a space
+    .index("by_space_created", ["spaceId", "createdAt"]), // recap.latest — newest one, no scan
 
   presence: defineTable({
     spaceId: v.id("spaces"),
@@ -167,13 +169,13 @@ export default defineSchema({
       }),
     ),
   })
-    .index("by_space", ["spaceId"])
-    .index("by_space_user", ["spaceId", "userId"])
-    .index("by_space_updated", ["spaceId", "updatedAt"]),
+    .index("by_space", ["spaceId"]) // gesture-lock arbitration reads the whole room
+    .index("by_space_user", ["spaceId", "userId"]) // upsert one person's cursor (findPresence)
+    .index("by_space_updated", ["spaceId", "updatedAt"]), // listHereNow: live rows only, TTL'd
 
   // batch-worker queue: stale linkCard widgets pending a Firecrawl refresh.
   linkRefreshQueue: defineTable({
     widgetId: v.id("widgets"),
     queuedAt: v.commitTs(), // commit-order cursor, not a wall-clock read
-  }).index("queuedAt", ["queuedAt"]),
+  }).index("queuedAt", ["queuedAt"]), // batch-worker drains in commit order
 });
