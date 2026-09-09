@@ -32,6 +32,7 @@ const app = defineApp({
     AGENTMAIL_API_KEY: v.string(),
     AGENTMAIL_WEBHOOK_SECRET: v.optional(v.string()),
     SITE_URL: v.optional(v.string()),
+    APP_URL: v.optional(v.string()),
     BETTER_AUTH_SECRET: v.optional(v.string()),
   },
 });

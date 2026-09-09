@@ -6,7 +6,10 @@
 // yet; see convex/auth.ts.
 import { createAuthClient } from "better-auth/react";
 import { anonymousClient } from "better-auth/client/plugins";
-import { convexClient } from "@convex-dev/better-auth/client/plugins";
+import {
+  convexClient,
+  crossDomainClient,
+} from "@convex-dev/better-auth/client/plugins";
 
 const convexSiteUrl = import.meta.env.VITE_CONVEX_SITE_URL as
   | string
@@ -14,7 +17,9 @@ const convexSiteUrl = import.meta.env.VITE_CONVEX_SITE_URL as
 
 export const authClient = createAuthClient({
   baseURL: convexSiteUrl,
-  plugins: [convexClient(), anonymousClient()],
+  // crossDomainClient carries the session token explicitly, so local dev
+  // (localhost app + convex.site auth) does not depend on third-party cookies.
+  plugins: [crossDomainClient(), convexClient(), anonymousClient()],
 });
 
 let guestSignInPromise: Promise<void> | null = null;
