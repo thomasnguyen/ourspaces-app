@@ -22,8 +22,11 @@ Worker proxy, direct OpenAI as fallback) · AgentMail · Firecrawl
   `convex/components/agentMail/` — every space's inbox: create/send/reply/label
   over the AgentMail REST API, plus an inbound-message store + webhook dedup;
   the published `@agentmail/convex` 0.1.0 is unusable), `migrations`
-  (widget-data backfills), `aggregate` (poll tallies + member counts, two named
-  instances), `sharded-counter` (global live totals), `rate-limiter`
+  (widget-data backfills), `aggregate` (poll tallies + member counts — mounted
+  as two *named instances*, so the call sites read `components.pollTallies`
+  and `components.memberCounts` rather than `components.aggregate`;
+  `convex/votes.ts` and `convex/spaces.ts`), `sharded-counter` (global live
+  totals), `rate-limiter`
   (LLM/mail/paint quotas), `action-retrier` (Firecrawl + AgentMail retries),
   `action-cache` (scrape + question-gen caching), `workpool` (bounded recap
   fan-out), `workflow` (durable weekly digest), `batch-worker` (stale-link
@@ -31,6 +34,10 @@ Worker proxy, direct OpenAI as fallback) · AgentMail · Firecrawl
   grounding `recap.ask`), `persistent-text-streaming` (HTTP token
   streaming for ask answers), `presence` (space-list "N here" — separate
   from the hand-rolled canvas cursor/gesture system)
+- **A note on two of the above:** `static-hosting` is only ever wired in
+  `convex.config.ts` (it serves the site; there is no `components.` call site
+  by design), and `prosemirror-sync` is installed but **not yet used** — the
+  collaborative note editor it would back is unbuilt.
 - **Schema & data:** tables + indexes for spaces, members, widgets, messages
   (+ full-text search index), votes, collaborative paint marks, recaps,
   presence, email events; `returns:` validators on every function

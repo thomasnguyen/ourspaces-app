@@ -16,7 +16,7 @@
 
 ## Highlights
 
-- **16 Convex components, each doing a real job** — migrations backfill
+- Sixteen Convex components, **each doing a real job** — migrations backfill
   legacy data, two named aggregate instances replace `.collect()` counting
   for poll tallies and member counts, a sharded counter drives the landing
   page's live totals, a rate limiter guards every LLM/mail/paint hot path,
@@ -30,28 +30,28 @@
   `returns:` validators on all 78 functions. Went from 1 component in use to
   15 in a single session; every one verified live against the dev
   deployment, not just deployed.
-- **144 commits in 7 days**, all inside the hackathon window; every log entry
+- 148 commits in 7 days, **all inside the hackathon window**; every log entry
   below is pinned to a commit hash so the story is checkable against history.
-- **32 widget types on one live multiplayer canvas** — countdowns, ballot
+- 32 widget types on **one live multiplayer canvas** — countdowns, ballot
   polls, potluck sign-up sheets, expense splits, itineraries, photo walls,
   daily questions, and more — all driven by Convex realtime queries.
-- **Deep Convex surface, not a demo veneer:** presence with live cursors and a
+- Deep Convex surface, **not a demo veneer**: presence with live cursors and a
   cron that sweeps stale rows, file-storage-backed photo prints with notes on
   the back, scheduled and internal mutations, HTTP actions for inbound email.
-- **All three sponsors doing real work:** Convex hosts the backend *and* the
+- All three sponsors **doing real work**: Convex hosts the backend *and* the
   static frontend, Firecrawl turns any pasted URL into a structured reading
   card, and AgentMail provisions a real inbox per space with a live webhook.
-- **AI reading circles:** `gpt-4o-mini` reads a saved article and seeds two
+- AI **reading circles**: `gpt-4o-mini` reads a saved article and seeds two
   conversation starters, each wired into the existing reactive message threads.
-- **Email that becomes furniture:** every showcase space has a real AgentMail
+- Email that **becomes furniture**: every showcase space has a real AgentMail
   address. A receipt mailed to the crew appends an expense row and clears
   someone's IOU; a URL mailed to the build room lands in the reading pile
   Firecrawl-enriched; a note mailed to the couple arrives as a sealed kraft
   letter you unfold. Friday, each space mails its week back.
-- **Collaborative paint-by-number:** 50-region vector boards (traced Starry
+- Collaborative **paint-by-number**: 50-region vector boards (traced Starry
   Night and Great Wave postcards) where fills, palettes, and board-scoped
   cursors sync live between two people coloring together.
-- **A handmade material language:** torn-paper notes with real fiber texture,
+- A handmade **material language**: torn-paper notes with real fiber texture,
   frosted-glass reading sheets, die-cut vinyl stickers — built as a design
   system, not one-off CSS.
 
