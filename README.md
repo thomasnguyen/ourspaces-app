@@ -34,8 +34,27 @@ Worker proxy, direct OpenAI as fallback) · AgentMail · Firecrawl
 - **Schema & data:** tables + indexes for spaces, members, widgets, messages
   (+ full-text search index), votes, collaborative paint marks, recaps,
   presence, email events; `returns:` validators on every function
-- **Realtime:** live queries drive the canvas, presence cursors/gestures, and
-  poll + cozy-color results — no hand-rolled sync
+- **Realtime:** every live surface is a Convex subscription — no polling, no
+  hand-rolled sync, no refetch-on-focus. Each one is a `useQuery` /
+  `usePaginatedQuery` against an indexed query:
+  - `spaces.getSpaceWithWidgets` → the canvas itself (`src/live/useSpaceData.ts`).
+    A drag, resize, edit or delete by anyone lands for everyone.
+  - `presence.listHereNow` → cursors and gesture locks (`src/live/usePresence.ts`).
+    `claimGesture` / `updateGesture` / `finishGesture` double as the widget-commit
+    and lock-arbitration mechanism, so "who is dragging this" and "who owns the
+    write" are the same reactive row.
+  - `votes.getResults` → poll bars move as votes land (`src/live/useLivePoll.ts`),
+    counted through the `pollTallies` aggregate instead of `.collect()`.
+  - `paint.listBySpace` → collaborative paint-by-number marks.
+  - `messages.listBySpace` → the thread, real cursor pagination via
+    `paginationOpts`, plus a `search_text` full-text search index.
+  - `recap.latest` → the recap strip updates when the cron writes a new one.
+  - `roomPresence.onlineCountForSpace` → "N here" on the space rail
+    (`src/components/Rail.tsx`), via the `presence` component.
+  - `stats.getLiveCounts` → global live totals on the landing block, backed by
+    `sharded-counter`.
+  - `firecrawl.getCrawlStatus` + `firecrawl.listCrawlPages` → crawled pages
+    stream into the strip as they arrive (`src/components/CrawlStrip.tsx`).
 - **Functions:** queries, mutations, internal mutations, actions, HTTP actions
   (svix-verified inbound-mail webhook, token-streaming ask endpoint), paginated
   message history
