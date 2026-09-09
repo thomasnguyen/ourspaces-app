@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { env, httpAction } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import { streamAsk } from "./streaming";
+import { createAuth } from "./auth";
 
 const http = httpRouter();
 
@@ -126,5 +127,18 @@ http.route({
     return new Response("ok", { status: 200 });
   }),
 });
+
+// Better Auth's own routes. Registered by hand rather than with
+// authComponent.registerRoutes because convex.config.ts mounts this router
+// under httpPrefix "/api": registerRoutes would register at the same path
+// Better Auth then matches against, and Better Auth matches the EXTERNAL
+// pathname. So we register at "/auth/" (external "/api/auth/") while
+// createAuth carries basePath "/api/auth" so both agree.
+const authHandler = httpAction(async (ctx, request) => {
+  return await createAuth(ctx).handler(request);
+});
+for (const method of ["GET", "POST"] as const) {
+  http.route({ pathPrefix: "/auth/", method, handler: authHandler });
+}
 
 export default http;

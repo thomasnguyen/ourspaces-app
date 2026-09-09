@@ -9,7 +9,7 @@
 - **Convex deployment:** https://necessary-cobra-892.convex.cloud
 - **Components:** static-hosting, firecrawl, agentMail, migrations, aggregate, sharded-counter, rate-limiter, action-retrier, action-cache, workpool, workflow, batch-worker, agent, rag, persistent-text-streaming, presence
 - **Convex features:** schema (typed discriminated union on `widgets.data`), tables, indexes, full-text search index, queries, mutations, actions, HTTP actions (svix-verified inbound mail, token-streaming ask endpoint), realtime queries, real cursor pagination, crons (presence sweep, daily recap via workpool, Friday weekly digest via a durable workflow, Friday stale-link refresh), scheduled functions, internal mutations, file storage, presence (canvas cursors/gestures, hand-rolled; room occupancy, component), agent threads, semantic retrieval (the `rag` component owns the vector index; no hand-rolled `.vectorIndex()` in our schema), `returns:` validators on all 115 functions
-- **Auth:** none
+- **Auth:** Better Auth (anonymous guest sessions; passkey blocked by a peer-dep conflict)
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, primary), gpt-4o-mini via the OpenAI API (chat fallback), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
 - **Last updated:** 2026-09-09T01:33:02Z

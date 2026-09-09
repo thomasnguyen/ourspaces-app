@@ -119,6 +119,22 @@ export function getIdentity(): LiveIdentity {
   return current;
 }
 
+/**
+ * Bind this tab's identity to the authenticated Convex user (§1: guest is a
+ * real anonymous account, not a random string). Called once the Better Auth
+ * session lands. Everything the person already picked — name, color, face —
+ * travels with them, so a guest who later joins stays the same person.
+ *
+ * No-op when the id is unchanged, so it is safe to call on every render.
+ */
+export function adoptAuthUserId(authUserId: string) {
+  const identity = getIdentity();
+  if (identity.userId === authUserId) return;
+  current = { ...identity, userId: authUserId };
+  window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(current));
+  for (const listener of listeners) listener();
+}
+
 export function updateIdentity(
   patch: Partial<Omit<LiveIdentity, "userId">>,
 ) {
