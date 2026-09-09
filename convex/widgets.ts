@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import type { PotluckData } from "./widgetData";
+import { widgetDataValidator, type PotluckData } from "./widgetData";
 import schema from "./schema";
 import { widgetsCounter } from "./stats";
 
@@ -25,7 +25,7 @@ export const createWidget = mutation({
     w: v.number(),
     h: v.number(),
     z: v.number(),
-    data: v.any(),
+    data: widgetDataValidator,
     createdBy: v.string(),
     rotate: v.optional(v.number()),
   },
@@ -126,7 +126,7 @@ export const resizeWidget = mutation({
 });
 
 export const updateWidgetData = mutation({
-  args: { id: v.id("widgets"), data: v.any() },
+  args: { id: v.id("widgets"), data: widgetDataValidator },
   returns: v.null(),
   handler: async (ctx, { id, data }) => {
     await ctx.db.patch(id, { data });
