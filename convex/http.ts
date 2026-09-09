@@ -134,10 +134,50 @@ http.route({
 // Better Auth then matches against, and Better Auth matches the EXTERNAL
 // pathname. So we register at "/auth/" (external "/api/auth/") while
 // createAuth carries basePath "/api/auth" so both agree.
+//
+// CORS is hand-rolled for the same reason. In production the static site and
+// this router share an origin so it never fires, but `npm run dev` serves the
+// app from localhost against the deployed convex.site — cross-origin, with
+// credentials, so the origin must be echoed back (never "*").
+function allowedAuthOrigin(request: Request): string | null {
+  const origin = request.headers.get("Origin");
+  if (!origin) return null;
+  if (/^http:\/\/localhost:\d+$/.test(origin)) return origin;
+  if (env.SITE_URL && origin === env.SITE_URL.replace(/\/$/, "")) return origin;
+  return null;
+}
+
 const authHandler = httpAction(async (ctx, request) => {
-  return await createAuth(ctx).handler(request);
+  const allowed = allowedAuthOrigin(request);
+
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: allowed
+        ? {
+            "Access-Control-Allow-Origin": allowed,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers":
+              "Content-Type, Authorization, Better-Auth-Cookie",
+            "Access-Control-Max-Age": "86400",
+            Vary: "Origin",
+          }
+        : {},
+    });
+  }
+
+  const response = await createAuth(ctx).handler(request);
+  if (!allowed) return response;
+  const headers = new Headers(response.headers);
+  headers.set("Access-Control-Allow-Origin", allowed);
+  headers.set("Access-Control-Allow-Credentials", "true");
+  headers.set("Access-Control-Expose-Headers", "Set-Better-Auth-Cookie");
+  headers.append("Vary", "Origin");
+  return new Response(response.body, { status: response.status, headers });
 });
-for (const method of ["GET", "POST"] as const) {
+
+for (const method of ["GET", "POST", "OPTIONS"] as const) {
   http.route({ pathPrefix: "/auth/", method, handler: authHandler });
 }
 

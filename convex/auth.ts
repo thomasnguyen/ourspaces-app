@@ -9,7 +9,7 @@
 // better-auth >=1.6.11 <1.7.0 and @better-auth/passkey requires ^1.7.3, so
 // the two cannot coexist today. See docs/local/road-to-60.md §1.
 import { createClient, type GenericCtx } from "@convex-dev/better-auth";
-import { convex } from "@convex-dev/better-auth/plugins";
+import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
 import { betterAuth } from "better-auth";
 import { anonymous } from "better-auth/plugins/anonymous";
 import { components } from "./_generated/api";
@@ -29,9 +29,28 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
     // external path is "/api/auth/*" — which is also what the browser client
     // hits by default (site URL + "/api/auth").
     basePath: "/api/auth",
+    // Better Auth rejects cross-origin requests it does not trust. Local dev
+    // serves the app from localhost against the deployed convex.site.
+    trustedOrigins: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+      "http://localhost:5176",
+      ...(env.SITE_URL ? [env.SITE_URL.replace(/\/$/, "")] : []),
+    ],
     database: authComponent.adapter(ctx),
     // Anonymous is the guest path. No email+password, ever (§1 hard rules).
-    plugins: [anonymous(), convex({ authConfig })],
+    //
+    // crossDomain matters for `npm run dev`: the app is served from
+    // localhost while auth lives on convex.site, so the session cookie is a
+    // third-party cookie and Chrome drops it. The plugin carries the token
+    // explicitly instead. In production both share an origin and it is a
+    // no-op. APP_URL is the FRONTEND origin (SITE_URL is the auth origin).
+    plugins: [
+      crossDomain({ siteUrl: env.APP_URL ?? env.SITE_URL ?? "" }),
+      anonymous(),
+      convex({ authConfig }),
+    ],
   });
 
 /**
