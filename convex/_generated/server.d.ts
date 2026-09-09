@@ -34,9 +34,11 @@ type Env = {
   readonly AGENTMAIL_WEBHOOK_SECRET: string | undefined;
   readonly AI_PROXY_TOKEN: string | undefined;
   readonly AI_PROXY_URL: string | undefined;
+  readonly BETTER_AUTH_SECRET: string | undefined;
   readonly FIRECRAWL_API_KEY: string;
   readonly FIRECRAWL_WEBHOOK_SECRET: string | undefined;
   readonly OPENAI_API_KEY: string | undefined;
+  readonly SITE_URL: string | undefined;
 };
 
 /**

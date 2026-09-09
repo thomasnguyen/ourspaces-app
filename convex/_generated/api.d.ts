@@ -11,6 +11,7 @@
 import type * as agent from "../agent.js";
 import type * as agentmail from "../agentmail.js";
 import type * as ai from "../ai.js";
+import type * as auth from "../auth.js";
 import type * as batch from "../batch.js";
 import type * as crons from "../crons.js";
 import type * as digest from "../digest.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   agent: typeof agent;
   agentmail: typeof agentmail;
   ai: typeof ai;
+  auth: typeof auth;
   batch: typeof batch;
   crons: typeof crons;
   digest: typeof digest;

@@ -31,6 +31,8 @@ const app = defineApp({
     AI_PROXY_TOKEN: v.optional(v.string()),
     AGENTMAIL_API_KEY: v.string(),
     AGENTMAIL_WEBHOOK_SECRET: v.optional(v.string()),
+    SITE_URL: v.optional(v.string()),
+    BETTER_AUTH_SECRET: v.optional(v.string()),
   },
 });
 
