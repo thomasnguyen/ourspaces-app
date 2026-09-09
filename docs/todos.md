@@ -517,6 +517,21 @@ Backward-looking history lives in `hackathon.md`.
   sweep (1 min) and the Friday digest run today.
 - **Live Convex still needs a re-seed** for the SomaFM playlist fields and the
   seeded buildclub / Tahoe web-post cards (`npx convex run seed:demo`).
+- **`better-auth` and `prosemirror-sync` are wired in `convex.config.ts` but
+  referenced nowhere in code.** Both are known-deferred ("Not done, by choice"
+  above), so this is bookkeeping, not new work: any repo scan reads them as
+  unused deps. Worth dropping from `package.json` + `convex.config.ts` if they
+  stay unbuilt through the deadline.
+- **`hackathon.md` contradicts the repo in three places.** It says
+  `Auth: none` while `@convex-dev/better-auth` sits in the manifest; it claims
+  vector search "via rag" when there is no `.vectorIndex()` of ours and no
+  `ctx.vectorSearch` call (that was the deliberate call — the *claim* is what's
+  wrong, not the code); and the header numbers are stale (says 122 commits in
+  5 days, git says 142 in 6).
+- **`npm install` goes stale and breaks the build.** `@convex-dev/presence`
+  was missing from `node_modules` and `npm run build` failed with ~15
+  implicit-any errors that look like real type bugs. Re-run `npm install`
+  first if the build breaks for no reason.
 
 ## Now also working
 

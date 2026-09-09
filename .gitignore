@@ -50,3 +50,6 @@ docs/vibeapps-listing.md
 # MCP server config — carries an API key in a header. Never commit.
 .mcp.json
 
+
+# Judge benchmark: how we score against the vibeapps AI judge. Local strategy.
+.claude/skills/judge-bench/
