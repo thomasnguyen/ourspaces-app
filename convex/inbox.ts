@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { v, type Infer } from "convex/values";
 import { api, internal } from "./_generated/api";
 import {
   internalAction,
@@ -202,7 +202,7 @@ async function routeBuildRoom(
 
   // Sequential on purpose: each patch read-modify-writes the pile document.
   for (const link of dropped) {
-    let patch: Record<string, unknown>;
+    let patch: Infer<typeof droppedLinkPatchValidator>;
     try {
       const scraped: {
         title: string;
@@ -233,8 +233,42 @@ async function routeBuildRoom(
   }
 }
 
+// One link dropped into the build-room pile by inbound mail. Shape is built
+// in routeBuildRoom below; both mutations are internal, so this is the only
+// producer.
+const droppedLinkValidator = v.object({
+  id: v.string(),
+  url: v.string(),
+  domain: v.string(),
+  title: v.string(),
+  description: v.string(),
+  imageUrl: v.string(),
+  kind: v.string(),
+  whyItMatters: v.string(),
+  questions: v.array(v.object({ id: v.string(), text: v.string() })),
+  status: v.string(),
+  batchKey: v.string(),
+  droppedBy: v.string(),
+  droppedByName: v.string(),
+  droppedAt: v.number(),
+  voters: v.array(v.string()),
+});
+
+// The partial written back once a scrape resolves (or fails).
+const droppedLinkPatchValidator = v.object({
+  title: v.optional(v.string()),
+  description: v.optional(v.string()),
+  imageUrl: v.optional(v.string()),
+  domain: v.optional(v.string()),
+  whyItMatters: v.optional(v.string()),
+  questions: v.optional(
+    v.array(v.object({ id: v.string(), text: v.string() })),
+  ),
+  status: v.optional(v.string()),
+});
+
 export const prependDroppedLinks = internalMutation({
-  args: { pileId: v.id("widgets"), dropped: v.array(v.any()) },
+  args: { pileId: v.id("widgets"), dropped: v.array(droppedLinkValidator) },
   returns: v.null(),
   handler: async (ctx, { pileId, dropped }) => {
     const pile = await ctx.db.get(pileId);
@@ -249,7 +283,11 @@ export const prependDroppedLinks = internalMutation({
 });
 
 export const patchDroppedLink = internalMutation({
-  args: { pileId: v.id("widgets"), linkId: v.string(), patch: v.any() },
+  args: {
+    pileId: v.id("widgets"),
+    linkId: v.string(),
+    patch: droppedLinkPatchValidator,
+  },
   returns: v.null(),
   handler: async (ctx, { pileId, linkId, patch }) => {
     const pile = await ctx.db.get(pileId);

@@ -29,6 +29,9 @@ export const list = query({
       userId: v.string(),
       online: v.boolean(),
       lastDisconnected: v.number(),
+      // `unknown` in @convex-dev/presence's own list() return type; we
+      // never set or read it, so v.any() mirrors upstream rather than
+      // inventing a shape.
       data: v.optional(v.any()),
     }),
   ),
