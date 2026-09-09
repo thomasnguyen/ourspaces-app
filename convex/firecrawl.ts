@@ -290,6 +290,7 @@ export const crawlComplete = internalMutation({
     pageCount: v.number(),
     unstored: v.optional(v.number()),
     error: v.optional(v.string()),
+    // `unknown` in the component's own onComplete payload type.
     context: v.optional(v.any()),
   },
   returns: v.null(),
@@ -299,17 +300,66 @@ export const crawlComplete = internalMutation({
   },
 });
 
+// Mirrors the component's exported `Crawl` type (@firecrawl/firecrawl-convex).
+// `context` is `unknown` upstream — passthrough we never read — so v.any()
+// here is the honest shape, not a missing validator.
+const crawlValidator = v.object({
+  _id: v.string(),
+  _creationTime: v.number(),
+  jobId: v.optional(v.string()),
+  url: v.string(),
+  status: v.union(
+    v.literal("scraping"),
+    v.literal("completed"),
+    v.literal("failed"),
+    v.literal("cancelled"),
+  ),
+  mode: v.union(v.literal("webhook"), v.literal("poll")),
+  storeContent: v.boolean(),
+  total: v.optional(v.number()),
+  completed: v.optional(v.number()),
+  pageCount: v.number(),
+  creditsUsed: v.optional(v.number()),
+  unstored: v.optional(v.number()),
+  error: v.optional(v.string()),
+  context: v.optional(v.any()),
+  finalized: v.boolean(),
+  startedAt: v.number(),
+  updatedAt: v.number(),
+  completedAt: v.optional(v.number()),
+});
+
+// Mirrors the component's exported `CrawledPage` type. `json`,
+// `changeTracking` and `metadata` are loose upstream too.
+const crawledPageValidator = v.object({
+  _id: v.string(),
+  _creationTime: v.number(),
+  crawlId: v.string(),
+  url: v.string(),
+  markdown: v.optional(v.string()),
+  html: v.optional(v.string()),
+  rawHtml: v.optional(v.string()),
+  summary: v.optional(v.string()),
+  screenshot: v.optional(v.string()),
+  links: v.optional(v.array(v.string())),
+  json: v.optional(v.any()),
+  changeTracking: v.optional(v.any()),
+  metadata: v.optional(v.any()),
+  truncated: v.boolean(),
+  scrapedAt: v.number(),
+});
+
 /** Live crawl status (scraping/completed/…, page counts) for the results panel. */
 export const getCrawlStatus = query({
   args: { crawlId: v.string() },
-  returns: v.any(),
+  returns: v.union(crawlValidator, v.null()),
   handler: async (ctx, { crawlId }) => await firecrawl.getCrawl(ctx, crawlId),
 });
 
 /** Paginated, reactive stream of crawled pages — feeds usePaginatedQuery. */
 export const listCrawlPages = query({
   args: { crawlId: v.string(), paginationOpts: paginationOptsValidator },
-  returns: paginationResultValidator(v.any()),
+  returns: paginationResultValidator(crawledPageValidator),
   handler: async (ctx, { crawlId, paginationOpts }) =>
     await firecrawl.listPages(ctx, { crawlId, paginationOpts }),
 });
