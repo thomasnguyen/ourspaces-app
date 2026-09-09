@@ -59,8 +59,9 @@ async function findPresence(
 ) {
   return await ctx.db
     .query("presence")
-    .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
-    .filter((q) => q.eq(q.field("userId"), userId))
+    .withIndex("by_space_user", (q) =>
+      q.eq("spaceId", spaceId).eq("userId", userId),
+    )
     .first();
 }
 
@@ -351,8 +352,9 @@ export const listHereNow = query({
     const staleBefore = Date.now() - PRESENCE_TTL_MS;
     return await ctx.db
       .query("presence")
-      .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
-      .filter((q) => q.gte(q.field("updatedAt"), staleBefore))
+      .withIndex("by_space_updated", (q) =>
+        q.eq("spaceId", spaceId).gte("updatedAt", staleBefore),
+      )
       .collect();
   },
 });
