@@ -50,3 +50,6 @@ docs/vibeapps-listing.md
 # MCP server config — carries an API key in a header. Never commit.
 .mcp.json
 
+
+# reviewer benchmark: how we score against the vibeapps automated review. Local strategy.
+.claude/skills/reviewer-bench/
