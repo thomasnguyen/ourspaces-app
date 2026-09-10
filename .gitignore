@@ -55,3 +55,6 @@ docs/vibeapps-listing.md
 # MCP server config — carries an API key in a header. Never commit.
 .mcp.json
 
+
+# TypeScript incremental build cache — a build artifact, not source.
+*.tsbuildinfo
