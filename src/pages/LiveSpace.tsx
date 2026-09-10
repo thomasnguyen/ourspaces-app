@@ -80,6 +80,66 @@ import {
 
 const EMPTY_RECAP_LINES: RecapLine[] = [];
 
+/** How long the daily question's scribble-wipe reveal runs after you post. */
+const DAILY_REVEAL_MS = 1600;
+
+/* ── rsvp + daily question: shared, not per-browser ────────────────────────
+   Both widgets already keep their state in `widget.data`, so both ride the
+   route the pile uses (`patchPile` below): read off the live subscription,
+   write through `handlers.onUpdate` → `widgets.updateWidgetData`. There is no
+   local mirror — a second source of truth is what made these single-browser.
+
+   Storage keys by identity (`userId`), never by browser or display name, so
+   two people are two rows. Seeded rows carry no userId and simply read as
+   everybody else; a widget whose `data` predates the fields reads as empty.
+   Validators: `rsvpData` / `dailyQData` in convex/widgetData.ts. */
+type LiveRsvpResponse = { name: string; status: RsvpStatus; userId?: string };
+type LiveDailyAnswer = {
+  name: string;
+  text: string;
+  userId?: string;
+  /** Seeded tally: emoji → who reacted. Live reactors are folded in here. */
+  reactions?: Record<string, string[]>;
+  /** Live reactions: reactor's userId → the one emoji they're holding. */
+  reactedBy?: Record<string, string>;
+};
+
+function rsvpResponsesOf(widget: Widget): LiveRsvpResponse[] {
+  return Array.isArray(widget.data.responses)
+    ? (widget.data.responses as LiveRsvpResponse[])
+    : [];
+}
+
+function dailyAnswersOf(widget: Widget): LiveDailyAnswer[] {
+  return Array.isArray(widget.data.answers)
+    ? (widget.data.answers as LiveDailyAnswer[])
+    : [];
+}
+
+/**
+ * The write-side inverse of `restoreKeys` in `src/live/adapt.ts`, matching
+ * `convexSafe` in `convex/seed.ts`. Convex field names are ASCII-only, so a
+ * seeded reaction tally is stored as `__unicode_1f602` and unescaped on read
+ * — writing the unescaped `😂` back is rejected before the mutation even
+ * runs. Anything that round-trips a widget's `data` through the client has to
+ * put the escaping back. (Three copies of this now; it belongs beside
+ * `restoreKeys`, but adapt.ts isn't mine this round.)
+ */
+function convexSafeKeys<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(convexSafeKeys) as T;
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, child]) => [
+      /^[\x20-\x7E]+$/.test(key)
+        ? key
+        : `__unicode_${Array.from(key)
+            .map((char) => char.codePointAt(0)?.toString(16))
+            .join("_")}`,
+      convexSafeKeys(child),
+    ]),
+  ) as T;
+}
+
 const emptyWidget = {
   id: "",
   type: "poll" as const,
@@ -282,9 +342,22 @@ export function LiveSpacePage({
   >(null);
   /** A hot-now row asked the reading room to open on one specific link. */
   const [pendingLinkId, setPendingLinkId] = useState<string | null>(null);
-  const [rsvpSelections, setRsvpSelections] = useState<Record<string, RsvpStatus>>({});
-  const [dailyAnswers, setDailyAnswers] = useState<Record<string, string>>({});
-  const [dailyReactions, setDailyReactions] = useState<Record<string, Record<string, string>>>({});
+  /* The one piece of local state left on these three interactions, and it is
+     animation only: the daily question plays its scribble-wipe reveal off the
+     card's `localAnswer` prop, so the text you just posted lives here for the
+     length of that reveal. It is not a second source of truth — Convex has
+     the answer either way, and once the reveal is done the card reads your
+     row straight off the board like everyone else's. */
+  const [revealingAnswers, setRevealingAnswers] = useState<Record<string, string>>({});
+  const revealTimers = useRef<Record<string, number>>({});
+  useEffect(
+    () => () => {
+      for (const timer of Object.values(revealTimers.current)) {
+        window.clearTimeout(timer);
+      }
+    },
+    [],
+  );
   const [focusedTarget, setFocusedTarget] = useState<FocusedTarget | null>(null);
   const [canvasScale, setCanvasScale] = useState(1);
   const [canvasCameraAnimating, setCanvasCameraAnimating] = useState(false);
@@ -492,7 +565,7 @@ export function LiveSpacePage({
     };
   }, []);
 
-  const adaptedWidgets = useMemo(
+  const boardWidgets = useMemo<Widget[]>(
     () => widgets.map((widget) => {
       const next = handlers.overrides[widget.id];
       const withOverride = next ? { ...widget, ...next } : widget;
@@ -500,6 +573,87 @@ export function LiveSpacePage({
     }),
     [handlers.overrides, livePoll, widgets],
   );
+  /* Lift *your* row out of every rsvp / daily-question card, the same split
+     useLivePoll makes between `mine` and `others`. Both cards render you as
+     "You" on top of the rest, so handing them the whole stored list would
+     count you twice; instead your row comes back through the props they
+     already have (`rsvpSelection` / `localAnswer` / `localReactions`). */
+  const {
+    widgets: adaptedWidgets,
+    rsvpSelections,
+    dailyAnswers,
+    dailyReactions,
+  } = useMemo(() => {
+    const rsvpSelections: Record<string, RsvpStatus> = {};
+    const dailyAnswers: Record<string, string> = {};
+    const dailyReactions: Record<string, Record<string, string>> = {};
+    const widgets = boardWidgets.map((widget) => {
+      if (widget.type === "rsvp") {
+        const responses = rsvpResponsesOf(widget);
+        const mine = responses.find((row) => row.userId === identity.userId);
+        if (!mine) return widget;
+        rsvpSelections[widget.id] = mine.status;
+        return {
+          ...widget,
+          data: { ...widget.data, responses: responses.filter((row) => row !== mine) },
+        };
+      }
+      if (widget.type === "dailyQ") {
+        const answers = dailyAnswersOf(widget);
+        const mineIndex = answers.findIndex(
+          (answer) => answer.userId === identity.userId,
+        );
+        /* Two ways your own answer can render. While the reveal is playing the
+           card appends it itself from `localAnswer`, so we hold it out of the
+           list to avoid a double. After that it stays in the list, renamed
+           "You" — which is how reactions other people leave on *your* answer
+           reach you, since the card's own "You" bubble carries none. */
+        const revealing = revealingAnswers[widget.id];
+        if (revealing !== undefined) dailyAnswers[widget.id] = revealing;
+        const myReactions: Record<string, string> = {};
+        const rows: LiveDailyAnswer[] = [];
+        answers.forEach(({ reactedBy, ...answer }, index) => {
+          const isMine = index === mineIndex;
+          if (isMine && revealing !== undefined) return;
+          const row: LiveDailyAnswer = isMine ? { ...answer, name: "You" } : answer;
+          if (reactedBy) {
+            // Everyone's live reaction joins the seeded tally, except your own
+            // on someone else's answer — the card adds that back itself from
+            // `localReactions`, so counting it here would double it.
+            const reactions = { ...(answer.reactions ?? {}) };
+            for (const [userId, emoji] of Object.entries(reactedBy)) {
+              if (!isMine && userId === identity.userId) {
+                myReactions[row.name] = emoji;
+                continue;
+              }
+              reactions[emoji] = [...(reactions[emoji] ?? []), userId];
+            }
+            row.reactions = reactions;
+          }
+          rows.push(row);
+        });
+        if (Object.keys(myReactions).length > 0) dailyReactions[widget.id] = myReactions;
+        return {
+          ...widget,
+          data: {
+            ...widget.data,
+            answers: rows,
+            // Never written back — the stored flag is one shared boolean, so
+            // this only ever unlocks the card for the person who answered.
+            youAnswered:
+              Boolean(widget.data.youAnswered) ||
+              (mineIndex !== -1 && revealing === undefined),
+          },
+        };
+      }
+      return widget;
+    });
+    return { widgets, rsvpSelections, dailyAnswers, dailyReactions };
+  }, [boardWidgets, identity.userId, revealingAnswers]);
+  /** The stored rows, for the three handlers below — they write what the
+      backend has, not the copy the canvas draws with. */
+  const rawWidgetsRef = useRef<Widget[]>(widgets);
+  rawWidgetsRef.current = widgets;
   const overviewWidgetsRef = useRef<Widget[]>(mockSpace.widgets);
   overviewWidgetsRef.current = adaptedWidgets.length
     ? adaptedWidgets
@@ -1719,28 +1873,86 @@ export function LiveSpacePage({
     setSpaceDraft(null);
   };
 
-  const respondToRsvp = useCallback((widgetId: string, status: RsvpStatus) => {
-    setRsvpSelections((current) => {
-      if (current[widgetId] === status) return current;
-      playSound("place");
-      return { ...current, [widgetId]: status };
-    });
-  }, []);
+  /* The three writes. Same route as patchPile: merge into the widget's own
+     `data` and hand it to `handlers.onUpdate`, which no-ops (and stays quiet)
+     when there is no live space, so mock mode is unaffected. */
+  const respondToRsvp = useCallback(
+    (widgetId: string, status: RsvpStatus) => {
+      const widget = rawWidgetsRef.current.find((item) => item.id === widgetId);
+      if (!widget) return;
+      const responses = rsvpResponsesOf(widget);
+      const mine = responses.find((row) => row.userId === identity.userId);
+      if (mine?.status === status) return;
+      const row: LiveRsvpResponse = {
+        name: identity.name,
+        status,
+        userId: identity.userId,
+      };
+      handlers.onUpdate(widgetId, {
+        ...widget.data,
+        responses: mine
+          ? responses.map((existing) => (existing === mine ? row : existing))
+          : [...responses, row],
+      });
+    },
+    [handlers, identity.name, identity.userId],
+  );
 
-  const answerDailyQuestion = useCallback((widgetId: string, text: string) => {
-    playSound("place");
-    setDailyAnswers((current) => ({ ...current, [widgetId]: text }));
-  }, []);
+  const answerDailyQuestion = useCallback(
+    (widgetId: string, text: string) => {
+      const widget = rawWidgetsRef.current.find((item) => item.id === widgetId);
+      if (!widget) return;
+      // Hand the card the text for the length of its reveal, then let it read
+      // the answer off the board like every other one.
+      setRevealingAnswers((current) => ({ ...current, [widgetId]: text }));
+      window.clearTimeout(revealTimers.current[widgetId]);
+      revealTimers.current[widgetId] = window.setTimeout(() => {
+        delete revealTimers.current[widgetId];
+        setRevealingAnswers(({ [widgetId]: _done, ...rest }) => rest);
+      }, DAILY_REVEAL_MS);
+      const answers = dailyAnswersOf(widget);
+      const mine = answers.find((answer) => answer.userId === identity.userId);
+      // Spread `mine` first so reactions other people left on your answer
+      // survive an edit. `youAnswered` stays untouched — it is one shared
+      // boolean, and flipping it would unlock the card for everybody.
+      const row: LiveDailyAnswer = {
+        ...mine,
+        name: identity.name,
+        text,
+        userId: identity.userId,
+      };
+      handlers.onUpdate(widgetId, {
+        ...widget.data,
+        answers: convexSafeKeys(
+          mine
+            ? answers.map((answer) => (answer === mine ? row : answer))
+            : [...answers, row],
+        ),
+      });
+    },
+    [handlers, identity.name, identity.userId],
+  );
 
-  const reactToDailyAnswer = useCallback((widgetId: string, answerName: string, emoji: string) => {
-    playSound("tap");
-    setDailyReactions((current) => {
-      const reactions = { ...(current[widgetId] ?? {}) };
-      if (reactions[answerName] === emoji) delete reactions[answerName];
-      else reactions[answerName] = emoji;
-      return { ...current, [widgetId]: reactions };
-    });
-  }, []);
+  const reactToDailyAnswer = useCallback(
+    (widgetId: string, answerName: string, emoji: string) => {
+      const widget = rawWidgetsRef.current.find((item) => item.id === widgetId);
+      if (!widget) return;
+      // The card only offers the tray on other people's bubbles, so the name
+      // it hands back is the stored one, never "You".
+      let matched = false;
+      const answers = dailyAnswersOf(widget).map((answer) => {
+        if (matched || answer.name !== answerName) return answer;
+        matched = true;
+        const reactedBy = { ...answer.reactedBy };
+        if (reactedBy[identity.userId] === emoji) delete reactedBy[identity.userId];
+        else reactedBy[identity.userId] = emoji;
+        return { ...answer, reactedBy };
+      });
+      if (!matched) return;
+      handlers.onUpdate(widgetId, { ...widget.data, answers: convexSafeKeys(answers) });
+    },
+    [handlers, identity.userId],
+  );
 
   const addWidget = async (type: WidgetType) => {
     const blueprint = getWidgetBlueprint(type);
@@ -2146,7 +2358,11 @@ export function LiveSpacePage({
         widget={editingWidget}
         onClose={() => setEditingWidgetId("")}
         onSave={(widgetId, data, layout) => {
-          handlers.onUpdate(widgetId, data);
+          // Every editor form spreads the widget's existing `data`, which came
+          // back from `restoreKeys` with its unicode keys unescaped — saving a
+          // daily question that has 😂 reactions was rejected by the encoder
+          // before it ever reached the mutation.
+          handlers.onUpdate(widgetId, convexSafeKeys(data));
           if (layout) handlers.onResize(widgetId, layout.w, layout.h);
           // A saved link gets OpenAI conversation starters; canned ones from
           // the editor hold the spot until the action lands.

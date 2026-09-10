@@ -621,6 +621,34 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- 2026-09-10: **RSVP, daily-question answers and answer reactions persist
+  per-person.** All three were `useState` in `LiveSpace.tsx` and never reached
+  Convex, so two people saw different answers and a reload lost yours — on a
+  canvas whose whole premise is that everyone sees the same board. They now
+  ride the existing `handlers.onUpdate` → `widgets.updateWidgetData` route
+  (the `widgetInSpace` guard is intact), keyed by `identity.userId` rather
+  than by browser or display name, so a second browser is a second person and
+  not an overwrite. `widgetData.ts` gained three *optional* fields
+  (`responses[].userId`, `answers[].userId`, `answers[].reactedBy`), so no
+  migration and every existing row still validates. Seeded rows carry no
+  `userId` and read as everybody else. Verified with two live browser
+  contexts: A responds, B sees it without reloading.
+  - `data.youAnswered` is deliberately **not** written — it is one shared
+    boolean, so flipping it would unlock the reveal for everyone. It is
+    derived per-user at render instead.
+  - Still local, and correctly so: the 1600ms scribble-reveal animation.
+  - Still broken, the last of its kind: the `us two` letter's `sealed` flag.
+  - Known limit: `onReact` matches the target answer by display name, so two
+    people with the same name on one card collide. Needs `extras.tsx`.
+- 2026-09-10: **Unicode widget-data keys were silently failing to save.**
+  Every editor form spreads `widget.data`, which `adapt.ts`'s `restoreKeys`
+  hands back with emoji keys unescaped — and Convex rejects non-ASCII field
+  names at the encoder, so saving a daily question with a 😂 reaction tally
+  threw `Field name 😂 has invalid character` and the edit vanished. Escaped
+  at the write site. **This is the third copy of that escaping**
+  (`convex/seed.ts`, `src/live/adapt.ts`, `LiveSpace.tsx`); it belongs next to
+  `restoreKeys` and should be de-duplicated.
+
 - 2026-09-10: **`spaces.lastActivityAt` is bumped, but only coarsely.** It used
   to be set at creation and never again — a creation time wearing a false name.
   Every real-activity mutation now calls `touchSpace()` from
