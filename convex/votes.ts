@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { touchSpace } from "./activity";
 import { TableAggregate } from "@convex-dev/aggregate";
 import { components } from "./_generated/api";
 import type { DataModel, Id } from "./_generated/dataModel";
@@ -17,18 +18,6 @@ export const pollTallies = new TableAggregate<{
   sortKey: (doc) => doc.optionId,
 });
 
-export const getTallyCounts = query({
-  args: { widgetId: v.id("widgets"), optionIds: v.array(v.string()) },
-  returns: v.array(v.object({ optionId: v.string(), count: v.number() })),
-  handler: async (ctx, { widgetId, optionIds }) => {
-    const counts = await pollTallies.countBatch(
-      ctx,
-      optionIds.map((optionId) => ({ namespace: widgetId, bounds: { eq: optionId } })),
-    );
-    return optionIds.map((optionId, index) => ({ optionId, count: counts[index] }));
-  },
-});
-
 export const getResults = query({
   args: { widgetId: v.id("widgets"), spaceId: v.id("spaces") },
   returns: v.array(schema.doc("votes").extend({ voterName: v.string() })),
@@ -38,23 +27,39 @@ export const getResults = query({
     // roster of any space to anyone holding a widget id.
     if (!widget || widget.spaceId !== spaceId) return [];
 
-    const [votes, members] = await Promise.all([
-      ctx.db
-        .query("votes")
-        .withIndex("by_widget", (q) => q.eq("widgetId", widgetId))
-        .collect(),
-      ctx.db
-        .query("members")
-        .withIndex("by_space", (q) => q.eq("spaceId", widget.spaceId))
-        .collect(),
-    ]);
-    const memberNames = new Map(
-      members.map((member) => [member.userId, member.name]),
+    // Not counted through pollTallies, on purpose. A poll bar names the people
+    // behind it and lists who still owes a vote (`voters` / `waitingOn` in
+    // src/live/useLivePoll.ts, rendered by PollWidget), so this query's payload
+    // *is* one row per voter. The aggregate stores widgetId -> optionId -> vote
+    // id and nothing else — no userId, no name — so it can hand back the number
+    // but never the row, and once the rows are read `rows.length` is the same
+    // number for free. pollTallies is the right tool where only the number is
+    // wanted and the rows are not: recap.ts's countBatch across a space's polls.
+    const votes = await ctx.db
+      .query("votes")
+      .withIndex("by_widget", (q) => q.eq("widgetId", widgetId))
+      .collect();
+
+    // Name only the people who actually voted, instead of collecting the whole
+    // roster: this read now scales with the rows we return, not with the size
+    // of the space, and a stranger joining no longer invalidates every open
+    // poll subscription. (memberCounts in spaces.ts is no help — it counts
+    // members, it cannot name them, and spaces.ts already imports pollTallies
+    // from this file, so importing it back would make an import cycle.)
+    const voters = await Promise.all(
+      votes.map((vote) =>
+        ctx.db
+          .query("members")
+          .withIndex("by_space_user", (q) =>
+            q.eq("spaceId", spaceId).eq("userId", vote.userId),
+          )
+          .unique(),
+      ),
     );
 
-    return votes.map((vote) => ({
+    return votes.map((vote, index) => ({
       ...vote,
-      voterName: memberNames.get(vote.userId) ?? "Guest",
+      voterName: voters[index]?.name ?? "Guest",
     }));
   },
 });
@@ -91,12 +96,14 @@ export const vote = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, { optionId });
       await pollTallies.replace(ctx, existing, { ...existing, optionId });
+      await touchSpace(ctx, spaceId);
       return existing._id;
     }
 
     const id = await ctx.db.insert("votes", { widgetId, userId, optionId });
     const doc = await ctx.db.get(id);
     await pollTallies.insert(ctx, doc!);
+    await touchSpace(ctx, spaceId);
     return id;
   },
 });

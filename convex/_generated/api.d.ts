@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as activity from "../activity.js";
 import type * as agent from "../agent.js";
 import type * as agentmail from "../agentmail.js";
 import type * as ai from "../ai.js";
@@ -31,6 +32,7 @@ import type * as recap from "../recap.js";
 import type * as roomPresence from "../roomPresence.js";
 import type * as seed from "../seed.js";
 import type * as spaces from "../spaces.js";
+import type * as staticHosting from "../staticHosting.js";
 import type * as stats from "../stats.js";
 import type * as streaming from "../streaming.js";
 import type * as votes from "../votes.js";
@@ -44,6 +46,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  activity: typeof activity;
   agent: typeof agent;
   agentmail: typeof agentmail;
   ai: typeof ai;
@@ -67,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   roomPresence: typeof roomPresence;
   seed: typeof seed;
   spaces: typeof spaces;
+  staticHosting: typeof staticHosting;
   stats: typeof stats;
   streaming: typeof streaming;
   votes: typeof votes;

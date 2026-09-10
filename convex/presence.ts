@@ -2,6 +2,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
+import { touchSpace } from "./activity";
 import schema from "./schema";
 
 // The client hides a cursor after 30s (src/live/usePresence.ts); the sweep
@@ -97,6 +98,8 @@ async function hasFreshCompetingGesture(
   widgetId: Id<"widgets">,
   now: number,
 ) {
+  // One room's cursors, not the table — bounded by who is in the space, which
+  // is what keeps it affordable on every 90ms gesture frame.
   const rows = await ctx.db
     .query("presence")
     .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
@@ -313,6 +316,10 @@ export const finishGesture = mutation({
       h: args.h,
       z: args.z,
     });
+    // The real drag/resize commit on the canvas — `widgets.moveWidget` only
+    // runs on the keyboard/editor fallback path. Throttled inside touchSpace,
+    // so a room full of people dragging still writes the space row ≤1×/min.
+    await touchSpace(ctx, args.spaceId, now);
     await ctx.db.patch(existing._id, {
       name: args.name,
       color: args.color,
@@ -369,6 +376,9 @@ export const cleanup = internalMutation({
   returns: v.null(),
   handler: async (ctx) => {
     const staleBefore = Date.now() - PRESENCE_SWEEP_AFTER_MS;
+    // This sweep is what holds the table at "cursors seen in the last two
+    // minutes", so it reads all of them — staleness has no cross-space index
+    // (by_space_updated is per room). One row per live cursor per minute.
     const rows = await ctx.db.query("presence").collect();
     for (const row of rows) {
       if (row.updatedAt < staleBefore) await ctx.db.delete(row._id);

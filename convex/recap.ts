@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { touchSpace } from "./activity";
 import {
   action,
   internalAction,
@@ -393,6 +394,9 @@ export const latest = query({
 export const listSpaceIds = internalQuery({
   args: {},
   returns: v.array(v.id("spaces")),
+  // One row per room, ids only: the daily recap runs per space, so the
+  // fan-out set IS the spaces table. The recap workpool (maxParallelism 3)
+  // is what bounds the LLM calls that follow.
   handler: async (ctx): Promise<Id<"spaces">[]> =>
     (await ctx.db.query("spaces").collect()).map((space) => space._id),
 });
@@ -414,6 +418,7 @@ export const reply = internalMutation({
   args: { spaceId: v.id("spaces"), text: v.string() },
   returns: v.id("messages"),
   handler: async (ctx, { spaceId, text }) => {
+    await touchSpace(ctx, spaceId);
     const id = await ctx.db.insert("messages", {
       spaceId,
       widgetId: THREAD,

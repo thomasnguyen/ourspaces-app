@@ -1,6 +1,7 @@
 import { internalMutation, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import type { PhotoWallData } from "./widgetData";
+import { touchSpace } from "./activity";
 
 const CREW_MEMORY_SOURCES: Record<
   string,
@@ -55,13 +56,14 @@ export const addPhoto = mutation({
     const src = await ctx.storage.getUrl(storageId);
     if (!src) throw new Error("Uploaded file not found");
 
+    const now = Date.now();
     const photoWallData = widget.data as PhotoWallData;
     const photos = Array.isArray(photoWallData?.photos) ? photoWallData.photos : [];
     const date = new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
     })
-      .format(new Date(Date.now()))
+      .format(new Date(now))
       .toLowerCase();
 
     const photo = {
@@ -72,11 +74,12 @@ export const addPhoto = mutation({
       rotate: PIN_TILTS[photos.length % PIN_TILTS.length],
       src,
       thumbnailSrc: src,
-      addedAt: Date.now(),
+      addedAt: now,
     };
     await ctx.db.patch(widget._id, {
       data: { ...photoWallData, photos: [photo, ...photos] },
     });
+    await touchSpace(ctx, spaceId, now);
     return null;
   },
 });

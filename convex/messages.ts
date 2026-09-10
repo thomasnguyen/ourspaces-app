@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import schema from "./schema";
 import type { DecisionData } from "./widgetData";
 import { messagesCounter, widgetsCounter } from "./stats";
+import { touchSpace } from "./activity";
 
 const messageValidator = schema.doc("messages");
 
@@ -66,12 +67,14 @@ export const sendMessage = mutation({
     const text = args.text.trim();
     if (!text) return null;
 
+    const now = Date.now();
     const id = await ctx.db.insert("messages", {
       ...args,
       text,
-      createdAt: Date.now(),
+      createdAt: now,
     });
     await messagesCounter.inc(ctx);
+    await touchSpace(ctx, args.spaceId, now);
     return id;
   },
 });
@@ -105,6 +108,7 @@ export const promoteMessage = mutation({
 
     if (existing) return existing._id;
 
+    const now = Date.now();
     const highestZ = widgets.reduce(
       (highest, widget) => Math.max(highest, widget.z),
       0,
@@ -127,9 +131,10 @@ export const promoteMessage = mutation({
         promotedFromMessageId: messageId,
       },
       createdBy: userId,
-      createdAt: Date.now(),
+      createdAt: now,
     });
     await widgetsCounter.inc(ctx);
+    await touchSpace(ctx, message.spaceId, now);
     return id;
   },
 });

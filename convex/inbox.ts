@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { touchSpace } from "./activity";
 import { internal } from "./_generated/api";
 import {
   internalAction,
@@ -141,6 +142,7 @@ export const addLetter = internalMutation({
     });
     await widgetsCounter.inc(ctx);
     await ctx.db.patch(eventId, { widgetId, because });
+    await touchSpace(ctx, event.spaceId);
     return null;
   },
 });
@@ -245,6 +247,7 @@ export const applyExpense = internalMutation({
       },
     });
     await ctx.db.patch(eventId, { widgetId: target._id, because });
+    await touchSpace(ctx, event.spaceId);
     return null;
   },
 });
@@ -293,6 +296,7 @@ export const applyItinerary = internalMutation({
       data: { ...data, days, lastEmail: { day, plan, because } },
     });
     await ctx.db.patch(eventId, { widgetId: target._id, because });
+    await touchSpace(ctx, event.spaceId);
     return null;
   },
 });
