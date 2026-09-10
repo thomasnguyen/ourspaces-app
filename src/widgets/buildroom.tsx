@@ -40,6 +40,29 @@ function LinkTile({ link, className = "" }: { link: BuildRoomLink; className?: s
   );
 }
 
+/** A compact count: the glyph carries it visually, the noun rides along in a
+    visually-hidden span so "↑ 7" isn't a bare number to a reader or an
+    extractor. `sr-only` is absolutely positioned, so the flex row is untouched. */
+function CountBadge({
+  glyph,
+  value,
+  one,
+  many,
+}: {
+  glyph: string;
+  value: number;
+  one: string;
+  many: string;
+}) {
+  return (
+    <b>
+      <i aria-hidden="true">{glyph}</i>
+      {value}
+      <span className="sr-only">{` ${value === 1 ? one : many}`}</span>
+    </b>
+  );
+}
+
 /* ── the pile ────────────────────────────────────────────────────────────── */
 
 export function LinkPileWidget({
@@ -149,14 +172,18 @@ export function HotLinksWidget({
                 <span className="br-hot-domain">{link.domain}</span>
               </span>
               <span className="br-hot-counts">
-                <b>
-                  <i aria-hidden="true">↑</i>
-                  {link.voters.length}
-                </b>
-                <b>
-                  <i aria-hidden="true">▤</i>
-                  {feed.replyCounts[link.id] ?? 0}
-                </b>
+                <CountBadge
+                  glyph="↑"
+                  value={link.voters.length}
+                  one="vote"
+                  many="votes"
+                />
+                <CountBadge
+                  glyph="▤"
+                  value={feed.replyCounts[link.id] ?? 0}
+                  one="reply"
+                  many="replies"
+                />
               </span>
             </button>
           </li>

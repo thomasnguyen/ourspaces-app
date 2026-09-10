@@ -50,7 +50,9 @@ export function ClaimCard({
   };
 
   return (
-    <aside
+    /* Not an <aside>: when this is up it IS the page — the gate variant blocks
+       the room behind it. A named <section> exposes it as a landmark region. */
+    <section
       className={`claim-card is-${variant}${inviteContext ? " has-invite-context" : ""}`}
       aria-label="Choose your identity"
     >
@@ -156,6 +158,6 @@ export function ClaimCard({
           </>
         )}
       </button>
-    </aside>
+    </section>
   );
 }
