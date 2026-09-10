@@ -354,12 +354,16 @@ only place models are configured.
 | Use | Model | Route |
 |---|---|---|
 | Chat / structured decisions (primary) | `@cf/openai/gpt-oss-120b` | RoomDone's shared Cloudflare Worker proxy, OpenAI-shaped `/v1`, via `AI_PROXY_URL` + `AI_PROXY_TOKEN` |
-| Chat fallback | `gpt-4o-mini` | OpenAI directly, via `OPENAI_API_KEY` |
+| Chat, proxy not configured | `gpt-4o-mini` | OpenAI directly, via `OPENAI_API_KEY` |
 | Embeddings (rag only) | `text-embedding-3-small`, 1536 dims | **OpenAI directly, always** — the proxy has no `/v1/embeddings` route |
 
-`chatTarget()` prefers the proxy and silently falls back to OpenAI; if
-neither is configured it returns `null` and **every caller degrades to canned
-output rather than erroring**. That fallback discipline is load-bearing for
+`chatTarget()` picks by which env vars are set — proxy if both
+`AI_PROXY_URL` and `AI_PROXY_TOKEN` are present, OpenAI otherwise. **That is a
+config-time preference, not a runtime failover:** a 500 from the proxy is not
+retried against OpenAI, it returns `null` like any other unusable answer. If
+neither is configured `chatTarget()` returns `null` too, and **every caller
+degrades to canned output rather than erroring**. That discipline is
+load-bearing for
 demos: pull the keys and the app still runs, just less smart.
 
 ### The one entry point
@@ -379,7 +383,7 @@ in this codebase. That is the single fact that shapes the vision brief below.
 
 ### The three consumers
 
-- **`completeJson` directly** — the mail router (`inbox.ts`), the recap and
+- **`completeJson` directly** — the mail router (`inboxRouting.ts`), the recap and
   digest composers, and `questions.ts` (two conversation starters per saved
   article; OpenAI as a structured decider, never a chatbot UI, with a canned
   pair as fallback and an ActionCache keyed by title+description).
@@ -728,6 +732,7 @@ exist because each was already argued once.
 - **No more reading-circle questions.** Ground the existing ones or leave them.
 - **No tests**, B/C-grade code is fine, `npm run build` is the check.
 - **Design is locked:** tokens in `src/index.css` `@theme`, no hex literals,
-  no glassmorphism, Plus Jakarta Sans only.
+  no glassmorphism, and only the two type tokens (`--font-display`
+  Bricolage Grotesque, `--font-sans` IBM Plex Sans).
 - **Don't clutter the crew.** It's the most complete room; the only sanctioned
   additions are the brain-play beats (B1 → B4 → B2 → B3).

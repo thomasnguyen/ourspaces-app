@@ -57,7 +57,9 @@ Convex hackathon entry; deadline Sep 22 2026. Doc index: `docs/doc-map.md`
   a medical space, or more reading-circle questions.
 - **Design is locked:** tokens in `src/index.css` `@theme`; use them, no hex.
   Near-black base, loud flat identity colors, black sticker pills, lime only as
-  a tiny pop, Plus Jakarta Sans only, punchy motion, reduced-motion respected.
+  a tiny pop, the two type tokens only (`--font-display` Bricolage Grotesque,
+  `--font-sans` IBM Plex Sans — `@theme` is the source of truth, not this
+  line), punchy motion, reduced-motion respected.
 - **LLM copy in-product is plain and direct.**
 - **Commit per working step** with a normal conventional message. Run
   `/hackathon` at the end of a session to update `hackathon.md`.
