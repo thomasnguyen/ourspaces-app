@@ -317,7 +317,14 @@ export function LiveSpacePage({
 
   const mockSpace = getSpace(slug);
   const isInvalidInvite = isInviteEntry && !SPACES_BY_ID[slug] && status === "missing";
-  const gateOpen = !roomEntered && !isInvalidInvite;
+  // A slug the backend has no space for. Authoritative in live mode: a slug
+  // can exist in the mock fixtures (#/space/trip does) and still be missing on
+  // the deployment, in which case we used to fall through to the claim gate
+  // and never render a canvas — an infinite "name yourself for a space that
+  // isn't there". Show the same dead-link card the invite path uses.
+  const isMissingSpace =
+    !isInviteEntry && mode === "live" && status === "missing";
+  const gateOpen = !roomEntered && !isInvalidInvite && !isMissingSpace;
   useEffect(() => {
     setCustomization(defaultSpaceCustomization(mockSpace));
     setSpaceDraft(null);
@@ -2025,12 +2032,22 @@ export function LiveSpacePage({
         />
       )}
       {gateOpen && <div className="entry-gate-scrim" aria-hidden="true" />}
-      {isInvalidInvite ? (
+      {isInvalidInvite || isMissingSpace ? (
         <div className="invalid-invite-card" role="alert">
           <span className="invalid-invite-mark" aria-hidden="true">↗</span>
-          <span className="claim-card-kicker">invite link</span>
-          <h2>this door doesn&apos;t open anymore</h2>
-          <p>That space may have moved or been closed.</p>
+          <span className="claim-card-kicker">
+            {isInvalidInvite ? "invite link" : "no space here"}
+          </span>
+          <h2>
+            {isInvalidInvite
+              ? "this door doesn't open anymore"
+              : "there's no space at this link"}
+          </h2>
+          <p>
+            {isInvalidInvite
+              ? "That space may have moved or been closed."
+              : "It may have been renamed, or it never existed."}
+          </p>
           <a href="#/home" className="invalid-invite-back">back to the block →</a>
         </div>
       ) : (

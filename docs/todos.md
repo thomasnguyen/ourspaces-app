@@ -528,6 +528,13 @@ Backward-looking history lives in `hackathon.md`.
   `ctx.vectorSearch` call (that was the deliberate call — the *claim* is what's
   wrong, not the code); and the header numbers are stale (says 122 commits in
   5 days, git says 142 in 6).
+- **Fixed 2026-09-10: a live-missing space hung forever.** `#/space/trip`
+  exists in the mock fixtures but not on the deployment, so
+  `isInvalidInvite` (which requires `!SPACES_BY_ID[slug]`) never fired and
+  the route fell through to the claim gate — you were asked to name yourself
+  for a space that doesn't exist, and no canvas ever rendered. `LiveSpace.tsx`
+  now treats `mode === "live" && status === "missing"` as authoritative and
+  shows the existing dead-link card. Verified in a browser on the dev URL.
 - **`npm install` goes stale and breaks the build.** `@convex-dev/presence`
   was missing from `node_modules` and `npm run build` failed with ~15
   implicit-any errors that look like real type bugs. Re-run `npm install`
