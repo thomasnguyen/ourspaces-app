@@ -147,12 +147,16 @@ const potluckData = v.object({
   openCount: v.optional(v.number()),
 });
 
+// One row per person, keyed by `userId` — an RSVP is "who said yes", so a
+// second browser has to be a second row, not an overwrite. Seeded rows have
+// no userId and read as everybody else (LiveSpace.tsx).
 const rsvpData = v.object({
   title: v.string(),
   responses: v.array(
     v.object({
       name: v.string(),
       status: v.union(v.literal("yes"), v.literal("maybe"), v.literal("no")),
+      userId: v.optional(v.string()),
     }),
   ),
   waitingOn: v.optional(v.array(v.string())),
@@ -166,11 +170,18 @@ const dailyQData = v.object({
   streak: v.optional(v.number()),
   youAnswered: v.optional(v.boolean()),
   waitingOn: v.optional(v.array(v.string())),
+  // Same rule as rsvp: one answer per identity, so `userId` is the key and a
+  // second browser is a second person. `reactions` stays the seeded emoji →
+  // names tally; live reactions go in `reactedBy` (userId → emoji) so one
+  // person can only hold one reaction per answer. The two are folded together
+  // for render in LiveSpace.tsx.
   answers: v.array(
     v.object({
       name: v.string(),
       text: v.string(),
+      userId: v.optional(v.string()),
       reactions: v.optional(v.record(v.string(), v.array(v.string()))),
+      reactedBy: v.optional(v.record(v.string(), v.string())),
     }),
   ),
   history: v.optional(

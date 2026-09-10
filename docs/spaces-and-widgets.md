@@ -171,7 +171,11 @@ Needs, in priority order:
 2. **photo wall** — the memory layer is thin; one small wall of crooked
    polaroids covers it.
 3. **shared letter opening** — `sealed` is per-tab local state; flipping it
-   through `updateWidgetData` would let both people watch it open.
+   through `updateWidgetData` would let both people watch it open. This is now
+   the *last* one of these: RSVP responses, daily-question answers and answer
+   reactions all persist per-`userId` through `updateWidgetData` as of
+   2026-09-10, so the letter is the only interaction left that a second person
+   cannot see.
 
 Skin note: same widgets, softer register — fewer, larger objects, more
 whitespace than the crew's clutter. Two people, not six.
