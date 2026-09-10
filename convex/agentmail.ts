@@ -194,6 +194,8 @@ export const clearStubInboxes = internalMutation({
   args: {},
   returns: v.array(v.string()),
   handler: async (ctx) => {
+    // Hand-run repair over the room table — a handful of rows, and every one
+    // has to be checked for a `test-` stub. This scan is the query.
     const spaces = await ctx.db.query("spaces").collect();
     const cleared: string[] = [];
     for (const space of spaces) {

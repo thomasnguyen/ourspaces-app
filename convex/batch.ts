@@ -12,6 +12,9 @@ import type { LinkCardData } from "./widgetData";
  */
 const BATCH_SIZE = 5;
 const STALE_MS = 7 * 24 * 60 * 60 * 1000;
+// Widgets read per sweep transaction. `widgets` is the fastest-growing table
+// in the app, so the cron below pages through it instead of collecting it.
+const SCAN_PAGE = 500;
 
 const { vQueryArgs, vQueryReturns, vMutationArgs } = defineBatchWorkerValidators({
   batch: {
@@ -101,17 +104,26 @@ export const refreshOne = internalAction({
   },
 });
 
-/** Cron target: find every linkCard not refreshed in 7+ days and enqueue it. */
+/** Cron target: find every linkCard not refreshed in 7+ days and enqueue it.
+ *  Self-continuing — one page per transaction, resuming from the last row's
+ *  `_creationTime`, so the sweep finishes whatever the table size and drops
+ *  nothing. No `by_type` index: taxing every widget write to speed up one
+ *  weekly pass is the wrong trade. */
 export const enqueueStaleLinkRefresh = internalMutation({
-  args: {},
+  args: { cursor: v.optional(v.number()), staleBefore: v.optional(v.number()) },
   returns: v.number(),
-  handler: async (ctx) => {
-    const staleBefore = Date.now() - STALE_MS;
-    // Demo-scale table (tens of widgets) — a full scan here is a weekly,
-    // low-frequency sweep, not a hot path worth an index for.
-    const widgets = await ctx.db.query("widgets").collect();
+  handler: async (ctx, { cursor, staleBefore: carried }) => {
+    // The cutoff is computed once and carried by the continuation — a sweep
+    // that spans transactions must not move its own goalposts mid-run.
+    const staleBefore = carried ?? Date.now() - STALE_MS;
+    const page = await ctx.db
+      .query("widgets")
+      .withIndex("by_creation_time", (q) =>
+        cursor === undefined ? q : q.gt("_creationTime", cursor),
+      )
+      .take(SCAN_PAGE);
     let queued = 0;
-    for (const widget of widgets) {
+    for (const widget of page) {
       if (widget.type !== "linkCard") continue;
       if ((widget.data as LinkCardData).savedAt >= staleBefore) continue;
       await ctx.db.insert("linkRefreshQueue", {
@@ -127,6 +139,12 @@ export const enqueueStaleLinkRefresh = internalMutation({
         workerMutation: internal.batch.processBatch,
       });
     }
-    return queued;
+    if (page.length === SCAN_PAGE) {
+      await ctx.scheduler.runAfter(0, internal.batch.enqueueStaleLinkRefresh, {
+        cursor: page[page.length - 1]._creationTime,
+        staleBefore,
+      });
+    }
+    return queued; // this page only; each continuation reports its own
   },
 });
