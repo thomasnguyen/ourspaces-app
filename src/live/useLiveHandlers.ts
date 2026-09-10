@@ -277,8 +277,8 @@ export function useLiveHandlers(
         ...current,
         [widget.id]: { ...(current[widget.id] ?? {}), ...layout },
       }));
-      void resize({ id: widget.id as never, w: layout.w, h: layout.h });
-      void move({
+      void resize({ spaceId: spaceId as never, id: widget.id as never, w: layout.w, h: layout.h });
+      void move({ spaceId: spaceId as never,
         id: widget.id as never,
         x: layout.x,
         y: layout.y,
@@ -304,10 +304,10 @@ export function useLiveHandlers(
     const patch = latest.current[id];
     if (!patch) return;
     if (spaceId && patch.w != null && patch.h != null) {
-      void resize({ id: id as never, w: patch.w, h: patch.h });
+      void resize({ spaceId: spaceId as never, id: id as never, w: patch.w, h: patch.h });
     }
     if (spaceId && patch.x != null && patch.y != null) {
-      void move({ id: id as never, x: patch.x, y: patch.y, z: 0 });
+      void move({ spaceId: spaceId as never, id: id as never, x: patch.x, y: patch.y, z: 0 });
     }
     window.setTimeout(() => removeOverride(id), 350);
   }, [move, removeOverride, resize, spaceId]);
@@ -321,7 +321,7 @@ export function useLiveHandlers(
   const onClaim = useCallback((widgetId: string, itemName: string) => {
     if (!spaceId) return;
     playSound("place");
-    void claim({
+    void claim({ spaceId: spaceId as never,
       widgetId: widgetId as never,
       itemName,
       claimantName: identity.name,
@@ -334,7 +334,7 @@ export function useLiveHandlers(
     spin: { spinNonce: number; resultIndex: number },
   ) => {
     if (!spaceId) return;
-    void spinWheel({
+    void spinWheel({ spaceId: spaceId as never,
       widgetId: widgetId as never,
       ...spin,
       spunBy: identity.name,
@@ -348,7 +348,7 @@ export function useLiveHandlers(
     if (!spaceId) return;
     const widget = widgetsRef.current.find((row) => row.id === widgetId);
     if (!widget) return;
-    void updateData({
+    void updateData({ spaceId: spaceId as never,
       id: widgetId as never,
       data: { ...widget.data, ...tune, playedBy: identity.name },
     });
@@ -358,7 +358,7 @@ export function useLiveHandlers(
     if (!spaceId) return;
     playSound("tap");
     setDeleted(widget);
-    void remove({ id: widget.id as never });
+    void remove({ spaceId: spaceId as never, id: widget.id as never });
   }, [remove, spaceId]);
 
   const onResolveLink = useCallback(
@@ -449,11 +449,11 @@ export function useLiveHandlers(
     onUpdate: (widgetId: string, data: Widget["data"]) => {
       if (!spaceId) return;
       playSound("place");
-      void updateData({ id: widgetId as never, data });
+      void updateData({ spaceId: spaceId as never, id: widgetId as never, data });
     },
     onResize: (widgetId: string, w: number, h: number) => {
       if (!spaceId) return;
-      void resize({ id: widgetId as never, w, h });
+      void resize({ spaceId: spaceId as never, id: widgetId as never, w, h });
     },
   };
 }
