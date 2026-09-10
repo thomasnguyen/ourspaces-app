@@ -8,7 +8,7 @@ remembers for everyone — live.
 Built for the [Convex All Gas Hackathon](https://www.convex.dev/hackathons/all-gas)
 by Thomas Nguyen (build) and Holly (design).
 
-**Live:** [necessary-cobra-892.convex.site](https://necessary-cobra-892.convex.site) · **Build log:** `hackathon.md`
+**Live:** [dusty-condor-648.convex.site](https://dusty-condor-648.convex.site) · **Build log:** `hackathon.md`
 
 ## Stack
 
@@ -17,7 +17,7 @@ Worker proxy, direct OpenAI as fallback) · AgentMail · Firecrawl
 
 ## Convex depth
 
-- **Components (16):** `static-hosting`, `firecrawl` (single-URL scrape + web
+- **Components (17 used in code):** `static-hosting`, `firecrawl` (single-URL scrape + web
   search + durable site crawl), `agentMail` (our own first-party component in
   `convex/components/agentMail/` — every space's inbox: create/send/reply/label
   over the AgentMail REST API, plus an inbound-message store + webhook dedup;
@@ -34,10 +34,15 @@ Worker proxy, direct OpenAI as fallback) · AgentMail · Firecrawl
   grounding `recap.ask`), `persistent-text-streaming` (HTTP token
   streaming for ask answers), `presence` (space-list "N here" — separate
   from the hand-rolled canvas cursor/gesture system)
-- **A note on two of the above:** `static-hosting` is only ever wired in
-  `convex.config.ts` (it serves the site; there is no `components.` call site
-  by design), and `prosemirror-sync` is installed but **not yet used** — the
-  collaborative note editor it would back is unbuilt.
+- **Plus `better-auth`** — silent anonymous guest sessions, so every visitor
+  has a real Convex identity without ever seeing a login form
+  (`convex/auth.ts`). The canvas is never behind a wall.
+- **A note on the count:** 17 components are referenced in code. Two more are
+  installed without a `components.` call site, by design: `static-hosting`
+  (it serves this site; it is wired only in `convex.config.ts`) and the
+  top-level `aggregate` export (we mount it as the two *named* instances
+  above, so the call sites are `components.pollTallies` /
+  `components.memberCounts`).
 - **Schema & data:** tables + indexes for spaces, members, widgets, messages
   (+ full-text search index), votes, collaborative paint marks, recaps,
   presence, email events; `returns:` validators on every function

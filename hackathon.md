@@ -3,10 +3,10 @@
 - **Project:** OurSpaces
 - **Event:** Convex All Gas Hackathon
 - **What it does:** Group plans die in the group chat. OurSpaces gives a friend group a persistent shared canvas — countdowns, polls, potluck sheets, photo piles — that every member sees update live, cursor to cursor.
-- **Live app:** https://necessary-cobra-892.convex.site
+- **Live app:** https://dusty-condor-648.convex.site
 - **Repo:** https://github.com/thomasnguyen/ourspaces-app
 - **Frontend:** Convex static hosting
-- **Convex deployment:** https://necessary-cobra-892.convex.cloud
+- **Convex deployment:** https://dusty-condor-648.convex.cloud
 - **Components:** static-hosting, firecrawl, agentMail, migrations, aggregate, sharded-counter, rate-limiter, action-retrier, action-cache, workpool, workflow, batch-worker, agent, rag, persistent-text-streaming, presence
 - **Convex features:** schema (typed discriminated union on `widgets.data`), tables, indexes, full-text search index, queries, mutations, actions, HTTP actions (svix-verified inbound mail, token-streaming ask endpoint), realtime queries, real cursor pagination, crons (presence sweep, daily recap via workpool, Friday weekly digest via a durable workflow, Friday stale-link refresh), scheduled functions, internal mutations, file storage, presence (canvas cursors/gestures, hand-rolled; room occupancy, component), agent threads, semantic retrieval (the `rag` component owns the vector index; no hand-rolled `.vectorIndex()` in our schema), `returns:` validators on all 115 functions
 - **Auth:** Better Auth (anonymous guest sessions; passkey blocked by a peer-dep conflict)
@@ -57,7 +57,7 @@
 
 ## Try it in 60 seconds
 
-1. Open the [live app](https://necessary-cobra-892.convex.site) and claim a
+1. Open the [live app](https://dusty-condor-648.convex.site) and claim a
    name at the identity gate — no signup.
 2. You land in **the crew**: drag the birthday countdown, vote in the cake
    poll, claim a potluck slot. Open the same space in a second tab and watch
