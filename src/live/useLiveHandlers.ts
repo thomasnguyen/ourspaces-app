@@ -315,7 +315,12 @@ export function useLiveHandlers(
   const onVote = useCallback((widgetId: string, optionId: string) => {
     if (!spaceId) return;
     playSound("tap");
-    void vote({ widgetId: widgetId as never, userId: identity.userId, optionId });
+    void vote({
+      widgetId: widgetId as never,
+      spaceId: spaceId as never,
+      userId: identity.userId,
+      optionId,
+    });
   }, [identity.userId, spaceId, vote]);
 
   const onClaim = useCallback((widgetId: string, itemName: string) => {
@@ -405,7 +410,7 @@ export function useLiveHandlers(
     onPromote: (messageId: string, x: number, y: number) => {
       if (spaceId) {
         playSound("promote");
-        void promote({
+        void promote({ spaceId: spaceId as never,
           messageId: messageId as never,
           userId: identity.userId,
           x,

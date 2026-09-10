@@ -431,7 +431,7 @@ export function LiveSpacePage({
     void ensureCozyColorWidget({ spaceId: space._id, createdBy: identity.userId });
   }, [ensureCozyColorWidget, identity.userId, slug, space, widgets]);
   const poll = widgets.find((widget) => widget.type === "poll") ?? emptyWidget;
-  const livePoll = useLivePoll(poll, identity.userId, members);
+  const livePoll = useLivePoll(poll, identity.userId, members, space?._id);
   const pollSelections = useMemo(
     () => livePoll.id
       ? { [livePoll.id]: String(livePoll.data.selectedOptionId ?? "") }
@@ -880,6 +880,7 @@ export function LiveSpacePage({
       const { storageId } = (await response.json()) as { storageId: string };
       await pinPhoto({
         widgetId: widgetId as Id<"widgets">,
+        spaceId: space!._id,
         storageId: storageId as Id<"_storage">,
         caption,
         by: identity.name,

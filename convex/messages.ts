@@ -80,14 +80,18 @@ export const sendMessage = mutation({
 export const promoteMessage = mutation({
   args: {
     messageId: v.id("messages"),
+    spaceId: v.id("spaces"),
     userId: v.string(),
     x: v.number(),
     y: v.number(),
   },
-  returns: v.id("widgets"),
-  handler: async (ctx, { messageId, userId, x, y }) => {
+  returns: v.union(v.id("widgets"), v.null()),
+  handler: async (ctx, { messageId, spaceId, userId, x, y }) => {
     const message = await ctx.db.get(messageId);
     if (!message) throw new Error("Message not found");
+    // listBySpace is public and returns message ids for any space, so without
+    // this an outsider could plant a "decision" widget on another canvas.
+    if (message.spaceId !== spaceId) return null;
 
     const widgets = await ctx.db
       .query("widgets")
