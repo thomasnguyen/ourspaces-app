@@ -2,6 +2,7 @@ import { DEFAULT_SPACE_SLUG } from "../lib/routes";
 import type { CSSProperties } from "react";
 import { useQuery } from "convex-helpers/react/cache";
 import { api } from "../../convex/_generated/api";
+import { getDataMode } from "../live/dataMode";
 import { SPACES, SPACES_BY_ID } from "../data/spaces";
 import type { SpaceMeta } from "../data/types";
 
@@ -13,6 +14,16 @@ function OnlineCountSuffix({ spaceId }: { spaceId: string }) {
   const count = useQuery(api.roomPresence.onlineCountForSpace, { spaceId }) ?? 0;
   if (count <= 0) return null;
   return <> · {count} here</>;
+}
+
+/* The rail renders in mock mode too, where main.tsx mounts a bare <App/> with
+   no ConvexQueryCacheProvider — and the cache hook throws outright when its
+   context is missing, which took the whole tree down and painted ?mock=1 as a
+   blank canvas. There is no live occupancy to show without a backend anyway,
+   so mock mode simply doesn't ask. */
+function OnlineCount({ spaceId }: { spaceId: string }) {
+  if (getDataMode() !== "live") return null;
+  return <OnlineCountSuffix spaceId={spaceId} />;
 }
 
 const SPACE_COVERS: Record<string, string> = {
@@ -72,7 +83,7 @@ export function Rail({
               <span className="space-tooltip">
                 {displaySpace.name}
                 {displaySpace.preview ? ` · ${displaySpace.preview}` : ""}
-                {hasSpace && <OnlineCountSuffix spaceId={space.id} />}
+                {hasSpace && <OnlineCount spaceId={space.id} />}
               </span>
             </div>
           );

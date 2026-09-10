@@ -3,6 +3,14 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModelV4 } from "@ai-sdk/provider";
 
+/**
+ * Model routing for the whole app. This is the job Convex's AI Gateway does,
+ * but the gateway isn't enabled on our team's plan (checked 2026-09-09), so it
+ * lives here instead: the shared Cloudflare proxy when its env vars are set,
+ * direct OpenAI otherwise. That order is a config-time preference, not a
+ * failover — a 500 from the proxy is not retried against OpenAI.
+ */
+
 /** RoomDone's shared Cloudflare Worker — OpenAI-shaped /v1 in front of Workers AI. */
 const PROXY_CHAT_MODEL = "@cf/openai/gpt-oss-120b";
 const OPENAI_CHAT_MODEL = "gpt-4o-mini";
@@ -65,6 +73,14 @@ export function embeddingModel() {
   return createOpenAI({ apiKey: openaiKey }).embedding(EMBEDDING_MODEL);
 }
 
+/**
+ * One-shot structured extraction: prompt in, one JSON object out. Not the
+ * `agent` component and not `rag` — those own the durable ask-the-space thread
+ * and its retrieval; this is the no-history path (mail routing, recap, digest,
+ * spark questions). Takes no ctx, so retry/cache/quota can't live here: they
+ * sit at the call site — workflow retry in digest.ts, action-cache in
+ * questions.ts, workpool + rate-limiter in recap.ts, none on inbound mail.
+ */
 export async function completeJson(args: {
   system: string;
   user: string;
@@ -93,6 +109,10 @@ export async function completeJson(args: {
     },
     body: JSON.stringify(body),
   });
+  // null, not throw, for every "no usable JSON" case, so callers can degrade to
+  // canned output. Cost: a 503 here reads the same as a model answering prose,
+  // and neither is retried. A rejected fetch does throw — that's what lets the
+  // digest workflow step retry.
   if (!response.ok) return null;
   const payload = (await response.json()) as {
     choices?: { message?: { content?: string } }[];
@@ -100,6 +120,8 @@ export async function completeJson(args: {
   return parseJsonObject(payload.choices?.[0]?.message?.content ?? "");
 }
 
+/** Salvages the object out of a reply that wrapped its JSON in prose. The shape
+ * is checked against nothing — each caller coerces the fields it needs. */
 function parseJsonObject(text: string): Record<string, unknown> | null {
   const trimmed = text.trim();
   if (!trimmed) return null;

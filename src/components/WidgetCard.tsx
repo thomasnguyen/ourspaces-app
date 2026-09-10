@@ -1112,7 +1112,14 @@ function WidgetCardComponent({
       >
         {content}
       </div>
-      <div className="widget-management" aria-label={`${controlLabel} widget controls`}>
+      {/* role="group" so the aria-label below is actually exposed — a bare div
+          is role=generic and AT drops its name. Not role="toolbar": the drag
+          handle already owns the arrow keys for nudging the widget. */}
+      <div
+        className="widget-management"
+        role="group"
+        aria-label={`${controlLabel} widget controls`}
+      >
         <button
           type="button"
           className="widget-drag-handle"
