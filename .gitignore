@@ -31,25 +31,27 @@ dist-ssr
 # Conductor workspace scratch (screenshots, local playbooks, eval scripts)
 .context/
 
-# Local marketing / strategy drafts — do not ship in the public repo
+# Local drafts and working notes.
 docs/post-skeletons.md
 docs/local/
 docs/*.local.md
 
-# Strategy + demo-positioning docs. The public repo shows the product and how
-# it's built; how we plan to present it to a hackathon audience stays local.
+# Product and presentation drafts. The public repo shows the product and how
+# it's built; working notes stay local.
 PRODUCT.md
 docs/ourspaces-prd-v0.6.md
 docs/vibeapps-listing.md
 
-# Internal agent process: the design override layer and its critique output.
-.claude/skills/eye-candy/
+# Local-only agent skills. Everything under .claude/skills/ stays local unless
+# it is explicitly allowed back in below — the tracked ones are the Convex
+# skills plus the two that document this repo.
+.claude/skills/*/
+!.claude/skills/convex*/
+!.claude/skills/ourspaces-docs/
+!.claude/skills/run-ourspaces/
 .agents/skills/ourspaces-hackathon/
 .impeccable/
 
 # MCP server config — carries an API key in a header. Never commit.
 .mcp.json
 
-
-# reviewer benchmark: how we score against the vibeapps automated review. Local strategy.
-.claude/skills/reviewer-bench/
