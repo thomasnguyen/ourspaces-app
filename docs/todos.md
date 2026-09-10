@@ -621,6 +621,25 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- 2026-09-10: **`spaces.lastActivityAt` is bumped, but only coarsely.** It used
+  to be set at creation and never again — a creation time wearing a false name.
+  Every real-activity mutation now calls `touchSpace()` from
+  `convex/activity.ts`, which rewrites the field only when it is already more
+  than 60s stale. Rationale: the `spaces` row is returned by both
+  `getSpaceWithWidgets` (every open room) and `listSpaces` (Home, and it reads
+  every space), so an unthrottled patch in a hot mutation would fan one paint
+  stroke out into an app-wide subscription re-run and put every writer in the
+  room into OCC contention on one document. Activity = widget
+  create/move/resize/delete/edit/claim/spin/tune, message send, promote, paint
+  stroke, paint clear, photo pin, `presence.finishGesture` (the real drag and
+  resize commit — `widgets.moveWidget` only runs on the keyboard/editor
+  fallback), `votes.vote`, the three inbound-mail landing paths in `inbox.ts`,
+  `recap.reply`, and `questions.setQuestions`. **Not** activity:
+  cursor/gesture heartbeats, `joinDemoSpace` (fires on every room entry — that
+  is a page load), `firecrawl.crawlComplete` (terminal logging; the crawl's
+  own user action already counted), seeds, backfills, CLI one-offs. No
+  backfill — existing rows keep their creation time until something happens in
+  them.
 - 2026-08-31: **Guest or join, never a wall.** Real Convex Auth. Guest =
   Anonymous (silent) + claim a name — the demo path, a complete product.
   Join = Passkey on the same claim card; upgrades the same `members` row.

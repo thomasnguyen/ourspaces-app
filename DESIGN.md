@@ -14,24 +14,24 @@ colors:
   league: "#13b8a6"
 typography:
   name:
-    fontFamily: "Plus Jakarta Sans, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Bricolage Grotesque, ui-sans-serif, system-ui, sans-serif"
     fontWeight: 800
     fontSize: "clamp(1.25rem, 1rem + 1.4vw, 2rem)"
     lineHeight: 1.1
     letterSpacing: "-0.01em"
   number:
-    fontFamily: "Plus Jakarta Sans, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Bricolage Grotesque, ui-sans-serif, system-ui, sans-serif"
     fontWeight: 700
     fontSize: "clamp(2rem, 1.2rem + 3vw, 3.5rem)"
     lineHeight: 1
     letterSpacing: "-0.02em"
   body:
-    fontFamily: "Plus Jakarta Sans, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
     fontWeight: 500
     fontSize: "1rem"
     lineHeight: 1.5
   label:
-    fontFamily: "Plus Jakarta Sans, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
     fontWeight: 600
     fontSize: "0.8125rem"
     lineHeight: 1.2
@@ -94,7 +94,8 @@ panel, it's wrong.
   or two.
 - Lime as the single rare pop (brand mark, status dot, the `+`).
 - Flat at rest; punchy, own-color lift on hover. No gradients, no glows.
-- One typeface (Plus Jakarta Sans), sentence case everywhere, weight for
+- Two typefaces and no more (Bricolage Grotesque for display, IBM Plex
+  Sans for text), sentence case everywhere, weight for
   hierarchy.
 
 ## 2. Colors
@@ -136,7 +137,8 @@ neon halos, no purple→blue washes. Color is flat and saturated or it is neutra
 
 ## 3. Typography
 
-**Display / Body / Label Font:** Plus Jakarta Sans (with `ui-sans-serif,
+**Display Font:** Bricolage Grotesque · **Body / Label Font:** IBM Plex Sans
+(both with `ui-sans-serif,
 system-ui, sans-serif` fallback). One family does everything.
 
 **Character:** A warm, geometric-humanist sans carrying the entire interface.
@@ -155,7 +157,9 @@ mono.
   status.
 
 ### Named Rules
-**The One-Family Rule.** Plus Jakarta Sans only. No second display face, no mono,
+**The Two-Family Rule.** `--font-display` (Bricolage Grotesque) for names and
+numbers, `--font-sans` (IBM Plex Sans) for everything you read. Nothing else —
+no third face, no mono,
 ever. If two weights can do it, two weights do it.
 
 **The Sentence-Case Rule.** Sentence case everywhere — names, headers, buttons,
@@ -237,7 +241,7 @@ token, never the raw curve. Full list: `docs/tokens.md`; when each earns use:
 
 ### Do:
 - **Do** make the card *be* the color — flat, saturated, edge to edge.
-- **Do** use Plus Jakarta Sans only, sentence case, with weight (800 / 700 / 500)
+- **Do** use only the two type tokens, sentence case, with weight (800 / 700 / 500)
   carrying hierarchy.
 - **Do** keep lime tiny and rare — brand mark, status dot, the `+`.
 - **Do** put all labels, chips, and buttons on black sticker pills; tilt one or

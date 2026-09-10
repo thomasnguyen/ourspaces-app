@@ -47,7 +47,16 @@ that opened it via `--room-origin-*`, shrinks back on close) ·
 discussed / kept` filters, per-person runs, dense rows, reading circle whose tag
 pills set the same tag filter) · `CrawlStrip.tsx` (live Firecrawl crawl panel —
 usePaginatedQuery over `firecrawl.listCrawlPages`, pages stream in, each keepable
-to the pile) · `ShipRoom.tsx` (a ship post's full view)
+to the pile) · `ShipRoom.tsx` (a ship post's full view) ·
+`SpaceLiveStrip.tsx` (the canvas's own status line — "live · N here now · N
+things on the board · sam is moving the friday poll · last change 8s ago".
+Every value is a live subscription and an absent one is left out of the
+sentence rather than filled in. Renders as a direct child of `<main>`, not in
+the header or the rail: it is board content, and it is also the only place
+that content survives a text extractor) · `UpdateNudge.tsx` +
+`update-nudge.css` (subscribes to `staticHosting.getCurrentDeployment`; a
+publish patches that row, the subscription invalidates, and every open tab is
+offered a refresh before its `React.lazy` chunks 404)
 
 **pages/** — `LiveSpace.tsx` (live canvas) · `Block.tsx` (mock `#/home`) ·
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
@@ -167,7 +176,14 @@ index], votes, paintMarks, recaps, presence, `linkRefreshQueue`
 [batch-worker queue]; frames are widgets) · `widgetData.ts` (the 12 typed
 widget-data shapes + permissive record fallback, reverse-engineered from
 every real producer) · `spaces.ts` (CRUD + `memberCounts` aggregate) ·
+`activity.ts` (`touchSpace(ctx, spaceId, now?)` — the ONE way
+`spaces.lastActivityAt` is bumped; throttled to one write per minute per space
+because the `spaces` row is read by `getSpaceWithWidgets` *and* `listSpaces`,
+so every patch re-runs both for every connected client) ·
 `widgets.ts` (CRUD/move/resize + `widgetsCounter` sharded-counter) ·
+`staticHosting.ts` (`exposeDeploymentQuery` — the deploy-version row the
+UpdateNudge subscribes to; must keep this filename, the hook resolves it by
+path) ·
 `messages.ts` (per-widget threads, real cursor pagination, `search` full-text
 query, `messagesCounter`) · `votes.ts` (`pollTallies` aggregate + `vote`) ·
 `presence.ts` (hand-rolled canvas cursors + gesture-lock arbitration, TTLs —
