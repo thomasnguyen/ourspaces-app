@@ -8,6 +8,10 @@ import {
 } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { completeJson } from "./ai";
+import {
+  droppedLinkValidator,
+  droppedLinkPatchValidator,
+} from "./widgetData";
 import { ackInbound } from "./agentmail";
 import schema from "./schema";
 import { widgetsCounter } from "./stats";
@@ -232,40 +236,6 @@ async function routeBuildRoom(
     });
   }
 }
-
-// One link dropped into the build-room pile by inbound mail. Shape is built
-// in routeBuildRoom below; both mutations are internal, so this is the only
-// producer.
-const droppedLinkValidator = v.object({
-  id: v.string(),
-  url: v.string(),
-  domain: v.string(),
-  title: v.string(),
-  description: v.string(),
-  imageUrl: v.string(),
-  kind: v.string(),
-  whyItMatters: v.string(),
-  questions: v.array(v.object({ id: v.string(), text: v.string() })),
-  status: v.string(),
-  batchKey: v.string(),
-  droppedBy: v.string(),
-  droppedByName: v.string(),
-  droppedAt: v.number(),
-  voters: v.array(v.string()),
-});
-
-// The partial written back once a scrape resolves (or fails).
-const droppedLinkPatchValidator = v.object({
-  title: v.optional(v.string()),
-  description: v.optional(v.string()),
-  imageUrl: v.optional(v.string()),
-  domain: v.optional(v.string()),
-  whyItMatters: v.optional(v.string()),
-  questions: v.optional(
-    v.array(v.object({ id: v.string(), text: v.string() })),
-  ),
-  status: v.optional(v.string()),
-});
 
 export const prependDroppedLinks = internalMutation({
   args: { pileId: v.id("widgets"), dropped: v.array(droppedLinkValidator) },

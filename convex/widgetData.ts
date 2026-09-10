@@ -2,12 +2,15 @@ import { v, type Infer } from "convex/values";
 
 /**
  * Typed shapes for `widgets.data`, keyed by the widget's `type` field.
- * Covers the 12 core widget types with real structured data (reverse-
- * engineered from every producer: seed.ts, widgetDefaults.ts, inbox.ts,
- * firecrawl.ts, questions.ts, WidgetEditorPanel.tsx). The remaining ~19
- * lighter-weight widget types (frame, sticker, chat, media, wheel, etc.)
- * share the permissive record fallback below — a discriminated union arm
- * per type isn't worth it for widgets with no real backend logic.
+ * Reverse-engineered from every producer (seed.ts, widgetDefaults.ts,
+ * inbox.ts, firecrawl.ts, questions.ts, WidgetEditorPanel.tsx) and
+ * cross-checked against the live shape of every widget on the deployment.
+ *
+ * The 12 core types with backend logic come first; the lighter-weight
+ * "long tail" types follow. A permissive record still sits at the end of
+ * the union as a genuine last resort, so an unknown or half-migrated widget
+ * can never fail validation — but it is no longer the primary path for any
+ * type we actually ship.
  */
 
 const pollData = v.object({
@@ -182,12 +185,175 @@ const dailyQData = v.object({
   ),
 });
 
-// The long tail (frame, sticker, chat, media, linkPile, wheel, playlist,
-// availability, linkShelf, jokeRegistry, messageWall, quote, weather,
-// sports, backendLive, dualClock, cozyColor, hotLinks, shipPost,
-// roundtable, …) — no shared backend logic reads into these, so a fully
-// typed arm buys nothing. linkPile's own `linkState` sub-map is keyed by
-// dynamic ids and is a record even in its own right (src/lib/buildRoomFeed.ts).
+
+// ---------------------------------------------------------------------------
+// Long tail — light widgets with no shared backend logic. Typed anyway so the
+// union describes what we actually ship. Only fields present on every live
+// instance are required; the rest are optional.
+// ---------------------------------------------------------------------------
+
+const frameData = v.object({
+  title: v.string(),
+  subtitle: v.string(),
+  deco: v.optional(v.string()),
+});
+
+const stickerData = v.object({ stickerId: v.string() });
+
+const mediaData = v.object({
+  src: v.string(),
+  caption: v.string(),
+  date: v.string(),
+  thumbnailSrc: v.string(),
+});
+
+const availabilityData = v.object({
+  title: v.string(),
+  tone: v.string(),
+  best: v.string(),
+  days: v.array(v.string()),
+  members: v.array(
+    v.object({ name: v.string(), slots: v.array(v.boolean()) }),
+  ),
+});
+
+const linkShelfData = v.object({
+  title: v.string(),
+  tone: v.string(),
+  links: v.array(
+    v.object({ label: v.string(), url: v.string(), by: v.string() }),
+  ),
+});
+
+const playlistData = v.object({
+  title: v.string(),
+  stationId: v.string(),
+  playing: v.boolean(),
+  playedBy: v.string(),
+  vibes: v.array(v.string()),
+});
+
+const jokeRegistryData = v.object({
+  title: v.string(),
+  jokes: v.array(v.object({ text: v.string(), votes: v.number() })),
+});
+
+const messageWallData = v.object({
+  title: v.string(),
+  messages: v.array(v.object({ from: v.string(), text: v.string() })),
+});
+
+const quoteData = v.object({
+  text: v.string(),
+  author: v.string(),
+  week: v.string(),
+});
+
+const weatherData = v.object({
+  event: v.string(),
+  date: v.string(),
+  temp: v.number(),
+  condition: v.string(),
+  note: v.string(),
+});
+
+const sportsTeam = v.object({
+  team: v.string(),
+  score: v.number(),
+  color: v.string(),
+});
+
+const sportsData = v.object({
+  sport: v.string(),
+  status: v.string(),
+  clock: v.string(),
+  quarter: v.string(),
+  home: sportsTeam,
+  away: sportsTeam,
+});
+
+const wheelData = v.object({
+  title: v.string(),
+  tone: v.string(),
+  slices: v.array(v.object({ id: v.string(), label: v.string() })),
+  resultIndex: v.number(),
+  spinNonce: v.number(),
+  spunBy: v.string(),
+});
+
+const dualClockFace = v.object({ label: v.string(), tz: v.string() });
+
+const dualClockData = v.object({
+  title: v.string(),
+  left: dualClockFace,
+  right: dualClockFace,
+});
+
+const cozyColorData = v.object({ title: v.string(), src: v.string() });
+
+// One link dropped into the reading pile — by inbound mail (convex/inbox.ts)
+// or by hand in the reading room. Exported so inbox.ts validates against the
+// same shape it writes, instead of keeping a second copy.
+export const droppedLinkValidator = v.object({
+  id: v.string(),
+  url: v.string(),
+  domain: v.string(),
+  title: v.string(),
+  description: v.string(),
+  imageUrl: v.string(),
+  kind: v.string(),
+  whyItMatters: v.string(),
+  questions: v.array(v.object({ id: v.string(), text: v.string() })),
+  status: v.string(),
+  batchKey: v.string(),
+  droppedBy: v.string(),
+  droppedByName: v.string(),
+  droppedAt: v.number(),
+  voters: v.array(v.string()),
+});
+
+// The partial written back once a scrape resolves (or fails).
+export const droppedLinkPatchValidator = v.object({
+  title: v.optional(v.string()),
+  description: v.optional(v.string()),
+  imageUrl: v.optional(v.string()),
+  domain: v.optional(v.string()),
+  whyItMatters: v.optional(v.string()),
+  questions: v.optional(
+    v.array(v.object({ id: v.string(), text: v.string() })),
+  ),
+  status: v.optional(v.string()),
+});
+
+// hotLinks renders from the reading-room feed. linkPile owns the rows: the
+// `dropped` array plus `linkState`, a per-link UI map keyed by dynamic link
+// id (src/lib/buildRoomFeed.ts), which is a record by nature.
+const linkPileData = v.object({
+  title: v.string(),
+  cta: v.string(),
+  dropped: v.optional(v.array(droppedLinkValidator)),
+  linkState: v.optional(v.record(v.string(), v.any())),
+});
+
+const hotLinksData = v.object({ title: v.string(), limit: v.number() });
+
+const shipPostData = v.object({
+  title: v.string(),
+  body: v.string(),
+  by: v.string(),
+  date: v.string(),
+  imageUrl: v.string(),
+  feedbackWanted: v.optional(v.boolean()),
+});
+
+const roundtableData = v.object({
+  title: v.string(),
+  body: v.string(),
+  category: v.string(),
+});
+
+// Last resort only. Every type we ship has an arm above; this keeps an
+// unknown or half-migrated widget from failing validation outright.
 const fallbackData = v.record(v.string(), v.any());
 
 export const widgetDataValidator = v.union(
@@ -203,6 +369,24 @@ export const widgetDataValidator = v.union(
   potluckData,
   rsvpData,
   dailyQData,
+  frameData,
+  stickerData,
+  mediaData,
+  availabilityData,
+  linkShelfData,
+  playlistData,
+  jokeRegistryData,
+  messageWallData,
+  quoteData,
+  weatherData,
+  sportsData,
+  wheelData,
+  dualClockData,
+  cozyColorData,
+  linkPileData,
+  hotLinksData,
+  shipPostData,
+  roundtableData,
   fallbackData,
 );
 
