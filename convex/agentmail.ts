@@ -1,7 +1,6 @@
 import { v } from "convex/values";
 import { components, internal } from "./_generated/api";
 import {
-  action,
   env,
   internalAction,
   internalMutation,
@@ -58,7 +57,10 @@ export async function ackInbound(
 /** Give a space its own email address (idempotent). */
 const inboxResultValidator = v.object({ inboxId: v.string(), address: v.string() });
 
-export const ensureInbox = action({
+// internalAction: provisioning an inbox is the scarcest resource in the app
+// (AgentMail free tier caps at 3 per org) and this was a public wrapper that
+// let any caller create one with a username of their choosing.
+export const ensureInbox = internalAction({
   args: { spaceId: v.id("spaces"), username: v.optional(v.string()) },
   returns: inboxResultValidator,
   handler: async (ctx, args): Promise<{ inboxId: string; address: string }> =>
@@ -66,7 +68,8 @@ export const ensureInbox = action({
 });
 
 /** The three showcase inboxes (free tier caps at 3). Run after seeding. */
-export const ensureShowcaseInboxes = action({
+// internalAction for the same reason as ensureInbox above.
+export const ensureShowcaseInboxes = internalAction({
   args: {},
   returns: v.record(v.string(), v.string()),
   handler: async (ctx): Promise<Record<string, string>> => {

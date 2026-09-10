@@ -224,7 +224,10 @@ export const searchTopic = action({
   handler: async (ctx, { query, limit }) => {
     const trimmed = query.trim();
     if (!trimmed) return [];
-    const response = await firecrawl.search(ctx, trimmed, { limit: limit ?? 8 });
+    // Clamped: `limit` is caller-supplied and Firecrawl bills per credit.
+    const response = await firecrawl.search(ctx, trimmed, {
+      limit: Math.min(20, Math.max(1, limit ?? 8)),
+    });
     const hits = (response.web ?? []).map((raw) => {
       const item = recordValue(raw);
       const url = textValue(item.url);
@@ -267,7 +270,9 @@ export const crawlSite = action({
     const { crawlId } = await firecrawl.startCrawl(ctx, {
       url: normalized,
       options: {
-        limit: limit ?? 25,
+        // Clamped for the same reason as searchTopic: the app never passes
+        // `limit`, so an unclamped value only helps a caller that isn't us.
+        limit: Math.min(50, Math.max(1, limit ?? 25)),
         scrapeOptions: { formats: ["markdown", "summary"], onlyMainContent: true },
       },
       onComplete: internal.firecrawl.crawlComplete,

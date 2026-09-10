@@ -1,7 +1,6 @@
 import { v } from "convex/values";
 import { components, internal } from "./_generated/api";
 import {
-  action,
   internalAction,
   internalMutation,
   internalQuery,
@@ -203,7 +202,12 @@ export const weekly = internalAction({
 });
 
 /** Demo trigger: `npx convex run digest:sendNow '{"slug":"crew","to":["you@x.com"]}'` */
-export const sendNow = action({
+// internalAction, not action: `npx convex run` executes internal functions
+// fine, so the public surface bought nothing — and as a public action any
+// browser could send an LLM-composed email FROM the space's real AgentMail
+// inbox to an arbitrary recipient list. The mailSend rate limit caps sends
+// per space, not recipients per send.
+export const sendNow = internalAction({
   args: { slug: v.string(), to: v.optional(v.array(v.string())) },
   returns: v.string(),
   handler: async (ctx, { slug, to }): Promise<string> => digestFor(ctx, slug, to),

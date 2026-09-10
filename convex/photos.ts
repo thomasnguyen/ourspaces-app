@@ -38,14 +38,18 @@ const PIN_TILTS = [-3, 2, -2, 3, -4, 4];
 export const addPhoto = mutation({
   args: {
     widgetId: v.id("widgets"),
+    spaceId: v.id("spaces"),
     storageId: v.id("_storage"),
     caption: v.string(),
     by: v.string(),
   },
   returns: v.null(),
-  handler: async (ctx, { widgetId, storageId, caption, by }) => {
+  handler: async (ctx, { widgetId, spaceId, storageId, caption, by }) => {
     const widget = await ctx.db.get(widgetId);
-    if (!widget || widget.type !== "photoWall") {
+    // Space-scoped like paint.addStroke. Without the spaceId clause an
+    // anonymous visitor could pin an uploaded image to the FRONT of any
+    // space's photo wall (photos are prepended, so index 0 is the cover).
+    if (!widget || widget.spaceId !== spaceId || widget.type !== "photoWall") {
       throw new Error("Not a photo wall");
     }
     const src = await ctx.storage.getUrl(storageId);

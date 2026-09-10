@@ -306,10 +306,30 @@ export const snapshot = internalQuery({
   }),
   handler: async (ctx, { spaceId }): Promise<Snapshot> => {
     const space = await ctx.db.get(spaceId);
-    const [widgets, messages] = await Promise.all([
+    // `messages` grows without bound per space (it is the chat), and this
+    // snapshot feeds the recap cron, the weekly digest workflow, recap.ask,
+    // the RAG sweep and the /ask-stream handler — so an unbounded .collect()
+    // here takes all five down once a space gets chatty. The by_space_widget
+    // index lets us read only the tail we actually use. Same anti-pattern
+    // convex/messages.ts:10 calls out.
+    const [widgets, chatRows, threadRows] = await Promise.all([
       ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).collect(),
-      ctx.db.query("messages").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).collect(),
+      ctx.db
+        .query("messages")
+        .withIndex("by_space_widget", (q) =>
+          q.eq("spaceId", spaceId).eq("widgetId", "global"),
+        )
+        .order("desc")
+        .take(20),
+      ctx.db
+        .query("messages")
+        .withIndex("by_space_widget", (q) =>
+          q.eq("spaceId", spaceId).eq("widgetId", THREAD),
+        )
+        .order("desc")
+        .take(12),
     ]);
+    const messages = [...chatRows].reverse().concat([...threadRows].reverse());
 
     const summarized: Snapshot["widgets"] = [];
     for (const widget of widgets) {

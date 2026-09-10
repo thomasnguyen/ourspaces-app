@@ -30,11 +30,13 @@ export const getTallyCounts = query({
 });
 
 export const getResults = query({
-  args: { widgetId: v.id("widgets") },
+  args: { widgetId: v.id("widgets"), spaceId: v.id("spaces") },
   returns: v.array(schema.doc("votes").extend({ voterName: v.string() })),
-  handler: async (ctx, { widgetId }) => {
+  handler: async (ctx, { widgetId, spaceId }) => {
     const widget = await ctx.db.get(widgetId);
-    if (!widget) return [];
+    // Scoped: results carry voter names, so an unscoped read leaked the member
+    // roster of any space to anyone holding a widget id.
+    if (!widget || widget.spaceId !== spaceId) return [];
 
     const [votes, members] = await Promise.all([
       ctx.db
@@ -60,11 +62,25 @@ export const getResults = query({
 export const vote = mutation({
   args: {
     widgetId: v.id("widgets"),
+    spaceId: v.id("spaces"),
     userId: v.string(),
     optionId: v.string(),
   },
-  returns: v.id("votes"),
-  handler: async (ctx, { widgetId, userId, optionId }) => {
+  // Nullable because a rejected vote is a no-op, not an error: widget ids are
+  // public (listWidgets returns them for any space), so an unscoped vote let
+  // anyone vote in another space's poll — and an unchecked optionId wrote a
+  // junk key straight into the pollTallies aggregate, where it persists.
+  returns: v.union(v.id("votes"), v.null()),
+  handler: async (ctx, { widgetId, spaceId, userId, optionId }) => {
+    const widget = await ctx.db.get(widgetId);
+    if (!widget || widget.spaceId !== spaceId || widget.type !== "poll") {
+      return null;
+    }
+    const options = (widget.data as { options?: { id: string }[] }).options;
+    if (!Array.isArray(options) || !options.some((o) => o.id === optionId)) {
+      return null;
+    }
+
     const existing = await ctx.db
       .query("votes")
       .withIndex("by_widget_user", (q) =>

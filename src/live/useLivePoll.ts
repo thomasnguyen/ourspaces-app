@@ -3,8 +3,18 @@ import { useMemo } from "react";
 import { api } from "../../convex/_generated/api";
 import type { SpaceMember, Widget } from "../data/types";
 
-export function useLivePoll(widget: Widget, userId: string, members: SpaceMember[]) {
-  const rows = useQuery(api.votes.getResults, widget.id ? { widgetId: widget.id as never } : "skip");
+export function useLivePoll(
+  widget: Widget,
+  userId: string,
+  members: SpaceMember[],
+  spaceId: string | undefined,
+) {
+  const rows = useQuery(
+    api.votes.getResults,
+    widget.id && spaceId
+      ? { widgetId: widget.id as never, spaceId: spaceId as never }
+      : "skip",
+  );
   return useMemo(() => {
     const options = Array.isArray(widget.data.options)
       ? widget.data.options as Record<string, unknown>[]
