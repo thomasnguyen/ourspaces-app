@@ -23,6 +23,7 @@ import { GhostCanvas } from "../components/GhostCanvas";
 import { GlobalChatPanel } from "../components/GlobalChatPanel";
 import { Rail } from "../components/Rail";
 import { SpaceEditorPanel } from "../components/SpaceEditorPanel";
+import { SpaceLiveStrip } from "../components/SpaceLiveStrip";
 import { WidgetEditorPanel } from "../components/WidgetEditorPanel";
 import { WidgetPicker } from "../components/WidgetPicker";
 import {
@@ -341,6 +342,21 @@ export function LiveSpacePage({
     { x: 72, y: 72 },
   );
   const liveCursors = presence.peers;
+  /* "who is here" has exactly one source: the presence component's room
+     occupancy, keyed by the same room id RoomPresenceHeartbeat registers
+     under and read with the same query the rail reads. The header and the
+     canvas's live strip both take this number, so they cannot disagree. */
+  const hereCount = useQuery(
+    api.roomPresence.onlineCountForSpace,
+    space?.slug ? { spaceId: space.slug } : "skip",
+  );
+  /* The board's raw rows, for their createdAt — the adapted widgets the page
+     draws with drop it. Same query + args as useSpaceData's, so the client
+     shares one subscription rather than opening a second. */
+  const boardRows = useQuery(
+    api.spaces.getSpaceWithWidgets,
+    mode === "live" ? { slug } : "skip",
+  );
   // Real cursor pagination server-side; the page auto-loads-more so the demo
   // still sees full space history without an infinite-scroll UI.
   const messagesPage = usePaginatedQuery(
@@ -1007,7 +1023,48 @@ export function LiveSpacePage({
       window.clearTimeout(payoffFlashTimer.current);
     }
   }, []);
-  const hereCount = members.filter((member) => member.online).length + liveCursors.length + 1;
+  /* The freshest real write we know about. Deliberately not the space's
+     lastActivityAt — that column is only ever written when a space is
+     created, so it is createdAt under another name. Widget and message
+     createdAt are the writes that actually happen while people are in here,
+     and both already stream in on subscriptions this page holds. */
+  const lastChangeAt = useMemo(() => {
+    /* Both sources, because neither is complete on its own. `createdAt` only
+       moves when something is *added*, so a drag, a resize or a title edit
+       would leave the line stale while someone is actively rearranging the
+       board. `spaces.lastActivityAt` covers those (convex/activity.ts bumps it
+       from every real write) but is throttled to one write a minute, so a
+       brand-new message would read a minute old. The max of the two is what
+       makes the words "last change" literally true. */
+    let newest = boardRows?.space?.lastActivityAt ?? 0;
+    for (const row of boardRows?.widgets ?? []) {
+      if (row.createdAt > newest) newest = row.createdAt;
+    }
+    for (const message of allMessages ?? []) {
+      if (message.createdAt > newest) newest = message.createdAt;
+    }
+    return newest || undefined;
+  }, [allMessages, boardRows]);
+  /* Someone's hand on a widget, named. presence rows carry the gesture, the
+     board carries the widget's title; the strip says it out loud. */
+  const liveGestures = useMemo(
+    () =>
+      liveCursors.flatMap((peer) => {
+        if (!peer.gesture) return [];
+        const target = widgets.find((widget) => widget.id === peer.gesture?.widgetId);
+        return [{
+          userId: peer.userId,
+          name: peer.name,
+          kind: peer.gesture.kind,
+          label: target ? widgetLabel(target) : undefined,
+        }];
+      }),
+    [liveCursors, widgets],
+  );
+  /* The header always needs a number to print, so an unloaded count reads as
+     quiet rather than falling through to the seeded roster. The strip can
+     stay silent until the real one lands, so it gets the raw value. */
+  const headerHereCount = mode === "live" ? hereCount ?? 0 : hereCount;
   const canvasWidth = space?.canvasW ?? snapshot?.canvasW ?? 1640;
   const canvasHeight = space?.canvasH ?? snapshot?.canvasH ?? 1080;
 
@@ -1777,7 +1834,7 @@ export function LiveSpacePage({
         roomEditing={Boolean(spaceDraft)}
         onEditSpace={openSpaceEditor}
         members={members}
-        hereCount={hereCount}
+        hereCount={headerHereCount}
         self={identity}
         onSelfClick={() => setClaimOpen(true)}
         livePeers={liveCursors}
@@ -1794,6 +1851,18 @@ export function LiveSpacePage({
         }}
         entrance={roomEntered}
       />
+      {/* Canvas content, not page chrome: the board saying what is true about
+          itself right now. Mock mode has nothing live to say, so it says
+          nothing. */}
+      {mode === "live" && (
+        <SpaceLiveStrip
+          spaceName={boardRows?.space?.name}
+          hereCount={hereCount}
+          boardCount={boardRows?.widgets.length}
+          lastChangeAt={lastChangeAt}
+          gestures={liveGestures}
+        />
+      )}
       {focusedTarget && (
         <nav className="canvas-focus-hud" aria-label="Focused canvas item">
           <button
@@ -2059,8 +2128,11 @@ export function LiveSpacePage({
           inviteContext={isInviteEntry ? {
             spaceName: mockSpace.name,
             spaceColor: mockSpace.color,
-            memberNames: members.filter((member) => member.online).map((member) => member.name),
-            presenceCount: members.filter((member) => member.online).length,
+            // Same rule as the header and the strip: the fixture roster's
+            // `online` flags never stand in for a live count. The invite
+            // gate reads the real room occupancy or says nobody.
+            memberNames: [],
+            presenceCount: hereCount ?? 0,
           } satisfies InviteContext : undefined}
         />
       )}
