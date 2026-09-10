@@ -24,7 +24,6 @@
     "@convex-dev/migrations": "^0.3.6",
     "@convex-dev/persistent-text-streaming": "^0.3.3",
     "@convex-dev/presence": "^0.4.0",
-    "@convex-dev/prosemirror-sync": "^0.2.6",
     "@convex-dev/rag": "^0.7.6",
     "@convex-dev/rate-limiter": "^0.3.2",
     "@convex-dev/sharded-counter": "^0.2.1",

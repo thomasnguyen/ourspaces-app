@@ -15,7 +15,6 @@ import agent from "@convex-dev/agent/convex.config";
 import rag from "@convex-dev/rag/convex.config";
 import persistentTextStreaming from "@convex-dev/persistent-text-streaming/convex.config";
 import presence from "@convex-dev/presence/convex.config";
-import prosemirrorSync from "@convex-dev/prosemirror-sync/convex.config";
 import betterAuth from "@convex-dev/better-auth/convex.config";
 import agentMail from "./components/agentMail/convex.config";
 
@@ -75,9 +74,8 @@ app.use(agent);
 app.use(rag);
 app.use(persistentTextStreaming);
 
-// Realtime + collaboration.
+// Realtime.
 app.use(presence);
-app.use(prosemirrorSync);
 
 // Auth.
 app.use(betterAuth);
