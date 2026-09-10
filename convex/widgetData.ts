@@ -7,10 +7,10 @@ import { v, type Infer } from "convex/values";
  * cross-checked against the live shape of every widget on the deployment.
  *
  * The 12 core types with backend logic come first; the lighter-weight
- * "long tail" types follow. A permissive record still sits at the end of
- * the union as a genuine last resort, so an unknown or half-migrated widget
- * can never fail validation — but it is no longer the primary path for any
- * type we actually ship.
+ * "long tail" types follow. Every type in `src/data/types.ts` has an arm, and
+ * every producer payload validates against one — nothing we ship reaches the
+ * permissive record at the end of the union. See the note above
+ * `fallbackData` for the two reasons it is still there.
  */
 
 const pollData = v.object({
@@ -200,11 +200,13 @@ const frameData = v.object({
 
 const stickerData = v.object({ stickerId: v.string() });
 
+// Seeded prints carry both paths; a fresh "photo" added from the picker is
+// caption + date only until someone points it at an image.
 const mediaData = v.object({
-  src: v.string(),
   caption: v.string(),
   date: v.string(),
-  thumbnailSrc: v.string(),
+  src: v.optional(v.string()),
+  thumbnailSrc: v.optional(v.string()),
 });
 
 const availabilityData = v.object({
@@ -225,12 +227,15 @@ const linkShelfData = v.object({
   ),
 });
 
+// `tone` is absent on the seeded rows but written by both the picker's fresh
+// payload and the editor panel — optional, not missing.
 const playlistData = v.object({
   title: v.string(),
   stationId: v.string(),
   playing: v.boolean(),
   playedBy: v.string(),
   vibes: v.array(v.string()),
+  tone: v.optional(v.string()),
 });
 
 const jokeRegistryData = v.object({
@@ -241,6 +246,25 @@ const jokeRegistryData = v.object({
 const messageWallData = v.object({
   title: v.string(),
   messages: v.array(v.object({ from: v.string(), text: v.string() })),
+});
+
+// The prototype chat card. Real chat lives in the `messages` table; this holds
+// only the canned transcript the card renders before it is wired to a thread.
+const chatData = v.object({
+  messages: v.array(
+    v.object({
+      from: v.string(),
+      text: v.string(),
+      time: v.optional(v.string()),
+      promotable: v.optional(v.boolean()),
+    }),
+  ),
+});
+
+// Counts are overwritten from live queries on render (Canvas.tsx); the stored
+// copy is just the placeholder the widget is born with.
+const backendLiveData = v.object({
+  counts: v.array(v.object({ label: v.string(), value: v.number() })),
 });
 
 const quoteData = v.object({
@@ -352,8 +376,16 @@ const roundtableData = v.object({
   category: v.string(),
 });
 
-// Last resort only. Every type we ship has an arm above; this keeps an
-// unknown or half-migrated widget from failing validation outright.
+// Last resort. Nothing we ship lands here: all 32 types in src/data/types.ts
+// have an arm above, and every producer payload (seed, picker defaults, editor
+// panel, inbox, firecrawl) was replayed against the typed arms alone and
+// passed. It stays for the two cases the arms can't cover:
+//   1. `widgets.updateWidgetData` and `questions.setQuestions` patch a widget
+//      by id without checking its `type`, so a shape can drift off-arm.
+//   2. Rows written to prod before this union landed can't be inspected from
+//      dev, and a row that fails validation blocks the deploy, not just the
+//      write.
+// Verify prod's widget shapes, then delete this arm and its union entry.
 const fallbackData = v.record(v.string(), v.any());
 
 export const widgetDataValidator = v.union(
@@ -377,6 +409,8 @@ export const widgetDataValidator = v.union(
   playlistData,
   jokeRegistryData,
   messageWallData,
+  chatData,
+  backendLiveData,
   quoteData,
   weatherData,
   sportsData,

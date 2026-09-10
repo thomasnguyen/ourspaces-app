@@ -17,7 +17,7 @@ export default defineSchema({
     createdAt: v.number(),
     lastActivityAt: v.number(),
     eventAt: v.optional(v.number()), // event spaces only
-    archivedAt: v.optional(v.number()), // settles into Past when set (§5.3)
+    archivedAt: v.optional(v.number()), // settles into Past when set (§5.3) — nothing writes it yet
     slug: v.optional(v.string()),
     canvasW: v.optional(v.number()),
     canvasH: v.optional(v.number()),
@@ -63,7 +63,9 @@ export default defineSchema({
 
   widgets: defineTable({
     spaceId: v.id("spaces"),
-    // Open widget type string; the prototype union lives in src/data/types.ts.
+    // Stays an open string, not a literal union: the client picks the type
+    // (widgets.createWidget takes v.string()) and the 32 shipped names live
+    // in src/data/types.ts. `data` is what's actually validated per type.
     type: v.string(),
     x: v.number(),
     y: v.number(),
@@ -80,16 +82,26 @@ export default defineSchema({
 
   messages: defineTable({
     spaceId: v.id("spaces"),
-    widgetId: v.string(), // "global" or the chat widget this belongs to
+    // thread key: "global", a widget id, or "<widgetId>::q:<n>" for a
+    // question sub-thread — a string, not v.id, because of the first two.
+    widgetId: v.string(),
     userId: v.string(),
     text: v.string(),
     createdAt: v.number(),
+    // Copied, not joined: the space thread is a live subscription, so a join
+    // would cost one extra read per message on every update — and a message
+    // should keep the name its author had when they sent it. Cost: a rename
+    // patches `members` only; old rows keep the old name, nothing backfills.
     authorName: v.string(),
     authorColor: v.string(),
     authorEmoji: v.optional(v.string()),
     authorAvatarUrl: v.optional(v.string()),
     promotable: v.optional(v.boolean()),
+    // Read by recap.ts, but no writer yet — promoteMessage dedupes on the
+    // decision widget's own data.promotedFromMessageId instead.
     promotedWidgetId: v.optional(v.id("widgets")),
+    // by_space is not redundant with by_space_widget: it orders a space's
+    // whole thread chronologically, which the widget-scoped index can't.
   }).index("by_widget", ["widgetId"]) // a widget's own comment thread
     .index("by_space", ["spaceId"]) // paginated space thread (messages.listBySpace)
     .index("by_space_widget", ["spaceId", "widgetId"]) // thread dock, scoped to one widget
@@ -107,6 +119,9 @@ export default defineSchema({
     spaceId: v.id("spaces"),
     widgetId: v.id("widgets"),
     userId: v.string(),
+    // Same call as messages: copied so a stroke renders with no join, and so
+    // a mark keeps the name of whoever drew it. Same cost — a rename never
+    // reaches marks already on the board.
     authorName: v.string(),
     authorColor: v.string(),
     tone: v.union(
@@ -139,7 +154,9 @@ export default defineSchema({
     ),
     createdAt: v.number(),
   })
-    .index("by_space", ["spaceId"]) // all recaps for a space
+    // A prefix of by_space_created, kept because spaces.deleteSpaceBySlug
+    // sweeps five tables through one loop and needs the name on all of them.
+    .index("by_space", ["spaceId"])
     .index("by_space_created", ["spaceId", "createdAt"]), // recap.latest — newest one, no scan
 
   presence: defineTable({
@@ -169,9 +186,11 @@ export default defineSchema({
       }),
     ),
   })
+    // No by_space_updated: listHereNow deliberately reads the whole room and
+    // lets the cron + the client's own tick decide what's stale, because a
+    // wall-clock bound inside a query never re-evaluates (see presence.ts).
     .index("by_space", ["spaceId"]) // gesture-lock arbitration reads the whole room
-    .index("by_space_user", ["spaceId", "userId"]) // upsert one person's cursor (findPresence)
-    .index("by_space_updated", ["spaceId", "updatedAt"]), // listHereNow: live rows only, TTL'd
+    .index("by_space_user", ["spaceId", "userId"]), // upsert one person's cursor (findPresence)
 
   // batch-worker queue: stale linkCard widgets pending a Firecrawl refresh.
   linkRefreshQueue: defineTable({
