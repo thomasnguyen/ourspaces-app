@@ -1,6 +1,8 @@
 import { useAction, useMutation } from "convex/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import type { OptimisticLocalStore } from "convex/browser";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { LiveIdentity } from "./identity";
 import type { PresenceController } from "./usePresence";
 import type {
@@ -45,14 +47,60 @@ function layoutMatches(widget: Widget | undefined, layout: CanvasLayout) {
   );
 }
 
+/**
+ * Optimistically move one widget's box inside the `getSpaceWithWidgets`
+ * envelope, keeping the `{ space, widgets }` shape intact.
+ *
+ * The query is keyed by slug and this hook only knows the space id, so we walk
+ * `getAllQueries` and match on each envelope's own space rather than guessing
+ * the args — an args mismatch would make the whole update a silent no-op.
+ */
+function patchWidgetBox(
+  store: OptimisticLocalStore,
+  spaceId: Id<"spaces">,
+  widgetId: Id<"widgets">,
+  box: Partial<Pick<Doc<"widgets">, "x" | "y" | "w" | "h" | "z">>,
+) {
+  for (const { args, value } of store.getAllQueries(api.spaces.getSpaceWithWidgets)) {
+    if (!value || value.space === null || value.space._id !== spaceId) continue;
+    store.setQuery(api.spaces.getSpaceWithWidgets, args, {
+      ...value,
+      widgets: value.widgets.map((widget) =>
+        widget._id === widgetId ? { ...widget, ...box } : widget,
+      ),
+    });
+  }
+}
+
 export function useLiveHandlers(
   spaceId: string | undefined,
   identity: LiveIdentity,
   presence: PresenceController,
   widgets: Widget[],
 ) {
-  const move = useMutation(api.widgets.moveWidget);
-  const resize = useMutation(api.widgets.resizeWidget);
+  const moveWidget = useMutation(api.widgets.moveWidget);
+  const resizeWidget = useMutation(api.widgets.resizeWidget);
+  /* Why these two get `withOptimisticUpdate` and the gesture path does not:
+     `moveWidget` / `resizeWidget` are unconditional server patches — the only
+     guard is a cross-space id check this call site cannot trip — so the client
+     already knows the answer and Convex can roll it back for free if the write
+     ever fails. The gesture path is *arbitrated*: `presence.claimGesture` /
+     `finishGesture` can refuse a commit (stale lock, competing peer, TTL) and
+     return a verdict the client branches on. An optimistic update can neither
+     read a mutation's return value nor roll back conditionally, so gestures
+     keep the hand-rolled `overrides` / `latest` / `pendingCommits` below. */
+  const move = useMemo(
+    () => moveWidget.withOptimisticUpdate((store, { spaceId, id, x, y, z }) =>
+      patchWidgetBox(store, spaceId, id, z === undefined ? { x, y } : { x, y, z }),
+    ),
+    [moveWidget],
+  );
+  const resize = useMemo(
+    () => resizeWidget.withOptimisticUpdate((store, { spaceId, id, w, h }) =>
+      patchWidgetBox(store, spaceId, id, { w, h }),
+    ),
+    [resizeWidget],
+  );
   const vote = useMutation(api.votes.vote);
   const send = useMutation(api.messages.sendMessage);
   const promote = useMutation(api.messages.promoteMessage);
@@ -89,6 +137,16 @@ export function useLiveHandlers(
       return next;
     });
   }, []);
+
+  /**
+   * Hand a widget over to `withOptimisticUpdate`: drop every hand-rolled local
+   * claim on it so the optimistic value is what shows. Replaces the blind
+   * 350ms timer the layout commits used to lean on.
+   */
+  const dropLocalClaim = useCallback((widgetId: string) => {
+    delete pendingCommits.current[widgetId];
+    removeOverride(widgetId);
+  }, [removeOverride]);
 
   useEffect(() => {
     const completed = Object.entries(pendingCommits.current)
@@ -272,11 +330,7 @@ export function useLiveHandlers(
   const onLayoutCommit = useCallback(
     (widget: Widget, layout: CanvasLayout) => {
       if (!spaceId) return;
-      latest.current[widget.id] = layout;
-      setOverrides((current) => ({
-        ...current,
-        [widget.id]: { ...(current[widget.id] ?? {}), ...layout },
-      }));
+      dropLocalClaim(widget.id);
       void resize({ spaceId: spaceId as never, id: widget.id as never, w: layout.w, h: layout.h });
       void move({ spaceId: spaceId as never,
         id: widget.id as never,
@@ -284,9 +338,8 @@ export function useLiveHandlers(
         y: layout.y,
         z: layout.z,
       });
-      window.setTimeout(() => removeOverride(widget.id), 350);
     },
-    [move, removeOverride, resize, spaceId],
+    [dropLocalClaim, move, resize, spaceId],
   );
 
   const onFrameLayoutChange = useCallback((
@@ -309,8 +362,10 @@ export function useLiveHandlers(
     if (spaceId && patch.x != null && patch.y != null) {
       void move({ spaceId: spaceId as never, id: id as never, x: patch.x, y: patch.y, z: 0 });
     }
-    window.setTimeout(() => removeOverride(id), 350);
-  }, [move, removeOverride, resize, spaceId]);
+    // The drag-time override `onFrameLayoutChange` left behind has done its
+    // job; the optimistic update holds the box from here.
+    dropLocalClaim(id);
+  }, [dropLocalClaim, move, resize, spaceId]);
 
   const onVote = useCallback((widgetId: string, optionId: string) => {
     if (!spaceId) return;
