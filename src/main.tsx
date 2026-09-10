@@ -10,6 +10,7 @@ import App from "./App.tsx";
 import { getDataMode } from "./live/dataMode.ts";
 import { authClient, ensureGuestSession } from "./lib/authClient.ts";
 import { AuthIdentityBridge } from "./live/useAuthIdentity.ts";
+import { UpdateNudge } from "./components/UpdateNudge.tsx";
 import "./index.css";
 
 const url = import.meta.env.VITE_CONVEX_URL as string | undefined;
@@ -51,6 +52,11 @@ createRoot(document.getElementById("root")!).render(
         <ConvexQueryCacheProvider expiration={600_000}>
           <AuthIdentityBridge />
           <App />
+          {/* Live path only. UpdateNudge subscribes to the static-hosting
+              component's deployment row, and that hook needs a Convex client
+              in context — the mock branch below renders a bare <App/> with no
+              provider, so mounting it there would throw. */}
+          <UpdateNudge />
         </ConvexQueryCacheProvider>
       </ConvexBetterAuthProvider>
     ) : mode === "mock" ? (
