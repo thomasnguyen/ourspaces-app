@@ -1471,6 +1471,108 @@
   text-align: center;
 }
 
+/* ── SPACE LIVE STRIP ─────────────────────────────────────────────────────
+   The board's own status line, sitting in the canvas's bottom gutter — left
+   of the action dock, clear of the rail, under everything that opens over
+   the board. One quiet sticker pill: white for the word that matters, muted
+   for the rest, lime only on the pulse. */
+.space-live-strip {
+  position: absolute;
+  z-index: 41;
+  bottom: 22px;
+  left: 118px;
+  /* Stops short of the action dock, which is centred on 50% + 48px and about
+     282px wide — so its left edge sits at 50% − 93px. */
+  max-width: min(620px, calc(50% - 227px));
+  margin: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  box-shadow: 0 5px 0 rgba(17, 17, 20, 0.22);
+  color: rgba(255, 255, 255, 0.62);
+  padding: 8px 16px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: space-live-strip-in var(--dur-arrive) var(--ease-pop) 320ms backwards;
+}
+
+.space-live-strip-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--color-lime);
+  vertical-align: 1px;
+  animation: loading-dot-pulse 1.6s ease-out infinite;
+}
+
+.space-live-strip-live {
+  color: white;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.space-live-strip-dot-sep {
+  padding: 0 7px;
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* Someone has a hand on something — the one line here that is about a
+   person, so it takes the pop. */
+.space-live-strip-busy {
+  color: var(--color-lime);
+  font-style: normal;
+  font-weight: 700;
+  animation: space-live-strip-say var(--dur-quick) var(--ease-pop) both;
+}
+
+@keyframes space-live-strip-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+@keyframes space-live-strip-say {
+  from {
+    opacity: 0;
+    translate: -4px 0;
+  }
+}
+
+/* A room opened over the board is the whole screen; the strip steps back. */
+.has-photo-gallery .space-live-strip,
+.has-entry-gate .space-live-strip {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-quick) var(--ease-glide);
+}
+
+/* Narrow enough that something has to give: the clock goes first — it is the
+   least newsy part of the line, and losing it beats clipping a word. */
+@media (max-width: 1200px) {
+  .space-live-strip-since {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-live-strip,
+  .space-live-strip-busy {
+    animation: none;
+  }
+
+  .space-live-strip-dot {
+    animation: none;
+  }
+}
+
 /* Percentage of the name's own height, so one- and two-line names both clear
    the h1's clipped box. */
 @keyframes space-title-in {

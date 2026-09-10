@@ -455,7 +455,13 @@ export function SpaceHeader({
   const copyResetTimeout = useRef<number | null>(null);
   const entering = useSpaceEntrance(entrance);
   const space = getSpace(spaceId);
-  const online = (membersProp ?? space.members).filter((member) => member.online);
+  /* A seeded roster's `online` flag is a mock-mode truth and nothing more.
+     The live page passes a real hereCount (room occupancy from the presence
+     component), and once it does, the fixtures stop being people: they must
+     not be counted, named, or drawn as faces next to a live number. */
+  const online = hereCount == null
+    ? (membersProp ?? space.members).filter((member) => member.online)
+    : [];
   const name = spaceName ?? spaceMeta?.name ?? space.name;
   const tagline = spaceMeta?.tagline ?? space.tagline;
   const mailAddress = inboxAddress ?? space.inboxAddress;
