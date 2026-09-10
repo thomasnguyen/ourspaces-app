@@ -5,6 +5,7 @@ import { v } from "convex/values";
 import { widgetDataValidator, type PotluckData } from "./widgetData";
 import schema from "./schema";
 import { widgetsCounter } from "./stats";
+import { touchSpace } from "./activity";
 
 /** Drives the canvas — every widget in a space, rendered by type (PRD §11). */
 export const listWidgets = query({
@@ -33,8 +34,10 @@ export const createWidget = mutation({
   },
   returns: v.id("widgets"),
   handler: async (ctx, args) => {
-    const id = await ctx.db.insert("widgets", { ...args, createdAt: Date.now() });
+    const now = Date.now();
+    const id = await ctx.db.insert("widgets", { ...args, createdAt: now });
     await widgetsCounter.inc(ctx);
+    await touchSpace(ctx, args.spaceId, now);
     return id;
   },
 });
@@ -74,6 +77,7 @@ export const moveWidget = mutation({
   handler: async (ctx, { id, spaceId, x, y, z }) => {
     if (!(await widgetInSpace(ctx, id, spaceId))) return null;
     await ctx.db.patch(id, z === undefined ? { x, y } : { x, y, z });
+    await touchSpace(ctx, spaceId);
     return null;
   },
 });
@@ -85,6 +89,7 @@ export const deleteWidget = mutation({
     if (!(await widgetInSpace(ctx, id, spaceId))) return null;
     await ctx.db.delete(id);
     await widgetsCounter.dec(ctx);
+    await touchSpace(ctx, spaceId);
     return null;
   },
 });
@@ -112,6 +117,7 @@ export const claimItem = mutation({
       return { ...item, claimed: true, by: args.claimantName, byUserId: args.claimantUserId };
     });
     await ctx.db.patch(widget._id, { data: { ...potluckData, items: nextItems } });
+    await touchSpace(ctx, args.spaceId);
     return null;
   },
 });
@@ -130,6 +136,7 @@ export const spinWheel = mutation({
     const widget = await widgetInSpace(ctx, widgetId, spaceId);
     if (!widget) return null;
     await ctx.db.patch(widget._id, { data: { ...widget.data, ...spin } });
+    await touchSpace(ctx, spaceId);
     return null;
   },
 });
@@ -148,6 +155,7 @@ export const tuneRadio = mutation({
     const widget = await widgetInSpace(ctx, widgetId, spaceId);
     if (!widget) return null;
     await ctx.db.patch(widget._id, { data: { ...widget.data, ...tune } });
+    await touchSpace(ctx, spaceId);
     return null;
   },
 });
@@ -163,6 +171,7 @@ export const resizeWidget = mutation({
   handler: async (ctx, { id, spaceId, w, h }) => {
     if (!(await widgetInSpace(ctx, id, spaceId))) return null;
     await ctx.db.patch(id, { w, h });
+    await touchSpace(ctx, spaceId);
     return null;
   },
 });
@@ -177,6 +186,7 @@ export const updateWidgetData = mutation({
   handler: async (ctx, { id, spaceId, data }) => {
     if (!(await widgetInSpace(ctx, id, spaceId))) return null;
     await ctx.db.patch(id, { data });
+    await touchSpace(ctx, spaceId);
     return null;
   },
 });

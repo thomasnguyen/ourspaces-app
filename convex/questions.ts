@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { touchSpace } from "./activity";
 import { action, internalAction, internalMutation } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import { completeJson } from "./ai";
@@ -74,6 +75,7 @@ export const setQuestions = internalMutation({
     const widget = await ctx.db.get(widgetId);
     if (!widget) return null;
     await ctx.db.patch(widget._id, { data: { ...widget.data, questions } });
+    await touchSpace(ctx, widget.spaceId);
     return null;
   },
 });

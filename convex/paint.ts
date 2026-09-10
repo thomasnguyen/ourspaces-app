@@ -4,6 +4,7 @@ import schema from "./schema";
 import type { NoteData } from "./widgetData";
 import { widgetsCounter } from "./stats";
 import { rateLimiter } from "./rateLimits";
+import { touchSpace } from "./activity";
 
 const tone = v.union(
   v.literal("berry"),
@@ -51,6 +52,10 @@ export const addStroke = mutation({
     // rather than throw — a paint stroke isn't worth an error toast.
     const status = await rateLimiter.limit(ctx, "paintStroke", { key: args.userId });
     if (!status.ok) return null;
+    const now = Date.now();
+    // Throttled to one write per minute per space — this is the hot path, a
+    // stroke lands every few hundred ms while someone is colouring.
+    await touchSpace(ctx, args.spaceId, now);
     if (args.regionId) {
       const marks = await ctx.db
         .query("paintMarks")
@@ -67,7 +72,7 @@ export const addStroke = mutation({
           tone: args.tone,
           points: args.points.slice(0, 1),
           preset: args.preset,
-          createdAt: Date.now(),
+          createdAt: now,
         });
         return existing._id;
       }
@@ -76,7 +81,7 @@ export const addStroke = mutation({
       ...args,
       points: args.points.slice(0, args.regionId ? 1 : 256),
       size: Math.min(0.08, Math.max(0.015, args.size)),
-      createdAt: Date.now(),
+      createdAt: now,
     });
   },
 });
@@ -104,6 +109,7 @@ export const clear = mutation({
       return mark.regionId?.startsWith(regionPrefix) ?? false;
     });
     for (const mark of targets) await ctx.db.delete(mark._id);
+    if (targets.length) await touchSpace(ctx, spaceId);
     return targets.length;
   },
 });
