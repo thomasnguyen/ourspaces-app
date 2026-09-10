@@ -18,6 +18,7 @@ import type * as digest from "../digest.js";
 import type * as firecrawl from "../firecrawl.js";
 import type * as http from "../http.js";
 import type * as inbox from "../inbox.js";
+import type * as inboxRouting from "../inboxRouting.js";
 import type * as messages from "../messages.js";
 import type * as migrations from "../migrations.js";
 import type * as paint from "../paint.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   firecrawl: typeof firecrawl;
   http: typeof http;
   inbox: typeof inbox;
+  inboxRouting: typeof inboxRouting;
   messages: typeof messages;
   migrations: typeof migrations;
   paint: typeof paint;
