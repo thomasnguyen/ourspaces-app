@@ -7,7 +7,8 @@
 //
 // Passkey is NOT wired: @convex-dev/better-auth@0.12.5 pins
 // better-auth >=1.6.11 <1.7.0 and @better-auth/passkey requires ^1.7.3, so
-// the two cannot coexist today. See docs/local/road-to-60.md §1.
+// the two cannot coexist today. Revisit when the adapter's pin moves; the
+// claim card already has the slot for it.
 import { createClient, type GenericCtx } from "@convex-dev/better-auth";
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
 import { betterAuth } from "better-auth";
