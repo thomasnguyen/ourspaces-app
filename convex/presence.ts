@@ -4,7 +4,9 @@ import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import schema from "./schema";
 
-const PRESENCE_TTL_MS = 30_000;
+// The client hides a cursor after 30s (src/live/usePresence.ts); the sweep
+// below runs well behind that so a brief tab stall never deletes a live row.
+const PRESENCE_SWEEP_AFTER_MS = 120_000;
 const GESTURE_TTL_MS = 1_500;
 
 const identityArgs = {
@@ -348,13 +350,16 @@ export const cancelGesture = mutation({
 export const listHereNow = query({
   args: { spaceId: v.id("spaces") },
   returns: v.array(schema.doc("presence")),
+  // No Date.now() here on purpose. A query's result is cached against its
+  // args, so a wall-clock bound inside the handler never re-evaluates as time
+  // passes — it only moves when a presence row is written, which is not what
+  // "who is here right now" means. Freshness is owned by the two things that
+  // actually observe time: the 1-minute cleanup cron sweeps rows past the TTL,
+  // and the client re-filters on its own tick (src/live/usePresence.ts).
   handler: async (ctx, { spaceId }) => {
-    const staleBefore = Date.now() - PRESENCE_TTL_MS;
     return await ctx.db
       .query("presence")
-      .withIndex("by_space_updated", (q) =>
-        q.eq("spaceId", spaceId).gte("updatedAt", staleBefore),
-      )
+      .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
       .collect();
   },
 });
@@ -363,7 +368,7 @@ export const cleanup = internalMutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    const staleBefore = Date.now() - 120_000;
+    const staleBefore = Date.now() - PRESENCE_SWEEP_AFTER_MS;
     const rows = await ctx.db.query("presence").collect();
     for (const row of rows) {
       if (row.updatedAt < staleBefore) await ctx.db.delete(row._id);
