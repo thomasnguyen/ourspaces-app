@@ -4,6 +4,10 @@ import { ShardedCounter } from "@convex-dev/sharded-counter";
 import { components } from "./_generated/api";
 
 const PRESENCE_TTL_MS = 30_000;
+// Upper bound on the presence rows the live counter will scan. The cleanup
+// cron keeps this table small; take() stops a missed sweep turning the live
+// counter into a full scan.
+const MAX_PRESENCE_SCAN = 1000;
 
 // sharded-counter: global live totals for the landing "live backend" widget.
 // Every session across every space can create a widget/message/space at
@@ -18,19 +22,26 @@ export const messagesCounter = counters.for("messages");
 
 /** Live counts for the build club "live backend" widget. */
 export const getLiveCounts = query({
-  args: {},
+  // `now` is an argument, not Date.now() in the handler. A query is cached
+  // against its args, so a clock read inside would freeze at whatever the
+  // first caller saw and never tick. Passing a coarse bucket keeps the
+  // function deterministic and lets the cache turn over on a known cadence.
+  args: { now: v.number() },
   returns: v.object({
     counts: v.array(v.object({ label: v.string(), value: v.number() })),
   }),
-  handler: async (ctx) => {
+  handler: async (ctx, { now }) => {
     const [spaces, widgets, messages, presence] = await Promise.all([
       spacesCounter.count(ctx),
       widgetsCounter.count(ctx),
       messagesCounter.count(ctx),
-      ctx.db.query("presence").collect(),
+      // Bounded: the cleanup cron sweeps this table every minute, so it holds
+      // only recent rows. take() keeps it from ever becoming a full scan if a
+      // sweep is missed.
+      ctx.db.query("presence").take(MAX_PRESENCE_SCAN),
     ]);
 
-    const staleBefore = Date.now() - PRESENCE_TTL_MS;
+    const staleBefore = now - PRESENCE_TTL_MS;
     const hereNow = presence.filter((row) => row.updatedAt >= staleBefore).length;
 
     return {
