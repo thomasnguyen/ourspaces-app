@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { SPACE_TEMPLATES } from "../data/templates";
+import { SPACE_TEMPLATES, WIDGET_CATALOG } from "../data/templates";
 import type { SpaceTemplate, WidgetType } from "../data/types";
 import { useIdentity } from "../live/identity";
 import { useCreateSpace } from "../live/useCreateSpace";
@@ -44,6 +44,35 @@ const SLOTS_THREE = [
 ];
 
 /**
+ * The custom shape: your colour, your mark, your widgets. The swatches are
+ * the identity colours the showcase spaces already wear (`@theme`), so a
+ * hand-made space sits in the rail like it belongs there.
+ */
+const CUSTOM_COLORS = [
+  "#7853ff",
+  "#e9369d",
+  "#3f70ff",
+  "#ff7c42",
+  "#13b8a6",
+  "oklch(0.42 0.09 160)",
+];
+const CUSTOM_MARKS = ["✦", "♥", "▲", "◎", "★", "☀", "♪", "⚑", "✿", "⌂"];
+const CUSTOM_TYPES: WidgetType[] = [
+  "note",
+  "chat",
+  "poll",
+  "countdown",
+  "photoWall",
+  "dailyQ",
+  "rsvp",
+  "potluck",
+  "playlist",
+  "availability",
+];
+const CUSTOM_MAX = SLOTS_FULL.length;
+const CUSTOM_ID = "custom";
+
+/**
  * A widget at postage-stamp size. Each type gets the shape it really has on
  * the canvas — the countdown is a big number, the poll is bars, the chat is
  * bubbles — so the board reads as a room, not a feature list. Pure CSS
@@ -51,6 +80,14 @@ const SLOTS_THREE = [
  */
 function MiniWidget({ type }: { type: WidgetType }) {
   switch (type) {
+    case "note":
+      return (
+        <span className="mini-note">
+          <i />
+          <i />
+          <i />
+        </span>
+      );
     case "countdown":
       return (
         <span className="mini-count">
@@ -218,7 +255,12 @@ export function SpaceMaker({
   onClose: () => void;
   onMade: (slug: string) => void;
 }) {
-  const [template, setTemplate] = useState<SpaceTemplate>(SPACE_TEMPLATES[0]);
+  const [pickedId, setPickedId] = useState<string>(SPACE_TEMPLATES[0].id);
+  const [custom, setCustom] = useState({
+    color: CUSTOM_COLORS[0],
+    icon: CUSTOM_MARKS[0],
+    types: [] as WidgetType[],
+  });
   const [name, setName] = useState("");
   // Guests only: the keep-it panel is folded until they press the button.
   const [keeping, setKeeping] = useState(false);
@@ -259,6 +301,28 @@ export function SpaceMaker({
   }, [makeWhenJoined, account.joined]);
 
   if (!open) return null;
+
+  const isCustom = pickedId === CUSTOM_ID;
+  const template: SpaceTemplate = isCustom
+    ? {
+        id: CUSTOM_ID,
+        name: "our space",
+        color: custom.color,
+        icon: custom.icon,
+        description: "",
+        widgets: custom.types
+          .map((type) => WIDGET_CATALOG.find((item) => item.type === type))
+          .filter((item): item is (typeof WIDGET_CATALOG)[number] => Boolean(item)),
+      }
+    : (SPACE_TEMPLATES.find((item) => item.id === pickedId) ?? SPACE_TEMPLATES[0]);
+
+  const toggleType = (type: WidgetType) =>
+    setCustom((prev) => {
+      if (prev.types.includes(type))
+        return { ...prev, types: prev.types.filter((item) => item !== type) };
+      if (prev.types.length >= CUSTOM_MAX) return prev;
+      return { ...prev, types: [...prev.types, type] };
+    });
 
   const shownName = name.trim() || template.name;
   const onCode = join.stage === "code";
@@ -344,6 +408,11 @@ export function SpaceMaker({
               </div>
             );
           })}
+          {isCustom && custom.types.length === 0 && (
+            <span className="space-maker-empty">
+              tap a widget below to put it on the wall
+            </span>
+          )}
           <div
             className="space-maker-cursor"
             style={{ "--cursor-color": identity.color } as CSSProperties}
@@ -362,19 +431,89 @@ export function SpaceMaker({
             <li key={item.id}>
               <button
                 type="button"
-                className={item.id === template.id ? "is-picked" : ""}
+                className={item.id === pickedId ? "is-picked" : ""}
                 style={{ "--shape-color": item.color } as CSSProperties}
                 disabled={settingUp}
-                onClick={() => setTemplate(item)}
+                onClick={() => setPickedId(item.id)}
               >
                 <span aria-hidden="true">{`${item.icon}\uFE0E`}</span>
                 {item.name}
               </button>
             </li>
           ))}
+          <li>
+            <button
+              type="button"
+              className={isCustom ? "is-picked" : ""}
+              style={{ "--shape-color": custom.color } as CSSProperties}
+              disabled={settingUp}
+              onClick={() => setPickedId(CUSTOM_ID)}
+            >
+              <span aria-hidden="true">✎</span>
+              custom
+            </button>
+          </li>
         </ul>
 
         <div className="space-maker-body">
+          {isCustom && (
+            <div className="space-maker-custom">
+              <div className="space-maker-custom-row">
+                <span className="space-maker-custom-label">colour</span>
+                <span className="space-maker-swatches">
+                  {CUSTOM_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={color === custom.color ? "is-picked" : ""}
+                      style={{ background: color }}
+                      aria-label="Pick a colour"
+                      onClick={() => setCustom((prev) => ({ ...prev, color }))}
+                    />
+                  ))}
+                </span>
+                <span className="space-maker-custom-label">mark</span>
+                <span className="space-maker-marks">
+                  {CUSTOM_MARKS.map((mark) => (
+                    <button
+                      key={mark}
+                      type="button"
+                      className={mark === custom.icon ? "is-picked" : ""}
+                      onClick={() => setCustom((prev) => ({ ...prev, icon: mark }))}
+                    >
+                      {`${mark}\uFE0E`}
+                    </button>
+                  ))}
+                </span>
+              </div>
+              <div className="space-maker-custom-row">
+                <span className="space-maker-custom-label">
+                  on the wall
+                  <small>
+                    {custom.types.length}/{CUSTOM_MAX}
+                  </small>
+                </span>
+                <span className="space-maker-types">
+                  {CUSTOM_TYPES.map((type) => {
+                    const item = WIDGET_CATALOG.find((entry) => entry.type === type);
+                    if (!item) return null;
+                    const on = custom.types.includes(type);
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        className={on ? "is-on" : ""}
+                        onClick={() => toggleType(type)}
+                      >
+                        <span aria-hidden="true">{item.emoji}</span>
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </span>
+              </div>
+            </div>
+          )}
 
           {account.joined ? (
             <div className="space-maker-foot">
