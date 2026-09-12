@@ -52,17 +52,27 @@ Left on the widget layer: no editor forms yet for the four build-room types
 
 ---
 
-## 0. the build room — dev guild (`#/`, `#ff7c42` orange, `torch` theme)
+## 0. the build room — dev guild (`#/`, burnt-orange `torch` theme)
 
 **Status: built.** Seven members, 1640×1080. The default demo space; the crew
 stays one click away in the rail.
 
-Desktop opens on a compact overview of all five zones. The shared mock/live
-camera fits the existing frame bounds between the tighter header and dock,
-capped at `.84`; focus still zooms to a widget and returns to that overview.
-Mobile keeps its existing stacked layout. The three pinned links use the local
-ceramic, violet-collage, and riso covers when Firecrawl has no image; scraped
-images and monograms remain the fallbacks for the rest.
+Desktop opens on a centered overview of all five zones, with a wider pile and
+landscape shipping wall on the left, compact hot/keepers/roundtable on the right.
+The shared mock/live camera fits the frame bounds between the header and dock
+(max scale `1`). `buildRoomPresentation.ts` maps recognized legacy demo
+placements to this composition without writing the database; later member moves
+retain their saved coordinates. The wall uses `--color-buildroom`, a deeper burnt orange chosen after the
+original bright torch color proved overpowering. The header keeps the copyable email address
+beside the title and preserves presence, add, invite, and editing.
+
+The pile uses overlapping full-size cover cards, a taped black front and five
+member faces. Hot links keep their real content, with stable local art on seeded
+favorites. The three original shipping photos render as **illustrated project
+previews** (performance, search spec, release), shared with the full ship room;
+user uploads continue rendering as images. Labels sit on frame edges, and
+keepers keep their paper/pushpin treatment. Mobile explicitly stacks the widget
+groups at viewport width, with section labels and a smaller pile fan.
 
 The problem it answers: a dev group drops links one at a time all week and ends
 up with 50, and 50 cards on a canvas fails. So it's an **attention funnel** —

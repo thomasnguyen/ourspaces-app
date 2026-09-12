@@ -20,6 +20,7 @@ used to be pasted 138 times).
   --color-fam: #3f70ff;
   --color-trip: #ff7c42;
   --color-league: #13b8a6;
+  --color-buildroom: oklch(0.63 0.155 42);
   --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --radius-pill: 9999px;
@@ -38,7 +39,8 @@ used to be pasted 138 times).
 - **Color** — `paper`/`paper-deep` are the near-black base, `card` the warm
   white object, `mat` the kraft frame floor, `sticker` the black pill, `lime`
   the one tiny pop. `crew` / `couple` / `fam` / `trip` / `league` are the loud
-  per-space identity colors.
+  per-space identity colors. `buildroom` is the deeper burnt-orange wall,
+  softened from the initial bright torch color after visual review.
 - **Motion** — three curves, three jobs: `glide` is the default (hover, press,
   translate, opacity), `pop` is for things *arriving*, `snap` is for climax
   beats only. Durations run `instant` 120ms → `hero` 900ms. The house motion

@@ -4,6 +4,7 @@ import { playSound } from "../lib/sounds";
 import { CanvasRoom, type RoomOrigin } from "./CanvasRoom";
 import { MemberFace } from "./MemberFace";
 import type { RoomReply } from "./ReadingRoom";
+import { ShipPreview } from "../widgets/buildroom";
 
 /** Free text with bare URLs turned into links — no markdown, just the useful bit. */
 function Body({ text }: { text: string }) {
@@ -71,7 +72,7 @@ export function ShipRoom({
       <div className="ship-room-body">
         <section className="sr-shot" aria-label={title}>
           {imageUrl ? (
-            <img src={imageUrl} alt="" draggable={false} />
+            <ShipPreview imageUrl={imageUrl} />
           ) : (
             <button
               type="button"

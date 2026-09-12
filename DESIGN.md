@@ -112,6 +112,11 @@ chrome. They are peers, not a hierarchy.
 - **Trip Orange** (#ff7a3d): trip / event spaces.
 - **League Teal** (#13b8a6): rec-league / recurring-group spaces.
 
+The build room uses `--color-buildroom` for its burnt-orange wall (`torch`
+preset); it is deliberately deeper and less saturated than the original torch
+color so the full-screen field supports the objects. Its small orange accents
+continue using the existing trip token.
+
 ### Secondary — The one pop
 - **Lime** (#c6f750): the brand mark, the live status dot, the `+` to add. Used
   tiny and rare, on a handful of elements per screen. **Never fills a panel.**

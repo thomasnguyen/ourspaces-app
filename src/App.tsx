@@ -644,7 +644,10 @@ export default function App() {
       }
 
       const viewportStyles = window.getComputedStyle(viewport);
-      const paddingLeft = cssPixels(viewportStyles.paddingLeft);
+      const stageMargin = canvasStageRef.current
+        ? cssPixels(window.getComputedStyle(canvasStageRef.current).marginLeft)
+        : 0;
+      const paddingLeft = cssPixels(viewportStyles.paddingLeft) + stageMargin;
       const paddingRight = cssPixels(viewportStyles.paddingRight);
       const paddingTop = cssPixels(viewportStyles.paddingTop);
       const paddingBottom = cssPixels(viewportStyles.paddingBottom);

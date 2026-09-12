@@ -5,6 +5,20 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Build room reference pass (2026-09-12):** centered the five zones, enlarged
+  the layered link pile, made shipping posts landscape project previews, and
+  reduced the header/rail/dock weight. The user found the full-screen orange
+  too bright, so `--color-buildroom` now gives the torch theme a deeper burnt
+  orange (also reflected in the theme picker). Email remains a copyable header chip;
+  add, invite, presence, catch-up and threads retain their existing behavior.
+  `buildRoomPresentation.ts` restyles only recognized old demo placements in
+  mock/live mode; other saved placements remain user-owned. Project previews
+  are illustrative demo art; uploaded images replace them normally.
+  Fixed the pre-existing mobile overflow: groups now stack at phone width,
+  section labels remain visible, and the pile fan stays inside the viewport.
+  Verified live-data local preview on desktop and phone, reading/ship rooms,
+  and frame focus/return. `npm run build` passed. No backend deployment.
+
 - **AgentMail is now a real Convex component + Firecrawl went deep** (2026-08-31).
   Deepened both sponsor integrations. `npm run build` green.
   - **`components.agentMail`** — our OWN first-party component at
@@ -175,10 +189,10 @@ Backward-looking history lives in `hackathon.md`.
   **keepers**, **shipping wall**, **roundtable**. Four new widget types live in
   `src/widgets/buildroom.tsx`; keepers reuse `note` with `data.title` +
   `data.pin` (`.is-keeper` drops the "remember this" affordance).
-  Desktop now opens on a mock/live shared overview camera (frame-fit, max
-  `.84`) with all five zones clear of the compact header, rail, and dock; focus
-  returns there, resize recomputes it while unfocused, and mobile stacking is
-  unchanged. The three pinned links use the local ceramic, violet-collage, and
+  Desktop opens on a centered mock/live shared overview camera (frame-fit, max
+  `1`) with all five zones clear of the compact header, rail, and dock; focus
+  returns there and resize recomputes it while unfocused. Phone widgets stack
+  at the viewport width with visible section labels. The three pinned links use the local ceramic, violet-collage, and
   riso covers before falling back to monograms. Shots:
   `.context/buildroom-{canvas,reading-room,ship-room}.png`.
 - **The attention funnel works end to end, live.** Open the pile card *or its
