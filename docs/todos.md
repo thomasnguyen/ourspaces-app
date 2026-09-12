@@ -5,6 +5,18 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Rail eye-candy pass (2026-09-12):** the space rail now floats on a soft
+  deep shadow instead of a tight neutral drop; the active tile's hard offset
+  shadow is the space accent darkened toward black (`color-mix … 58%, black`)
+  so it reads on the rail and on a same-hue wall (build room orange); photo
+  tiles lost most of their purple dim and gained a 1px printed-photo edge, and
+  in the build room they sit 4px bigger than icon tiles for collage rhythm;
+  the `+` is lime at rest (its rule in DESIGN.md), not a ghosted white; the
+  tooltip slaps on with `--ease-pop`. New: a lime `.space-link-dot` on a tile
+  when anyone is in that space — `OnlineDot` in `Rail.tsx`, same
+  `roomPresence.onlineCountForSpace` query as the tooltip suffix (cache
+  dedupes it), live mode only. Shot script: `.context/shot-rail.mjs` (3x rail
+  clip for build room + crew, still / fake-dot / hover).
 - **App-wide reading pass (2026-09-12):** the user
   clarified that body-text readability applies throughout the app. Messages,
   descriptions, letters, recaps and forms now share 16px regular IBM Plex Sans,

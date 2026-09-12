@@ -659,9 +659,9 @@
   align-items: center;
   border-radius: 28px;
   background: var(--color-rail);
-  box-shadow: 0 8px 8px rgba(45, 22, 31, 0.2);
+  box-shadow: 0 22px 44px -18px rgba(0, 0, 0, 0.6);
   animation: rail-in var(--dur-stage) var(--ease-glide) backwards;
-  padding: 16px 10px 14px;
+  padding: 16px 10px 16px;
 }
 
 @keyframes rail-in {
@@ -715,10 +715,10 @@
   height: 44px;
   flex: 0 0 auto;
   place-items: center;
-  border: 1.5px dashed rgba(255, 255, 255, 0.32);
+  border: 1.5px dashed rgba(255, 255, 255, 0.42);
   border-radius: 14px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-lime);
   cursor: pointer;
   transition:
     translate var(--dur-quick) var(--ease-glide),
@@ -811,11 +811,28 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: rgba(34, 16, 63, 0.2);
+  background: rgba(20, 10, 30, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
   content: "";
 }
 
-.space-link.has-photo > span {
+/* Someone is in this space right now — the one lime pop on the rail.
+   Real presence data only (see Rail.tsx); never rendered in mock mode. */
+.space-link-dot {
+  position: absolute;
+  z-index: 2;
+  top: -4px;
+  right: -4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--color-lime);
+  box-shadow: 0 0 0 2.5px var(--color-rail);
+  animation: rail-tile-in var(--dur-arrive) var(--ease-pop) backwards;
+  pointer-events: none;
+}
+
+.space-link.has-photo > span:not(.space-link-dot) {
   position: relative;
   z-index: 1;
 }
@@ -842,11 +859,11 @@
 }
 
 .space-link.is-active {
-  translate: 9px 0;
+  translate: 8px 0;
   rotate: -2deg;
   box-shadow:
     0 0 0 3px white,
-    6px 7px 0 var(--space-accent, #7853ff);
+    6px 7px 0 color-mix(in oklch, var(--space-accent, #7853ff) 58%, black);
   transition:
     translate var(--dur-base) var(--ease-pop),
     rotate var(--dur-base) var(--ease-pop),
@@ -870,7 +887,7 @@
   transform-origin: left center;
   transition:
     opacity var(--dur-quick) ease-out,
-    transform var(--dur-quick) var(--ease-glide);
+    transform var(--dur-base) var(--ease-pop);
   white-space: nowrap;
 }
 
@@ -12317,7 +12334,7 @@
     translate: 0 -5px;
     box-shadow:
       0 0 0 2px white,
-      0 6px 0 rgba(120, 83, 255, 0.46);
+      0 6px 0 color-mix(in oklch, var(--space-accent, #7853ff) 58%, black);
   }
 
   .space-tooltip,
@@ -21229,6 +21246,7 @@
   .paper-bg[data-space-id="buildroom"] .space-rail { width: 64px; left: 22px; top: 24px; padding: 12px 6px; border-radius: 22px; }
   .paper-bg[data-space-id="buildroom"] .space-list { gap: 10px; }
   .paper-bg[data-space-id="buildroom"] .space-link { width: 42px; height: 42px; border-radius: 12px; }
+  .paper-bg[data-space-id="buildroom"] .space-link.has-photo { width: 46px; height: 46px; border-radius: 13px; }
   .paper-bg[data-space-id="buildroom"] .rail-brand { width: 30px; height: 30px; }
   .paper-bg[data-space-id="buildroom"] .action-dock { bottom: 18px; padding: 4px; }
   .paper-bg[data-space-id="buildroom"] .action-dock > button { min-height: 36px; padding: 7px 12px; font-size: 11px; }
