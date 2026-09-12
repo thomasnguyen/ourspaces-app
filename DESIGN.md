@@ -113,9 +113,13 @@ chrome. They are peers, not a hierarchy.
 - **League Teal** (#13b8a6): rec-league / recurring-group spaces.
 
 The build room uses `--color-buildroom` for its burnt-orange wall (`torch`
-preset); it is deliberately deeper and less saturated than the original torch
-color so the full-screen field supports the objects. Its small orange accents
-continue using the existing trip token.
+preset). The wall is a tonal system, not one flat fill: the five zone frames
+are panels one step deeper in the wall's own hue, every object's shadow is
+`--color-buildroom-deep` at half alpha (never neutral black, which turns orange
+to mud), and the canvas grid is a pegboard (dark hole, light rim). The room
+keeps one cool counterpoint — crew violet — for tape, pushpins and kind pills;
+magenta stays out of it. Its small orange accents on black objects continue
+using the existing trip token.
 
 ### Secondary — The one pop
 - **Lime** (#c6f750): the brand mark, the live status dot, the `+` to add. Used

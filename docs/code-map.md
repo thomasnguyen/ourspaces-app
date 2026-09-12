@@ -251,7 +251,7 @@ a photoWall widget's `data.photos`, becomes the pile cover;
 changing their ids/note threads) ·
 `convex.config.ts` (all 15 components + env)
 
-## src/index.css (~21.1k lines, hand-written, banner comments)
+## src/index.css (~22k lines, hand-written, banner comments)
 
 Tokens `@theme` (lines 4–27) → base (~1–1000) → space entrance (~1048) →
 per-widget sections (~1670–6300) → chrome: picker ~6305, threads ~7047,
@@ -261,8 +261,10 @@ block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
 (`.canvas-room` shell → `.reading-room` / `.rr-*` incl. the tag row, ship room
 `.sr-*`), the quote pushpin (~17882), the scroll-linked header fade (~17905),
 the letter envelope + mail chip, "BUILD ROOM — COMPACT OVERVIEW" (~20762),
-and app-wide reading typography (~21680: prose, inputs, paper sizing and
-mobile reading/ship rooms). New CSS goes in a new banner section at the end.
+app-wide reading typography (~21680: prose, inputs, paper sizing and
+mobile reading/ship rooms), and "BUILD ROOM — COLOR PASS" (end of file: tonal
+panels, wall-shade shadows; the pegboard grid sits in the torch theme block
+near line 171). New CSS goes in a new banner section at the end.
 
 ## scripts/
 

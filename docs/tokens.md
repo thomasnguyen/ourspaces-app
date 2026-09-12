@@ -20,7 +20,8 @@ used to be pasted 138 times).
   --color-fam: #3f70ff;
   --color-trip: #ff7c42;
   --color-league: #13b8a6;
-  --color-buildroom: oklch(0.63 0.155 42);
+  --color-buildroom: oklch(0.62 0.175 41);
+  --color-buildroom-deep: oklch(0.28 0.09 40);
   --text-body: 1rem;
   --text-body--line-height: 1.5;
   --text-caption: 0.875rem;
@@ -43,8 +44,11 @@ used to be pasted 138 times).
 - **Color** — `paper`/`paper-deep` are the near-black base, `card` the warm
   white object, `mat` the kraft frame floor, `sticker` the black pill, `lime`
   the one tiny pop. `crew` / `couple` / `fam` / `trip` / `league` are the loud
-  per-space identity colors. `buildroom` is the deeper burnt-orange wall,
-  softened from the initial bright torch color after visual review.
+  per-space identity colors. `buildroom` is the build room's burnt-orange
+  wall (richer than the first muted pass, still well under the bright torch
+  color that proved overpowering); `buildroom-deep` is the same hue at shadow
+  depth — the torch theme mixes it with alpha for every object's shadow, so
+  nothing on the orange casts neutral black.
 - **Reading** — `text-body` is 16px / 1.5 for prose and inputs;
   `text-caption` is 14px / 1.4 for supporting text. Both use IBM Plex Sans.
   Body weight is 400; bylines use 500. Canvas previews account for camera scale.
