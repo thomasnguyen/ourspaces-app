@@ -26,6 +26,19 @@ function OnlineCount({ spaceId }: { spaceId: string }) {
   return <OnlineCountSuffix spaceId={spaceId} />;
 }
 
+/* Lime dot on the tile when anyone is in that space. Same query as the
+   tooltip suffix — the query cache dedupes the subscription. */
+function OnlineDotLive({ spaceId }: { spaceId: string }) {
+  const count = useQuery(api.roomPresence.onlineCountForSpace, { spaceId }) ?? 0;
+  if (count <= 0) return null;
+  return <span className="space-link-dot" aria-hidden="true" />;
+}
+
+function OnlineDot({ spaceId }: { spaceId: string }) {
+  if (getDataMode() !== "live") return null;
+  return <OnlineDotLive spaceId={spaceId} />;
+}
+
 const SPACE_COVERS: Record<string, string> = {
   crew: "/assets/the-crew-snapshot-thumb.jpg",
   couple: "/assets/space-covers/us-two.png",
@@ -79,6 +92,7 @@ export function Rail({
               >
                 {/* U+FE0E keeps ♥ a text glyph (white ink) instead of the emoji */}
                 {!spaceCover && <span>{`${displaySpace.icon}\uFE0E`}</span>}
+                {hasSpace && <OnlineDot spaceId={space.id} />}
               </button>
               <span className="space-tooltip">
                 {displaySpace.name}
