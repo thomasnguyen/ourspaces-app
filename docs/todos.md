@@ -5,6 +5,16 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Start a new space is one sheet (2026-09-12):** rail "+" opens
+  `components/SpaceMaker.tsx` — pick a shape (the sheet drenches in its
+  colour, the mini board fills with tilted widget tiles), call it, keep it.
+  Joined people get one "make it" button. Guests get email → six slots
+  inline at the bottom, folded until "keep it"; the sixth digit verifies,
+  waits for `useAccount().joined` to flip, creates from the held draft, and
+  opens the room — no "you're in the book" pit stop. `WidgetPicker` is
+  widgets-only again; mock's "+" opens the widget picker (no backend to make
+  a space in). Verified live as a guest through the email step
+  (`/tmp/maker-*.png`); the code/verify path is the unchanged `useJoin`.
 - **Build room wall pass (2026-09-12, supersedes the color pass below):** the
   user didn't want the orange wall at all ("I don't like the orange bg"), then
   asked for something different than the first replacement (a denim felt).

@@ -26,9 +26,7 @@ import { SpaceEditorPanel } from "../components/SpaceEditorPanel";
 import { SpaceLiveStrip } from "../components/SpaceLiveStrip";
 import { WidgetEditorPanel } from "../components/WidgetEditorPanel";
 import { WidgetPicker } from "../components/WidgetPicker";
-import { JoinForm } from "../components/JoinForm";
-import { useAccount } from "../live/useJoin";
-import { useCreateSpace } from "../live/useCreateSpace";
+import { SpaceMaker } from "../components/SpaceMaker";
 import {
   WidgetThreadDock,
   type ThreadDockPlacement,
@@ -327,15 +325,9 @@ export function LiveSpacePage({
   const [recapHover, setRecapHover] = useState<string | null>(null);
   const [highlightMessageId, setHighlightMessageId] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
-  // The rail's "+" opens the SPACE picker; the dock's add opens the widget
-  // one. Same component, two modes.
+  // The rail's "+" opens the space maker; the dock's add opens the widget
+  // picker.
   const [spacePickerOpen, setSpacePickerOpen] = useState(false);
-  const account = useAccount();
-  // Set when someone finishes joining from the create-space nudge. It only
-  // dismisses the stamp — whether they can actually make a space is still
-  // account.joined, which is the server's answer, not ours.
-  const [joinDismissed, setJoinDismissed] = useState(false);
-  const spaceMaker = useCreateSpace();
   const [canvasAwayFromHome, setCanvasAwayFromHome] = useState(false);
   const [customization, setCustomization] = useState<SpaceCustomization>(() =>
     defaultSpaceCustomization(getSpace(slug)),
@@ -2382,37 +2374,13 @@ export function LiveSpacePage({
         onAddWidget={addWidget}
         onClose={() => setPickerOpen(false)}
       />
-      <WidgetPicker
+      <SpaceMaker
         open={spacePickerOpen}
-        mode="spaces"
-        creating={spaceMaker.busy}
-        // A guest gets the reason, not a refusal. The server would turn them
-        // away anyway (§1: making a space is the one thing an account buys).
-        spacesGate={
-          account.joined ? undefined : joinDismissed ? (
-            // The join form reloads the page on "keep going" (see JoinForm),
-            // so this is only ever a flash between click and navigation.
-            <p className="template-busy">one sec — getting your keys…</p>
-          ) : (
-            <JoinForm
-              reason="spaces you make stick around — so you need somewhere to come back to. one code, no password."
-              // Without this there is no way out of the "you're in the book"
-              // stamp: the gate only lifts when the currentUser query catches
-              // up, and until then the picker is a dead end.
-              onJoined={() => setJoinDismissed(true)}
-              onCancel={() => setSpacePickerOpen(false)}
-            />
-          )
-        }
-        createError={spaceMaker.error}
-        onCreateSpace={(template, name) => {
-          void spaceMaker.create(template, name).then((newSlug) => {
-            if (!newSlug) return;
-            setSpacePickerOpen(false);
-            window.location.hash = normalSpaceHash(newSlug);
-          });
-        }}
         onClose={() => setSpacePickerOpen(false)}
+        onMade={(newSlug) => {
+          setSpacePickerOpen(false);
+          window.location.hash = normalSpaceHash(newSlug);
+        }}
       />
       <WidgetEditorPanel
         widget={editingWidget}

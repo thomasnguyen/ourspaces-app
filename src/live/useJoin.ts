@@ -63,15 +63,17 @@ export function useJoin() {
       const digits = code.replace(/\D/g, "");
       if (digits.length !== 6) {
         setError("six digits, from the email");
-        return;
+        return false;
       }
       setBusy(true);
       setError(null);
       try {
         await signIn("email-otp", { email, code: digits });
         setStage("done");
+        return true;
       } catch {
         setError("that code didn't work. check it, or start over");
+        return false;
       } finally {
         setBusy(false);
       }

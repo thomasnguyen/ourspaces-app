@@ -3,8 +3,9 @@ import { useJoin } from "../live/useJoin";
 import { CodeSlots } from "./CodeSlots";
 
 /**
- * The join form: email in, six digits back. Lives inside the claim card and
- * inside the "make your own space" nudge — same two steps either place.
+ * The join form: email in, six digits back. Lives inside the claim card.
+ * (Making a space has its own inline copy of these steps — SpaceMaker.tsx —
+ * because there the code should open the room, not stamp a card.)
  *
  * Deliberately not a wall. Every copy line here is about keeping what you
  * already have, never about unlocking the app (§1).
