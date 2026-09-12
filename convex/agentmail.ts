@@ -9,6 +9,7 @@ import {
 } from "./_generated/server";
 import schema from "./schema";
 import { rateLimiter } from "./rateLimits";
+import { isParseable } from "./firecrawl";
 
 /**
  * AgentMail = the space's inbox. Every REST call goes through our first-party
@@ -17,6 +18,23 @@ import { rateLimiter } from "./rateLimits";
  * read env). The inbound webhook lands in convex/http.ts.
  */
 const API = "https://api.agentmail.to/v0";
+
+/** Attachment metadata as it arrives; and the parsed form the router reads. */
+export const inboundAttachmentValidator = v.object({
+  attachmentId: v.string(),
+  filename: v.string(),
+  contentType: v.string(),
+  size: v.number(),
+  inline: v.boolean(),
+});
+
+const parsedAttachmentValidator = v.object({
+  filename: v.string(),
+  contentType: v.string(),
+  size: v.number(),
+  text: v.string(),
+});
+
 
 /**
  * Best-effort acknowledgement of an inbound email: label it with the router's
@@ -245,9 +263,10 @@ export const onMessageReceived = internalMutation({
     to: v.string(),
     subject: v.string(),
     text: v.string(),
+    attachments: v.optional(v.array(inboundAttachmentValidator)),
   },
   returns: v.null(),
-  handler: async (ctx, { inboxId, messageId, threadId, from, to, subject, text }) => {
+  handler: async (ctx, { inboxId, messageId, threadId, from, to, subject, text, attachments }) => {
     const space = await ctx.db
       .query("spaces")
       .withIndex("by_inbox", (q) => q.eq("inboxId", inboxId))
@@ -265,7 +284,104 @@ export const onMessageReceived = internalMutation({
       threadId,
       createdAt: Date.now(),
     });
-    await ctx.scheduler.runAfter(0, internal.inbox.processInbound, { eventId });
+    // Attachment metadata rides the scheduler rather than the event row: the
+    // row stores parsed text, and parsing needs an action.
+    await ctx.scheduler.runAfter(0, internal.inbox.processInbound, { eventId, attachments });
+    return null;
+  },
+});
+
+/* ── attachments: emailed documents → text the router can read ──────────── */
+
+// Firecrawl bills per parse, so the cheap checks come first: skip inline parts
+// (signature logos, quoted images), anything over the cap, and anything that
+// isn't a document. Three per email is more than any real receipt needs.
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENTS = 3;
+
+/**
+ * The AgentMail → Firecrawl chain. AgentMail hands back a short-lived
+ * `download_url` per attachment rather than bytes, so Firecrawl can fetch and
+ * parse the document directly — nothing is ever staged in Convex storage.
+ *
+ * Best-effort throughout: an unreadable PDF returns no text and the router
+ * falls back to the email body, which is exactly what it did before this
+ * existed. An attachment must never cost us the email.
+ */
+export const parseAttachments = internalAction({
+  args: {
+    inboxId: v.optional(v.string()),
+    messageId: v.optional(v.string()),
+    attachments: v.optional(v.array(inboundAttachmentValidator)),
+  },
+  returns: v.array(parsedAttachmentValidator),
+  handler: async (ctx, { inboxId, messageId, attachments }) => {
+    if (!inboxId || !messageId) return [];
+    let listed = attachments;
+    // `undefined` means the webhook shape didn't carry attachments at all —
+    // ask AgentMail rather than assume the email had none. An empty array
+    // means it genuinely had none, and costs no call.
+    if (listed === undefined) {
+      try {
+        listed = await ctx.runAction(components.agentMail.lib.getMessageAttachments, {
+          apiKey: env.AGENTMAIL_API_KEY,
+          baseUrl: API,
+          inboxId,
+          messageId,
+        });
+      } catch {
+        return [];
+      }
+    }
+    const worth = listed
+      .filter((item) => !item.inline)
+      .filter((item) => item.size > 0 && item.size <= MAX_ATTACHMENT_BYTES)
+      .filter((item) => isParseable(item.contentType, item.filename))
+      .slice(0, MAX_ATTACHMENTS);
+
+    const parsed: {
+      filename: string;
+      contentType: string;
+      size: number;
+      text: string;
+    }[] = [];
+    for (const item of worth) {
+      try {
+        const url: string | null = await ctx.runAction(
+          components.agentMail.lib.getAttachmentUrl,
+          {
+            apiKey: env.AGENTMAIL_API_KEY,
+            baseUrl: API,
+            inboxId,
+            messageId,
+            attachmentId: item.attachmentId,
+          },
+        );
+        if (!url) continue;
+        const { text } = await ctx.runAction(internal.firecrawl.parseDocument, { url });
+        if (!text) continue;
+        parsed.push({
+          filename: item.filename || "attachment",
+          contentType: item.contentType,
+          size: item.size,
+          text,
+        });
+      } catch {
+        // this one document is unreadable; the rest of the email still routes
+      }
+    }
+    return parsed;
+  },
+});
+
+export const setEventAttachments = internalMutation({
+  args: {
+    eventId: v.id("emailEvents"),
+    attachments: v.array(parsedAttachmentValidator),
+  },
+  returns: v.null(),
+  handler: async (ctx, { eventId, attachments }) => {
+    await ctx.db.patch(eventId, { attachments });
     return null;
   },
 });

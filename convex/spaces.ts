@@ -1,4 +1,6 @@
 import { query, mutation, internalMutation, type MutationCtx } from "./_generated/server";
+import { requireRegisteredUserId, requireUserId } from "./auth";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { TableAggregate } from "@convex-dev/aggregate";
 import { components } from "./_generated/api";
@@ -127,6 +129,32 @@ export const getSpaceWithWidgets = query({
   },
 });
 
+/** "the tahoe trip" -> "the-tahoe-trip". Empty-safe. */
+function slugify(name: string) {
+  const stem = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 24);
+  return stem || "space";
+}
+
+/**
+ * The slug IS the invite link (#/join/<slug>) and the link is full access, so
+ * it has to carry entropy — "the-house" would be guessable by anyone.
+ */
+function randomSuffix() {
+  const alphabet = "abcdefghijkmnpqrstuvwxyz23456789"; // no l/o/0/1
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+}
+
+/**
+ * Make a space. Registered people only — this is the one thing an account
+ * buys (§1). The owner comes from the session, never from an argument, so
+ * there is no path from a forged userId to owning someone else's space.
+ */
 export const createSpace = mutation({
   args: {
     name: v.string(),
@@ -135,16 +163,117 @@ export const createSpace = mutation({
     color: v.string(),
     eventAt: v.optional(v.number()),
   },
-  returns: v.id("spaces"),
+  returns: v.object({ spaceId: v.id("spaces"), slug: v.string() }),
   handler: async (ctx, args) => {
+    const ownerId = await requireRegisteredUserId(ctx);
     const now = Date.now();
-    const id = await ctx.db.insert("spaces", {
+    const slug = `${slugify(args.name)}-${randomSuffix()}`;
+    const spaceId = await ctx.db.insert("spaces", {
       ...args,
+      ownerId,
+      slug,
       createdAt: now,
       lastActivityAt: now,
     });
     await spacesCounter.inc(ctx);
-    return id;
+    return { spaceId, slug };
+  },
+});
+
+/**
+ * The space, if the caller made it. An unset `ownerId` (every seeded showcase
+ * space) always throws — those are CLI-only by design.
+ */
+async function requireOwner(ctx: MutationCtx, spaceId: Id<"spaces">) {
+  const space = await ctx.db.get(spaceId);
+  if (!space) throw new Error("no such space");
+  const me = await requireUserId(ctx);
+  if (!space.ownerId || space.ownerId !== me) {
+    throw new Error("only the person who made this space can change it");
+  }
+  return space;
+}
+
+/** Rename / retint / re-icon your own space. */
+export const renameSpace = mutation({
+  args: {
+    spaceId: v.id("spaces"),
+    name: v.optional(v.string()),
+    tagline: v.optional(v.string()),
+    icon: v.optional(v.string()),
+    color: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, { spaceId, ...patch }) => {
+    await requireOwner(ctx, spaceId);
+    const fields = Object.fromEntries(
+      Object.entries(patch).filter(([, value]) => value !== undefined),
+    );
+    if (Object.keys(fields).length > 0) await ctx.db.patch(spaceId, fields);
+    return null;
+  },
+});
+
+/** Delete your own space, and everything in it. */
+export const deleteSpace = mutation({
+  args: { spaceId: v.id("spaces") },
+  returns: v.null(),
+  handler: async (ctx, { spaceId }) => {
+    const space = await requireOwner(ctx, spaceId);
+    if (space.slug) await deleteSpaceBySlug(ctx, space.slug);
+    return null;
+  },
+});
+
+/**
+ * "yours" in the rail: spaces you made, plus spaces you were invited into.
+ * Returns [] for a signed-out visitor rather than throwing — the rail renders
+ * for everyone.
+ */
+export const listMine = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("spaces"),
+      name: v.string(),
+      slug: v.optional(v.string()),
+      icon: v.string(),
+      color: v.string(),
+      isOwner: v.boolean(),
+    }),
+  ),
+  handler: async (ctx) => {
+    const me = await getAuthUserId(ctx);
+    if (me === null) return [];
+
+    const owned = await ctx.db
+      .query("spaces")
+      .withIndex("by_owner", (q) => q.eq("ownerId", me))
+      .collect();
+    const seen = new Set(owned.map((space) => space._id));
+
+    // Spaces someone invited you into. Seeded showcase spaces are filtered
+    // out — they already have their own group in the rail.
+    const joined = [];
+    for (const membership of await ctx.db
+      .query("members")
+      .withIndex("by_user", (q) => q.eq("userId", me))
+      .collect()) {
+      if (seen.has(membership.spaceId)) continue;
+      const space = await ctx.db.get(membership.spaceId);
+      if (!space || !space.ownerId) continue;
+      seen.add(space._id);
+      joined.push(space);
+    }
+
+    return [...owned, ...joined].map((space) => ({
+      _id: space._id,
+      name: space.name,
+      slug: space.slug,
+      icon: space.icon,
+      color: space.color,
+      isOwner: space.ownerId === me,
+    }));
   },
 });
 

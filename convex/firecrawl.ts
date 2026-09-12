@@ -368,3 +368,64 @@ export const listCrawlPages = query({
   handler: async (ctx, { crawlId, paginationOpts }) =>
     await firecrawl.listPages(ctx, { crawlId, paginationOpts }),
 });
+
+/* ── Firecrawl parse: emailed documents → text the mail router can read ───── */
+
+// Firecrawl's `/parse` endpoint wants a multipart upload; `/scrape` detects the
+// file type and parses it identically when you already have a public URL. We
+// always have a URL (AgentMail hands back a short-lived `download_url`), so
+// this is a scrape with a pdf parser attached, not a separate surface.
+const PARSEABLE = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/msword",
+  "application/vnd.ms-excel",
+  "text/csv",
+  "text/plain",
+  "text/html",
+];
+
+/** Is this attachment worth spending a Firecrawl credit on? */
+export function isParseable(contentType: string, filename: string): boolean {
+  const type = contentType.toLowerCase().split(";")[0].trim();
+  if (PARSEABLE.includes(type)) return true;
+  return /\.(pdf|docx?|xlsx?|csv|txt|html?)$/i.test(filename);
+}
+
+/** One document URL → its text. Returns "" rather than throwing: a receipt we
+ *  couldn't read must still route on the email body, never drop the email. */
+export const parseDocument = internalAction({
+  args: { url: v.string(), maxPages: v.optional(v.number()) },
+  returns: v.object({ text: v.string(), title: v.string() }),
+  handler: async (ctx, { url, maxPages }) => {
+    try {
+      const doc = await firecrawl.scrape(ctx, url, {
+        formats: ["markdown"],
+        parsers: [{ type: "pdf", mode: "auto", maxPages: maxPages ?? 10 }],
+        onlyMainContent: true,
+        removeBase64Images: true,
+        maxAge: 0, // presigned URLs are single-use; a cached hit would be a lie
+      });
+      return {
+        text: plainDocument(doc.markdown ?? ""),
+        title: textValue(doc.metadata?.title),
+      };
+    } catch (error) {
+      console.warn(`parseDocument failed for ${url.slice(0, 80)}: ${String(error)}`);
+      return { text: "", title: "" };
+    }
+  },
+});
+
+/** Like plainSummary, but keeps the whole document — receipts are mostly
+ *  numbers in tables and the router needs the amounts, not a 240-char teaser. */
+function plainDocument(markdown: string) {
+  return markdown
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, 8_000);
+}

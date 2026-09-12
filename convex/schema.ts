@@ -32,10 +32,16 @@ export default defineSchema({
     inboxAddress: v.optional(v.string()),
     askThreadId: v.optional(v.string()), // agent component thread for recap.ask
     ragIndexedAt: v.optional(v.number()), // last rag.add sweep, see convex/rag.ts
+    // Who made it. Unset on every seeded/showcase space, and that is load-
+    // bearing: "no owner" means nobody can rename or delete it from the
+    // client. Only createSpace writes it, always from getAuthUserId — never
+    // from an argument. See docs/data-model-plan.md §1.
+    ownerId: v.optional(v.string()),
   })
     .index("by_name", ["name"]) // seed/demo lookup by display name
     .index("by_slug", ["slug"]) // every /:slug page load — the hot read
-    .index("by_inbox", ["inboxId"]), // inbound webhook → which space owns this inbox
+    .index("by_inbox", ["inboxId"]) // inbound webhook → which space owns this inbox
+    .index("by_owner", ["ownerId"]), // "yours" in the rail + the guest→join merge
 
   // Every email the space sends or receives — feeds the activity log widget.
   emailEvents: defineTable({
@@ -50,6 +56,19 @@ export default defineSchema({
     // AgentMail ids on inbound mail — let the router reply in-thread + label it.
     messageId: v.optional(v.string()),
     threadId: v.optional(v.string()),
+    // Documents that came attached, already parsed to text by Firecrawl. The
+    // router reads `text` alongside the email body, so a receipt that says
+    // nothing in the body still files itself off the PDF.
+    attachments: v.optional(
+      v.array(
+        v.object({
+          filename: v.string(),
+          contentType: v.string(),
+          size: v.number(),
+          text: v.string(),
+        }),
+      ),
+    ),
     // One lowercase sentence from the router: why it landed where it did (B1).
     because: v.optional(v.string()),
     createdAt: v.number(),
@@ -65,7 +84,8 @@ export default defineSchema({
     lastSeen: v.number(),
   })
     .index("by_space", ["spaceId"]) // roster + memberCounts aggregate
-    .index("by_space_user", ["spaceId", "userId"]), // is this person already a member
+    .index("by_space_user", ["spaceId", "userId"]) // is this person already a member
+    .index("by_user", ["userId"]), // every space one person is in (guest→join merge)
 
   widgets: defineTable({
     spaceId: v.id("spaces"),
@@ -119,7 +139,8 @@ export default defineSchema({
     optionId: v.string(),
   })
     .index("by_widget", ["widgetId"]) // tally a poll (also feeds the pollTallies aggregate)
-    .index("by_widget_user", ["widgetId", "userId"]), // one vote per user
+    .index("by_widget_user", ["widgetId", "userId"]) // one vote per user
+    .index("by_user", ["userId"]), // every vote one person cast (guest→join merge)
 
   paintMarks: defineTable({
     spaceId: v.id("spaces"),

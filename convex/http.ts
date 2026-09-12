@@ -70,6 +70,33 @@ async function svixVerified(req: Request, payload: string): Promise<boolean> {
     .some((part) => part.split(",")[1] === expected);
 }
 
+type WebhookAttachment = {
+  attachmentId: string;
+  filename: string;
+  contentType: string;
+  size: number;
+  inline: boolean;
+};
+
+/** AgentMail's snake_case attachment metadata → the component's shape. */
+function attachmentsFrom(raw: unknown[]): WebhookAttachment[] {
+  const out: WebhookAttachment[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+    const item = entry as Record<string, unknown>;
+    const attachmentId = str(item.attachment_id);
+    if (!attachmentId) continue;
+    out.push({
+      attachmentId,
+      filename: str(item.filename),
+      contentType: str(item.content_type),
+      size: typeof item.size === "number" ? item.size : 0,
+      inline: str(item.content_disposition) === "inline",
+    });
+  }
+  return out;
+}
+
 function str(value: unknown): string {
   if (typeof value === "string") return value;
   if (Array.isArray(value)) return value.filter((x) => typeof x === "string").join(", ");
@@ -101,6 +128,12 @@ http.route({
     const to = str(message.to);
     const subject = str(message.subject);
     const text = str(message.text ?? message.preview);
+    // `attachments` absent entirely (vs. an empty array) means this webhook
+    // shape doesn't carry them — the mail path re-fetches the message instead
+    // of assuming the email had none.
+    const attachments = Array.isArray(message.attachments)
+      ? attachmentsFrom(message.attachments)
+      : undefined;
     // Component owns dedup (AgentMail can redeliver) + the inbound store.
     const { isNew } = await ctx.runMutation(components.agentMail.lib.ingestWebhook, {
       eventId: str(event.event_id ?? event.id) || messageId,
@@ -111,6 +144,7 @@ http.route({
       to,
       subject,
       text,
+      attachments,
     });
     if (isNew) {
       await ctx.runMutation(internal.agentmail.onMessageReceived, {
@@ -121,6 +155,7 @@ http.route({
         to,
         subject,
         text,
+        attachments,
       });
     }
     return new Response("ok", { status: 200 });

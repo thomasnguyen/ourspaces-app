@@ -51,10 +51,43 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         { address: string; inboxId: string },
         Name
       >;
+      getAttachmentUrl: FunctionReference<
+        "action",
+        "internal",
+        {
+          apiKey: string;
+          attachmentId: string;
+          baseUrl: string;
+          inboxId: string;
+          messageId: string;
+        },
+        string | null,
+        Name
+      >;
+      getMessageAttachments: FunctionReference<
+        "action",
+        "internal",
+        { apiKey: string; baseUrl: string; inboxId: string; messageId: string },
+        Array<{
+          attachmentId: string;
+          contentType: string;
+          filename: string;
+          inline: boolean;
+          size: number;
+        }>,
+        Name
+      >;
       ingestWebhook: FunctionReference<
         "mutation",
         "internal",
         {
+          attachments?: Array<{
+            attachmentId: string;
+            contentType: string;
+            filename: string;
+            inline: boolean;
+            size: number;
+          }>;
           eventId: string;
           from: string;
           inboxId: string;
@@ -75,6 +108,13 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         Array<{
           _creationTime: number;
           _id: string;
+          attachments?: Array<{
+            attachmentId: string;
+            contentType: string;
+            filename: string;
+            inline: boolean;
+            size: number;
+          }>;
           from: string;
           inboxId: string;
           labels: Array<string>;
