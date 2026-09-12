@@ -5,6 +5,19 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Build room wall pass (2026-09-12, supersedes the color pass below):** the
+  user didn't want the orange wall at all ("I don't like the orange bg"). Five
+  candidates shot side by side via `.context/shot-buildroom-wall.mjs` (soft
+  denim, mid denim, ink navy, cork, chalk slate); the dark walls flattened the
+  black slabs, cork read beige, so the wall is now a dusty denim felt —
+  `--color-buildroom: oklch(0.74 0.06 245)`, `--color-buildroom-deep:
+  oklch(0.35 0.07 250)`. Orange stays the room's identity but only as accent:
+  pile tape, the third ship tape, pushpins (`hue-rotate` on the purple
+  asset), kept count, vote arrows, rail tile — all via `--space-accent`.
+  Tonal panels, wall-shade shadows and pegboard are unchanged and still
+  derive from the token. Theme id stays `torch` (label now "denim").
+  `npm run build` passed. No deployment.
+
 - **Build room color pass (2026-09-12):** the user asked for a more appealing
   orange. Decision: keep orange as the identity but stop treating it as one
   flat fill. `--color-buildroom` is now `oklch(0.62 0.175 41)` (richer, a hair

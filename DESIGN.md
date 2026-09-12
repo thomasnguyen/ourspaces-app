@@ -112,14 +112,16 @@ chrome. They are peers, not a hierarchy.
 - **Trip Orange** (#ff7a3d): trip / event spaces.
 - **League Teal** (#13b8a6): rec-league / recurring-group spaces.
 
-The build room uses `--color-buildroom` for its burnt-orange wall (`torch`
-preset). The wall is a tonal system, not one flat fill: the five zone frames
-are panels one step deeper in the wall's own hue, every object's shadow is
-`--color-buildroom-deep` at half alpha (never neutral black, which turns orange
-to mud), and the canvas grid is a pegboard (dark hole, light rim). The room
-keeps one cool counterpoint — crew violet — for tape, pushpins and kind pills;
-magenta stays out of it. Its small orange accents on black objects continue
-using the existing trip token.
+The build room uses `--color-buildroom` for its wall: a dusty denim felt
+(`torch` preset — the id survived three oranges and a color change). The
+room's identity color is still orange, but it lives on the objects, not the
+wall: the tape, the pushpins, the kept count, the vote arrows and the rail
+tile all take `--space-accent`, so the loud color is rare and the black slabs
+and white paper do the talking. The wall is a tonal system, not one flat fill:
+the five zone frames are panels one step deeper in the wall's own hue, every
+object's shadow is `--color-buildroom-deep` at half alpha (never neutral
+black, which goes gray on blue), and the canvas grid is a pegboard (dark hole,
+light rim). Kind pills keep crew violet; magenta stays out of it.
 
 ### Secondary — The one pop
 - **Lime** (#c6f750): the brand mark, the live status dot, the `+` to add. Used

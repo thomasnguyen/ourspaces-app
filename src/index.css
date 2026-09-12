@@ -16,8 +16,8 @@
   --color-fam: #3f70ff;
   --color-trip: #ff7c42;
   --color-league: #13b8a6;
-  --color-buildroom: oklch(0.62 0.175 41);
-  --color-buildroom-deep: oklch(0.28 0.09 40);
+  --color-buildroom: oklch(0.74 0.06 245);
+  --color-buildroom-deep: oklch(0.35 0.07 250);
   --text-body: 1rem;
   --text-body--line-height: 1.5;
   --text-caption: 0.875rem;
@@ -168,9 +168,11 @@
   --canvas-grid-major: rgba(255, 176, 46, 0.35);
 }
 
-/* The build room — a rich burnt orange, and everything on it is cut from the
-   same hue: the panels one step deeper, the shadows in the wall's own shade
-   (--color-buildroom-deep), never neutral black, which turns orange to mud. */
+/* The build room — a dusty denim felt board, and everything on it is cut
+   from the same hue: the panels one step deeper, the shadows in the wall's own
+   shade (--color-buildroom-deep), never neutral black, which goes gray on
+   blue. The room's orange is the accent now (tape, pins, counts, the rail
+   tile), not the wall — the objects are the loud part. */
 .paper-bg.space-theme-torch {
   background-color: var(--color-buildroom);
   --page-bg: var(--color-buildroom);
@@ -18461,15 +18463,16 @@
 /* ── THE BUILD ROOM ─────────────────────────────────────────────────────────
  * A dev guild space: the pile (everything anyone dropped), hot now (what the
  * room is actually reading), keepers (what we learned), the shipping wall, and
- * the roundtable. Flat black objects on flat orange — the identity color is the
- * field, never a wash on the cards. No gradients, no glows.
+ * the roundtable. Flat black objects and white paper on a dusty denim felt
+ * board — the room's orange is the accent (tape, pins, counts), never the
+ * field and never a wash on the cards. No gradients, no glows.
  *
  * Covers are monogram tiles rather than hotlinked og:images on purpose: 47
  * remote images would half-fail on camera. See src/data/buildroom.ts.
  */
 
 /* Outlined frames — the build room's frames are containers, not paper. The
-   kraft mat would fight the orange field, so this variant drops it. */
+   kraft mat would read as a second paper on the felt, so this variant drops it. */
 .widget-frame.is-outline {
   --frame-stroke: color-mix(in srgb, var(--color-ink) 34%, transparent);
   background: transparent;
@@ -21100,7 +21103,7 @@
   top: -9px;
   left: 38px;
   rotate: -7deg;
-  background: var(--color-crew);
+  background: var(--space-accent, var(--color-trip));
   opacity: .85;
   clip-path: polygon(0 4%, 99% 0, 100% 91%, 1% 100%);
 }
@@ -21205,17 +21208,20 @@
   color: var(--color-muted);
 }
 
+/* The pushpin asset is purple plastic; on the denim wall the room's pins are
+   orange like its tape, so the hue is rotated toward the accent. */
 .paper-bg[data-space-id="buildroom"] .note-paper-pin {
   background: url('/assets/ui/quote-pushpin.png') center / contain no-repeat;
   width: 24px;
   height: 28px;
   top: -14px;
   box-shadow: none;
+  filter: hue-rotate(118deg) saturate(1.25);
 }
 
 .widget-ship-post { gap: 9px; padding: 11px 11px 12px; }
 .br-ship-tape { width: 80px; height: 23px; background: color-mix(in srgb, var(--color-mat) 88%, transparent); }
-.widget-group:has(.widget-ship-post):nth-child(3n) .br-ship-tape { background: var(--color-crew); }
+.widget-group:has(.widget-ship-post):nth-child(3n) .br-ship-tape { background: var(--space-accent, var(--color-trip)); }
 .br-ship-byline { display: flex; align-items: center; gap: 5px; }
 .br-ship-byline .member-face { width: 18px; height: 18px; }
 .br-project-preview { display: block; width: 100%; height: 100%; font-family: var(--font-sans); }
@@ -21965,14 +21971,15 @@
 
 /* ================================================================
    BUILD ROOM — COLOR PASS
-   The wall used to be one flat mid orange edge to edge, black objects sat in
-   gray halos, and two hot accents (magenta tape, violet pins) argued with it.
-   Now the wall is richer (@theme --color-buildroom), the five zones are tonal
-   panels one step deeper in the wall's own hue (no paper, no kraft — they read
-   as painted sections), every object casts the wall's shade instead of neutral
-   black, and the room keeps one cool counterpoint: crew violet, on the tape,
-   the pushpins and the kind pills. Everything derives from the wall token, so
-   the torch theme carries it to any room. The dot grid became a pegboard (see
+   The wall went through three oranges (bright, muted, rich) and the objects
+   never won: a saturated field out-shouts black slabs and white paper. Now
+   the wall is a dusty denim felt (@theme --color-buildroom), the five zones
+   are tonal panels one step deeper in the wall's own hue (no paper, no kraft —
+   they read as felt sections), every object casts the wall's shade instead of
+   neutral black, and the room's identity color — orange — moved off the wall
+   and onto the tape, the pushpins, the kept count and the vote arrows, where
+   a loud color earns its place. Everything derives from the wall token, so the
+   torch theme carries it to any room. The dot grid is a pegboard (see
    .space-theme-torch above).
    ================================================================ */
 .paper-bg.space-theme-torch .widget-frame.is-outline {
