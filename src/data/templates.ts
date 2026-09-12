@@ -63,20 +63,6 @@ export const SPACE_TEMPLATES: SpaceTemplate[] = [
     ],
   },
   {
-    id: "couple",
-    name: "couple",
-    color: "#e9369d",
-    icon: "♥",
-    description: "countdown, photos, radio, color together",
-    widgets: [
-      { type: "countdown", label: "countdown", emoji: "⏳" },
-      { type: "media", label: "photo", emoji: "📷" },
-      { type: "chat", label: "chat", emoji: "💭" },
-      { type: "playlist", label: "playlist", emoji: "🎵" },
-      { type: "cozyColor", label: "color together", emoji: "🎨" },
-    ],
-  },
-  {
     id: "trip",
     name: "trip",
     color: "#ff7c42",
