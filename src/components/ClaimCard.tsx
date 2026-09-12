@@ -6,6 +6,8 @@ import {
 } from "../live/identity";
 import { getAvatarSrc, VISITOR_AVATAR_NAMES } from "../data/avatars";
 import { MemberFace } from "./MemberFace";
+import { JoinForm } from "./JoinForm";
+import { useAccount } from "../live/useJoin";
 
 export type InviteContext = {
   spaceName: string;
@@ -26,6 +28,8 @@ export function ClaimCard({
   inviteContext?: InviteContext;
 }) {
   const identity = useIdentity();
+  const account = useAccount();
+  const [joining, setJoining] = useState(false);
   const [draftName, setDraftName] = useState(identity.name);
   const fallbackName = useRef(identity.name);
 
@@ -48,6 +52,21 @@ export function ClaimCard({
     setDraftName(name);
     updateIdentity({ name });
   };
+
+  if (joining) {
+    return (
+      <section
+        className={`claim-card is-${variant}`}
+        aria-label="Keep this identity"
+      >
+        <JoinForm
+          reason="your name, your colour, the spaces you're in — kept, so you're the same person on your phone."
+          onJoined={() => setJoining(false)}
+          onCancel={() => setJoining(false)}
+        />
+      </section>
+    );
+  }
 
   return (
     /* Not an <aside>: when this is up it IS the page — the gate variant blocks
@@ -158,6 +177,22 @@ export function ClaimCard({
           </>
         )}
       </button>
+
+      {/* The second CTA §1 always planned. Never a wall: it sits UNDER the way
+          in, it is one quiet line, and "not now" is always there. */}
+      {account.joined ? (
+        <span className="claim-joined-note" title={account.email}>
+          saved to {account.email} ✓
+        </span>
+      ) : (
+        <button
+          type="button"
+          className="claim-join-link"
+          onClick={() => setJoining(true)}
+        >
+          keep this on your other devices
+        </button>
+      )}
     </section>
   );
 }

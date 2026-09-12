@@ -10,14 +10,112 @@
 // WebAuthn provider, and Auth.js's passkey provider needs adapter hooks this
 // library doesn't implement. The claim card already has the slot for it.
 import { convexAuth, getAuthUserId } from "@convex-dev/auth/server";
+import type { GenericMutationCtx, AnyDataModel } from "convex/server";
 import { Anonymous } from "@convex-dev/auth/providers/Anonymous";
-import type { DataModel } from "./_generated/dataModel";
+import { EmailOtp, OTP_PROVIDER_ID } from "./otp";
+import type { DataModel, Id } from "./_generated/dataModel";
 import { query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 
+/**
+ * Which `users` row a sign-in resolves to. Supplying this means we own ALL
+ * user-row creation, including the silent guest path — so the non-OTP branch
+ * below is load-bearing: get it wrong and nobody can walk in at all.
+ *
+ * Why it exists: it is what lets a guest keep their identity when they join.
+ * The callback runs inside the `auth:store` mutation, which carries the
+ * CALLER's identity — so `getAuthUserId` here is the anonymous guest who is
+ * registering. We patch the email onto their existing row and return the same
+ * id, and the library re-points the authAccounts row at it. Their votes,
+ * name, colour and membership all survive because the id never changed.
+ * That's §1's "upgrade, don't fork", with no data migration at all.
+ */
+async function createOrUpdateUser(
+  rawCtx: GenericMutationCtx<AnyDataModel>,
+  {
+    existingUserId,
+    type,
+    provider,
+    profile,
+  }: {
+    existingUserId: Id<"users"> | null;
+    type: "oauth" | "credentials" | "email" | "phone" | "verification";
+    provider: { id: string };
+    profile: Record<string, unknown> & { email?: string };
+  },
+): Promise<Id<"users">> {
+  const ctx = rawCtx as unknown as { db: GenericMutationCtx<DataModel>["db"] };
+  const db = ctx.db;
+
+  // Guest sign-in and anything else: stock behaviour. The whole product walks
+  // through here on every first visit.
+  if (provider.id !== OTP_PROVIDER_ID) {
+    if (existingUserId) {
+      await db.patch(existingUserId, profile);
+      return existingUserId;
+    }
+    return await db.insert("users", profile);
+  }
+
+  // Step 1 — a code was requested. The address is a CLAIM, not a fact yet, so
+  // the guest must not be touched: otherwise anyone could type a stranger's
+  // address, never read the code, and still have permanently welded that
+  // address onto their own account. Mint a throwaway stub instead.
+  if (type === "email") {
+    if (existingUserId) return existingUserId;
+    return await db.insert("users", { email: profile.email });
+  }
+
+  // Step 2 — the code checked out, so this address is proven.
+  const guestId = (await getAuthUserId(
+    rawCtx as never,
+  )) as Id<"users"> | null;
+  const guest = guestId ? await db.get(guestId) : null;
+  const stub = existingUserId ? await db.get(existingUserId) : null;
+  const now = Date.now();
+
+  // "Unclaimed stub" = made by step 1, never finished a verification. We are
+  // the only writer of emailVerificationTime, so it is a safe discriminator.
+  const stubIsUnclaimed =
+    stub !== null &&
+    stub.emailVerificationTime === undefined &&
+    stub.isAnonymous !== true;
+
+  // The demo path: a guest registers a fresh address. Adopt the email onto
+  // the guest's OWN row, so the user id never changes and nothing needs
+  // rewriting.
+  if (guest?.isAnonymous === true && stubIsUnclaimed && guestId) {
+    await db.patch(guestId, {
+      email: profile.email,
+      emailVerificationTime: now,
+      isAnonymous: undefined, // patching undefined removes the field
+    });
+    await db.delete(stub._id);
+    return guestId;
+  }
+
+  // Otherwise: a registered person signing in again (often on a new browser,
+  // which is the whole point of joining). Their durable identity wins and is
+  // returned as-is. This browser's throwaway guest rows are simply left
+  // behind — see convex/identityMerge.ts for folding them in.
+  if (existingUserId) {
+    await db.patch(existingUserId, {
+      email: profile.email,
+      emailVerificationTime: now,
+    });
+    return existingUserId;
+  }
+  return await db.insert("users", {
+    email: profile.email,
+    emailVerificationTime: now,
+  });
+}
+
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  // Anonymous is the guest path. No email+password, ever (§1 hard rules).
-  providers: [Anonymous<DataModel>()],
+  // Anonymous is the guest path; EmailOtp is "join". No email+password,
+  // ever (§1 hard rules) — the emailed code is not a password.
+  providers: [Anonymous<DataModel>(), EmailOtp],
+  callbacks: { createOrUpdateUser },
 });
 
 /**
