@@ -8605,19 +8605,28 @@
   margin-bottom: 14px;
 }
 
-/* The board: the new space, wearing its colour head to toe. */
+/* The board: the new space at postage-stamp size, wearing its colour head
+   to toe, with the canvas's own dot grid on the wall. */
 .space-maker-board {
   position: relative;
-  height: 232px;
+  height: 264px;
   margin: 0 20px;
   border-radius: 16px;
-  background: var(--maker-color);
+  background-color: var(--maker-color);
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.22) 0 1px,
+    transparent 1.4px
+  );
+  background-size: 22px 22px;
   overflow: hidden;
-  transition: background var(--dur-base) var(--ease-glide);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  transition: background-color var(--dur-base) var(--ease-glide);
 }
 
 .space-maker-board-head {
   position: absolute;
+  z-index: 3;
   top: 14px;
   left: 16px;
   right: 16px;
@@ -8640,82 +8649,528 @@
   font-size: 15px;
 }
 
+/* The name is typed straight onto the board, where it'll actually live. */
 .space-maker-board-name {
+  min-width: 2ch;
+  max-width: calc(100% - 70px);
+  flex: 0 1 auto;
+  field-sizing: content;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  outline: 0;
+  background: none;
   color: white;
+  padding: 2px 0;
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  caret-color: white;
+  transition: border-color var(--dur-quick) var(--ease-glide);
 }
 
-.space-maker-board-name.is-default {
-  opacity: 0.62;
+.space-maker-board-name::placeholder {
+  color: rgba(255, 255, 255, 0.66);
 }
 
-.space-maker-tiles {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.space-maker-board-name:focus {
+  border-bottom-color: rgba(255, 255, 255, 0.7);
 }
 
-/* Paper on the wall — the same tilted-sticker feel as the rail. Each one
-   lands in turn on every pick, which is what makes a template feel like a
-   room and not a list of features. */
+.space-maker-board-pencil {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  transition: opacity var(--dur-quick) var(--ease-glide);
+}
+
+.space-maker-board-name:focus + .space-maker-board-pencil {
+  opacity: 0;
+}
+
+/* Paper on the wall, hand-placed (SLOTS in SpaceMaker.tsx). Each one lands
+   in turn on every pick, which is what makes a template feel like a room. */
 .space-maker-tile {
+  position: absolute;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  min-height: 62px;
-  border-radius: 10px;
+  gap: 8px;
+  border-radius: 9px;
   background: var(--color-card);
-  box-shadow: 0 6px 14px rgba(17, 17, 20, 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 8px 18px rgba(17, 17, 20, 0.3);
   color: var(--color-ink);
-  padding: 9px 10px;
+  padding: 8px 9px 9px;
   rotate: var(--tilt);
   animation: space-maker-tile-in var(--dur-arrive) var(--ease-pop) backwards;
-  animation-delay: calc(40ms + var(--i, 0) * 45ms);
+  animation-delay: calc(60ms + var(--i, 0) * 55ms);
 }
 
-.space-maker-tile em {
-  font-size: 19px;
-  font-style: normal;
-  line-height: 1;
-}
-
-.space-maker-tile span {
+.space-maker-tile-label {
   align-self: flex-start;
   border-radius: 999px;
   background: var(--color-sticker);
   color: white;
-  padding: 3px 8px;
-  font-size: 10px;
+  padding: 3px 7px;
+  font-size: 9.5px;
   font-weight: 800;
   line-height: 1;
   text-transform: lowercase;
+  white-space: nowrap;
 }
 
 @keyframes space-maker-tile-in {
   from {
     opacity: 0;
-    translate: 0 16px;
+    translate: 0 18px;
     scale: 0.7;
+  }
+}
+
+/* ── the mini widgets ── flat ink shapes, the loud colour only as accent */
+.space-maker-tile strong {
+  font-family: var(--font-display);
+  line-height: 1;
+}
+
+.space-maker-tile i {
+  display: block;
+  font-style: normal;
+}
+
+.mini-count {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.mini-count strong {
+  font-size: 30px;
+  letter-spacing: -0.04em;
+}
+
+.mini-count span {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.mini-score {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mini-score > span {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.mini-score i {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+.mini-score b {
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+
+.mini-score > span:first-child b {
+  color: var(--maker-color);
+}
+
+.mini-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mini-bars i {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-ink);
+}
+
+.mini-bars i:first-child {
+  background: var(--maker-color);
+}
+
+.mini-ledger {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mini-ledger > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mini-ledger i {
+  flex: 1 1 auto;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(17, 17, 20, 0.16);
+}
+
+.mini-ledger b {
+  font-family: var(--font-display);
+  font-size: 11px;
+}
+
+.mini-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mini-chat i {
+  width: 62%;
+  height: 10px;
+  border-radius: 999px 999px 999px 3px;
+  background: rgba(17, 17, 20, 0.16);
+}
+
+.mini-chat i.is-mine {
+  align-self: flex-end;
+  width: 46%;
+  border-radius: 999px 999px 3px 999px;
+  background: var(--maker-color);
+}
+
+.mini-q {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.mini-q strong {
+  font-size: 22px;
+  color: var(--maker-color);
+}
+
+.mini-q > span {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 4px;
+}
+
+.mini-q i,
+.mini-joke i {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(17, 17, 20, 0.2);
+}
+
+.mini-q i:last-child,
+.mini-joke i:last-child {
+  width: 60%;
+}
+
+.mini-joke {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-joke > span {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mini-joke b {
+  border-radius: 999px;
+  background: var(--maker-color);
+  color: white;
+  padding: 3px 6px;
+  font-family: var(--font-display);
+  font-size: 10px;
+}
+
+.mini-wall {
+  display: flex;
+  gap: 4px;
+}
+
+.mini-wall i {
+  width: 22px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--color-lime);
+}
+
+.mini-wall i:nth-child(2) {
+  rotate: 4deg;
+  background: var(--maker-color);
+}
+
+.mini-wall i:nth-child(3) {
+  rotate: -3deg;
+  background: var(--color-mat);
+}
+
+.mini-photos {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  grid-template-rows: 14px 14px;
+  gap: 3px;
+}
+
+.mini-photos i {
+  border-radius: 3px;
+  background: var(--maker-color);
+}
+
+.mini-photos i:first-child {
+  grid-row: span 2;
+  background: var(--color-ink);
+}
+
+.mini-photos i:last-child {
+  background: var(--color-mat);
+}
+
+.mini-cal {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+}
+
+.mini-cal i {
+  height: 11px;
+  border-radius: 3px;
+  background: rgba(17, 17, 20, 0.12);
+}
+
+.mini-cal i.is-on {
+  background: var(--maker-color);
+}
+
+.mini-rsvp {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.mini-rsvp > span {
+  display: flex;
+}
+
+.mini-rsvp i {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-card);
+  border-radius: 50%;
+  background: var(--maker-color);
+  margin-left: -5px;
+}
+
+.mini-rsvp i:first-child {
+  margin-left: 0;
+  background: var(--color-ink);
+}
+
+.mini-rsvp i:last-child {
+  background: var(--color-mat);
+}
+
+.mini-rsvp b {
+  font-family: var(--font-display);
+  font-size: 11px;
+}
+
+.mini-check {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mini-check span {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(17, 17, 20, 0.16);
+  margin-left: 14px;
+}
+
+.mini-check span::before {
+  position: absolute;
+  top: -3px;
+  left: -14px;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--color-ink);
+  border-radius: 3px;
+  content: "";
+}
+
+.mini-check span.is-done::before {
+  background: var(--maker-color);
+  border-color: var(--maker-color);
+}
+
+.mini-play {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mini-play strong {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--color-ink);
+  color: var(--color-lime);
+  font-size: 12px;
+}
+
+.mini-play i {
+  position: relative;
+  flex: 1 1 auto;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(17, 17, 20, 0.16);
+}
+
+.mini-play i::before {
+  position: absolute;
+  inset: 0 42% 0 0;
+  border-radius: inherit;
+  background: var(--maker-color);
+  content: "";
+}
+
+.mini-swatch {
+  display: flex;
+  gap: 3px;
+}
+
+.mini-swatch i {
+  flex: 1 1 0;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--maker-color);
+}
+
+.mini-swatch i:nth-child(2) {
+  background: var(--color-lime);
+}
+
+.mini-swatch i:nth-child(3) {
+  background: var(--color-ink);
+}
+
+.mini-swatch i:nth-child(4) {
+  background: var(--color-mat);
+}
+
+.mini-route {
+  display: flex;
+  align-items: center;
+  padding: 4px 2px;
+}
+
+.mini-route i {
+  position: relative;
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--maker-color);
+}
+
+.mini-route i + i {
+  margin-left: auto;
+}
+
+.mini-route i + i::before {
+  position: absolute;
+  top: 3.5px;
+  right: 100%;
+  width: 34px;
+  height: 2px;
+  background: rgba(17, 17, 20, 0.2);
+  content: "";
+}
+
+.mini-weather {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mini-weather strong {
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.mini-weather span {
+  color: var(--maker-color);
+  font-size: 18px;
+}
+
+.mini-generic {
+  font-size: 18px;
+}
+
+/* Your own cursor, already in the room. The name is the one you claimed. */
+.space-maker-cursor {
+  position: absolute;
+  z-index: 4;
+  left: 57%;
+  top: 50%;
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  color: var(--cursor-color, var(--color-lime));
+  animation: space-maker-cursor-in var(--dur-stage) var(--ease-glide) 380ms backwards;
+}
+
+.space-maker-cursor svg {
+  fill: currentColor;
+  stroke: white;
+  stroke-width: 1.2;
+  filter: drop-shadow(0 1px 1px rgba(17, 17, 20, 0.3));
+}
+
+.space-maker-cursor span {
+  translate: 6px 8px;
+  border-radius: 999px;
+  background: var(--cursor-color, var(--color-lime));
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  color: white;
+  white-space: nowrap;
+  box-shadow: 0 1px 0 rgba(17, 17, 20, 0.25);
+}
+
+@keyframes space-maker-cursor-in {
+  from {
+    opacity: 0;
+    translate: -28px 18px;
   }
 }
 
 /* "yours" lands on the board the moment the code does. */
 .space-maker-stamp {
   position: absolute;
+  z-index: 5;
   top: 14px;
   right: 16px;
   font-size: 15px;
@@ -8776,25 +9231,6 @@
   opacity: 0.6;
 }
 
-.space-maker-name {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.space-maker-name .claim-name-input {
-  min-height: 42px;
-  font-family: var(--font-display);
-  font-size: 16px;
-}
-
-.space-maker-name .claim-name-input:focus {
-  border-color: var(--maker-color);
-}
-
 .space-maker-foot {
   display: flex;
   align-items: center;
@@ -8831,6 +9267,24 @@
 .space-maker-keep {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 14px;
+}
+
+.space-maker-keep-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.space-maker-keep-row .claim-name-input {
+  flex: 1 1 auto;
+}
+
+.space-maker-keep-row .claim-done {
+  flex: 0 0 auto;
+}
+
+.space-maker-keep .join-form-back {
+  align-self: flex-start;
 }
 
 .space-maker-keep .code-slot.is-next,
@@ -12393,6 +12847,7 @@
   .code-slot.just-landed,
   .join-stamp,
   .space-maker-tile,
+  .space-maker-cursor,
   .invite-popover,
   .arrival-toast,
   .member-face.is-new-arrival,
