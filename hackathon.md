@@ -561,3 +561,16 @@ kept count, vote arrows, rail tile — so the loud color is rare again. Tonal
 panels, wall-shade shadows and the pegboard carried over untouched because
 they derive from the token. Docs and tokens mirror the change; `npm run
 build` passes; no deployment.
+
+### 2026-09-12 - 0a0cf8e
+Round two on the build room wall. The denim felt was calmer than the
+orange but the user asked for something different, so four non-blue
+directions were shot side by side as complete theme overrides (blueprint,
+plaster, mustard, bottle green) and presented on one contact sheet. Landed
+blueprint: a deep cobalt wall (`--color-buildroom: oklch(0.40 0.12 262)`)
+ruled with a fine white drafting grid, white header ink, zone panels one step
+lighter than the wall, shadows in the wall's own deep shade, and orange kept
+as the accent where it is now the wall's complement. Made the compact header
+read `--space-heading-color` instead of hardcoded ink so the preset carries
+the ink. Plaster and bottle green stay one token swap away in the local
+script. `npm run build` passes; no deployment.
