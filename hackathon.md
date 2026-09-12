@@ -546,3 +546,18 @@ papers grow around the text, with the decorative tear below the author line;
 reading-list descriptions wrap below their titles. Phone reading rooms now
 offer full-width links and reading-circle views. Verified local desktop and
 phone views; `npm run build` passes. No backend changes or deployment.
+
+### 2026-09-12 - 706ff27
+The build room's wall left orange. Three passes (bright, deeper, richer
+tonal system) never fixed the real problem: a saturated field out-shouts the
+black slabs and white paper that make the sticker-wall look work, and the
+user finally said they didn't want the orange background at all. Shot five
+candidate walls side by side at demo distance (soft denim, mid denim, ink
+navy, cork, chalk slate) via a local `.context` script that injects token
+overrides; the dark walls flattened the black objects, cork read beige. Landed
+a dusty denim felt (`--color-buildroom: oklch(0.74 0.06 245)`) and demoted
+orange to the room's accent — pile tape, ship tape, hue-rotated pushpins,
+kept count, vote arrows, rail tile — so the loud color is rare again. Tonal
+panels, wall-shade shadows and the pegboard carried over untouched because
+they derive from the token. Docs and tokens mirror the change; `npm run
+build` passes; no deployment.
