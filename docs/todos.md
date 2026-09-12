@@ -11,7 +11,9 @@ Backward-looking history lives in `hackathon.md`.
   strip below; the wall is the new space at postage-stamp size: dot-grid
   wall, hand-placed paper tiles with a per-type mini widget — countdown is
   a number, poll is bars, chat is bubbles — your cursor with your claimed
-  name, and the name typed straight onto the board), keep it.
+  name, and the name typed straight onto the board), keep it. Sixth dock
+  item is **custom**: colour swatches (the identity tokens), a mark, and
+  widget pills you tap to put on the wall (max 6, the wall fills live).
   Joined people get one "make it" button. Guests get email → six slots
   inline at the bottom, folded until "keep it"; the sixth digit verifies,
   waits for `useAccount().joined` to flip, creates from the held draft, and
