@@ -16,7 +16,7 @@ that survives the 3-minute demo.
 
 | Question | Call | Why |
 |---|---|---|
-| Auth | Convex Auth, **guest or join** | Guest = Anonymous (silent, current claim-a-name). Join = Passkey (upgrade the same person). Never a login wall. |
+| Auth | Convex Auth (`@convex-dev/auth`), **guest or join** | Guest = Anonymous (silent, current claim-a-name) — **built 2026-09-12**. Join is still a slot: the library has no passkey provider (see §1). Never a login wall. |
 | Global state lib | **None.** Convex queries + React `useState`/`useRef` | The platform already gives reactive shared state for free. |
 | `userId` column type | **`v.string()`** (store the auth id's string form) | Lets us seed fake crew with `"seed:maya"` ids without minting real `users` rows. `v.id("users")` is the post-hackathon hardening. |
 | Poll tallies | Separate **`votes`** table, aggregated in a query | One-vote-per-user via index; bars recompute live for free. |
@@ -67,18 +67,46 @@ you're walking into the crew
 dismisses. Popover (already in) can grow a "join so you come back" link;
 don't nag.
 
-**Setup when we wire it** (do not run the interactive `npx @convex-dev/auth`
-wizard — it hangs headless). Skill: `.agents/skills/convex-auth/SKILL.md`.
+**As built (2026-09-12).** Guest works end to end: silent anonymous sign-in,
+server-validated token, identity stable across reloads. Wiring:
 
-1. `npm i @convex-dev/auth @auth/core jose`
-2. Generate JWT_PRIVATE_KEY + JWKS with `jose` (see the skill). Set
-   `SITE_URL`, keys on the deployment via `npx convex env set "NAME=value"`.
-3. `convex/auth.ts`: Anonymous + Passkey providers.
-4. Always write `convex/auth.config.ts` (missing = silently always signed out).
-5. `schema.ts`: `...authTables`. `members.userId` stays `v.string()`.
-6. Client: `ConvexAuthProvider`. First load: if `!isAuthenticated`,
-   `signIn("anonymous")`. Claim card "join" → `signIn("passkey")`.
-7. Verify a guest round-trip *and* a join round-trip before calling it done.
+| Piece | Where |
+|---|---|
+| `convexAuth({ providers: [Anonymous] })` + `currentUser` | `convex/auth.ts` |
+| `...authTables` | `convex/schema.ts` |
+| OIDC provider Convex validates against | `convex/auth.config.ts` |
+| Discovery documents at the site root | `convex/components/authWellKnown/` |
+| `ConvexAuthProvider` | `src/main.tsx` |
+| Silent sign-in + identity adoption | `src/live/useAuthIdentity.ts` |
+
+Keys: `JWT_PRIVATE_KEY` + `JWKS` generated headlessly with `jose` and set via
+`npx convex env set "NAME=value"`. **Never run the interactive
+`npx @convex-dev/auth` wizard — it hangs headless.**
+
+**Two traps this cost real time on; don't re-derive them.**
+
+1. *The discovery documents must be served from the root of `convex.site`.*
+   `convex.config.ts` mounts our own router under `httpPrefix: "/api"` so the
+   static site can own `/`, so `auth.addHttpRoutes(http)` puts
+   `/.well-known/jwks.json` at `/api/.well-known/jwks.json` — while Convex
+   still fetches it from the root, where static hosting answers with the SPA's
+   `index.html`. Auth then fails with **no error anywhere**. Fix: a tiny local
+   component, `convex/components/authWellKnown/`, mounted at
+   `httpPrefix: "/.well-known"`. Component prefixes are absolute from the root,
+   unlike the app router's.
+2. *`customJwt` cannot be used as the escape hatch.* It takes an explicit
+   `jwks` URL, so it looks like it dodges trap 1 — but it rejects these tokens
+   with `InvalidAuthHeader: JWT may be missing a 'kid' (key ID) header`.
+   Convex Auth signs with a bare `{ alg: "RS256" }` header and no key id.
+   The stock `{ domain, applicationID }` pair tolerates that; `customJwt`
+   does not.
+
+**Join / passkey is still not wired, and not for a version-pin reason.**
+`@convex-dev/auth@0.0.95` ships Anonymous, ConvexCredentials, Email, Password
+and Phone providers — there is no WebAuthn provider. Auth.js's passkey
+provider exists in `@auth/core` but needs adapter hooks this library doesn't
+implement. So join needs either ConvexCredentials wrapping WebAuthn by hand,
+or an OAuth provider (Google). The claim card already has the slot.
 
 **Seed vs live** — unchanged: seeded crew = `"seed:maya"` strings; the visitor
 is a real auth id joined as a `members` row on first visit.

@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 import { widgetDataValidator } from "./widgetData";
 
 /**
@@ -8,6 +9,11 @@ import { widgetDataValidator } from "./widgetData";
  * and TTL'd. A "frame" is just a widget with type: "frame" — no extra table.
  */
 export default defineSchema({
+  // Convex Auth owns users/authSessions/authAccounts/... — see convex/auth.ts.
+  // `members.userId` stays v.string() so seeded crew ("seed:maya") keep
+  // working alongside real auth ids (§0).
+  ...authTables,
+
   spaces: defineTable({
     name: v.string(),
     // "ongoing" = evergreen relationship; "event" = time-bound (carries eventAt)
