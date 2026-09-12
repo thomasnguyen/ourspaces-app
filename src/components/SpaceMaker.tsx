@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { SPACE_TEMPLATES } from "../data/templates";
-import type { SpaceTemplate } from "../data/types";
+import type { SpaceTemplate, WidgetType } from "../data/types";
+import { useIdentity } from "../live/identity";
 import { useCreateSpace } from "../live/useCreateSpace";
 import { useAccount, useJoin } from "../live/useJoin";
 import { CodeSlots } from "./CodeSlots";
@@ -20,8 +21,192 @@ import { CodeSlots } from "./CodeSlots";
  * Investment first, the gate last, and the gate is one line.
  */
 
-// Resting tilts for the preview tiles — a sticker wall, not a grid.
-const TILTS = [-2.2, 1.6, -1.1, 2.4, -1.8, 1.2];
+/**
+ * Where the tiles land on the mini board, in order. Any prefix has to look
+ * inhabited — a three-widget shape (game night) fills the middle band, five
+ * spill into a second row. Percent of the board, plus a resting tilt.
+ */
+const SLOTS_FULL = [
+  { left: 4, top: 27, width: 29, tilt: -2 },
+  { left: 36, top: 22, width: 27, tilt: 1.5 },
+  { left: 67, top: 29, width: 29, tilt: -1.2 },
+  { left: 15, top: 63, width: 28, tilt: 2 },
+  { left: 50, top: 64, width: 31, tilt: -1.6 },
+  { left: 80, top: 66, width: 18, tilt: 1 },
+];
+
+// Three widgets get a diagonal, so the wall is used top to bottom.
+const SLOTS_THREE = [
+  { left: 5, top: 26, width: 32, tilt: -2 },
+  { left: 38, top: 50, width: 30, tilt: 1.6 },
+  { left: 65, top: 24, width: 31, tilt: -1.3 },
+];
+
+/**
+ * A widget at postage-stamp size. Each type gets the shape it really has on
+ * the canvas — the countdown is a big number, the poll is bars, the chat is
+ * bubbles — so the board reads as a room, not a feature list. Pure CSS
+ * shapes; nothing here is interactive.
+ */
+function MiniWidget({ type }: { type: WidgetType }) {
+  switch (type) {
+    case "countdown":
+      return (
+        <span className="mini-count">
+          <strong>12</strong>
+          <span>days</span>
+        </span>
+      );
+    case "sports":
+      return (
+        <span className="mini-score">
+          <span>
+            <i>LAL</i>
+            <b>98</b>
+          </span>
+          <span>
+            <i>BOS</i>
+            <b>94</b>
+          </span>
+        </span>
+      );
+    case "poll":
+      return (
+        <span className="mini-bars">
+          <i style={{ width: "88%" }} />
+          <i style={{ width: "54%" }} />
+          <i style={{ width: "31%" }} />
+        </span>
+      );
+    case "expenseSplit":
+      return (
+        <span className="mini-ledger">
+          <span>
+            <i />
+            <b>$48</b>
+          </span>
+          <span>
+            <i />
+            <b>$120</b>
+          </span>
+          <span>
+            <i />
+            <b>$9</b>
+          </span>
+        </span>
+      );
+    case "chat":
+      return (
+        <span className="mini-chat">
+          <i />
+          <i className="is-mine" />
+          <i />
+        </span>
+      );
+    case "dailyQ":
+      return (
+        <span className="mini-q">
+          <strong>Q</strong>
+          <span>
+            <i />
+            <i />
+          </span>
+        </span>
+      );
+    case "jokeRegistry":
+      return (
+        <span className="mini-joke">
+          <span>
+            <i />
+            <i />
+          </span>
+          <b>×12</b>
+        </span>
+      );
+    case "messageWall":
+      return (
+        <span className="mini-wall">
+          <i />
+          <i />
+          <i />
+        </span>
+      );
+    case "photoWall":
+    case "media":
+      return (
+        <span className="mini-photos">
+          <i />
+          <i />
+          <i />
+        </span>
+      );
+    case "availability":
+      return (
+        <span className="mini-cal">
+          <i />
+          <i className="is-on" />
+          <i />
+          <i className="is-on" />
+          <i className="is-on" />
+          <i />
+          <i />
+          <i />
+        </span>
+      );
+    case "rsvp":
+      return (
+        <span className="mini-rsvp">
+          <span>
+            <i />
+            <i />
+            <i />
+          </span>
+          <b>3 yes</b>
+        </span>
+      );
+    case "potluck":
+      return (
+        <span className="mini-check">
+          <span className="is-done" />
+          <span className="is-done" />
+          <span />
+        </span>
+      );
+    case "playlist":
+      return (
+        <span className="mini-play">
+          <strong>♫</strong>
+          <i />
+        </span>
+      );
+    case "cozyColor":
+      return (
+        <span className="mini-swatch">
+          <i />
+          <i />
+          <i />
+          <i />
+        </span>
+      );
+    case "itinerary":
+      return (
+        <span className="mini-route">
+          <i />
+          <i />
+          <i />
+        </span>
+      );
+    case "weather":
+      return (
+        <span className="mini-weather">
+          <strong>72°</strong>
+          <span>☀︎</span>
+        </span>
+      );
+    default:
+      return <span className="mini-generic">✦</span>;
+  }
+}
 
 export function SpaceMaker({
   open,
@@ -42,6 +227,7 @@ export function SpaceMaker({
   const [makeWhenJoined, setMakeWhenJoined] = useState(false);
 
   const account = useAccount();
+  const identity = useIdentity();
   const join = useJoin();
   const maker = useCreateSpace();
   const madeRef = useRef(false);
@@ -89,6 +275,7 @@ export function SpaceMaker({
         <header>
           <div>
             <h2>start a new space</h2>
+            <p>pick a shape, name it on the board, keep it.</p>
           </div>
           <button
             type="button"
@@ -100,31 +287,62 @@ export function SpaceMaker({
           </button>
         </header>
 
-        {/* The board. Keyed on the template so the tiles re-land on every pick. */}
+        {/* The board: the new space at postage-stamp size. Keyed on the
+            template so the tiles re-land on every pick. */}
         <div className="space-maker-board" key={template.id}>
           <div className="space-maker-board-head">
             <span className="space-maker-board-icon">{`${template.icon}\uFE0E`}</span>
-            <strong className={`space-maker-board-name${name.trim() ? "" : " is-default"}`}>
-              {shownName}
-            </strong>
+            <input
+              className="space-maker-board-name"
+              value={name}
+              maxLength={28}
+              placeholder={template.name}
+              disabled={settingUp}
+              aria-label="Name your space"
+              onChange={(event) => setName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                if (account.joined) void make();
+                else setKeeping(true);
+              }}
+            />
+            <span className="space-maker-board-pencil" aria-hidden="true">
+              ✎
+            </span>
           </div>
-          <ul className="space-maker-tiles">
-            {template.widgets.map((item, i) => (
-              <li
+          {template.widgets.map((item, i) => {
+            const slots = template.widgets.length <= 3 ? SLOTS_THREE : SLOTS_FULL;
+            const slot = slots[i % slots.length];
+            return (
+              <div
                 key={item.type}
                 className="space-maker-tile"
                 style={
                   {
                     "--i": i,
-                    "--tilt": `${TILTS[i % TILTS.length]}deg`,
+                    "--tilt": `${slot.tilt}deg`,
+                    left: `${slot.left}%`,
+                    top: `${slot.top}%`,
+                    width: `${slot.width}%`,
                   } as CSSProperties
                 }
               >
-                <em aria-hidden="true">{item.emoji}</em>
-                <span>{item.label}</span>
-              </li>
-            ))}
-          </ul>
+                <span className="space-maker-tile-label">{item.label}</span>
+                <MiniWidget type={item.type} />
+              </div>
+            );
+          })}
+          <div
+            className="space-maker-cursor"
+            style={{ "--cursor-color": identity.color } as CSSProperties}
+            aria-hidden="true"
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14">
+              <path d="M2 1.5 L13.5 8 L8.2 9.3 L5.6 14.5 Z" />
+            </svg>
+            <span>{identity.name}</span>
+          </div>
           {settingUp && <span className="join-stamp space-maker-stamp">yours</span>}
         </div>
 
@@ -145,24 +363,6 @@ export function SpaceMaker({
               </li>
             ))}
           </ul>
-
-          <label className="space-maker-name">
-            call it
-            <input
-              className="claim-name-input"
-              value={name}
-              maxLength={28}
-              placeholder={template.name}
-              disabled={settingUp}
-              onChange={(event) => setName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter") return;
-                event.preventDefault();
-                if (account.joined) void make();
-                else setKeeping(true);
-              }}
-            />
-          </label>
 
           {account.joined ? (
             <div className="space-maker-foot">
@@ -228,18 +428,23 @@ export function SpaceMaker({
                         disabled={join.busy || settingUp}
                       />
                     ) : (
-                      <input
-                        className="claim-name-input"
-                        value={draft}
-                        onChange={(event) => setDraft(event.target.value)}
-                        type="email"
-                        inputMode="email"
-                        autoComplete="email"
-                        maxLength={64}
-                        placeholder="you@email.com"
-                        aria-label="Your email"
-                        autoFocus={keeping}
-                      />
+                      <div className="space-maker-keep-row">
+                        <input
+                          className="claim-name-input"
+                          value={draft}
+                          onChange={(event) => setDraft(event.target.value)}
+                          type="email"
+                          inputMode="email"
+                          autoComplete="email"
+                          maxLength={64}
+                          placeholder="you@email.com"
+                          aria-label="Your email"
+                          autoFocus={keeping}
+                        />
+                        <button type="submit" className="claim-done" disabled={join.busy}>
+                          {join.busy ? "sending…" : "send me a code"}
+                        </button>
+                      </div>
                     )}
 
                     {(join.error || maker.error) && (
@@ -247,18 +452,13 @@ export function SpaceMaker({
                     )}
 
                     {!onCode && (
-                      <div className="space-maker-foot">
-                        <button
-                          type="button"
-                          className="join-form-back"
-                          onClick={() => setKeeping(false)}
-                        >
-                          not yet
-                        </button>
-                        <button type="submit" className="claim-done" disabled={join.busy}>
-                          {join.busy ? "sending…" : "send me a code"}
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        className="join-form-back"
+                        onClick={() => setKeeping(false)}
+                      >
+                        not yet
+                      </button>
                     )}
                     {onCode && !settingUp && (
                       <button

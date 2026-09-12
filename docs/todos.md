@@ -7,7 +7,10 @@ Backward-looking history lives in `hackathon.md`.
 
 - **Start a new space is one sheet (2026-09-12):** rail "+" opens
   `components/SpaceMaker.tsx` — pick a shape (the sheet drenches in its
-  colour, the mini board fills with tilted widget tiles), call it, keep it.
+  colour; the mini board is the new space at postage-stamp size: dot-grid
+  wall, hand-placed paper tiles with a per-type mini widget — countdown is
+  a number, poll is bars, chat is bubbles — your cursor with your claimed
+  name, and the name typed straight onto the board), keep it.
   Joined people get one "make it" button. Guests get email → six slots
   inline at the bottom, folded until "keep it"; the sixth digit verifies,
   waits for `useAccount().joined` to flip, creates from the held draft, and
