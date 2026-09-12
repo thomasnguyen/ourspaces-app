@@ -5,6 +5,7 @@ import { useIdentity } from "../live/identity";
 import { useCreateSpace } from "../live/useCreateSpace";
 import { useAccount, useJoin } from "../live/useJoin";
 import { CodeSlots } from "./CodeSlots";
+import { MemberFace } from "./MemberFace";
 
 /**
  * "start a new space" — one sheet, three beats.
@@ -310,6 +311,16 @@ export function SpaceMaker({
             <span className="space-maker-board-pencil" aria-hidden="true">
               ✎
             </span>
+            <span className="space-maker-faces" aria-hidden="true">
+              <MemberFace
+                name={identity.name}
+                color={identity.color}
+                avatarUrl={identity.avatarUrl}
+                size="sm"
+              />
+              <i />
+              <i />
+            </span>
           </div>
           {template.widgets.map((item, i) => {
             const slots = template.widgets.length <= 3 ? SLOTS_THREE : SLOTS_FULL;
@@ -346,23 +357,24 @@ export function SpaceMaker({
           {settingUp && <span className="join-stamp space-maker-stamp">yours</span>}
         </div>
 
+        <ul className="space-maker-shapes">
+          {SPACE_TEMPLATES.map((item) => (
+            <li key={item.id}>
+              <button
+                type="button"
+                className={item.id === template.id ? "is-picked" : ""}
+                style={{ "--shape-color": item.color } as CSSProperties}
+                disabled={settingUp}
+                onClick={() => setTemplate(item)}
+              >
+                <span aria-hidden="true">{`${item.icon}\uFE0E`}</span>
+                {item.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+
         <div className="space-maker-body">
-          <ul className="space-maker-shapes">
-            {SPACE_TEMPLATES.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  className={item.id === template.id ? "is-picked" : ""}
-                  style={{ "--shape-color": item.color } as CSSProperties}
-                  disabled={settingUp}
-                  onClick={() => setTemplate(item)}
-                >
-                  <span aria-hidden="true">{`${item.icon}\uFE0E`}</span>
-                  {item.name}
-                </button>
-              </li>
-            ))}
-          </ul>
 
           {account.joined ? (
             <div className="space-maker-foot">
