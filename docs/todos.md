@@ -14,7 +14,9 @@ Backward-looking history lives in `hackathon.md`.
   name, and the name typed straight onto the board), keep it. Every preset
   is a starting point: the builder in the strip (colour swatches = the
   identity tokens, ten marks, widget pills, max 6 on the wall) is prefilled
-  by the pick and editable; **blank** starts empty. The couple preset was
+  by the pick and editable; **blank** starts empty. Two prongs: "keep it"
+  swaps the strip for the email + code under the same board (dock and
+  builder leave), with "← back to the board". The couple preset was
   removed 2026-09-12 (two pinks in the dock; "us two" is already a showcase
   space). Presets: friend group, birthday, trip, game night.
   Joined people get one "make it" button. Guests get email → six slots

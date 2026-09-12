@@ -58,7 +58,7 @@ const CUSTOM_COLORS = [
   "#13b8a6",
   "oklch(0.42 0.09 160)",
 ];
-const CUSTOM_MARKS = ["✦", "♥", "▲", "◎", "★", "☀", "♪", "⚑", "✿", "⌂"];
+const CUSTOM_MARKS = ["✦", "♥", "▲", "◎", "★", "☀", "♪", "✿"];
 const CUSTOM_TYPES: WidgetType[] = [
   "note",
   "chat",
@@ -280,8 +280,9 @@ export function SpaceMaker({
   const [pickedId, setPickedId] = useState<string>(SPACE_TEMPLATES[0].id);
   const [custom, setCustom] = useState<Draft>(() => draftFrom(SPACE_TEMPLATES[0]));
   const [name, setName] = useState("");
-  // Guests only: the keep-it panel is folded until they press the button.
-  const [keeping, setKeeping] = useState(false);
+  // Two prongs. "build" is the board, the dock and the builder; "keep" is
+  // the same board with only the email + code under it, and a way back.
+  const [step, setStep] = useState<"build" | "keep">("build");
   const [draft, setDraft] = useState("");
   // Set once the code lands. The account query flips to `joined` a beat
   // later, and only then is the mutation sent with a registered identity.
@@ -367,7 +368,7 @@ export function SpaceMaker({
   return (
     <div className="widget-picker-backdrop" onClick={onClose} role="presentation">
       <div
-        className="widget-picker space-maker"
+        className={`widget-picker space-maker is-${step}`}
         style={{ "--maker-color": template.color } as CSSProperties}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
@@ -375,8 +376,12 @@ export function SpaceMaker({
       >
         <header>
           <div>
-            <h2>start a new space</h2>
-            <p>pick a shape, name it on the board, keep it.</p>
+            <h2>{step === "build" ? "start a new space" : "keep it"}</h2>
+            <p>
+              {step === "build"
+                ? "pick a shape, name it on the board."
+                : "one code to your email. no password, and it's yours on any browser."}
+            </p>
           </div>
           <button
             type="button"
@@ -405,7 +410,7 @@ export function SpaceMaker({
                 if (event.key !== "Enter") return;
                 event.preventDefault();
                 if (account.joined) void make();
-                else setKeeping(true);
+                else setStep("keep");
               }}
             />
             <span className="space-maker-board-pencil" aria-hidden="true">
@@ -491,7 +496,10 @@ export function SpaceMaker({
           </li>
         </ul>
 
-        <div className="space-maker-body">
+        {/* Keyed on the step so the new prong slides in. */}
+        <div className="space-maker-body" key={step}>
+          {step === "build" ? (
+            <>
           <div className="space-maker-custom">
               <div className="space-maker-custom-row">
                 <span className="space-maker-custom-label">colour</span>
@@ -549,118 +557,103 @@ export function SpaceMaker({
               </div>
             </div>
 
-          {account.joined ? (
-            <div className="space-maker-foot">
-              <span className="space-maker-hint">
-                {settingUp ? "setting the room up…" : `${shownName} — yours, from today.`}
-              </span>
-              <button
-                type="button"
-                className="claim-done"
-                disabled={settingUp}
-                onClick={() => void make()}
-              >
-                make it <span aria-hidden="true">→</span>
-              </button>
-            </div>
+              <div className="space-maker-foot">
+                <span className="space-maker-hint">
+                  {settingUp
+                    ? "setting the room up…"
+                    : account.joined
+                      ? `${shownName} — yours, from today.`
+                      : `${shownName}, with ${custom.types.length} things on the wall.`}
+                </span>
+                <button
+                  type="button"
+                  className="claim-done"
+                  disabled={settingUp}
+                  onClick={() => (account.joined ? void make() : setStep("keep"))}
+                >
+                  {account.joined ? "make it" : "keep it"} <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            </>
           ) : (
-            <>
-              {!keeping && (
-                <div className="space-maker-foot">
-                  <span className="space-maker-hint">
-                    one code to your email, so it's still yours next week.
-                  </span>
-                  <button
-                    type="button"
-                    className="claim-done"
-                    onClick={() => setKeeping(true)}
-                  >
-                    keep it <span aria-hidden="true">→</span>
+            <form
+              className="join-form space-maker-keep"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (join.busy || settingUp) return;
+                void (onCode ? join.verify(draft) : join.sendCode(draft));
+              }}
+            >
+              <span className="claim-card-kicker">
+                {settingUp ? "you're in" : onCode ? "check your email" : "where should the code go?"}
+              </span>
+              <p className="join-form-reason">
+                {settingUp
+                  ? `setting ${shownName} up…`
+                  : onCode
+                    ? `six numbers, on their way to ${join.email}. the last one opens the room.`
+                    : `${shownName} is yours the moment the code lands.`}
+              </p>
+
+              {onCode ? (
+                <CodeSlots
+                  value={draft}
+                  onChange={setDraft}
+                  onComplete={(code) => {
+                    void join.verify(code).then((ok) => {
+                      if (ok) setMakeWhenJoined(true);
+                    });
+                  }}
+                  disabled={join.busy || settingUp}
+                />
+              ) : (
+                <div className="space-maker-keep-row">
+                  <input
+                    className="claim-name-input"
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    maxLength={64}
+                    placeholder="you@email.com"
+                    aria-label="Your email"
+                    autoFocus
+                  />
+                  <button type="submit" className="claim-done" disabled={join.busy}>
+                    {join.busy ? "sending…" : "send me a code"}
                   </button>
                 </div>
               )}
 
-              <div className={`space-maker-keep-wrap${keeping ? " is-open" : ""}`}>
-                <div>
-                  <form
-                    className="join-form space-maker-keep"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      if (join.busy || settingUp) return;
-                      void (onCode ? join.verify(draft) : join.sendCode(draft));
-                    }}
+              {(join.error || maker.error) && (
+                <span className="join-form-error">{join.error ?? maker.error}</span>
+              )}
+
+              {!settingUp && (
+                <div className="space-maker-foot">
+                  <button
+                    type="button"
+                    className="join-form-back"
+                    onClick={() => setStep("build")}
                   >
-                    <span className="claim-card-kicker">
-                      {onCode ? "check your email" : "keep this"}
-                    </span>
-                    <p className="join-form-reason">
-                      {settingUp
-                        ? `you're in. setting ${shownName} up…`
-                        : onCode
-                          ? `six numbers, on their way to ${join.email}. the last one opens the room.`
-                          : "no password. one code, and the space is yours on any browser."}
-                    </p>
-
-                    {onCode ? (
-                      <CodeSlots
-                        value={draft}
-                        onChange={setDraft}
-                        onComplete={(code) => {
-                          void join.verify(code).then((ok) => {
-                            if (ok) setMakeWhenJoined(true);
-                          });
-                        }}
-                        disabled={join.busy || settingUp}
-                      />
-                    ) : (
-                      <div className="space-maker-keep-row">
-                        <input
-                          className="claim-name-input"
-                          value={draft}
-                          onChange={(event) => setDraft(event.target.value)}
-                          type="email"
-                          inputMode="email"
-                          autoComplete="email"
-                          maxLength={64}
-                          placeholder="you@email.com"
-                          aria-label="Your email"
-                          autoFocus={keeping}
-                        />
-                        <button type="submit" className="claim-done" disabled={join.busy}>
-                          {join.busy ? "sending…" : "send me a code"}
-                        </button>
-                      </div>
-                    )}
-
-                    {(join.error || maker.error) && (
-                      <span className="join-form-error">{join.error ?? maker.error}</span>
-                    )}
-
-                    {!onCode && (
-                      <button
-                        type="button"
-                        className="join-form-back"
-                        onClick={() => setKeeping(false)}
-                      >
-                        not yet
-                      </button>
-                    )}
-                    {onCode && !settingUp && (
-                      <button
-                        type="button"
-                        className="join-form-back"
-                        onClick={() => {
-                          setDraft("");
-                          join.restart();
-                        }}
-                      >
-                        use a different email
-                      </button>
-                    )}
-                  </form>
+                    <span aria-hidden="true">←</span> back to the board
+                  </button>
+                  {onCode && (
+                    <button
+                      type="button"
+                      className="join-form-back"
+                      onClick={() => {
+                        setDraft("");
+                        join.restart();
+                      }}
+                    >
+                      use a different email
+                    </button>
+                  )}
                 </div>
-              </div>
-            </>
+              )}
+            </form>
           )}
         </div>
       </div>
