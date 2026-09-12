@@ -574,3 +574,11 @@ as the accent where it is now the wall's complement. Made the compact header
 read `--space-heading-color` instead of hardcoded ink so the preset carries
 the ink. Plaster and bottle green stay one token swap away in the local
 script. `npm run build` passes; no deployment.
+
+### 2026-09-12 - e52192c
+The user picked bottle green off the wall sheet. Landed it on the same tonal
+system as the blueprint: `--color-buildroom: oklch(0.42 0.09 160)`, white
+header ink, pegboard holes instead of the ruled grid, zone panels one step
+lighter (12% toward card so they read on the darker green), shadows in the
+wall's own deep shade, orange kept as the accent. Verified at 1x, 2x and phone
+width; `npm run build` passes; no deployment.
