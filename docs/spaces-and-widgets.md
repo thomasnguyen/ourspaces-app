@@ -62,8 +62,10 @@ landscape shipping wall on the left, compact hot/keepers/roundtable on the right
 The shared mock/live camera fits the frame bounds between the header and dock
 (max scale `1`). `buildRoomPresentation.ts` maps recognized legacy demo
 placements to this composition without writing the database; later member moves
-retain their saved coordinates. The wall uses `--color-buildroom`, a deeper burnt orange chosen after the
-original bright torch color proved overpowering. The header keeps the copyable email address
+retain their saved coordinates. The wall uses `--color-buildroom`, a rich burnt orange (the first bright
+torch color proved overpowering, the muted follow-up read flat). It is a tonal system: the five zone frames
+are panels one step deeper in the same hue, shadows are `--color-buildroom-deep` at half alpha, the grid is
+a pegboard, and crew violet is the room's only cool accent (tape, pushpins, kind pills). The header keeps the copyable email address
 beside the title and preserves presence, add, invite, and editing.
 
 The pile uses overlapping full-size cover cards, a taped black front and five

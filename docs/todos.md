@@ -5,6 +5,19 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Build room color pass (2026-09-12):** the user asked for a more appealing
+  orange. Decision: keep orange as the identity but stop treating it as one
+  flat fill. `--color-buildroom` is now `oklch(0.62 0.175 41)` (richer, a hair
+  deeper; ink contrast 4.8:1), the five zone frames are tonal panels 10% toward
+  ink in the wall's hue, every object's shadow uses the new
+  `--color-buildroom-deep` token at half alpha instead of neutral black, the
+  dot grid is a pegboard (dark hole + light rim), and crew violet is the room's
+  single cool counterpoint (pile tape and one polaroid tape switched from
+  magenta; pushpins were already violet). All wall rules are scoped to
+  `.space-theme-torch`, so the theme carries them to any room. Variant shots
+  via `.context/shot-buildroom-palette.mjs` (local-only). `npm run build`
+  passed. No deployment.
+
 - **Rail eye-candy pass (2026-09-12):** the space rail now floats on a soft
   deep shadow instead of a tight neutral drop; the active tile's hard offset
   shadow is the space accent darkened toward black (`color-mix … 58%, black`)

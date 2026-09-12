@@ -16,7 +16,8 @@
   --color-fam: #3f70ff;
   --color-trip: #ff7c42;
   --color-league: #13b8a6;
-  --color-buildroom: oklch(0.63 0.155 42);
+  --color-buildroom: oklch(0.62 0.175 41);
+  --color-buildroom-deep: oklch(0.28 0.09 40);
   --text-body: 1rem;
   --text-body--line-height: 1.5;
   --text-caption: 0.875rem;
@@ -167,13 +168,26 @@
   --canvas-grid-major: rgba(255, 176, 46, 0.35);
 }
 
-/* The build room — burnt orange keeps the wall warm without overpowering it. */
+/* The build room — a rich burnt orange, and everything on it is cut from the
+   same hue: the panels one step deeper, the shadows in the wall's own shade
+   (--color-buildroom-deep), never neutral black, which turns orange to mud. */
 .paper-bg.space-theme-torch {
   background-color: var(--color-buildroom);
   --page-bg: var(--color-buildroom);
   --canvas-field: color-mix(in srgb, var(--color-buildroom) 94%, var(--color-ink));
-  --canvas-grid-dot: rgba(17, 17, 20, 0.075);
-  --canvas-grid-major: rgba(17, 17, 20, 0.14);
+  --canvas-grid-dot: color-mix(in oklch, var(--color-buildroom) 72%, var(--color-ink));
+  --canvas-grid-major: transparent;
+  --wall-shadow: color-mix(in srgb, var(--color-buildroom-deep) 50%, transparent);
+}
+
+/* Pegboard, not confetti: each hole is a dark dot with a light rim one pixel
+   down-right, the way a real board catches the light. No major grid. */
+.paper-bg.space-theme-torch .space-canvas {
+  background-image:
+    radial-gradient(circle, var(--canvas-grid-dot) 0 1px, transparent 1.4px),
+    radial-gradient(circle, color-mix(in srgb, var(--color-card) 16%, transparent) 0 1px, transparent 1.4px);
+  background-position: 0 0, 1px 1px;
+  background-size: 32px 32px;
 }
 
 .space-scroll {
@@ -21069,7 +21083,7 @@
   top: -9px;
   left: 38px;
   rotate: -7deg;
-  background: var(--color-couple);
+  background: var(--color-crew);
   opacity: .85;
   clip-path: polygon(0 4%, 99% 0, 100% 91%, 1% 100%);
 }
@@ -21185,7 +21199,6 @@
 .widget-ship-post { gap: 9px; padding: 11px 11px 12px; }
 .br-ship-tape { width: 80px; height: 23px; background: color-mix(in srgb, var(--color-mat) 88%, transparent); }
 .widget-group:has(.widget-ship-post):nth-child(3n) .br-ship-tape { background: var(--color-crew); }
-.widget-group:has(.widget-ship-post):nth-child(3n + 2) .br-ship-tape { background: var(--color-couple); }
 .br-ship-byline { display: flex; align-items: center; gap: 5px; }
 .br-ship-byline .member-face { width: 18px; height: 18px; }
 .br-project-preview { display: block; width: 100%; height: 100%; font-family: var(--font-sans); }
@@ -21936,4 +21949,51 @@
   font-weight: 400;
   line-height: var(--text-body--line-height);
   color: var(--color-card);
+}
+
+/* ================================================================
+   BUILD ROOM — COLOR PASS
+   The wall used to be one flat mid orange edge to edge, black objects sat in
+   gray halos, and two hot accents (magenta tape, violet pins) argued with it.
+   Now the wall is richer (@theme --color-buildroom), the five zones are tonal
+   panels one step deeper in the wall's own hue (no paper, no kraft — they read
+   as painted sections), every object casts the wall's shade instead of neutral
+   black, and the room keeps one cool counterpoint: crew violet, on the tape,
+   the pushpins and the kind pills. Everything derives from the wall token, so
+   the torch theme carries it to any room. The dot grid became a pegboard (see
+   .space-theme-torch above).
+   ================================================================ */
+.paper-bg.space-theme-torch .widget-frame.is-outline {
+  background: color-mix(in oklch, var(--color-buildroom) 90%, var(--color-ink));
+  --frame-stroke: color-mix(in oklch, var(--color-buildroom) 86%, var(--color-ink));
+}
+
+.paper-bg.space-theme-torch .widget-frame.is-outline.is-focused {
+  background: color-mix(in oklch, var(--color-buildroom) 85%, var(--color-ink));
+}
+
+.paper-bg.space-theme-torch .widget-frame-group:hover .widget-frame.is-outline {
+  --frame-stroke: color-mix(in oklch, var(--color-buildroom) 74%, var(--color-ink));
+}
+
+/* Shadows in the wall's shade — same geometry as each object's base rule. */
+.paper-bg.space-theme-torch .br-hot-row > button,
+.paper-bg.space-theme-torch .br-hot-row.is-pinned > button {
+  box-shadow: 1px 4px 5px var(--wall-shadow);
+}
+
+.paper-bg.space-theme-torch .widget-roundtable {
+  box-shadow: 0 16px 34px var(--wall-shadow);
+}
+
+.paper-bg.space-theme-torch .widget-ship-post {
+  box-shadow: 0 12px 26px var(--wall-shadow);
+}
+
+.paper-bg.space-theme-torch .br-pile-card {
+  box-shadow: 2px 8px 8px var(--wall-shadow);
+}
+
+.paper-bg.space-theme-torch .br-pile-fan-card {
+  box-shadow: 2px 5px 6px var(--wall-shadow);
 }
