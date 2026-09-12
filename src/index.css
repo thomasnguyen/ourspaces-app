@@ -16,8 +16,8 @@
   --color-fam: #3f70ff;
   --color-trip: #ff7c42;
   --color-league: #13b8a6;
-  --color-buildroom: oklch(0.74 0.06 245);
-  --color-buildroom-deep: oklch(0.35 0.07 250);
+  --color-buildroom: oklch(0.40 0.12 262);
+  --color-buildroom-deep: oklch(0.18 0.08 262);
   --text-body: 1rem;
   --text-body--line-height: 1.5;
   --text-caption: 0.875rem;
@@ -168,28 +168,32 @@
   --canvas-grid-major: rgba(255, 176, 46, 0.35);
 }
 
-/* The build room — a dusty denim felt board, and everything on it is cut
-   from the same hue: the panels one step deeper, the shadows in the wall's own
-   shade (--color-buildroom-deep), never neutral black, which goes gray on
-   blue. The room's orange is the accent now (tape, pins, counts, the rail
-   tile), not the wall — the objects are the loud part. */
+/* The build room — blueprint paper: a deep cobalt wall ruled with a fine
+   white grid, white ink, and everything on it cut from the same hue: the zone
+   panels one step lighter, the shadows in the wall's own shade
+   (--color-buildroom-deep), never neutral black. The room's orange is the
+   accent (tape, pins, counts, the rail tile) — the wall's complement, so it
+   stays rare and loud instead of everywhere. */
 .paper-bg.space-theme-torch {
   background-color: var(--color-buildroom);
   --page-bg: var(--color-buildroom);
-  --canvas-field: color-mix(in srgb, var(--color-buildroom) 94%, var(--color-ink));
-  --canvas-grid-dot: color-mix(in oklch, var(--color-buildroom) 72%, var(--color-ink));
-  --canvas-grid-major: transparent;
-  --wall-shadow: color-mix(in srgb, var(--color-buildroom-deep) 50%, transparent);
+  --canvas-field: color-mix(in srgb, var(--color-buildroom) 94%, var(--color-card));
+  --canvas-grid-dot: color-mix(in srgb, var(--color-card) 6%, transparent);
+  --canvas-grid-major: color-mix(in srgb, var(--color-card) 13%, transparent);
+  --wall-shadow: color-mix(in srgb, var(--color-buildroom-deep) 65%, transparent);
 }
 
-/* Pegboard, not confetti: each hole is a dark dot with a light rim one pixel
-   down-right, the way a real board catches the light. No major grid. */
+/* Ruled like drafting paper: a fine 32px grid with a heavier line every
+   160px, both white at low alpha. Lines, not dots — it reads as a blueprint,
+   not confetti. */
 .paper-bg.space-theme-torch .space-canvas {
   background-image:
-    radial-gradient(circle, var(--canvas-grid-dot) 0 1px, transparent 1.4px),
-    radial-gradient(circle, color-mix(in srgb, var(--color-card) 16%, transparent) 0 1px, transparent 1.4px);
-  background-position: 0 0, 1px 1px;
-  background-size: 32px 32px;
+    linear-gradient(var(--canvas-grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--canvas-grid-major) 1px, transparent 1px),
+    linear-gradient(var(--canvas-grid-dot) 1px, transparent 1px),
+    linear-gradient(90deg, var(--canvas-grid-dot) 1px, transparent 1px);
+  background-size: 160px 160px, 160px 160px, 32px 32px, 32px 32px;
+  background-position: 16px 16px, 16px 16px, 0 0, 0 0;
 }
 
 .space-scroll {
@@ -9267,6 +9271,31 @@
 /* Join — the second CTA on the claim card, and the same form inside the
    "make your own space" nudge. It borrows the card's own shell, so it reads
    as one more step rather than a different screen. */
+/* "start a new space": name it, then pick the shape. */
+.template-name-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.template-busy {
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  text-align: center;
+}
+
+.template-list button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 .claim-join-link {
   border: 0;
   background: none;
@@ -18557,16 +18586,17 @@
 /* ── THE BUILD ROOM ─────────────────────────────────────────────────────────
  * A dev guild space: the pile (everything anyone dropped), hot now (what the
  * room is actually reading), keepers (what we learned), the shipping wall, and
- * the roundtable. Flat black objects and white paper on a dusty denim felt
- * board — the room's orange is the accent (tape, pins, counts), never the
- * field and never a wash on the cards. No gradients, no glows.
+ * the roundtable. Flat black objects and white paper on blueprint paper — a
+ * deep cobalt wall with a ruled grid; the room's orange is the accent (tape,
+ * pins, counts), never the field and never a wash on the cards. No gradients,
+ * no glows.
  *
  * Covers are monogram tiles rather than hotlinked og:images on purpose: 47
  * remote images would half-fail on camera. See src/data/buildroom.ts.
  */
 
 /* Outlined frames — the build room's frames are containers, not paper. The
-   kraft mat would read as a second paper on the felt, so this variant drops it. */
+   kraft mat would read as a second paper on the blueprint, so this variant drops it. */
 .widget-frame.is-outline {
   --frame-stroke: color-mix(in srgb, var(--color-ink) 34%, transparent);
   background: transparent;
@@ -21302,7 +21332,7 @@
   color: var(--color-muted);
 }
 
-/* The pushpin asset is purple plastic; on the denim wall the room's pins are
+/* The pushpin asset is purple plastic; on the blueprint the room's pins are
    orange like its tape, so the hue is rotated toward the accent. */
 .paper-bg[data-space-id="buildroom"] .note-paper-pin {
   background: url('/assets/ui/quote-pushpin.png') center / contain no-repeat;
@@ -21363,21 +21393,21 @@
     margin: 0;
     font-size: 11px;
     padding: 7px 10px;
-    background: color-mix(in srgb, var(--color-ink) 9%, transparent);
-    color: var(--color-ink);
+    background: color-mix(in srgb, var(--space-heading-color, var(--color-ink)) 13%, transparent);
+    color: var(--space-heading-color, var(--color-ink));
   }
   .paper-bg[data-space-id="buildroom"] .space-mail-chip:hover { background: var(--color-sticker); color: var(--color-card); }
   .paper-bg[data-space-id="buildroom"] .space-header-side { flex-direction: row; align-items: center; gap: 16px; }
   .paper-bg[data-space-id="buildroom"] .space-presence { min-height: 32px; gap: 7px; }
-  .paper-bg[data-space-id="buildroom"] .space-presence-label { background: transparent; color: var(--color-ink); padding: 0; font-size: 11px; }
+  .paper-bg[data-space-id="buildroom"] .space-presence-label { background: transparent; color: var(--space-heading-color, var(--color-ink)); padding: 0; font-size: 11px; }
   .paper-bg[data-space-id="buildroom"] .header-actions { gap: 7px; }
   .paper-bg[data-space-id="buildroom"] .add-widget-button,
   .paper-bg[data-space-id="buildroom"] .invite-button { min-height: 34px; padding: 6px 14px; font-size: 12px; }
   .paper-bg[data-space-id="buildroom"] .action-dock { bottom: 18px; padding: 4px; }
   .paper-bg[data-space-id="buildroom"] .action-dock > button { min-height: 36px; padding: 7px 12px; font-size: 11px; }
-  .paper-bg[data-space-id="buildroom"] .space-live-strip { left: 128px; bottom: 27px; padding: 0; background: transparent; box-shadow: none; color: var(--color-ink); font-size: 10px; font-weight: 500; }
-  .paper-bg[data-space-id="buildroom"] .space-live-strip-live { color: var(--color-ink); }
-  .paper-bg[data-space-id="buildroom"] .space-live-strip-dot-sep { color: var(--color-ink); opacity: .4; padding: 0 5px; }
+  .paper-bg[data-space-id="buildroom"] .space-live-strip { left: 128px; bottom: 27px; padding: 0; background: transparent; box-shadow: none; color: var(--space-heading-color, var(--color-ink)); font-size: 10px; font-weight: 500; }
+  .paper-bg[data-space-id="buildroom"] .space-live-strip-live { color: var(--space-heading-color, var(--color-ink)); }
+  .paper-bg[data-space-id="buildroom"] .space-live-strip-dot-sep { color: var(--space-heading-color, var(--color-ink)); opacity: .4; padding: 0 5px; }
 }
 
 @media (min-width: 801px) and (max-width: 1150px) {
@@ -22065,28 +22095,29 @@
 
 /* ================================================================
    BUILD ROOM — COLOR PASS
-   The wall went through three oranges (bright, muted, rich) and the objects
-   never won: a saturated field out-shouts black slabs and white paper. Now
-   the wall is a dusty denim felt (@theme --color-buildroom), the five zones
-   are tonal panels one step deeper in the wall's own hue (no paper, no kraft —
-   they read as felt sections), every object casts the wall's shade instead of
-   neutral black, and the room's identity color — orange — moved off the wall
-   and onto the tape, the pushpins, the kept count and the vote arrows, where
-   a loud color earns its place. Everything derives from the wall token, so the
-   torch theme carries it to any room. The dot grid is a pegboard (see
-   .space-theme-torch above).
+   The wall went through three oranges (bright, muted, rich) and a denim
+   felt, and the objects only won once the wall had a reason: the build room
+   is drawn on blueprint paper. The wall is a deep cobalt (@theme
+   --color-buildroom) ruled with a white grid, the five zones are tonal panels
+   one step LIGHTER in the wall's own hue (dark walls get depth from surface
+   lightness, not shadow), every object casts the wall's shade instead of
+   neutral black, and the room's identity color — orange, the wall's
+   complement — lives on the tape, the pushpins, the kept count and the vote
+   arrows, where a loud color earns its place. Everything derives from the
+   wall token, so the torch theme carries it to any room. Header ink follows
+   --space-heading-color (white here) via the theme preset.
    ================================================================ */
 .paper-bg.space-theme-torch .widget-frame.is-outline {
-  background: color-mix(in oklch, var(--color-buildroom) 90%, var(--color-ink));
-  --frame-stroke: color-mix(in oklch, var(--color-buildroom) 86%, var(--color-ink));
+  background: color-mix(in oklch, var(--color-buildroom) 90%, var(--color-card));
+  --frame-stroke: color-mix(in oklch, var(--color-buildroom) 82%, var(--color-card));
 }
 
 .paper-bg.space-theme-torch .widget-frame.is-outline.is-focused {
-  background: color-mix(in oklch, var(--color-buildroom) 85%, var(--color-ink));
+  background: color-mix(in oklch, var(--color-buildroom) 85%, var(--color-card));
 }
 
 .paper-bg.space-theme-torch .widget-frame-group:hover .widget-frame.is-outline {
-  --frame-stroke: color-mix(in oklch, var(--color-buildroom) 74%, var(--color-ink));
+  --frame-stroke: color-mix(in oklch, var(--color-buildroom) 72%, var(--color-card));
 }
 
 /* Shadows in the wall's shade — same geometry as each object's base rule. */

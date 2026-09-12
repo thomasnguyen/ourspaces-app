@@ -278,7 +278,7 @@ block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
 the letter envelope + mail chip, "BUILD ROOM — COMPACT OVERVIEW" (~20762),
 app-wide reading typography (~21680: prose, inputs, paper sizing and
 mobile reading/ship rooms), and "BUILD ROOM — COLOR PASS" (end of file: tonal
-panels, wall-shade shadows; the pegboard grid sits in the torch theme block
+panels, wall-shade shadows; the ruled blueprint grid sits in the torch theme block
 near line 171). New CSS goes in a new banner section at the end.
 
 ## scripts/
