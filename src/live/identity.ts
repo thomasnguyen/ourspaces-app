@@ -121,7 +121,7 @@ export function getIdentity(): LiveIdentity {
 
 /**
  * Bind this tab's identity to the authenticated Convex user (§1: guest is a
- * real anonymous account, not a random string). Called once the Better Auth
+ * real anonymous account, not a random string). Called once the Convex Auth
  * session lands. Everything the person already picked — name, color, face —
  * travels with them, so a guest who later joins stays the same person.
  *
