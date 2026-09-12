@@ -48,6 +48,7 @@ Product spec and positioning are **local-only** — see the bottom table.
 | Schema, auth (guest or join), Convex-as-state | `docs/data-model-plan.md` |
 | Email → canvas: the 3 mail cases, router, digest, status, open goals | `docs/mail.md` |
 | Next OpenAI / Firecrawl work (visible filing, recap strip, meal train) | `docs/todos.md` § Next up + `docs/mail.md` goals |
+| Every Firecrawl + AgentMail feature we use, in plain English (incl. mail-powered sign-in) | `docs/firecrawl-and-agentmail.md` |
 | Firecrawl + AgentMail keys and webhooks | `docs/firecrawl-agentmail-setup.md` |
 | Running / screenshotting the app | `.claude/skills/run-ourspaces/SKILL.md` |
 

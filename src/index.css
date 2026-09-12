@@ -9264,6 +9264,100 @@
   font-size: 15px;
 }
 
+/* Join — the second CTA on the claim card, and the same form inside the
+   "make your own space" nudge. It borrows the card's own shell, so it reads
+   as one more step rather than a different screen. */
+.claim-join-link {
+  border: 0;
+  background: none;
+  padding: 2px 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--dur-quick) var(--ease-glide);
+}
+
+.claim-join-link:hover {
+  color: var(--color-lime);
+}
+
+.claim-joined-note {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.join-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.join-form-reason {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.join-form .claim-name-input {
+  width: 100%;
+}
+
+/* The code step: six digits deserve to look like six digits. */
+.join-form input[inputmode="numeric"] {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-align: center;
+}
+
+.join-form-error {
+  color: #ffb4a9;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.join-form .claim-done:disabled {
+  cursor: default;
+  opacity: 0.6;
+  translate: none;
+}
+
+.join-form-back {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.join-form-back:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.join-form.is-done strong {
+  font-family: var(--font-display);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.join-form.is-done span:last-of-type {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+}
+
 .claim-invite-context {
   display: flex;
   flex-direction: column;

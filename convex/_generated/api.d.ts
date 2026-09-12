@@ -22,6 +22,7 @@ import type * as inbox from "../inbox.js";
 import type * as inboxRouting from "../inboxRouting.js";
 import type * as messages from "../messages.js";
 import type * as migrations from "../migrations.js";
+import type * as otp from "../otp.js";
 import type * as paint from "../paint.js";
 import type * as photos from "../photos.js";
 import type * as presence from "../presence.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   inboxRouting: typeof inboxRouting;
   messages: typeof messages;
   migrations: typeof migrations;
+  otp: typeof otp;
   paint: typeof paint;
   photos: typeof photos;
   presence: typeof presence;

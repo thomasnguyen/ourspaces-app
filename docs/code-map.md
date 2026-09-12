@@ -210,6 +210,8 @@ via `components.agentMail.lib.ingestWebhook` → router; persistent-text-streami
 `currentUser` query the client adopts an identity from) ·
 `auth.config.ts` (the OIDC provider Convex validates JWTs against — the
 silently-always-signed-out footgun lives here) ·
+`otp.ts` (join = an emailed six-digit code, sent via AgentMail from
+`ourspaces@agentmail.to`; never create a fourth inbox) ·
 `components/authWellKnown/` (two-route component mounted at `/.well-known`;
 publishes `openid-configuration` + `jwks.json` at the SITE ROOT, which the app
 router can't do because it sits under `httpPrefix: "/api"` — see

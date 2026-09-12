@@ -1,7 +1,9 @@
 # Mail — email → canvas (AgentMail)
 
 The spec + status doc for the mail system. Setup/keys/webhooks live in
-`docs/firecrawl-agentmail-setup.md`; this file is what it does, why, and what's
+`docs/firecrawl-agentmail-setup.md`; a plain-English tour of every Firecrawl and
+AgentMail surface we use (including the mail-powered sign-in) is
+`docs/firecrawl-and-agentmail.md`; this file is what it does, why, and what's
 left. Updated 2026-08-31.
 
 ## The idea

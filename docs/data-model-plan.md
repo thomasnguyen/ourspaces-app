@@ -116,12 +116,40 @@ writing rows no auth identity can produce (§0). Identity is decorative
 everywhere it was already decorative, and load-bearing in exactly the three
 places that make an ownership claim.
 
-**Join / passkey is still not wired, and not for a version-pin reason.**
-`@convex-dev/auth@0.0.95` ships Anonymous, ConvexCredentials, Email, Password
-and Phone providers — there is no WebAuthn provider. Auth.js's passkey
-provider exists in `@auth/core` but needs adapter hooks this library doesn't
-implement. So join needs either ConvexCredentials wrapping WebAuthn by hand,
-or an OAuth provider (Google). The claim card already has the slot.
+**Join is an emailed six-digit code, built 2026-09-12.** Not passkey:
+`@convex-dev/auth@0.0.95` ships no WebAuthn provider, and Auth.js's passkey
+provider needs adapter hooks this library doesn't implement. Not Google
+either — that needs a Google Cloud client id/secret. The code path needs no
+new credential at all: `convex/otp.ts` wires `Email({ sendVerificationRequest })`
+and sends through the AgentMail integration the spaces already use.
+
+- Sends from `ourspaces@agentmail.to`. **Never create a fourth inbox** — the
+  free tier caps at three PER ORG and all three are spoken for.
+- Rate-limited on the *destination address* (`otpSend`), not the caller:
+  anonymous sign-in is free so an attacker owns their userId, but the
+  victim's inbox is the resource worth protecting.
+- Keep the provider's default `authorize`. It requires the same email at step
+  two, which is what makes six digits safe; `authorize: undefined` is the
+  magic-link shape and would make them guessable.
+
+**Joining does not fork the person, and needs no data migration.**
+`callbacks.createOrUpdateUser` runs inside the `auth:store` mutation, which
+carries the *caller's* identity — so `getAuthUserId` there is the anonymous
+guest who is registering. We patch the email onto their existing row and
+return the same id; the library re-points `authAccounts` at it. Verified:
+`userId` is byte-identical before and after, so votes, name, colour and
+memberships keep working untouched. That is §1's "upgrade, don't fork" with
+zero rows rewritten.
+
+Two traps inside that callback:
+
+1. **Link only at `type: "verification"`, never at `type: "email"`.** The user
+   row is created when the code is *sent*, before the address is proven. Link
+   at step one and anyone could type a stranger's address, never read the
+   code, and still have welded that address onto their own account.
+2. **The non-OTP branch is load-bearing.** Supplying the callback means owning
+   *all* user creation, including the silent guest path. Get that branch wrong
+   and nobody can walk in at all. Re-test guest sign-in after every change.
 
 **Seed vs live** — unchanged: seeded crew = `"seed:maya"` strings; the visitor
 is a real auth id joined as a `members` row on first visit.
