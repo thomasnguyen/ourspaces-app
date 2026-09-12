@@ -6,16 +6,22 @@ Backward-looking history lives in `hackathon.md`.
 ## Now working
 
 - **Build room wall pass (2026-09-12, supersedes the color pass below):** the
-  user didn't want the orange wall at all ("I don't like the orange bg"). Five
-  candidates shot side by side via `.context/shot-buildroom-wall.mjs` (soft
-  denim, mid denim, ink navy, cork, chalk slate); the dark walls flattened the
-  black slabs, cork read beige, so the wall is now a dusty denim felt —
-  `--color-buildroom: oklch(0.74 0.06 245)`, `--color-buildroom-deep:
-  oklch(0.35 0.07 250)`. Orange stays the room's identity but only as accent:
-  pile tape, the third ship tape, pushpins (`hue-rotate` on the purple
-  asset), kept count, vote arrows, rail tile — all via `--space-accent`.
-  Tonal panels, wall-shade shadows and pegboard are unchanged and still
-  derive from the token. Theme id stays `torch` (label now "denim").
+  user didn't want the orange wall at all ("I don't like the orange bg"), then
+  asked for something different than the first replacement (a denim felt).
+  Round one shot five candidates via `.context/shot-buildroom-wall.mjs`
+  (soft/mid denim, ink navy, cork, chalk); round two shot four non-blue
+  directions via `.context/shot-buildroom-wall-v2.mjs` (blueprint, plaster,
+  mustard, bottle green — each a complete torch override, so any can be
+  landed by copying its CSS). Landed **blueprint**: `--color-buildroom:
+  oklch(0.40 0.12 262)`, `--color-buildroom-deep: oklch(0.18 0.08 262)`,
+  white ink (torch preset `ink: "#ffffff"`), ruled white grid instead of the
+  pegboard, zone panels one step *lighter*, shadows at 65%. Orange stays the
+  room's identity but only as accent (pile tape, third ship tape, hue-rotated
+  pushpins, kept count, vote arrows, rail tile — all via `--space-accent`).
+  The compact header (mail chip, presence label, live strip) now reads
+  `--space-heading-color` instead of hardcoded ink, so it follows the preset.
+  Plaster (quiet warm neutral) and bottle green (chalkboard) are the
+  ready-to-swap alternates in the v2 script. Theme id stays `torch`.
   `npm run build` passed. No deployment.
 
 - **Build room color pass (2026-09-12):** the user asked for a more appealing

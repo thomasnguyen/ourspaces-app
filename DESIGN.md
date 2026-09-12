@@ -112,16 +112,18 @@ chrome. They are peers, not a hierarchy.
 - **Trip Orange** (#ff7a3d): trip / event spaces.
 - **League Teal** (#13b8a6): rec-league / recurring-group spaces.
 
-The build room uses `--color-buildroom` for its wall: a dusty denim felt
-(`torch` preset — the id survived three oranges and a color change). The
-room's identity color is still orange, but it lives on the objects, not the
-wall: the tape, the pushpins, the kept count, the vote arrows and the rail
-tile all take `--space-accent`, so the loud color is rare and the black slabs
-and white paper do the talking. The wall is a tonal system, not one flat fill:
-the five zone frames are panels one step deeper in the wall's own hue, every
-object's shadow is `--color-buildroom-deep` at half alpha (never neutral
-black, which goes gray on blue), and the canvas grid is a pegboard (dark hole,
-light rim). Kind pills keep crew violet; magenta stays out of it.
+The build room uses `--color-buildroom` for its wall: blueprint paper, a
+deep cobalt ruled with a fine white grid (`torch` preset — the id survived
+three oranges, a denim and a color change; its ink is white). The room's
+identity color is still orange, but it lives on the objects, not the wall: the
+tape, the pushpins, the kept count, the vote arrows and the rail tile all take
+`--space-accent`, the wall's complement, so the loud color is rare and the
+black slabs and white paper do the talking. The wall is a tonal system, not
+one flat fill: the five zone frames are panels one step *lighter* in the
+wall's own hue (a dark wall gets depth from surface lightness), every object's
+shadow is `--color-buildroom-deep` at 65% (never neutral black), and the
+canvas grid is ruled lines, not dots. Kind pills keep crew violet; magenta
+stays out of it.
 
 ### Secondary — The one pop
 - **Lime** (#c6f750): the brand mark, the live status dot, the `+` to add. Used
