@@ -52,7 +52,7 @@ Left on the widget layer: no editor forms yet for the four build-room types
 
 ---
 
-## 0. the build room — dev guild (`#/`, burnt-orange `torch` theme)
+## 0. the build room — dev guild (`#/`, denim `torch` theme)
 
 **Status: built.** Seven members, 1640×1080. The default demo space; the crew
 stays one click away in the rail.
@@ -62,11 +62,13 @@ landscape shipping wall on the left, compact hot/keepers/roundtable on the right
 The shared mock/live camera fits the frame bounds between the header and dock
 (max scale `1`). `buildRoomPresentation.ts` maps recognized legacy demo
 placements to this composition without writing the database; later member moves
-retain their saved coordinates. The wall uses `--color-buildroom`, a rich burnt orange (the first bright
-torch color proved overpowering, the muted follow-up read flat). It is a tonal system: the five zone frames
-are panels one step deeper in the same hue, shadows are `--color-buildroom-deep` at half alpha, the grid is
-a pegboard, and crew violet is the room's only cool accent (tape, pushpins, kind pills). The header keeps the copyable email address
-beside the title and preserves presence, add, invite, and editing.
+retain their saved coordinates. The wall uses `--color-buildroom`, a dusty denim felt (three oranges
+came before it — bright, muted, rich — and every one out-shouted the objects). It is a tonal system: the
+five zone frames are panels one step deeper in the same hue, shadows are `--color-buildroom-deep` at half
+alpha, the grid is a pegboard, and the room's orange is its accent, not its wall: pile tape, ship tape,
+pushpins (the purple asset hue-rotated), the kept count and vote arrows all take `--space-accent`. Kind
+pills keep crew violet. The header keeps the copyable email address beside the title and preserves
+presence, add, invite, and editing.
 
 The pile uses overlapping full-size cover cards, a taped black front and five
 member faces. Hot links keep their real content, with stable local art on seeded
@@ -88,7 +90,7 @@ only hot links and keepers graduate into canvas objects.
 
 | Layer | Widgets on canvas |
 |---|---|
-| Identity | the orange field itself — one loud flat color, black objects |
+| Identity | black objects and white paper on a denim felt wall; orange only on tape, pins and counts |
 | Memory | **keepers** frame → pinned `note` takeaways promoted out of the pile |
 | Now | **the pile** frame → `linkPile` (47 links, fanned covers) · **hot now** frame → `hotLinks` (3 ranked rows) |
 | Talk | **roundtable** frame → `roundtable` (threaded, previews its own tail) |
