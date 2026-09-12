@@ -12,15 +12,17 @@ Backward-looking history lives in `hackathon.md`.
   (soft/mid denim, ink navy, cork, chalk); round two shot four non-blue
   directions via `.context/shot-buildroom-wall-v2.mjs` (blueprint, plaster,
   mustard, bottle green — each a complete torch override, so any can be
-  landed by copying its CSS). Landed **blueprint**: `--color-buildroom:
-  oklch(0.40 0.12 262)`, `--color-buildroom-deep: oklch(0.18 0.08 262)`,
-  white ink (torch preset `ink: "#ffffff"`), ruled white grid instead of the
-  pegboard, zone panels one step *lighter*, shadows at 65%. Orange stays the
+  landed by copying its CSS). Blueprint landed first; the user picked
+  **bottle green** off the sheet: `--color-buildroom: oklch(0.42 0.09 160)`,
+  `--color-buildroom-deep: oklch(0.20 0.05 160)`, white ink (torch preset
+  `ink: "#ffffff"`), pegboard dots with a light rim, zone panels one step
+  *lighter* (12% toward card so they read on the dark green), shadows at
+  65%. Orange stays the
   room's identity but only as accent (pile tape, third ship tape, hue-rotated
   pushpins, kept count, vote arrows, rail tile — all via `--space-accent`).
   The compact header (mail chip, presence label, live strip) now reads
   `--space-heading-color` instead of hardcoded ink, so it follows the preset.
-  Plaster (quiet warm neutral) and bottle green (chalkboard) are the
+  Plaster (quiet warm neutral) and blueprint (cobalt + ruled grid) are the
   ready-to-swap alternates in the v2 script. Theme id stays `torch`.
   `npm run build` passed. No deployment.
 

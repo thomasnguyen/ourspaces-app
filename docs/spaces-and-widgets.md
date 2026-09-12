@@ -52,7 +52,7 @@ Left on the widget layer: no editor forms yet for the four build-room types
 
 ---
 
-## 0. the build room — dev guild (`#/`, blueprint `torch` theme)
+## 0. the build room — dev guild (`#/`, bottle-green `torch` theme)
 
 **Status: built.** Seven members, 1640×1080. The default demo space; the crew
 stays one click away in the rail.
@@ -62,13 +62,13 @@ landscape shipping wall on the left, compact hot/keepers/roundtable on the right
 The shared mock/live camera fits the frame bounds between the header and dock
 (max scale `1`). `buildRoomPresentation.ts` maps recognized legacy demo
 placements to this composition without writing the database; later member moves
-retain their saved coordinates. The wall uses `--color-buildroom`, blueprint paper — a deep cobalt ruled
-with a fine white grid (three oranges and a denim felt came before it; the oranges out-shouted the objects,
-the denim had no reason to be blue). It is a tonal system: the five zone frames are panels one step lighter
-in the same hue, shadows are `--color-buildroom-deep` at 65%, the grid is ruled lines, header ink is white,
-and the room's orange is its accent, not its wall: pile tape, ship tape, pushpins (the purple asset
-hue-rotated), the kept count and vote arrows all take `--space-accent`. Kind pills keep crew violet. The
-header keeps the copyable email address beside the title and preserves presence, add, invite, and editing.
+retain their saved coordinates. The wall uses `--color-buildroom`, a bottle-green chalkboard (three
+oranges, a denim felt and a cobalt blueprint came before it; the user picked the green off a four-up sheet).
+It is a tonal system: the five zone frames are panels one step lighter in the same hue, shadows are
+`--color-buildroom-deep` at 65%, the grid is a pegboard, header ink is white, and the room's orange is its
+accent, not its wall: pile tape, ship tape, pushpins (the purple asset hue-rotated), the kept count and vote
+arrows all take `--space-accent`. Kind pills keep crew violet. The header keeps the copyable email address
+beside the title and preserves presence, add, invite, and editing.
 
 The pile uses overlapping full-size cover cards, a taped black front and five
 member faces. Hot links keep their real content, with stable local art on seeded
@@ -90,7 +90,7 @@ only hot links and keepers graduate into canvas objects.
 
 | Layer | Widgets on canvas |
 |---|---|
-| Identity | black objects and white paper on blueprint paper; orange only on tape, pins and counts |
+| Identity | black objects and white paper on a bottle-green chalkboard; orange only on tape, pins and counts |
 | Memory | **keepers** frame → pinned `note` takeaways promoted out of the pile |
 | Now | **the pile** frame → `linkPile` (47 links, fanned covers) · **hot now** frame → `hotLinks` (3 ranked rows) |
 | Talk | **roundtable** frame → `roundtable` (threaded, previews its own tail) |
