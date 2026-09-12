@@ -3,7 +3,7 @@ import type { Widget } from "../data/types";
 
 const BUILD_ROOM_OVERVIEW_MAX_SCALE = 1;
 const BUILD_ROOM_OVERVIEW_RIGHT = 1556;
-const BUILD_ROOM_OVERVIEW_BOTTOM = 946;
+const BUILD_ROOM_OVERVIEW_BOTTOM = 1044;
 
 // Recognized demo placements (including the three lightly nudged live objects)
 // get the new composition. Other saved placements stay untouched.
@@ -11,19 +11,27 @@ const BUILD_ROOM_LAYOUT: [Widget["type"], [number, number, number, number], [num
   ["frame", [48, 64, 760, 420], [48, 48, 850, 540]],
   ["linkPile", [88, 148, 680, 300], [80, 104, 780, 438]],
   ["linkPile", [90, 142, 680, 300], [80, 104, 780, 438]],
-  ["frame", [850, 48, 700, 400], [936, 48, 620, 370]],
-  ["hotLinks", [886, 112, 628, 300], [958, 84, 576, 306]],
-  ["frame", [850, 470, 700, 210], [936, 446, 620, 194]],
-  ["note", [886, 512, 320, 150], [958, 485, 276, 140]],
-  ["note", [1222, 512, 320, 150], [1254, 485, 276, 140]],
-  ["note", [862, 498, 320, 150], [958, 485, 276, 140]],
-  ["note", [1218, 511, 320, 150], [1254, 485, 276, 140]],
+  ["frame", [850, 48, 700, 400], [936, 48, 620, 340]],
+  ["hotLinks", [886, 112, 628, 300], [958, 80, 576, 306]],
+  ["frame", [850, 470, 700, 210], [936, 416, 620, 296]],
+  ["note", [886, 512, 320, 150], [958, 446, 276, 248]],
+  ["note", [1222, 512, 320, 150], [1254, 446, 276, 248]],
+  ["note", [862, 498, 320, 150], [958, 446, 276, 248]],
+  ["note", [1218, 511, 320, 150], [1254, 446, 276, 248]],
   ["frame", [48, 570, 760, 380], [48, 626, 850, 320]],
   ["shipPost", [84, 632, 222, 282], [72, 672, 254, 246]],
   ["shipPost", [328, 626, 222, 282], [356, 667, 254, 246]],
   ["shipPost", [572, 634, 222, 282], [640, 674, 254, 246]],
-  ["frame", [850, 705, 700, 310], [936, 668, 620, 278]],
-  ["roundtable", [886, 752, 628, 250], [958, 704, 576, 228]],
+  ["frame", [850, 705, 700, 310], [936, 742, 620, 302]],
+  ["roundtable", [886, 752, 628, 250], [958, 774, 576, 256]],
+  // The first reference pass may already have been saved by a canvas gesture.
+  ["frame", [936, 48, 620, 370], [936, 48, 620, 340]],
+  ["hotLinks", [958, 84, 576, 306], [958, 80, 576, 306]],
+  ["frame", [936, 446, 620, 194], [936, 416, 620, 296]],
+  ["note", [958, 485, 276, 140], [958, 446, 276, 248]],
+  ["note", [1254, 485, 276, 140], [1254, 446, 276, 248]],
+  ["frame", [936, 668, 620, 278], [936, 742, 620, 302]],
+  ["roundtable", [958, 704, 576, 228], [958, 774, 576, 256]],
 ];
 
 export function withBuildRoomLayout(widget: Widget): Widget {

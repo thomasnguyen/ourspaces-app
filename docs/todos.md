@@ -5,6 +5,27 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **App-wide reading pass (2026-09-12):** the user
+  clarified that body-text readability applies throughout the app. Messages,
+  descriptions, letters, recaps and forms now share 16px regular IBM Plex Sans,
+  1.5 line spacing; generous reading panels use 18px. Supporting text uses 14px.
+  Reading-list descriptions now sit under their titles at full reading width.
+  The reference pass made keeper
+  body text ~8px and credits ~6px after the overview camera scaled it down.
+  Keeper papers are taller with a 36px bottom inset; body text is now 20px
+  before scaling, titles use IBM Plex Sans, and credits flow after the text.
+  Hot links, shipping captions and roundtable text also have larger reading
+  sizes and stronger contrast. Hot-link type/domain share a line to make room.
+  Fixed the actual material clipping: the PNG's transparent margins no longer
+  define the text surface; opaque paper carries the copy and a separate tear
+  decorates the bottom. Smaller notes in other spaces grow with their copy;
+  an unfolded letter's comment button sits above its text. Mobile reading
+  room now switches between full-width links and reading circle; selecting a
+  link opens the circle. Ship rooms stack image and copy on phones. Fixed
+  mobile canvas stacking so notes cannot appear above the chat drawer.
+  Browser-checked desktop/mobile keepers, chat, reading room, crew messages,
+  couple notes/letter and editor fields. `npm run build` passed. No deployment.
+
 - **Build room reference pass (2026-09-12):** centered the five zones, enlarged
   the layered link pile, made shipping posts landscape project previews, and
   reduced the header/rail/dock weight. The user found the full-screen orange

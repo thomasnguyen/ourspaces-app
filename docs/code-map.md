@@ -44,7 +44,8 @@ briefing, ↻ refresh, follow-up composer) ·
 that opened it via `--room-origin-*`, shrinks back on close) ·
 `ReadingRoom.tsx` (the pile's full view — single-link drop bar + a research bar
 [`onSearch` topic / `onCrawl` site], a tag row over the `all / new / hot /
-discussed / kept` filters, per-person runs, dense rows, reading circle whose tag
+discussed / kept` filters, per-person runs, wrapping link descriptions, mobile
+links/reading-circle switch, reading circle whose tag
 pills set the same tag filter) · `CrawlStrip.tsx` (live Firecrawl crawl panel —
 usePaginatedQuery over `firecrawl.listCrawlPages`, pages stream in, each keepable
 to the pile) · `ShipRoom.tsx` (a ship post's full view) ·
@@ -259,8 +260,9 @@ block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
 (~11482+): catch-me-up recap, the kraft-mat frames, the full-screen rooms
 (`.canvas-room` shell → `.reading-room` / `.rr-*` incl. the tag row, ship room
 `.sr-*`), the quote pushpin (~17882), the scroll-linked header fade (~17905),
-the letter envelope + mail chip, and "BUILD ROOM — COMPACT OVERVIEW" (~20762)
-last. New CSS goes in a new banner section at the end.
+the letter envelope + mail chip, "BUILD ROOM — COMPACT OVERVIEW" (~20762),
+and app-wide reading typography (~21680: prose, inputs, paper sizing and
+mobile reading/ship rooms). New CSS goes in a new banner section at the end.
 
 ## scripts/
 

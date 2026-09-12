@@ -165,11 +165,13 @@ export function HotLinksWidget({
             >
               <LinkTile link={link} className="br-hot-tile" />
               <span className="br-hot-copy">
-                <span className="br-kind" style={{ background: kindTone(link.kind) }}>
-                  {link.kind}
-                </span>
                 <strong>{link.title}</strong>
-                <span className="br-hot-domain">{link.domain}</span>
+                <span className="br-hot-meta">
+                  <span className="br-kind" style={{ background: kindTone(link.kind) }}>
+                    {link.kind}
+                  </span>
+                  <span className="br-hot-domain">{link.domain}</span>
+                </span>
               </span>
               <span className="br-hot-counts">
                 <CountBadge

@@ -21,6 +21,10 @@ used to be pasted 138 times).
   --color-trip: #ff7c42;
   --color-league: #13b8a6;
   --color-buildroom: oklch(0.63 0.155 42);
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+  --text-caption: 0.875rem;
+  --text-caption--line-height: 1.4;
   --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --radius-pill: 9999px;
@@ -41,6 +45,9 @@ used to be pasted 138 times).
   the one tiny pop. `crew` / `couple` / `fam` / `trip` / `league` are the loud
   per-space identity colors. `buildroom` is the deeper burnt-orange wall,
   softened from the initial bright torch color after visual review.
+- **Reading** — `text-body` is 16px / 1.5 for prose and inputs;
+  `text-caption` is 14px / 1.4 for supporting text. Both use IBM Plex Sans.
+  Body weight is 400; bylines use 500. Canvas previews account for camera scale.
 - **Motion** — three curves, three jobs: `glide` is the default (hover, press,
   translate, opacity), `pop` is for things *arriving*, `snap` is for climax
   beats only. Durations run `instant` 120ms → `hero` 900ms. The house motion
