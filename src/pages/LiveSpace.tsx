@@ -26,6 +26,9 @@ import { SpaceEditorPanel } from "../components/SpaceEditorPanel";
 import { SpaceLiveStrip } from "../components/SpaceLiveStrip";
 import { WidgetEditorPanel } from "../components/WidgetEditorPanel";
 import { WidgetPicker } from "../components/WidgetPicker";
+import { JoinForm } from "../components/JoinForm";
+import { useAccount } from "../live/useJoin";
+import { useCreateSpace } from "../live/useCreateSpace";
 import {
   WidgetThreadDock,
   type ThreadDockPlacement,
@@ -45,7 +48,7 @@ import {
 import { cleanRecapText, RECAP_THREAD_ID, type RecapLine, type RecapTurn } from "../data/recap";
 import { flyWidgetIn } from "../lib/flipLanding";
 import { pileInsideFrame } from "../lib/frameMembership";
-import { relTime, toChatMessage } from "../live/adapt";
+import { relTime, spaceFromLive, toChatMessage } from "../live/adapt";
 import type { RoundtableReply } from "../widgets/buildroom";
 import {
   buildRoomFeedFrom,
@@ -324,6 +327,15 @@ export function LiveSpacePage({
   const [recapHover, setRecapHover] = useState<string | null>(null);
   const [highlightMessageId, setHighlightMessageId] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
+  // The rail's "+" opens the SPACE picker; the dock's add opens the widget
+  // one. Same component, two modes.
+  const [spacePickerOpen, setSpacePickerOpen] = useState(false);
+  const account = useAccount();
+  // Set when someone finishes joining from the create-space nudge. It only
+  // dismisses the stamp — whether they can actually make a space is still
+  // account.joined, which is the server's answer, not ours.
+  const [joinDismissed, setJoinDismissed] = useState(false);
+  const spaceMaker = useCreateSpace();
   const [canvasAwayFromHome, setCanvasAwayFromHome] = useState(false);
   const [customization, setCustomization] = useState<SpaceCustomization>(() =>
     defaultSpaceCustomization(getSpace(slug)),
@@ -389,7 +401,14 @@ export function LiveSpacePage({
     playSound("place");
   }, [identity, isInviteEntry, join, slug, space]);
 
-  const mockSpace = getSpace(slug);
+  // A space someone made has no fixture, and getSpace() would hand back the
+  // CREW's name/colour/faces for it. Prefer the live row whenever the slug
+  // isn't one of the seeded showcase spaces.
+  const mockSpace = useMemo(() => {
+    const fixture = SPACES_BY_ID[slug];
+    if (fixture) return fixture;
+    return space ? spaceFromLive(space) : getSpace(slug);
+  }, [slug, space]);
   const isInvalidInvite = isInviteEntry && !SPACES_BY_ID[slug] && status === "missing";
   // A slug the backend has no space for. Authoritative in live mode: a slug
   // can exist in the mock fixtures (#/space/trip does) and still be missing on
@@ -1839,6 +1858,12 @@ export function LiveSpacePage({
     onSelectSpace?.(id);
   };
 
+  const openSpacePicker = () => {
+    if (focusedTarget) leaveFocus(false);
+    playSound("tap");
+    setSpacePickerOpen(true);
+  };
+
   const openWidgetPicker = () => {
     if (focusedTarget) leaveFocus(false);
     playSound("tap");
@@ -2037,7 +2062,7 @@ export function LiveSpacePage({
 
   return (
     <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""} ${spacePan.panning ? "is-canvas-panning" : ""} ${spacePan.spaceHeld ? "is-space-panning" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
-      <Rail activeId={slug} onSelectSpace={selectSpace} onCreateClick={openWidgetPicker} />
+      <Rail activeId={slug} onSelectSpace={selectSpace} onCreateClick={openSpacePicker} />
       {roomEntered && space?.slug && (
         <RoomPresenceHeartbeat roomId={space.slug} userId={identity.userId} />
       )}
@@ -2356,6 +2381,38 @@ export function LiveSpacePage({
         onAddSticker={addSticker}
         onAddWidget={addWidget}
         onClose={() => setPickerOpen(false)}
+      />
+      <WidgetPicker
+        open={spacePickerOpen}
+        mode="spaces"
+        creating={spaceMaker.busy}
+        // A guest gets the reason, not a refusal. The server would turn them
+        // away anyway (§1: making a space is the one thing an account buys).
+        spacesGate={
+          account.joined ? undefined : joinDismissed ? (
+            // The join form reloads the page on "keep going" (see JoinForm),
+            // so this is only ever a flash between click and navigation.
+            <p className="template-busy">one sec — getting your keys…</p>
+          ) : (
+            <JoinForm
+              reason="spaces you make stick around — so you need somewhere to come back to. one code, no password."
+              // Without this there is no way out of the "you're in the book"
+              // stamp: the gate only lifts when the currentUser query catches
+              // up, and until then the picker is a dead end.
+              onJoined={() => setJoinDismissed(true)}
+              onCancel={() => setSpacePickerOpen(false)}
+            />
+          )
+        }
+        createError={spaceMaker.error}
+        onCreateSpace={(template, name) => {
+          void spaceMaker.create(template, name).then((newSlug) => {
+            if (!newSlug) return;
+            setSpacePickerOpen(false);
+            window.location.hash = normalSpaceHash(newSlug);
+          });
+        }}
+        onClose={() => setSpacePickerOpen(false)}
       />
       <WidgetEditorPanel
         widget={editingWidget}

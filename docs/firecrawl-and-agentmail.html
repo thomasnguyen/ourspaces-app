@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OurSpaces × Firecrawl + AgentMail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Tokens lifted from src/index.css @theme — one dialect, not a second one. */
+  :root {
+    --card: #fffaf7;
+    --ink: #111114;
+    --muted: #5f5055;
+    --mat: #ddc8ac;
+    --lime: #c9ff3d;
+    --fire: #ff7c42;   /* --color-trip */
+    --mail: #7853ff;   /* --color-crew */
+    --teal: #13b8a6;   /* --color-league */
+    --pink: #e9369d;   /* --color-couple */
+
+    --ease-glide: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-pop:   cubic-bezier(0.2, 0.9, 0.3, 1.18);
+    --ease-snap:  cubic-bezier(0.34, 1.56, 0.64, 1);
+    --dur-quick: 160ms;
+    --dur-base: 220ms;
+    --dur-arrive: 360ms;
+    --dur-stage: 500ms;
+
+    --display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--mat);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── deck shell ─────────────────────────────────────────────── */
+  .deck {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: clamp(12px, 2.2vmin, 28px);
+  }
+
+  .slide {
+    position: absolute;
+    width: min(1180px, 96vw);
+    height: min(680px, 88vh);
+    background: var(--card);
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    box-shadow: 12px 12px 0 var(--ink);
+    padding: clamp(26px, 4vmin, 54px) clamp(30px, 5vmin, 64px);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .slide.is-live {
+    display: flex;
+    animation: slide-in var(--dur-arrive) var(--ease-glide) both;
+  }
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.992); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* stagger: children ride --i, so adding a sixth bullet still works */
+  .slide.is-live [data-step] {
+    animation: step-in var(--dur-base) var(--ease-pop) both;
+    animation-delay: calc(90ms + var(--i, 0) * 52ms);
+  }
+  @keyframes step-in {
+    from { opacity: 0; transform: translateY(9px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ── type ───────────────────────────────────────────────────── */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: clamp(11px, 1.25vmin, 13px);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent, var(--ink));
+    border: 2px solid var(--ink);
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(38px, 6.4vmin, 76px);
+    line-height: 0.98;
+    letter-spacing: -0.025em;
+    margin: 0 0 18px;
+  }
+  h2 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(28px, 4.4vmin, 50px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin: 0 0 6px;
+  }
+  h2 .num {
+    display: inline-block;
+    background: var(--accent, var(--ink));
+    color: var(--card);
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    padding: 0 14px;
+    margin-right: 14px;
+    transform: rotate(-2deg);
+  }
+  .sub {
+    font-size: clamp(16px, 2.05vmin, 23px);
+    line-height: 1.35;
+    color: var(--muted);
+    margin: 0 0 22px;
+    max-width: 46ch;
+  }
+  .lede {
+    font-size: clamp(17px, 2.3vmin, 26px);
+    line-height: 1.42;
+    margin: 0 0 20px;
+    max-width: 52ch;
+  }
+  strong { font-weight: 600; }
+  .hl {
+    background: var(--lime);
+    box-shadow: 0 0 0 4px var(--lime);
+    border-radius: 2px;
+  }
+
+  /* ── the "what you see" block — the demo-facing line ─────────── */
+  .see {
+    border-left: 6px solid var(--accent, var(--ink));
+    padding: 2px 0 2px 18px;
+    margin: 0 0 20px;
+    max-width: 56ch;
+  }
+  .see .k {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 5px;
+  }
+  .see p { margin: 0; font-size: clamp(15px, 1.95vmin, 21px); line-height: 1.38; }
+
+  /* ── bullets ────────────────────────────────────────────────── */
+  ul.points { list-style: none; margin: 0; padding: 0; display: grid; gap: 11px; }
+  ul.points li {
+    position: relative;
+    padding-left: 26px;
+    font-size: clamp(14px, 1.72vmin, 18px);
+    line-height: 1.42;
+    max-width: 64ch;
+  }
+  ul.points li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0.55em;
+    width: 11px; height: 11px;
+    background: var(--accent, var(--ink));
+    border: 2px solid var(--ink);
+    border-radius: 3px;
+    transform: rotate(45deg) translateY(-2px);
+  }
+
+  /* ── layout helpers ─────────────────────────────────────────── */
+  .body { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 3.4vmin, 46px); align-items: start; }
+  .cols.tight { gap: clamp(16px, 2.4vmin, 30px); }
+
+  /* ── file chip ──────────────────────────────────────────────── */
+  .file {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: clamp(11px, 1.35vmin, 14px);
+    background: var(--ink);
+    color: var(--card);
+    padding: 7px 13px;
+    border-radius: 999px;
+    margin-top: 4px;
+  }
+  .file::before { content: "›"; opacity: 0.55; }
+
+  /* ── big stat cards ─────────────────────────────────────────── */
+  .stat {
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    padding: clamp(18px, 2.8vmin, 32px);
+    background: var(--card);
+    box-shadow: 7px 7px 0 var(--ink);
+  }
+  .stat .n {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(52px, 10vmin, 112px);
+    line-height: 0.86;
+    letter-spacing: -0.04em;
+    color: var(--accent, var(--ink));
+    display: block;
+  }
+  .stat .n small {
+    font-size: 0.26em;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--ink);
+    display: block;
+    margin-top: 10px;
+  }
+  .stat h3 {
+    font-family: var(--display);
+    font-size: clamp(20px, 2.7vmin, 30px);
+    margin: 16px 0 8px;
+    letter-spacing: -0.015em;
+  }
+  .stat p { margin: 0; font-size: clamp(13px, 1.62vmin, 17px); line-height: 1.42; color: var(--muted); }
+
+  /* ── flow diagram ───────────────────────────────────────────── */
+  .flow { display: grid; gap: 9px; margin: 0; }
+  .flow .row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-size: clamp(12.5px, 1.55vmin, 16px);
+    line-height: 1.32;
+  }
+  .flow .pill {
+    font-family: var(--mono);
+    font-size: 0.82em;
+    padding: 6px 11px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    white-space: nowrap;
+    background: var(--card);
+  }
+  .flow .pill.fire { background: var(--fire); }
+  .flow .pill.mail { background: var(--mail); color: var(--card); }
+  .flow .pill.lime { background: var(--lime); }
+  .flow .arrow { font-family: var(--mono); color: var(--muted); }
+
+  /* ── tables / scoreboards ───────────────────────────────────── */
+  table { border-collapse: collapse; width: 100%; font-size: clamp(12.5px, 1.55vmin, 16.5px); }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 2px solid color-mix(in srgb, var(--ink) 12%, transparent); vertical-align: top; }
+  th {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 3px solid var(--ink);
+  }
+  td.mark { width: 1%; white-space: nowrap; font-weight: 600; }
+  .yes { color: #0a7b32; }
+  .no { color: #b4231f; }
+  .warn { color: #9a6100; }
+  tr.is-star td { background: color-mix(in srgb, var(--lime) 42%, transparent); }
+
+  /* ── chrome ─────────────────────────────────────────────────── */
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    margin-top: auto;
+    padding-top: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .tag {
+    padding: 5px 11px;
+    border-radius: 999px;
+    border: 2px solid var(--ink);
+    background: var(--accent, var(--card));
+    color: var(--ink);
+  }
+  .tag.on-dark { color: var(--card); }
+
+  .rail {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    height: 5px;
+    background: color-mix(in srgb, var(--ink) 16%, transparent);
+    z-index: 40;
+  }
+  .rail > i { display: block; height: 100%; background: var(--ink); width: 0; transition: width var(--dur-base) var(--ease-glide); }
+
+  .nav {
+    position: fixed;
+    right: 18px; bottom: 20px;
+    display: flex; gap: 8px; z-index: 50;
+  }
+  .nav button {
+    font-family: var(--mono);
+    font-size: 15px;
+    width: 40px; height: 40px;
+    border: 3px solid var(--ink);
+    background: var(--card);
+    border-radius: 11px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform var(--dur-quick) var(--ease-glide), box-shadow var(--dur-quick) var(--ease-glide);
+  }
+  .nav button:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+  .nav button:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+
+  .hint {
+    position: fixed;
+    left: 18px; bottom: 22px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--ink) 52%, transparent);
+    z-index: 50;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide.is-live, .slide.is-live [data-step] { animation: none; }
+    .rail > i { transition: none; }
+  }
+
+  /* Print → one slide per page, so this exports to PDF cleanly. */
+  @media print {
+    html, body { background: #fff; height: auto; }
+    .deck { position: static; display: block; padding: 0; }
+    .slide {
+      display: flex !important;
+      position: static;
+      width: 100%; height: 100vh;
+      page-break-after: always;
+      break-after: page;
+      box-shadow: none;
+      border-radius: 0;
+      border: none;
+      animation: none !important;
+    }
+    .slide [data-step] { animation: none !important; }
+    .nav, .hint, .rail { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- 1 ─────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--lime)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> OurSpaces · Convex All Gas</p>
+      <h1 data-step style="--i:1">What we actually<br />built with <span class="hl">Firecrawl</span><br />and <span class="hl">AgentMail</span>.</h1>
+      <p class="sub" data-step style="--i:2">Not a list of endpoints we called once. Every surface below is load-bearing in the demo.</p>
+    </div>
+    <div class="foot">
+      <span>12 surfaces · 2 sponsors · 1 canvas</span>
+      <span>press → to start</span>
+    </div>
+  </section>
+
+  <!-- 2 ─────────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> The one-line version</p>
+      <div class="cols">
+        <div class="stat" style="--accent: var(--fire)" data-step="" data-i>
+          <span class="n">5<small>surfaces in use</small></span>
+          <h3>Firecrawl</h3>
+          <p>Turns anything on the web — a link, a topic, a whole site, an emailed PDF — into clean text the canvas can hold.</p>
+        </div>
+        <div class="stat" style="--accent: var(--mail)" data-step>
+          <span class="n">7<small>surfaces in use</small></span>
+          <h3>AgentMail</h3>
+          <p>Gives every space a real email address, so the outside world can put things on the canvas by writing to it. It also signs you in.</p>
+        </div>
+      </div>
+      <p class="lede" data-step style="--i:3; margin-top: 26px">They also <strong>chain</strong>: one email can travel through both.</p>
+    </div>
+    <div class="foot"><span>Overview</span><span>02</span></div>
+  </section>
+
+  <!-- 3 ─────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--fire)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> Firecrawl · 1 of 5</p>
+      <h2 data-step style="--i:1"><span class="num">01</span>Scrape</h2>
+      <p class="sub" data-step style="--i:2">A link becomes a card.</p>
+      <div class="cols tight">
+        <div>
+          <div class="see" data-step style="--i:3">
+            <span class="k">What you see</span>
+            <p>Paste a link into the build room. A grey placeholder appears, then fills in with a real card — title, description, cover image.</p>
+          </div>
+          <span class="file" data-step style="--i:4">convex/firecrawl.ts · scrapeLink</span>
+        </div>
+        <ul class="points">
+          <li data-step style="--i:5"><strong>Firecrawl does the extraction, not us.</strong> We ask for four formats at once — markdown, summary, images, and a <strong>JSON format with a prompt</strong>. We never parse HTML ourselves.</li>
+          <li data-step style="--i:6"><strong>Hacker News links resolve properly.</strong> An HN link points at a comments page. We ask the HN API what story it is, scrape <em>the article</em>, and keep the points and comment count.</li>
+          <li data-step style="--i:7"><strong>Cached 1 hour, retried with backoff.</strong> A re-shared link costs zero credits. A network blip doesn't lose the save.</li>
+          <li data-step style="--i:8"><strong>A card is never blank.</strong> Title falls back through four sources, description through five.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span class="tag">Firecrawl</span><span>03</span></div>
+  </section>
+
+  <!-- 4 ─────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--fire)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> Firecrawl · 2 of 5</p>
+      <h2 data-step style="--i:1"><span class="num">02</span>Search</h2>
+      <p class="sub" data-step style="--i:2">A topic becomes a pile of cards.</p>
+      <div class="cols tight">
+        <div>
+          <div class="see" data-step style="--i:3">
+            <span class="k">What you see</span>
+            <p>In the build room, type a <em>topic</em> instead of a URL. The room fills with things to read.</p>
+          </div>
+          <span class="file" data-step style="--i:4">convex/firecrawl.ts · searchTopic</span>
+        </div>
+        <ul class="points">
+          <li data-step style="--i:5"><strong>A genuinely different surface from scrape.</strong> Search-then-clean in one call — not "search somewhere else, then scrape each result."</li>
+          <li data-step style="--i:6">Results come back shaped <strong>exactly like the link cards the pile already renders</strong>, so there's no second card design.</li>
+          <li data-step style="--i:7">The result limit is <strong>clamped to 1–20</strong>, because it's caller-supplied and Firecrawl bills per credit.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span class="tag">Firecrawl</span><span>04</span></div>
+  </section>
+
+  <!-- 5 ─────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--fire)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> Firecrawl · 3 of 5 · the showpiece</p>
+      <h2 data-step style="--i:1"><span class="num">03</span>Crawl</h2>
+      <p class="sub" data-step style="--i:2">A whole site, streaming in live.</p>
+      <div class="cols tight">
+        <div>
+          <div class="see" data-step style="--i:3">
+            <span class="k">What you see</span>
+            <p>The crawl strip. Pages appear <strong>as Firecrawl finds them</strong> — a live counter, a growing list, each page keepable into the pile.</p>
+          </div>
+          <span class="file" data-step style="--i:4">crawlSite · CrawlStrip.tsx</span>
+        </div>
+        <ul class="points">
+          <li data-step style="--i:5">Pages land in <strong>Firecrawl's own Convex tables</strong>, and the UI subscribes to them.</li>
+          <li data-step style="--i:6">We never copy pages into a widget, never poll, never write refresh logic.</li>
+          <li data-step style="--i:7"><strong>A second person watching the same space sees the same pages arrive at the same moment.</strong></li>
+        </ul>
+      </div>
+      <p class="lede" data-step style="--i:8; margin: 22px 0 0"><span class="hl">That's the demo nobody else has: a crawl with two people watching it.</span></p>
+    </div>
+    <div class="foot"><span class="tag">Firecrawl</span><span>05</span></div>
+  </section>
+
+  <!-- 6 ─────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--fire)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> Firecrawl · 4 of 5 · new</p>
+      <h2 data-step style="--i:1"><span class="num">04</span>Parse</h2>
+      <p class="sub" data-step style="--i:2">An emailed document becomes text.</p>
+      <div class="cols tight">
+        <div>
+          <div class="see" data-step style="--i:3">
+            <span class="k">What you see</span>
+            <p>Email a receipt PDF to a space. The body can say nothing but <em>"see attached"</em> — the amount still lands on the right expense tracker.</p>
+          </div>
+          <span class="file" data-step style="--i:4">convex/firecrawl.ts · parseDocument</span>
+        </div>
+        <ul class="points">
+          <li data-step style="--i:5"><strong>No file ever touches our storage.</strong> AgentMail hands back a short-lived download URL, and <code>/scrape</code> parses a document URL identically to <code>/parse</code>.</li>
+          <li data-step style="--i:6">So this is a scrape with a <strong>PDF parser attached</strong> — same call we already make for link cards, pointed at a different URL.</li>
+          <li data-step style="--i:7"><strong>Guards, because parsing costs credits:</strong> inline logos skipped, 10&nbsp;MB cap, documents only, 3 per email.</li>
+          <li data-step style="--i:8"><strong>Every failure is soft.</strong> An unreadable PDF routes on the email body exactly as before. An attachment must never cost us the email.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span class="tag">Firecrawl</span><span>06</span></div>
+  </section>
+
+  <!-- 7 ─────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--fire)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> Firecrawl · 5 of 5</p>
+      <h2 data-step style="--i:1"><span class="num">05</span>Stale-link refresh</h2>
+      <p class="sub" data-step style="--i:2">Cards that don't rot.</p>
+      <div class="cols tight">
+        <div>
+          <div class="see" data-step style="--i:3">
+            <span class="k">What you see</span>
+            <p><strong>Nothing — which is the point.</strong> Old cards quietly stay accurate.</p>
+          </div>
+          <span class="file" data-step style="--i:4">convex/batch.ts · Fridays 17:00 UTC</span>
+        </div>
+        <ul class="points">
+          <li data-step style="--i:5">Link cards older than <strong>7 days</strong> get re-scraped, <strong>5 at a time</strong>.</li>
+          <li data-step style="--i:6">A hundred stale links don't become a hundred simultaneous Firecrawl calls — the cron enqueues, a batch worker drains.</li>
+          <li data-step style="--i:7">Interrupted mid-run? It <strong>resumes from a cursor</strong>.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span class="tag">Firecrawl</span><span>07</span></div>
+  </section>
+
+  <!-- 8 ─────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--fire)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> Firecrawl</p>
+      <h2 data-step style="--i:1">Scoreboard</h2>
+      <div data-step style="--i:2; margin-top: 14px">
+        <table>
+          <thead><tr><th>Surface</th><th>Us</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>Scrape</td><td class="mark yes">✓</td><td>+ JSON extraction, cached, retried, HN-aware</td></tr>
+            <tr><td>Search</td><td class="mark yes">✓</td><td>build room topic search</td></tr>
+            <tr><td>Crawl</td><td class="mark yes">✓</td><td>durable, streaming, reactive</td></tr>
+            <tr><td>Parse</td><td class="mark yes">✓</td><td>emailed documents</td></tr>
+            <tr><td>Extract (standalone)</td><td class="mark warn">—</td><td>we do JSON-on-scrape instead, same result</td></tr>
+            <tr><td>Map</td><td class="mark no">✕</td><td><strong>one call away</strong> — <code>map()</code> is already on our client</td></tr>
+            <tr><td>Interact</td><td class="mark no">✕</td><td>click/fill a live page — one of their headline three</td></tr>
+            <tr><td>Agent · Sandbox · Change tracking</td><td class="mark no">✕</td><td>out of scope for a shared canvas</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="foot"><span class="tag">Firecrawl</span><span>08</span></div>
+  </section>
+
+  <!-- 9 ─────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--mail)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> AgentMail · 1 of 7</p>
+      <h2 data-step style="--i:1"><span class="num">01</span>Inboxes</h2>
+      <p class="sub" data-step style="--i:2">Every space has a real address.</p>
+      <div data-step style="--i:3">
+        <table>
+          <thead><tr><th>Space</th><th>Address</th><th>What mail becomes</th></tr></thead>
+          <tbody>
+            <tr><td>the crew</td><td><code>ourspaces@agentmail.to</code></td><td>AI-filed: receipts → expense rows, bookings → itinerary days</td></tr>
+            <tr><td>us two</td><td><code>ustwo@agentmail.to</code></td><td>a sealed kraft letter you click to unfold</td></tr>
+            <tr><td>the build room</td><td><code>buildroom@agentmail.to</code></td><td>URLs drop into the pile, Firecrawl-enriched</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="points" style="margin-top: 20px">
+        <li data-step style="--i:4"><strong>Inboxes are the scarcest thing in the app</strong> — the free tier caps at 3 per org, shared across dev <em>and</em> prod.</li>
+        <li data-step style="--i:5">So creation is <strong>idempotent and internal-only</strong>. It used to be a public wrapper that let any caller make one. That was closed deliberately.</li>
+      </ul>
+    </div>
+    <div class="foot"><span class="tag on-dark">AgentMail</span><span>09</span></div>
+  </section>
+
+  <!-- 10 ────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--mail)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> AgentMail · 2 of 7</p>
+      <h2 data-step style="--i:1"><span class="num">02</span>Webhooks</h2>
+      <p class="sub" data-step style="--i:2">Mail arriving, safely.</p>
+      <ul class="points">
+        <li data-step style="--i:3"><strong>Signature-verified.</strong> Standard-webhooks/svix HMAC — we sign <code>id.timestamp.body</code> and compare. An unsigned POST gets a 401.</li>
+        <li data-step style="--i:4"><strong>Deduped.</strong> AgentMail can redeliver. We record the event id, so an email is never filed to the canvas twice.</li>
+        <li data-step style="--i:5"><strong>The component owns the store.</strong> Dedup and the inbound table live behind one boundary, not scattered through app code.</li>
+      </ul>
+      <span class="file" data-step style="--i:6; margin-top: 22px">convex/http.ts · /api/agentmail/webhook</span>
+    </div>
+    <div class="foot"><span class="tag on-dark">AgentMail</span><span>10</span></div>
+  </section>
+
+  <!-- 11 ────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--mail)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> AgentMail · 3 of 7</p>
+      <h2 data-step style="--i:1"><span class="num">03</span>Send</h2>
+      <p class="sub" data-step style="--i:2">The space writes back.</p>
+      <div class="see" data-step style="--i:3">
+        <span class="k">What you see</span>
+        <p>Friday 16:00 UTC, every mail-enabled space emails its week to <strong>everyone who has ever emailed it</strong>. Mailing a space subscribes you to it.</p>
+      </div>
+      <ul class="points">
+        <li data-step style="--i:4">The digest is a <strong>durable workflow</strong>: recipients → canvas snapshot → AI-composed lines → send.</li>
+        <li data-step style="--i:5">Each step retries independently, and the whole run <strong>survives a server restart</strong>. A plain action would start over.</li>
+        <li data-step style="--i:6">Rate-limited to <strong>10/hour per space</strong> so a retry loop can't burn the free tier.</li>
+      </ul>
+      <span class="file" data-step style="--i:7; margin-top: 20px">convex/digest.ts · sendEmail</span>
+    </div>
+    <div class="foot"><span class="tag on-dark">AgentMail</span><span>11</span></div>
+  </section>
+
+  <!-- 12 ────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--mail)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> AgentMail · 4 &amp; 5 of 7</p>
+      <h2 data-step style="--i:1"><span class="num">04</span>Reply &amp; Label</h2>
+      <p class="sub" data-step style="--i:2">It answers you, in the same thread.</p>
+      <div class="see" data-step style="--i:3">
+        <span class="k">What you see</span>
+        <p>Email the crew a receipt. You get back:<br />
+        <strong>“Logged $242 from Jules for tahoe cabin on the expense tracker. Read tahoe-cabin-receipt.pdf.”</strong></p>
+      </div>
+      <ul class="points">
+        <li data-step style="--i:4"><strong>Naming the file back to you is the tell</strong> that the space actually opened it.</li>
+        <li data-step style="--i:5">The router's verdict also becomes a <strong>label on the message</strong> — <code>receipt</code>, <code>booking</code>, <code>letter</code>, <code>links</code>, <code>spam</code>, <code>filed</code>, <code>otp</code>.</li>
+        <li data-step style="--i:6">So <strong>AgentMail's own console shows what our app decided</strong>, without us building a dashboard.</li>
+        <li data-step style="--i:7"><strong>Deliberately best-effort.</strong> If the reply fails we swallow it — the email was already filed, and a mail hiccup must not undo a committed write.</li>
+      </ul>
+    </div>
+    <div class="foot"><span class="tag on-dark">AgentMail</span><span>12</span></div>
+  </section>
+
+  <!-- 13 ────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--mail)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> AgentMail · 6 of 7 · new</p>
+      <h2 data-step style="--i:1"><span class="num">06</span>Attachments</h2>
+      <p class="sub" data-step style="--i:2">Documents are readable.</p>
+      <div class="flow" data-step style="--i:3">
+        <div class="row"><span class="pill mail">attachment</span><span class="arrow">→</span><span class="pill mail">AgentMail download_url</span><span class="arrow">→</span><span class="pill fire">Firecrawl parse</span><span class="arrow">→</span><span class="pill lime">the router reads it</span></div>
+      </div>
+      <ul class="points" style="margin-top: 24px">
+        <li data-step style="--i:4"><strong>The robustness bit.</strong> If the webhook carries attachments, we use them. If the key is <em>absent entirely</em>, we re-fetch the message rather than assume there were none.</li>
+        <li data-step style="--i:5">An <strong>empty array</strong> means the email genuinely had none — and costs no extra call. That distinction is the whole fallback.</li>
+      </ul>
+      <span class="file" data-step style="--i:6; margin-top: 20px">convex/agentmail.ts · parseAttachments</span>
+    </div>
+    <div class="foot"><span class="tag on-dark">AgentMail</span><span>13</span></div>
+  </section>
+
+  <!-- 14 ────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--mail)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> AgentMail · 7 of 7 · the one people don't expect</p>
+      <h2 data-step style="--i:1"><span class="num">07</span>It signs you in</h2>
+      <p class="lede" data-step style="--i:2">There is <strong>no separate email provider</strong> in this app. When you join OurSpaces, the six-digit code is sent <span class="hl">through AgentMail</span>.</p>
+      <div class="cols tight">
+        <ul class="points">
+          <li data-step style="--i:3"><strong>No new credential.</strong> The integration the spaces already use does one more real job.</li>
+          <li data-step style="--i:4"><strong>It must not create a fourth inbox.</strong> All three slots are spoken for, so sign-in rides the account-level inbox on purpose.</li>
+          <li data-step style="--i:5"><strong>Six digits from the CSPRNG</strong>, 10-minute expiry — the library default is an hour, which is a long time for six digits to stay live.</li>
+        </ul>
+        <ul class="points">
+          <li data-step style="--i:6"><strong>Rate-limited on the destination address</strong>, not the caller. Anonymous sign-in is free, so an attacker controls their own id — the thing worth protecting is the <em>victim's inbox</em>.</li>
+          <li data-step style="--i:7"><strong>Guests upgrade, they don't fork.</strong> Join and the email is patched onto the <em>same</em> row — votes, name, colour, memberships all survive.</li>
+          <li data-step style="--i:8"><strong>A requested code is a claim, not a fact.</strong> Nobody can type a stranger's address, never read the code, and still weld it onto their account.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span class="tag on-dark">AgentMail</span><span>14</span></div>
+  </section>
+
+  <!-- 15 ────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--mail)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> AgentMail</p>
+      <h2 data-step style="--i:1">Scoreboard</h2>
+      <div data-step style="--i:2; margin-top: 14px">
+        <table>
+          <thead><tr><th>Surface</th><th>Us</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>Inboxes</td><td class="mark yes">✓</td><td>3 showcase spaces, idempotent, internal-only</td></tr>
+            <tr><td>Webhooks</td><td class="mark yes">✓</td><td>svix-verified + deduped</td></tr>
+            <tr><td>Send</td><td class="mark yes">✓</td><td>weekly digest via durable workflow</td></tr>
+            <tr><td>Reply in-thread</td><td class="mark yes">✓</td><td>every inbound gets an answer</td></tr>
+            <tr><td>Labels</td><td class="mark yes">✓</td><td>router verdict written back</td></tr>
+            <tr><td>Attachments</td><td class="mark yes">✓</td><td>+ Firecrawl parse</td></tr>
+            <tr class="is-star"><td><strong>Auth / OTP</strong></td><td class="mark yes">✓</td><td><strong>the whole sign-in path rides it</strong></td></tr>
+            <tr><td>Threads</td><td class="mark warn">~</td><td>we store <code>threadId</code> and reply in-thread, but never call the threads API</td></tr>
+            <tr><td>Drafts</td><td class="mark no">✕</td><td><strong>best remaining idea</strong> — human-in-the-loop review before send</td></tr>
+            <tr><td>Domains · Search · Pods · Metrics</td><td class="mark no">✕</td><td>not needed at this size</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="foot"><span class="tag on-dark">AgentMail</span><span>15</span></div>
+  </section>
+
+  <!-- 16 ────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--lime)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> Where the two meet</p>
+      <h2 data-step style="--i:1">One email,<br />both sponsors.</h2>
+      <div style="margin-top: 20px">
+        <p class="eyebrow" data-step style="--i:2; margin-bottom: 8px">A · emailed link → the build room pile</p>
+        <div class="flow" data-step style="--i:3">
+          <div class="row"><span class="pill mail">email</span><span class="arrow">→</span><span class="pill mail">verified webhook</span><span class="arrow">→</span><span class="pill">URLs pulled from the body</span><span class="arrow">→</span><span class="pill fire">Firecrawl fills each card</span><span class="arrow">→</span><span class="pill lime">pops onto every open screen</span></div>
+        </div>
+
+        <p class="eyebrow" data-step style="--i:4; margin: 20px 0 8px">B · emailed receipt → the right tracker</p>
+        <div class="flow" data-step style="--i:5">
+          <div class="row"><span class="pill mail">PDF attached</span><span class="arrow">→</span><span class="pill mail">download_url</span><span class="arrow">→</span><span class="pill fire">Firecrawl parses it</span><span class="arrow">→</span><span class="pill">model reads doc + live canvas</span><span class="arrow">→</span><span class="pill lime">finds the EXISTING tracker</span></div>
+        </div>
+
+        <p class="eyebrow" data-step style="--i:6; margin: 20px 0 8px">C · joining the app</p>
+        <div class="flow" data-step style="--i:7">
+          <div class="row"><span class="pill">type your address</span><span class="arrow">→</span><span class="pill mail">AgentMail sends six digits</span><span class="arrow">→</span><span class="pill lime">guest upgraded in place, nothing lost</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>The chains</span><span>16</span></div>
+  </section>
+
+  <!-- 17 ────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--teal)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> Proof, not a claim</p>
+      <h2 data-step style="--i:1">The same email,<br />before and after.</h2>
+      <p class="sub" data-step style="--i:2">Subject: “tahoe cabin — receipt”. Body: <em>“see attached”</em>. Nothing else.</p>
+      <div class="cols" style="margin-top: 8px">
+        <div class="stat" style="--accent: #b4231f" data-step>
+          <p class="eyebrow" style="margin:0 0 10px"><span class="dot"></span> Before</p>
+          <h3 style="margin-top:0">Dead end</h3>
+          <p>No widget. No explanation. The email arrived, and the canvas had no idea what to do with it.</p>
+        </div>
+        <div class="stat" style="--accent: #0a7b32" data-step>
+          <p class="eyebrow" style="margin:0 0 10px"><span class="dot"></span> After</p>
+          <h3 style="margin-top:0">Filed itself</h3>
+          <p><strong>$242 credited to Jules</strong> on the <em>existing</em> tahoe trip tracker — and the canvas says <span class="hl">“jules covered his cabin share”</span>.</p>
+        </div>
+      </div>
+      <p class="lede" data-step style="--i:5; margin: 22px 0 0">It didn't create a new tracker. <strong>It found the right one, from a PDF.</strong></p>
+    </div>
+    <div class="foot"><span>Verified on dev</span><span>17</span></div>
+  </section>
+
+  <!-- 18 ────────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> Worth saying out loud</p>
+      <h2 data-step style="--i:1">What we <em>chose</em><br />not to build.</h2>
+      <p class="sub" data-step style="--i:2">“We didn't get to it” and “we decided against it” sound very different.</p>
+      <ul class="points">
+        <li data-step style="--i:3"><strong>Firecrawl Map</strong> — would make the crawl strip less of a black box: show the URL list, <em>then</em> crawl. Cheap. Honest answer: we ran out of demo, not ability.</li>
+        <li data-step style="--i:4"><strong>Firecrawl Interact / Agent</strong> — genuinely out of scope. Nothing in a shared canvas wants to fill in a form on someone else's website.</li>
+        <li data-step style="--i:5"><strong>AgentMail Drafts</strong> — the best remaining idea. We already frame ambiguity as an interaction (“a sealed envelope a human opens and files”). A draft reply a human approves is that idea one step further.</li>
+        <li data-step style="--i:6"><strong>AgentMail WebSockets</strong> — webhooks are correct here. A Convex HTTP action is already push-driven; a socket adds a connection to babysit for nothing.</li>
+        <li data-step style="--i:7"><strong>Custom domains</strong> — <code>@agentmail.to</code> in the UI is a <em>feature</em> at a hackathon. People recognise it.</li>
+      </ul>
+    </div>
+    <div class="foot"><span>Scope</span><span>18</span></div>
+  </section>
+
+  <!-- 19 ────────────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--lime)">
+    <div class="body">
+      <p class="eyebrow" data-step style="--i:0"><span class="dot"></span> OurSpaces</p>
+      <h1 data-step style="--i:1">12 surfaces.<br />Every one of them<br /><span class="hl">load-bearing.</span></h1>
+      <p class="sub" data-step style="--i:2">Firecrawl turns the web into something the canvas can hold.<br />AgentMail is how the outside world reaches it — and how you get in.</p>
+      <span class="file" data-step style="--i:3">docs/firecrawl-and-agentmail.md</span>
+    </div>
+    <div class="foot"><span>Convex All Gas · Sep 2026</span><span>19</span></div>
+  </section>
+
+</div>
+
+<div class="rail"><i id="rail"></i></div>
+<div class="hint">← → or space · P to print</div>
+<div class="nav">
+  <button id="prev" title="Previous">←</button>
+  <button id="next" title="Next">→</button>
+</div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  const rail = document.getElementById('rail');
+  let at = 0;
+
+  // Auto-number the stagger for any element that didn't get an explicit --i,
+  // so adding a bullet later still animates in order.
+  slides.forEach((slide) => {
+    slide.querySelectorAll('[data-step]').forEach((el, i) => {
+      if (!el.style.getPropertyValue('--i')) el.style.setProperty('--i', i);
+    });
+  });
+
+  function show(next) {
+    at = Math.max(0, Math.min(slides.length - 1, next));
+    slides.forEach((slide, i) => slide.classList.toggle('is-live', i === at));
+    rail.style.width = ((at + 1) / slides.length * 100) + '%';
+    location.hash = at + 1;
+  }
+
+  document.getElementById('next').onclick = () => show(at + 1);
+  document.getElementById('prev').onclick = () => show(at - 1);
+
+  addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); show(at + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(at - 1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(slides.length - 1);
+    else if (e.key === 'p' || e.key === 'P') print();
+  });
+
+  // Click the right or left half of the deck to advance or go back.
+  document.getElementById('deck').addEventListener('click', (e) => {
+    if (e.target.closest('button, a')) return;
+    show(e.clientX > innerWidth / 2 ? at + 1 : at - 1);
+  });
+
+  show(Number(location.hash.slice(1)) - 1 || 0);
+</script>
+</body>
+</html>

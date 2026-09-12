@@ -91,6 +91,14 @@ switches it back) ·
 
 **cursors/** — `registry.ts` + `styles.tsx` (8+ cursor styles) · `LiveCursor.tsx`
 
+**Join / make a space** — `components/JoinForm.tsx` (email → six digits →
+"you're in the book"; reloads on finish, see `docs/data-model-plan.md` §1) ·
+`components/CodeSlots.tsx` (six painted boxes over one real input) ·
+`live/useJoin.ts` (`useJoin` two-step sign-in, `useAccount` guest-vs-joined) ·
+`live/useCreateSpace.ts` (template → space + its starting widgets) ·
+`live/adapt.ts` `spaceFromLive` (live row → the shape the canvas chrome reads;
+without it a new space renders as the crew).
+
 **lib/** — `routes.ts` (hash + invite URLs) · `widgetDefaults.ts`
 (`WIDGET_BLUEPRINTS`) · `widgetLabels.ts` · `widgetThreads.ts` · `blockZoom.ts` ·
 `entrance.ts` · `onboarding.ts` · `sounds.ts` · `radio.ts` (SomaFM singleton) ·

@@ -1,6 +1,6 @@
 import type { ChatMessage } from "../data/chat";
 import { getStickerDefinition } from "../data/stickers";
-import type { Widget, WidgetType } from "../data/types";
+import type { Space, Widget, WidgetType } from "../data/types";
 
 function restoreKeys(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(restoreKeys);
@@ -74,5 +74,46 @@ export function toChatMessage(row: {
     text: row.text,
     time: relTime(row.createdAt),
     promotable: row.promotable,
+  };
+}
+
+/**
+ * A live `spaces` row, shaped like the mock fixtures the canvas chrome reads.
+ *
+ * Needed because `getSpace(slug)` falls back to the CREW fixture for any slug
+ * it doesn't know (src/data/spaces.ts) — which was fine while every space was
+ * seeded, and became a bug the moment people could make their own: a new
+ * space would render with the crew's name, colour and faces.
+ *
+ * `members` is empty on purpose. There is no public members-list query, and
+ * "who's here" on the canvas comes from presence anyway; a space nobody has
+ * walked into yet genuinely has no faces to show.
+ */
+export function spaceFromLive(row: {
+  slug?: string;
+  name: string;
+  color: string;
+  icon: string;
+  tagline?: string;
+  type: "ongoing" | "event";
+  canvasW?: number;
+  canvasH?: number;
+  inboxAddress?: string;
+}): Space {
+  return {
+    id: row.slug ?? "",
+    name: row.name,
+    color: row.color,
+    icon: row.icon,
+    canvasSize:
+      row.canvasW && row.canvasH
+        ? { width: row.canvasW, height: row.canvasH }
+        : undefined,
+    activity: true,
+    kind: row.type,
+    tagline: row.tagline ?? "",
+    inboxAddress: row.inboxAddress,
+    members: [],
+    widgets: [],
   };
 }

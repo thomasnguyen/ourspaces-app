@@ -57,6 +57,67 @@ const SPACE_COVERS: Record<string, string> = {
   league: "/assets/space-covers/game-day.png",
 };
 
+/** Spaces you made, or were invited into. Live only — see OnlineCount. */
+function YoursGroupLive({
+  activeId,
+  onSelectSpace,
+  offset,
+}: {
+  activeId: string;
+  onSelectSpace?: (id: string) => void;
+  offset: number;
+}) {
+  const mine = useQuery(api.spaces.listMine, {}) ?? [];
+  if (mine.length === 0) return null;
+
+  return (
+    <>
+      <div
+        className="rail-divider"
+        aria-hidden="true"
+        style={{ "--i": offset } as CSSProperties}
+      />
+      {mine.map((space, i) => {
+        const slug = space.slug ?? "";
+        const active = slug === activeId;
+        return (
+          <div
+            key={space._id}
+            className="space-link-wrap"
+            style={{ "--i": offset + i + 1 } as CSSProperties}
+          >
+            <button
+              type="button"
+              className={`space-link ${active ? "is-active" : ""}`}
+              style={{ backgroundColor: space.color }}
+              aria-label={space.name}
+              aria-current={active ? "page" : undefined}
+              onClick={() => slug && onSelectSpace?.(slug)}
+            >
+              <span>{`${space.icon}\uFE0E`}</span>
+              <OnlineDot spaceId={space._id} />
+            </button>
+            <span className="space-tooltip">
+              {space.name}
+              {space.isOwner ? " · yours" : ""}
+              <OnlineCount spaceId={space._id} />
+            </span>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function YoursGroup(props: {
+  activeId: string;
+  onSelectSpace?: (id: string) => void;
+  offset: number;
+}) {
+  if (getDataMode() !== "live") return null;
+  return <YoursGroupLive {...props} />;
+}
+
 export function Rail({
   activeId = DEFAULT_SPACE_SLUG,
   activeSpaceOverride,
@@ -126,9 +187,15 @@ export function Rail({
           );
         })}
 
+        <YoursGroup
+          activeId={activeId}
+          onSelectSpace={onSelectSpace}
+          offset={SPACES.length}
+        />
+
         <div
           className="space-link-wrap"
-          style={{ "--i": SPACES.length } as CSSProperties}
+          style={{ "--i": SPACES.length + 1 } as CSSProperties}
         >
           <button
             type="button"
