@@ -6,8 +6,9 @@ Backward-looking history lives in `hackathon.md`.
 ## Now working
 
 - **Start a new space is one sheet (2026-09-12):** rail "+" opens
-  `components/SpaceMaker.tsx` — pick a shape (the sheet drenches in its
-  colour; the mini board is the new space at postage-stamp size: dot-grid
+  `components/SpaceMaker.tsx` — pick a shape (the whole sheet wears its
+  colour, the switcher is a black dock on the seam, the foot is the black
+  strip below; the wall is the new space at postage-stamp size: dot-grid
   wall, hand-placed paper tiles with a per-type mini widget — countdown is
   a number, poll is bars, chat is bubbles — your cursor with your claimed
   name, and the name typed straight onto the board), keep it.

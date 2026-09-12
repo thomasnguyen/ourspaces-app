@@ -8583,10 +8583,19 @@
    the mini board fills), call it something, keep it. The email + code live at
    the bottom, folded until pressed — investment first, the gate last. */
 .widget-picker.space-maker {
+  display: flex;
   width: min(600px, 100%);
+  flex-direction: column;
   padding: 0;
   overflow: hidden;
+  /* The sheet IS the space: it wears the picked colour head to toe, and the
+     black strip below is the dock, like the real room. */
+  background: var(--maker-color);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 24px 60px rgba(17, 17, 20, 0.5);
   transition:
+    background var(--dur-base) var(--ease-glide),
     opacity var(--dur-stage) var(--ease-glide),
     translate var(--dur-stage) var(--ease-pop),
     scale var(--dur-stage) var(--ease-pop);
@@ -8605,14 +8614,20 @@
   margin-bottom: 14px;
 }
 
+.space-maker > header p {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.space-maker > header .widget-picker-close {
+  background: rgba(0, 0, 0, 0.22);
+  color: white;
+}
+
 /* The board: the new space at postage-stamp size, wearing its colour head
    to toe, with the canvas's own dot grid on the wall. */
 .space-maker-board {
   position: relative;
-  height: 264px;
-  margin: 0 20px;
-  border-radius: 16px;
-  background-color: var(--maker-color);
+  height: 296px;
   background-image: radial-gradient(
     circle,
     rgba(255, 255, 255, 0.22) 0 1px,
@@ -8620,8 +8635,6 @@
   );
   background-size: 22px 22px;
   overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
-  transition: background-color var(--dur-base) var(--ease-glide);
 }
 
 .space-maker-board-head {
@@ -8687,6 +8700,33 @@
 
 .space-maker-board-name:focus + .space-maker-board-pencil {
   opacity: 0;
+}
+
+/* You, and two seats waiting — a space is a group thing. */
+.space-maker-faces {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  margin-left: auto;
+}
+
+.space-maker-faces > * {
+  margin-left: -6px;
+  box-shadow: 0 0 0 2px var(--maker-color);
+  border-radius: 50%;
+}
+
+.space-maker-faces > :first-child {
+  margin-left: 0;
+}
+
+.space-maker-faces i {
+  width: 26px;
+  height: 26px;
+  border: 2px dashed rgba(255, 255, 255, 0.75);
+  border-radius: 50%;
+  box-sizing: border-box;
+  box-shadow: none;
 }
 
 /* Paper on the wall, hand-placed (SLOTS in SpaceMaker.tsx). Each one lands
@@ -9181,15 +9221,26 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 14px 20px 20px;
+  background: var(--color-sticker);
+  padding: 18px 20px 20px;
 }
 
+/* The switcher is the dock: a black pill floating on the seam between the
+   wall and the strip, exactly where the real room keeps its dock. */
 .space-maker-shapes {
+  position: relative;
+  z-index: 6;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
+  justify-content: center;
+  gap: 4px;
+  width: max-content;
+  max-width: calc(100% - 40px);
+  margin: -24px auto 0;
+  padding: 6px;
+  border-radius: 999px;
+  background: var(--color-sticker);
+  box-shadow: 0 7px 0 rgba(17, 17, 20, 0.28);
   list-style: none;
 }
 
@@ -9197,9 +9248,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border: 1.5px solid transparent;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
+  background: transparent;
   color: white;
   padding: 7px 12px;
   cursor: pointer;
