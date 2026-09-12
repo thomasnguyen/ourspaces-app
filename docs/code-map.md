@@ -63,7 +63,8 @@ offered a refresh before its `React.lazy` chunks 404)
 `CursorLab.tsx` · `labs.css`
 
 **widgets/** — `buildroom.tsx` (the build room's four: `linkPile`, `hotLinks`,
-`shipPost`, `roundtable`; all pure, fed one `BuildRoomFeed` prop threaded
+`shipPost`, `roundtable`; also `ShipPreview`, the illustrated demo project
+captures shared with `ShipRoom`; all pure, fed one `BuildRoomFeed` prop threaded
 Canvas → WidgetCard) · `core.tsx` (sticker, frame, countdown, poll, note…) ·
 `extras.tsx` (rsvp, dailyQ, availability, Firecrawl link card, link shelf, playlist, expense,
 itinerary, quote, weather, sports, letter — kraft envelope that unfolds; buttons
@@ -99,8 +100,9 @@ pile counts, per-domain tile tones, and the pile's tag vocabulary —
 `linkTags` / `tagFacets` (kinds first, then top hosts, synonyms dropped) /
 `linkHasTag` / `isKindTag`) · `buildRoomFeed.ts` (link state + thread-id
 namespacing; `pileLinks()` folds the pile widget's `data.linkState`/`data.dropped`
-over the fixtures) · `buildRoomPresentation.ts` (desktop overview scale from
-frame bounds + viewport padding, capped at `.84`; pinned local cover fallback) ·
+over the fixtures) · `buildRoomPresentation.ts` (centered desktop overview scale from
+frame bounds + viewport padding, capped at `1`; recognized legacy demo layout
+adapter used by seed data and `useSpaceData`; pinned local cover fallback) ·
 `frameMembership.ts` (`widgetIsInsideFrame`, moved out of
 `Canvas.tsx`; `pileInsideFrame` makes the pile's frame open the room instead of
 zooming) · `flipLanding.ts` (`flyWidgetIn` — the kept-takeaway arc) ·

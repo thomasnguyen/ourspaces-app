@@ -1,4 +1,5 @@
 import type { Space, SpaceMeta, Widget } from "./types";
+import { withBuildRoomLayout } from "../lib/buildRoomPresentation";
 
 export type { Widget, Space, SpaceMeta, WidgetType } from "./types";
 
@@ -925,7 +926,7 @@ function shortDaysAgo(days: number): string {
 /* Five outlined frames on a 1640×1080 canvas: the pile fills the left column,
    hot now / keepers / roundtable stack down the right, shipping wall sits
    under the pile. Matches the approved concept. */
-export const BUILD_ROOM_WIDGETS: Widget[] = [
+export const BUILD_ROOM_WIDGETS: Widget[] = ([
   {
     id: "br-frame-pile",
     type: "frame",
@@ -1098,7 +1099,7 @@ export const BUILD_ROOM_WIDGETS: Widget[] = [
       body: "nobody's answered yet. go first.",
     },
   },
-];
+] satisfies Widget[]).map(withBuildRoomLayout);
 
 export const SPACES: SpaceMeta[] = [
   {

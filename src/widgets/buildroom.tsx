@@ -76,7 +76,7 @@ export function LinkPileWidget({
 }) {
   const counts = pileCounts(feed.links, feed.replyCounts);
   const fan = rankLinks(feed.links, feed.replyCounts).slice(0, 3);
-  const faces = feed.faces.slice(0, 4);
+  const faces = feed.faces.slice(0, 5);
   const extraFaces = Math.max(0, feed.faces.length - faces.length);
 
   return (
@@ -111,7 +111,7 @@ export function LinkPileWidget({
               name={face.name}
               color={face.color}
               avatarUrl={face.avatarUrl}
-              size="sm"
+              size="md"
             />
           ))}
           {extraFaces > 0 && <span className="br-pile-face-more">+{extraFaces}</span>}
@@ -198,6 +198,50 @@ export function HotLinksWidget({
 
 /* ── shipping wall ───────────────────────────────────────────────────────── */
 
+/** Illustrated project captures for the three demo posts. Uploaded shots win. */
+export function ShipPreview({ imageUrl }: { imageUrl: string }) {
+  const demo = ["demo-day", "hack-weekend", "shipped-v01"].find(
+    (name) => imageUrl === `/photos/hackathon/${name}.jpg`,
+  );
+  if (!demo) return <img src={imageUrl} alt="" draggable={false} />;
+  const spec = demo === "hack-weekend";
+  const release = demo === "shipped-v01";
+  const ink = spec ? "var(--color-ink)" : "var(--color-card)";
+  const muted = spec ? "var(--color-muted)" : "var(--color-mat)";
+  return (
+    <svg className="br-project-preview" viewBox="0 0 600 370" role="img" aria-label="Illustrated demo project preview">
+      <rect width="600" height="370" fill={spec ? "var(--color-card)" : "var(--color-sticker)"} />
+      <g fill={ink} opacity=".3">{[16, 27, 38].map(x => <circle key={x} cx={x} cy="14" r="3" />)}</g>
+      <text x="65" y="18" fill={muted} fontSize="8">{spec ? "workspace / product / search" : "pulse / production / overview"}</text>
+      <path d="M0 30H600M98 30V370" stroke={ink} strokeOpacity=".12" />
+      <g fill={muted} fontSize="9">
+        {["workspace", "overview", "projects", "activity", "settings"].map((label, i) => <text key={label} x="16" y={58 + i * 27}>{label}</text>)}
+      </g>
+      {spec ? <g fill={ink}>
+        <text x="125" y="64" fontSize="22" fontWeight="700">Search, without the wait.</text>
+        <text x="125" y="86" fill={muted} fontSize="10">Product spec · Jordan · ready for feedback</text>
+        <path d="M125 103H570" stroke={ink} strokeOpacity=".15" />
+        <text x="125" y="129" fontSize="12" fontWeight="700">Find the right thing on the first try</text>
+        {["A single search across everything in your workspace.", "Typo tolerance, better ranking, and results as you type.", "Keep the useful details. Get out of the way."].map((t,i) => <text key={t} x="125" y={150+i*17} fill={muted} fontSize="10">{t}</text>)}
+        <rect x="125" y="213" width="445" height="36" rx="4" fill="var(--color-mat)" fillOpacity=".3" />
+        <text x="139" y="235" fontSize="11">⌕  Search projects, notes, people…</text>
+        {["Migration plan", "Search relevance", "Release checklist"].map((t,i) => <g key={t}><path d={`M125 ${274+i*30}H570`} stroke={ink} strokeOpacity=".1" /><text x="136" y={268+i*30} fontSize="10">{t}</text><text x="488" y={268+i*30} fill={muted} fontSize="9">updated today</text></g>)}
+      </g> : <g>
+        <text x="121" y="62" fill={ink} fontSize="20" fontWeight="700">{release ? "v2.3.0 is out." : "Performance overview"}</text>
+        <text x="121" y="81" fill={muted} fontSize="9">{release ? "Migration complete. All systems healthy." : "Query latency · last 24 hours"}</text>
+        <rect x="494" y="47" width="82" height="24" rx="4" fill="var(--color-league)" fillOpacity=".2" />
+        <text x="507" y="63" fontSize="9" fill="var(--color-league)">● healthy</text>
+        {[['90 ms', 'p95 latency'], ['99.98%', 'uptime'], ['12.4k', 'requests']].map(([value,label],i) => <g key={label}><text x={124+i*153} y="119" fontSize="23" fill={ink} fontWeight="700">{value}</text><text x={124+i*153} y="137" fontSize="9" fill={muted}>{label}</text></g>)}
+        <g stroke={ink} strokeOpacity=".1">{[168,198,228,258].map(y=><path key={y} d={`M122 ${y}H573`} />)}</g>
+        <path d="M122 237 145 240 161 222 177 226 192 180 205 209 220 204 238 225 256 221 274 229 292 183 307 214 322 216 342 234 363 230 385 241 407 239 430 240 450 236 472 242 496 238 518 240 540 236 573 239" fill="none" stroke="var(--color-crew)" strokeWidth="3" />
+        <path d="M122 248 183 250 235 244 288 248 336 246 400 251 455 247 507 250 573 248" fill="none" stroke="var(--color-league)" strokeWidth="2" />
+        <g fontSize="9" fill={muted}>{["12:00", "16:00", "20:00", "00:00", "04:00"].map((t,i)=><text key={t} x={122+i*104} y="276">{t}</text>)}</g>
+        {[release ? "✓  backfill complete" : "spaces:getSpaceWithWidgets", release ? "✓  dual-write verified" : "messages:listForWidget", release ? "✓  deployment healthy" : "widgets:updateWidget"].map((t,i)=><g key={t}><path d={`M122 ${297+i*24}H573`} stroke={ink} strokeOpacity=".1" /><text x="126" y={313+i*24} fontSize="9" fill={ink}>{t}</text><text x="528" y={313+i*24} fontSize="9" fill="var(--color-league)">{release ? "passed" : "42 ms"}</text></g>)}
+      </g>}
+    </svg>
+  );
+}
+
 export function ShipPostWidget({ widget, style }: { widget: Widget; style: Style }) {
   const title = String(widget.data.title ?? "untitled ship");
   const by = String(widget.data.by ?? "someone");
@@ -213,7 +257,7 @@ export function ShipPostWidget({ widget, style }: { widget: Widget; style: Style
       <span className="br-ship-tape" aria-hidden="true" />
       <div className="br-ship-shot">
         {imageUrl ? (
-          <img src={imageUrl} alt="" draggable={false} />
+          <ShipPreview imageUrl={imageUrl} />
         ) : (
           <span className="br-ship-placeholder" aria-hidden="true">
             +
@@ -223,7 +267,8 @@ export function ShipPostWidget({ widget, style }: { widget: Widget; style: Style
       </div>
       <footer className="br-ship-caption">
         <strong>{title}</strong>
-        <span>
+        <span className="br-ship-byline">
+          <MemberFace name={by} size="sm" />
           by {by}
           {date ? ` · ${date}` : ""}
         </span>

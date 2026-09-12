@@ -37,7 +37,7 @@ export const SPACE_THEME_PRESETS: {
   { id: "mint", name: "mint", background: "#bfe9dc", ink: "#102e27" },
   { id: "midnight", name: "midnight", background: "#1f1b2d", ink: "#ffffff" },
   { id: "butter", name: "butter", background: "#ffe9c2", ink: "#111114" },
-  { id: "torch", name: "torch", background: "#f4610f", ink: "#111114" },
+  { id: "torch", name: "burnt orange", background: "var(--color-buildroom)", ink: "#111114" },
 ];
 
 export const SPACE_ACCENTS = [

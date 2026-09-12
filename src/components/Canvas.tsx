@@ -629,7 +629,7 @@ export function SpaceHeader({
               aria-expanded={roomEditing}
               aria-label={`Edit ${name}`}
             >
-              <span className="space-edit-mark" aria-hidden="true">✎</span>
+              <span className="space-edit-mark" aria-hidden="true">{spaceId === "buildroom" ? "⌄" : "✎"}</span>
               <span className="space-edit-label">edit</span>
             </button>
           </div>
