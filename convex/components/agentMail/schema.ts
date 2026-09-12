@@ -20,6 +20,19 @@ export default defineSchema({
     subject: v.string(),
     text: v.string(),
     labels: v.array(v.string()),
+    // What came attached. The app parses documents out of these (Firecrawl)
+    // before routing, so a receipt PDF is readable content, not a filename.
+    attachments: v.optional(
+      v.array(
+        v.object({
+          attachmentId: v.string(),
+          filename: v.string(),
+          contentType: v.string(),
+          size: v.number(),
+          inline: v.boolean(),
+        }),
+      ),
+    ),
     receivedAt: v.number(),
   })
     .index("by_messageId", ["messageId"])

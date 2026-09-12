@@ -44,6 +44,21 @@ flow → Firecrawl enrichment (HN links resolve through the Firebase API) →
 Convex reactivity pops the ready card into the room. Sender shows as
 "Name ✉".
 
+**Plus: attachments are readable.** A real receipt is a PDF, and a booking
+confirmation's body is often just "see attached". Before routing, every inbound
+message's attachments are resolved to AgentMail `download_url`s and handed to
+Firecrawl, which parses the document to markdown — `/scrape` detects the file
+type and parses it identically to `/parse`, so a public URL means nothing is
+ever staged in Convex storage. The text lands on `emailEvents.attachments` and
+the router reads it alongside the body; the reply names the file back
+("Logged $242 from Jules for tahoe cabin on the expense tracker. Read
+tahoe-cabin-receipt.pdf."), which is the tell that the space actually opened it.
+Cheap checks come first because Firecrawl bills per parse: inline parts
+(signature logos) skipped, 10MB cap, documents only, 3 per email. Every failure
+is soft — an unreadable PDF routes on the body exactly as before. Verified on
+dev: the same "see attached" email dead-ended before, and now files $242 onto
+the existing tahoe tracker with *"jules covered his cabin share"*.
+
 **Plus: the weekly digest.** Friday 16:00 UTC (or `digest:sendNow`), each
 mail-enabled space emails its week — AI-composed lowercase lines from the recap
 snapshot — to **everyone who has ever emailed it**. Mailing a space subscribes
@@ -55,6 +70,8 @@ you to it; the space is a correspondent, not a database.
 inbound  email → AgentMail → webhook (svix-verified, convex/http.ts)
          → components.agentMail.lib.ingestWebhook (dedup + inbound store)
          → emailEvents row w/ messageId/threadId (convex/agentmail.ts)
+         → attachments: AgentMail download_url → Firecrawl parse → text on
+           the event (convex/agentmail.ts parseAttachments)
          → router (convex/inbox.ts): couple | buildroom | AI-file (default)
          → widget mutations → every open tab updates live
          → ackInbound: reply in-thread + label the message with the verdict
@@ -84,7 +101,8 @@ outbound digest cron (convex/crons.ts) → weeklyDigestWorkflow (durable,
   crew's structured-filing LLM calls are rate-limited
   (`@convex-dev/rate-limiter`) so a retry loop or bad actor can't burn the
   free-tier inbox quota or LLM budget.
-- Schema: `emailEvents` gained `messageId`/`threadId` (optional — no backfill)
+- Schema: `emailEvents` gained `attachments` (optional — parsed document text,
+  no backfill) and earlier `messageId`/`threadId` (optional — no backfill)
   so the router can reply/label; the component owns its own `events` +
   `inboundMessages` tables. Letters are a widget type; crew filings mutate
   existing widget `data`; buildroom rides the pile's `linkState`/`dropped`.
@@ -106,6 +124,12 @@ outbound digest cron (convex/crons.ts) → weeklyDigestWorkflow (durable,
 - [x] **Reply-in-thread + labels on every inbound** (`ackInbound`). *Live
       round-trip not re-verified after the component swap — needs a real
       inbound email to confirm the reply + label land in the AgentMail console.*
+- [x] **Attachments → Firecrawl parse → router** (`parseAttachments` in
+      convex/agentmail.ts, `parseDocument` in convex/firecrawl.ts). Parse
+      verified against a real PDF; routing verified on a "see attached" email
+      that now files off the document. *Not yet exercised by a real inbound
+      email with a real attachment — needs one send to confirm the webhook
+      carries `attachments` rather than needing the message re-fetch fallback.*
 - [ ] **Prod cutover** (before demo/submission): key on `--prod`, second
       webhook → `necessary-cobra-892`, bind addresses to prod space ids via
       `setSpaceInbox` (do NOT re-create inboxes). Steps in the setup doc.

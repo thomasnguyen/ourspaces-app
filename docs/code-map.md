@@ -218,7 +218,9 @@ router can't do because it sits under `httpPrefix: "/api"` — see
 `schema.ts` [events dedup + inboundMessages], `lib.ts` [createInbox/sendMessage/
 replyToMessage/addLabels/ingestWebhook/listInbound]; no nested workpool, key
 passed in from app. Replaces the broken published `@agentmail/convex` 0.1.0) ·
-`agentmail.ts` (app wrappers over `components.agentMail`: ensure/clear inboxes,
+`agentmail.ts` (`parseAttachments`: AgentMail download_url → Firecrawl parse,
+inline/size/type filtered, re-fetches the message when the webhook omits
+attachments · app wrappers over `components.agentMail`: ensure/clear inboxes,
 send [rate-limiter wrapped], `ackInbound` [reply-in-thread + label], and
 `onMessageReceived` → `emailEvents` [now carries messageId/threadId] → router) ·
 `inbox.ts` (per-space email router: couple→letter widget, buildroom→pile drop +
@@ -228,7 +230,10 @@ branch returns an `{label, reply}` ack the space mails back) ·
 recipients → snapshot → LLM compose → send, each independently retried;
 cron calls `start()` fire-and-forget with an `onComplete` logger; manual
 `sendNow` demo trigger keeps the simpler action-retrier `digestFor` path) ·
-`firecrawl.ts` (`scrapeLink`: action-cache-wrapped [1h TTL] around
+`firecrawl.ts` (`parseDocument`: emailed PDF/DOCX/XLSX → markdown via scrape +
+`parsers`, soft-fails to "" so an unreadable file never costs the email;
+`isParseable` gates on content type before spending a credit ·
+`scrapeLink`: action-cache-wrapped [1h TTL] around
 `scrapeLinkRetried`, which retries `scrapeLinkOnce` via action-retrier —
 callers see one plain action. Plus `searchTopic` [web search → pile cards],
 `crawlSite` [durable startCrawl] + `getCrawlStatus`/`listCrawlPages` reactive

@@ -101,6 +101,21 @@ Keys: `JWT_PRIVATE_KEY` + `JWKS` generated headlessly with `jose` and set via
    The stock `{ domain, applicationID }` pair tolerates that; `customJwt`
    does not.
 
+**Ownership is real as of 2026-09-12 (phase 1 of guest→join).** Three
+functions derive identity server-side via `requireUserId` /
+`requireRegisteredUserId` (`convex/auth.ts`): `spaces.createSpace` (registered
+only, stamps `ownerId` from the session), `spaces.renameSpace` and
+`spaces.deleteSpace` (both via `requireOwner`). `spaces.ownerId` is optional and
+**unset on every seeded showcase space** — "no owner" reads as "nobody renames
+or deletes this from the client", which is what we want.
+
+Everything else still takes `userId` from the client and that is deliberate,
+not debt: forging it lets you do what you could already do honestly, because
+every space is world-writable (§1), and the seeded crew (`seed:maya`) must keep
+writing rows no auth identity can produce (§0). Identity is decorative
+everywhere it was already decorative, and load-bearing in exactly the three
+places that make an ownership claim.
+
 **Join / passkey is still not wired, and not for a version-pin reason.**
 `@convex-dev/auth@0.0.95` ships Anonymous, ConvexCredentials, Email, Password
 and Phone providers — there is no WebAuthn provider. Auth.js's passkey

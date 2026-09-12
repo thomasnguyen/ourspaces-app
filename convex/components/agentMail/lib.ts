@@ -34,6 +34,39 @@ async function am(
 
 const messageIdResult = v.object({ messageId: v.string() });
 
+/** Attachment metadata as AgentMail reports it on a message. */
+const attachmentValidator = v.object({
+  attachmentId: v.string(),
+  filename: v.string(),
+  contentType: v.string(),
+  size: v.number(),
+  inline: v.boolean(),
+});
+
+function toAttachment(raw: unknown): Record<string, unknown> | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const item = raw as Record<string, unknown>;
+  const attachmentId = String(item.attachment_id ?? "");
+  if (!attachmentId) return null;
+  return {
+    attachmentId,
+    filename: String(item.filename ?? ""),
+    contentType: String(item.content_type ?? ""),
+    size: typeof item.size === "number" ? item.size : 0,
+    // `content_disposition: "inline"` is a signature image or a quoted logo,
+    // not something a person meant to send. Kept, but flagged so the app skips it.
+    inline: String(item.content_disposition ?? "") === "inline",
+  };
+}
+
+/** Parse an AgentMail `attachments` array into our shape. */
+export function readAttachments(raw: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map(toAttachment)
+    .filter((item): item is Record<string, unknown> => item !== null);
+}
+
 /** Create (or re-fetch) an AgentMail inbox → { inboxId, address }. */
 export const createInbox = action({
   args: {
@@ -167,6 +200,7 @@ export const ingestWebhook = mutation({
     subject: v.string(),
     text: v.string(),
     labels: v.optional(v.array(v.string())),
+    attachments: v.optional(v.array(attachmentValidator)),
   },
   returns: v.object({ isNew: v.boolean() }),
   handler: async (ctx, args) => {
@@ -187,6 +221,7 @@ export const ingestWebhook = mutation({
       subject: args.subject,
       text: args.text,
       labels: args.labels ?? [],
+      attachments: args.attachments,
       receivedAt: Date.now(),
     });
     return { isNew: true };
@@ -208,6 +243,7 @@ export const listInbound = query({
       subject: v.string(),
       text: v.string(),
       labels: v.array(v.string()),
+      attachments: v.optional(v.array(attachmentValidator)),
       receivedAt: v.number(),
     }),
   ),
@@ -217,5 +253,53 @@ export const listInbound = query({
       .withIndex("by_inbox", (q) => q.eq("inboxId", args.inboxId))
       .order("desc")
       .take(args.limit ?? 50);
+  },
+});
+
+/** Fetch a message — the fallback for when a webhook payload omits attachments. */
+export const getMessageAttachments = action({
+  args: {
+    apiKey: v.string(),
+    baseUrl: v.string(),
+    inboxId: v.string(),
+    messageId: v.string(),
+  },
+  returns: v.array(attachmentValidator),
+  handler: async (_ctx, args) => {
+    const message = await am(
+      args.apiKey,
+      args.baseUrl,
+      `/inboxes/${encodeURIComponent(args.inboxId)}/messages/${encodeURIComponent(args.messageId)}`,
+    );
+    return readAttachments(message.attachments) as unknown as {
+      attachmentId: string;
+      filename: string;
+      contentType: string;
+      size: number;
+      inline: boolean;
+    }[];
+  },
+});
+
+/** One attachment → a short-lived public URL Firecrawl can fetch and parse.
+ *  AgentMail hands back a `download_url` rather than bytes, which is why this
+ *  chain never has to stage the file in Convex storage. */
+export const getAttachmentUrl = action({
+  args: {
+    apiKey: v.string(),
+    baseUrl: v.string(),
+    inboxId: v.string(),
+    messageId: v.string(),
+    attachmentId: v.string(),
+  },
+  returns: v.union(v.string(), v.null()),
+  handler: async (_ctx, args) => {
+    const res = await am(
+      args.apiKey,
+      args.baseUrl,
+      `/inboxes/${encodeURIComponent(args.inboxId)}/messages/${encodeURIComponent(args.messageId)}/attachments/${encodeURIComponent(args.attachmentId)}`,
+    );
+    const url = String(res.download_url ?? res.url ?? "");
+    return url || null;
   },
 });

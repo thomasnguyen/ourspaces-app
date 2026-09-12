@@ -11,13 +11,14 @@ import {
   droppedLinkValidator,
   droppedLinkPatchValidator,
 } from "./widgetData";
-import { ackInbound } from "./agentmail";
+import { ackInbound, inboundAttachmentValidator } from "./agentmail";
 import schema from "./schema";
 import { widgetsCounter } from "./stats";
 import {
   extractUrls,
   hashJitter,
   routeBuildRoom,
+  routableText,
   routeSmart,
   senderName,
   type InboundAck,
@@ -60,13 +61,33 @@ export const getEventContext = internalQuery({
 });
 
 export const processInbound = internalAction({
-  args: { eventId: v.id("emailEvents") },
+  args: {
+    eventId: v.id("emailEvents"),
+    attachments: v.optional(v.array(inboundAttachmentValidator)),
+  },
   returns: v.null(),
-  handler: async (ctx, { eventId }) => {
+  handler: async (ctx, { eventId, attachments }) => {
     const context = await ctx.runQuery(internal.inbox.getEventContext, { eventId });
     if (!context) return null;
-    const { event, space, widgets } = context;
+    const { space, widgets } = context;
+    let { event } = context;
     const slug = space.slug ?? "";
+
+    // Attachments first: a receipt PDF with an empty email body has to be
+    // readable *before* anything decides where the email goes. AgentMail's
+    // download_url → Firecrawl parse → text on the event.
+    const parsed = await ctx.runAction(internal.agentmail.parseAttachments, {
+      inboxId: space.inboxId,
+      messageId: event.messageId,
+      attachments,
+    });
+    if (parsed.length > 0) {
+      await ctx.runMutation(internal.agentmail.setEventAttachments, {
+        eventId,
+        attachments: parsed,
+      });
+      event = { ...event, attachments: parsed };
+    }
 
     let ack: InboundAck = {};
 
@@ -74,7 +95,7 @@ export const processInbound = internalAction({
       await ctx.runMutation(internal.inbox.addLetter, { eventId, unfiled: false });
       ack = { label: "letter", reply: "Sealed your letter onto the canvas. 💌" };
     } else if (slug === "buildroom") {
-      const urls = extractUrls(`${event.subject}\n${event.body ?? event.summary}`);
+      const urls = extractUrls(routableText(event));
       const pile = widgets.find((widget) => widget.type === "linkPile");
       if (urls.length > 0 && pile) {
         await routeBuildRoom(ctx, { event, pileId: pile._id, urls });

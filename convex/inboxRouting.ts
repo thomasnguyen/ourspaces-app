@@ -52,6 +52,19 @@ export function cleanBecause(raw: unknown): string | undefined {
   return text;
 }
 
+/**
+ * Everything in an email that a router should read: subject, body, and the
+ * text Firecrawl pulled out of any attached document. A booking confirmation
+ * whose body is "see attached" is a real email, and this is what makes it one.
+ */
+export function routableText(event: Doc<"emailEvents">): string {
+  const parts = [event.subject, event.body ?? event.summary];
+  for (const file of event.attachments ?? []) {
+    parts.push(`\n--- attached: ${file.filename} ---\n${file.text}`);
+  }
+  return parts.filter(Boolean).join("\n");
+}
+
 export function extractUrls(text: string): string[] {
   const found = text.match(/https?:\/\/[^\s<>"')\]]+/g) ?? [];
   const cleaned = found.map((url) => url.replace(/[.,;:!?]+$/, ""));
@@ -153,6 +166,16 @@ function widgetInventory(widgets: Doc<"widgets">[]): string {
   return lines.join("\n");
 }
 
+/** The parsed attachment text, framed for the model. Empty when nothing was
+ *  attached, so the prompt stays identical to what it was before. */
+function attachmentBlock(event: Doc<"emailEvents">): string {
+  const files = event.attachments ?? [];
+  if (files.length === 0) return "";
+  return files
+    .map((file) => `\nAttached document (${file.filename}):\n${file.text.slice(0, 4_000)}`)
+    .join("\n");
+}
+
 export async function routeSmart(
   ctx: ActionCtx,
   { event, space, widgets }: { event: Doc<"emailEvents">; space: Doc<"spaces">; widgets: Doc<"widgets">[] },
@@ -168,6 +191,7 @@ export async function routeSmart(
       "- If the right kind of widget doesn't exist for a clear receipt/booking, use action \"create\" (kind \"expenseSplit\" or \"itinerary\") with a short title naming the trip/event.",
       "- Obvious spam, marketing, or automated junk → action \"discard\".",
       "- Anything else, or if you are not confident → action \"unfiled\".",
+      "- When a document is attached, it is the authoritative source for amounts, dates and vendors — a body that only says \"see attached\" is not a reason to give up.",
       `Today is ${today}.`,
       "",
       "ALSO write \"because\": one short sentence the group reads on the canvas,",
@@ -193,9 +217,14 @@ export async function routeSmart(
     user: [
       `Canvas widgets:\n${widgetInventory(widgets) || "(none)"}`,
       `\nEmail:\nFrom: ${event.from}\nSubject: ${event.subject}\n\n${(event.body ?? event.summary).slice(0, 4_000)}`,
-    ].join("\n"),
+      attachmentBlock(event),
+    ].filter(Boolean).join("\n"),
     temperature: 0.2,
   });
+
+  // Naming the file back to the sender is the whole tell that we opened it.
+  const files = event.attachments ?? [];
+  const read = files.length > 0 ? ` Read ${files.map((f) => f.filename).join(", ")}.` : "";
 
   const action = String(decision?.action ?? "unfiled");
   if (action === "discard") return { label: "spam" };
@@ -218,7 +247,7 @@ export async function routeSmart(
       });
       return {
         label: "receipt",
-        reply: `Logged $${amount} from ${who}${label ? ` for ${label}` : ""} on the expense tracker.`,
+        reply: `Logged $${amount} from ${who}${label ? ` for ${label}` : ""} on the expense tracker.${read}`,
       };
     }
   }
@@ -235,7 +264,7 @@ export async function routeSmart(
         plan,
         because,
       });
-      return { label: "booking", reply: `Added "${plan}" to the ${day} plan.` };
+      return { label: "booking", reply: `Added "${plan}" to the ${day} plan.${read}` };
     }
   }
 
@@ -245,6 +274,6 @@ export async function routeSmart(
     unfiled: true,
     because,
   });
-  return { label: "filed", reply: "Left it on your canvas as a sealed envelope." };
+  return { label: "filed", reply: `Left it on your canvas as a sealed envelope.${read}` };
 }
 
