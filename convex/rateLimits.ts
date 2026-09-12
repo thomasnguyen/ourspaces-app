@@ -22,8 +22,9 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   // Sign-in codes (convex/otp.ts). Keyed on the DESTINATION address, not the
   // caller: anonymous sign-in is free and unlimited so an attacker controls
   // their own userId, but the victim's inbox is the resource being protected.
-  // Two in a burst covers a typo'd retry; the refill makes mailbombing dull.
-  otpSend: { kind: "token bucket", rate: 3, period: HOUR, capacity: 2 },
+  // Three in a burst so a typo'd address isn't a 20-minute lockout on stage,
+  // refilling slowly enough that mailbombing a stranger stays pointless.
+  otpSend: { kind: "token bucket", rate: 10, period: HOUR, capacity: 3 },
   // Per-user: a stroke lands once per completed drag, not per point, so this
   // is generous headroom for normal drawing while still bounding abuse.
   paintStroke: { kind: "token bucket", rate: 60, period: MINUTE, capacity: 20 },

@@ -9338,13 +9338,93 @@
   width: 100%;
 }
 
-/* The code step: six digits deserve to look like six digits. */
-.join-form input[inputmode="numeric"] {
+/* The code step: six slots, not a text field. One real input underneath
+   carries the caret and the paste; the boxes carry the personality. */
+.code-slots {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  cursor: text;
+}
+
+.code-slots-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: transparent;
+  caret-color: transparent;
+  outline: none;
+}
+
+.code-slot {
+  display: grid;
+  height: 46px;
+  place-items: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-lime);
   font-family: var(--font-display);
   font-size: 22px;
   font-weight: 800;
-  letter-spacing: 0.28em;
-  text-align: center;
+  transition:
+    border-color var(--dur-quick) var(--ease-glide),
+    background var(--dur-quick) var(--ease-glide);
+}
+
+.code-slot.is-filled {
+  border-color: rgba(201, 255, 61, 0.5);
+  background: rgba(201, 255, 61, 0.1);
+}
+
+/* The slot you're about to fill. Breathing, not blinking — a caret that
+   blinks in six boxes reads as six carets. */
+.code-slot.is-next {
+  border-color: var(--color-lime);
+}
+
+/* Only the digit that just landed animates; all six would be noise. */
+.code-slot.just-landed {
+  animation: code-slot-land var(--dur-base) var(--ease-pop);
+}
+
+@keyframes code-slot-land {
+  0% {
+    scale: 1.16 0.86;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+/* Joining is a real beat, so the confirmation stamps rather than fades. */
+.join-stamp {
+  align-self: flex-start;
+  rotate: -2.5deg;
+  border-radius: 999px;
+  background: var(--color-lime);
+  padding: 5px 12px;
+  color: var(--color-sticker);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  animation: join-stamp-in var(--dur-arrive) var(--ease-pop) both;
+}
+
+@keyframes join-stamp-in {
+  0% {
+    opacity: 0;
+    rotate: -14deg;
+    scale: 1.5;
+  }
+  100% {
+    opacity: 1;
+    rotate: -2.5deg;
+    scale: 1;
+  }
 }
 
 .join-form-error {
@@ -12128,6 +12208,8 @@
   .widget-sticky.is-promoted,
   .widget-poster.is-promoted,
   .claim-card,
+  .code-slot.just-landed,
+  .join-stamp,
   .invite-popover,
   .arrival-toast,
   .member-face.is-new-arrival,

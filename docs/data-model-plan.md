@@ -101,6 +101,15 @@ Keys: `JWT_PRIVATE_KEY` + `JWKS` generated headlessly with `jose` and set via
    The stock `{ domain, applicationID }` pair tolerates that; `customJwt`
    does not.
 
+**One client-side gotcha, verified the hard way.** After `signIn` succeeds,
+Convex Auth writes the new token to localStorage but the live
+`ConvexReactClient` keeps using the old one: 40s after joining, `currentUser`
+still answered as the guest and `createSpace` still refused. So
+`src/components/JoinForm.tsx` **reloads the page** on "keep going". Heavy-
+handed, and correct — the reload re-reads the token and everything downstream
+just works. Don't replace it with a longer wait; waiting was the thing that
+didn't work.
+
 **Ownership is real as of 2026-09-12 (phase 1 of guest→join).** Three
 functions derive identity server-side via `requireUserId` /
 `requireRegisteredUserId` (`convex/auth.ts`): `spaces.createSpace` (registered

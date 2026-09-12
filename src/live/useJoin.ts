@@ -14,6 +14,21 @@ import { api } from "../../convex/_generated/api";
  */
 export type JoinStage = "email" | "code" | "done";
 
+/**
+ * The rate limiter (convex/rateLimits.ts `otpSend`) is by far the likeliest
+ * failure here, and "try again" is useless advice without a rough when — so
+ * read the retryAfter it hands back rather than guessing.
+ */
+function sendFailureMessage(thrown: unknown) {
+  const data = (thrown as { data?: { kind?: string; retryAfter?: number } })
+    ?.data;
+  if (data?.kind === "RateLimited") {
+    const minutes = Math.max(1, Math.ceil((data.retryAfter ?? 0) / 60000));
+    return `too many codes just now — try again in ${minutes} min`;
+  }
+  return "couldn't send that. check the address?";
+}
+
 export function useJoin() {
   const { signIn } = useAuthActions();
   const [stage, setStage] = useState<JoinStage>("email");
@@ -34,10 +49,8 @@ export function useJoin() {
         await signIn("email-otp", { email: address });
         setEmail(address);
         setStage("code");
-      } catch {
-        // The rate limiter is the likely one — it's keyed on the address, so
-        // this is the honest reading of a failure here.
-        setError("couldn't send that. try again in a minute");
+      } catch (thrown) {
+        setError(sendFailureMessage(thrown));
       } finally {
         setBusy(false);
       }

@@ -668,10 +668,13 @@ Backward-looking history lives in `hackathon.md`.
     "this clears jules' tahoe iou" / "jules' tahoe cabin half is settled" /
     "jules cleared his tahoe half"), and the crew canvas seats a decorative
     sticker over the tahoe receipt's footer, which covers the pinned line.
-- **Auth: join (the second half)** — guest shipped 2026-09-12; the claim
-  card's `join` CTA is still inert. `@convex-dev/auth` has no passkey
-  provider, so this is Google OAuth or hand-rolled WebAuthn over
-  ConvexCredentials, not a one-liner. `docs/data-model-plan.md` §1.
+- ~~**Auth: join (the second half)**~~ — shipped 2026-09-12. Emailed six-digit
+  code via AgentMail, joining keeps the same user id, registered people make
+  and own spaces, invite link is full access, "yours" group in the rail.
+  Verified end to end against a real inbox. `docs/data-model-plan.md` §1.
+  Still open: no rename/delete UI for a space you own (the mutations exist),
+  and `identityMerge` (folding a second browser's guest rows in) is designed
+  but unbuilt — a returning user just gets their account back, which is fine.
 - **Brain play B4** — crew frame *"jules is out this week"* (meal train).
   With B1; enough to reshoot tape.
 - **Brain play B2** — vision writes the note on the back of a photo-wall

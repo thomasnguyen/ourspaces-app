@@ -48,13 +48,51 @@ const sendCode = (async (
     text: [
       token,
       "",
-      "Type this back into OurSpaces and you're in. It expires in 10 minutes.",
+      "Punch this back into OurSpaces and you're in. Good for 10 minutes.",
       "",
       "Didn't ask for it? Ignore this — nothing happened to your stuff.",
     ].join("\n"),
+    html: codeEmail(token),
     labels: ["otp"],
   });
 }) as unknown as EmailConfig["sendVerificationRequest"];
+
+/**
+ * The mail is a surface too — a plain-text code from a product about making
+ * dull things feel owned is a missed beat. Tokens are inlined as literals
+ * because mail clients have no @theme and strip <style>; every colour here
+ * matches src/index.css.
+ */
+function codeEmail(token: string) {
+  const digits = token
+    .split("")
+    .map(
+      (d) =>
+        `<td style="padding:0 3px;"><div style="width:42px;height:56px;background:#211922;border-radius:10px;color:#c9ff3d;font-family:'Bricolage Grotesque',Georgia,serif;font-size:30px;font-weight:800;line-height:56px;text-align:center;">${d}</div></td>`,
+    )
+    .join("");
+
+  return `<!doctype html><html><body style="margin:0;padding:0;background:#0b0b0e;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b0b0e;padding:36px 16px;">
+  <tr><td align="center">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="420" style="width:420px;max-width:100%;background:#fffaf7;border-radius:22px;overflow:hidden;">
+      <tr><td style="background:#7853ff;padding:18px 26px;">
+        <span style="color:#fffaf7;font-family:'Bricolage Grotesque',Georgia,serif;font-size:19px;font-weight:800;">OurSpaces</span>
+      </td></tr>
+      <tr><td style="padding:30px 26px 8px;">
+        <p style="margin:0 0 6px;color:#5f5055;font-family:'IBM Plex Sans',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;">your six numbers</p>
+        <p style="margin:0 0 20px;color:#111114;font-family:'Bricolage Grotesque',Georgia,serif;font-size:25px;font-weight:800;line-height:1.2;">punch these back in and you're in.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>${digits}</tr></table>
+        <p style="margin:20px 0 0;color:#5f5055;font-family:'IBM Plex Sans',Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;">Good for 10 minutes. Your name, your colour and the spaces you're in all come with you.</p>
+      </td></tr>
+      <tr><td style="padding:18px 26px 26px;">
+        <p style="margin:0;color:#5f5055;font-family:'IBM Plex Sans',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;">Didn't ask for this? Ignore it — nothing happened to your stuff.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
 
 export const EmailOtp = Email<DataModel>({
   id: OTP_PROVIDER_ID,

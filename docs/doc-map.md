@@ -25,6 +25,7 @@ commit it.
 | Need | Open |
 |---|---|
 | Public one-pager | `README.md` |
+| Product / demo pitch deck (light mode, present or print) | `docs/ourspaces-product.html` |
 | What each space is and what it still needs | `docs/spaces-and-widgets.md` |
 
 Product spec and positioning are **local-only** — see the bottom table.
@@ -49,6 +50,7 @@ Product spec and positioning are **local-only** — see the bottom table.
 | Email → canvas: the 3 mail cases, router, digest, status, open goals | `docs/mail.md` |
 | Next OpenAI / Firecrawl work (visible filing, recap strip, meal train) | `docs/todos.md` § Next up + `docs/mail.md` goals |
 | Every Firecrawl + AgentMail feature we use, in plain English (incl. mail-powered sign-in) | `docs/firecrawl-and-agentmail.md` |
+| Same, as a 19-slide light-mode deck (present or print to PDF) | `docs/firecrawl-and-agentmail.html` |
 | Firecrawl + AgentMail keys and webhooks | `docs/firecrawl-agentmail-setup.md` |
 | Running / screenshotting the app | `.claude/skills/run-ourspaces/SKILL.md` |
 

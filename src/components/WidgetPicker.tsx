@@ -1,7 +1,7 @@
-import { useEffect, useId, useState, type CSSProperties } from "react";
+import { useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
 import { STICKER_CATALOG } from "../data/stickers";
 import { SPACE_TEMPLATES, WIDGET_CATALOG } from "../data/templates";
-import type { WidgetTemplate, WidgetType } from "../data/types";
+import type { SpaceTemplate, WidgetTemplate, WidgetType } from "../data/types";
 
 const QUICK_TYPES: WidgetType[] = [
   "note",
@@ -164,15 +164,27 @@ export function WidgetPicker({
   mode = "widgets",
   onAddSticker,
   onAddWidget,
+  onCreateSpace,
+  creating = false,
+  createError,
+  spacesGate,
   onClose,
 }: {
   open: boolean;
   mode?: "widgets" | "spaces";
   onAddSticker?: (stickerId: string) => void;
   onAddWidget?: (type: WidgetType) => void;
+  /** Live mode only. Left undefined in mock, where the templates stay inert. */
+  onCreateSpace?: (template: SpaceTemplate, name: string) => void;
+  creating?: boolean;
+  /** Surfaced so a failed create isn't a dead click. */
+  createError?: string | null;
+  /** Shown instead of the templates when the visitor can't make a space yet. */
+  spacesGate?: ReactNode;
   onClose: () => void;
 }) {
   const [showAll, setShowAll] = useState(false);
+  const [spaceName, setSpaceName] = useState("");
   const titleId = useId();
   const descriptionId = useId();
   const gridId = useId();
@@ -323,21 +335,47 @@ export function WidgetPicker({
           </section>
         ) : (
           <section>
-            <ul className="template-list">
-              {SPACE_TEMPLATES.map((template) => (
-                <li key={template.id}>
-                  <button type="button" style={{ borderColor: template.color }}>
-                    <span className="template-icon" style={{ background: template.color }}>
-                      {template.icon}
-                    </span>
-                    <span className="template-copy">
-                      <strong>{template.name}</strong>
-                      <span>{template.description}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            {spacesGate ?? (
+              <>
+                <label className="template-name-label">
+                  call it
+                  <input
+                    className="claim-name-input"
+                    value={spaceName}
+                    maxLength={28}
+                    placeholder="the tahoe trip"
+                    onChange={(event) => setSpaceName(event.target.value)}
+                    aria-label="Name your space"
+                  />
+                </label>
+                <ul className="template-list">
+                  {SPACE_TEMPLATES.map((template) => (
+                    <li key={template.id}>
+                      <button
+                        type="button"
+                        style={{ borderColor: template.color }}
+                        disabled={creating}
+                        onClick={() => onCreateSpace?.(template, spaceName)}
+                      >
+                        <span className="template-icon" style={{ background: template.color }}>
+                          {template.icon}
+                        </span>
+                        <span className="template-copy">
+                          <strong>{template.name}</strong>
+                          <span>{template.description}</span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {creating && (
+                  <p className="template-busy">setting the room up…</p>
+                )}
+                {createError && !creating && (
+                  <p className="join-form-error">{createError}</p>
+                )}
+              </>
+            )}
           </section>
         )}
       </div>
