@@ -35,10 +35,10 @@ Backward-looking history lives in `hackathon.md`.
   "N here" still counts everyone), so the room you're standing in never
   lights for you. The build-room-only rail shrink (64px rail, 42px tiles) is
   gone — the rail is the same object in every space. The first three
-  spaces (`EXAMPLE_COUNT` in `Rail.tsx`: build room, crew, us two) sit under
-  a white "examples" sticker label; a 2px rule separates them from the
-  spaces a judge makes (house, game day) and the `+`. Mobile hides the label
-  and turns the rule vertical.
+  spaces (`EXAMPLE_COUNT` in `Rail.tsx`: build room, crew, us two) are the
+  examples; a 2px rule (no label — the user cut it) separates them from the
+  spaces a judge makes (house, game day) and the `+`. Mobile turns the rule
+  vertical.
 - **App-wide reading pass (2026-09-12):** the user
   clarified that body-text readability applies throughout the app. Messages,
   descriptions, letters, recaps and forms now share 16px regular IBM Plex Sans,

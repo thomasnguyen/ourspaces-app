@@ -785,25 +785,8 @@
   }
 }
 
-/* The first three spaces are the worked examples; everything under the rule
-   is what a judge makes. White sticker on the black rail — the same die-cut
-   vocabulary as the active ring. */
-.rail-group-label {
-  display: inline-block;
-  margin-bottom: -6px;
-  border-radius: var(--radius-pill);
-  background: white;
-  color: var(--color-sticker);
-  padding: 3px 9px;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.2;
-  rotate: -3deg;
-  animation: rail-tile-in var(--dur-arrive) var(--ease-pop) backwards;
-  animation-delay: 40ms;
-  pointer-events: none;
-}
-
+/* Rule under the first three (example) spaces; what a judge makes sits
+   below it. */
 .rail-divider {
   width: 30px;
   height: 2px;
@@ -12381,8 +12364,7 @@
   }
 
   .space-tooltip,
-  .rail-brand,
-  .rail-group-label {
+  .rail-brand {
     display: none;
   }
 

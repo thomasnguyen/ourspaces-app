@@ -47,7 +47,7 @@ function OnlineDot({ spaceId }: { spaceId: string }) {
 }
 
 /** The first N spaces in SPACES are the worked examples; the rail draws a
- * rule under them and everything below is what a judge makes. */
+ * rule under them (no label) and everything below is what a judge makes. */
 const EXAMPLE_COUNT = 3;
 
 const SPACE_COVERS: Record<string, string> = {
@@ -75,7 +75,6 @@ export function Rail({
       </a>
 
       <div className="space-list">
-        <span className="rail-group-label">examples</span>
         {SPACES.map((space, i) => {
           const active = space.id === activeId;
           const displaySpace = active
