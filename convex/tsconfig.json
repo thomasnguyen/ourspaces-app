@@ -21,5 +21,8 @@
     "noEmit": true
   },
   "include": ["./**/*"],
-  "exclude": ["./_generated"]
+  // Component _generated is excluded for the same reason as the app's: it is
+  // generated, and a component with no exported functions generates unused
+  // imports. Excluded files still resolve when imported.
+  "exclude": ["./_generated", "./components/*/_generated"]
 }

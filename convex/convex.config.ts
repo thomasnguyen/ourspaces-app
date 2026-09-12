@@ -15,8 +15,8 @@ import agent from "@convex-dev/agent/convex.config";
 import rag from "@convex-dev/rag/convex.config";
 import persistentTextStreaming from "@convex-dev/persistent-text-streaming/convex.config";
 import presence from "@convex-dev/presence/convex.config";
-import betterAuth from "@convex-dev/better-auth/convex.config";
 import agentMail from "./components/agentMail/convex.config";
+import authWellKnown from "./components/authWellKnown/convex.config";
 
 // Our own HTTP endpoints (convex/http.ts) are served under /api so the
 // static site can own the root.
@@ -31,8 +31,9 @@ const app = defineApp({
     AGENTMAIL_API_KEY: v.string(),
     AGENTMAIL_WEBHOOK_SECRET: v.optional(v.string()),
     SITE_URL: v.optional(v.string()),
-    APP_URL: v.optional(v.string()),
-    BETTER_AUTH_SECRET: v.optional(v.string()),
+    // Convex Auth signing keys — see convex/auth.ts + auth.config.ts.
+    JWT_PRIVATE_KEY: v.optional(v.string()),
+    JWKS: v.optional(v.string()),
   },
 });
 
@@ -77,7 +78,13 @@ app.use(persistentTextStreaming);
 // Realtime.
 app.use(presence);
 
-// Auth.
-app.use(betterAuth);
+// Auth is @convex-dev/auth (convex/auth.ts) — a library, not a component, so
+// there is nothing to app.use for it; it adds tables via ...authTables. This
+// component only publishes the OIDC discovery documents Convex fetches to
+// validate those tokens, at the root where it looks for them.
+app.use(authWellKnown, {
+  httpPrefix: "/.well-known",
+  env: { JWKS: app.env.JWKS },
+});
 
 export default app;

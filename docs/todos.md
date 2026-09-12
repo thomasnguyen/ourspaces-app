@@ -144,7 +144,9 @@ Backward-looking history lives in `hackathon.md`.
     component equivalent exists for that).
   - **Not done, by choice**: `prosemirror-sync` (collaborative note editor —
     real new styled UI, not just backend wiring; stopped before this one)
-    and Better Auth (auth is still unwired). Note that rag's vector search
+    (Better Auth was here too until 2026-09-12, when auth was switched to
+    `@convex-dev/auth` and the guest path shipped — see the entry below.)
+    Note that rag's vector search
     lives inside the component's own tables — there is no hand-rolled
     `.vectorIndex()` in `schema.ts`, and adding one we don't need would be
     dead weight.
@@ -153,12 +155,13 @@ Backward-looking history lives in `hackathon.md`.
     Cloudflare proxy / OpenAI fallback already described further down).
 
 
-- **Guest or join** (2026-08-31, decided — not built). Canvas stays open.
-  Guest = silent Convex Auth Anonymous + today's claim-a-name. Join =
-  Passkey, same person, same `members` row. Never a login wall, never
-  email+password. Spec: `docs/data-model-plan.md` §1. Wire after B1 so
-  auth can't break the inbound demo; guest must still work if join is
-  half-done.
+- **Guest or join** (2026-08-31 decided; **guest built 2026-09-12**). Canvas
+  stays open. Guest = silent Convex Auth Anonymous + today's claim-a-name —
+  shipped, server-validated, stable across reloads. Join is still inert: the
+  library has no passkey provider. Never a login wall, never email+password.
+  Spec + the two traps that cost the most time (root-served discovery
+  documents; `customJwt` rejects these tokens for a missing `kid`):
+  `docs/data-model-plan.md` §1.
 
 - **The brain play** (2026-08-31, decided — not built yet). Mail filing and
   catch-me-up exist but stay invisible. Make the reason visible in the
@@ -586,11 +589,12 @@ Backward-looking history lives in `hackathon.md`.
   sweep (1 min) and the Friday digest run today.
 - **Live Convex still needs a re-seed** for the SomaFM playlist fields and the
   seeded buildclub / Tahoe web-post cards (`npx convex run seed:demo`).
-- **`better-auth` and `prosemirror-sync` are wired in `convex.config.ts` but
-  referenced nowhere in code.** Both are known-deferred ("Not done, by choice"
-  above), so this is bookkeeping, not new work: any repo scan reads them as
-  unused deps. Worth dropping from `package.json` + `convex.config.ts` if they
-  stay unbuilt through the deadline.
+- **`prosemirror-sync` is wired in `convex.config.ts` but referenced nowhere
+  in code.** Known-deferred ("Not done, by choice" above), so this is
+  bookkeeping, not new work: any repo scan reads it as an unused dep. Worth
+  dropping from `package.json` + `convex.config.ts` if it stays unbuilt through
+  the deadline. (`better-auth` was the other one — removed 2026-09-12 when auth
+  moved to `@convex-dev/auth`.)
 - **`hackathon.md` contradicts the repo in three places.** It says
   `Auth: none` while `@convex-dev/better-auth` sits in the manifest; it claims
   vector search "via rag" when there is no `.vectorIndex()` of ours and no
@@ -643,9 +647,10 @@ Backward-looking history lives in `hackathon.md`.
     "this clears jules' tahoe iou" / "jules' tahoe cabin half is settled" /
     "jules cleared his tahoe half"), and the crew canvas seats a decorative
     sticker over the tahoe receipt's footer, which covers the pinned line.
-- **Auth: guest or join** — after B1 is green on the live URL.
-  `docs/data-model-plan.md` §1. Anonymous silent + Passkey on the claim
-  card. Guest path is the rollback.
+- **Auth: join (the second half)** — guest shipped 2026-09-12; the claim
+  card's `join` CTA is still inert. `@convex-dev/auth` has no passkey
+  provider, so this is Google OAuth or hand-rolled WebAuthn over
+  ConvexCredentials, not a one-liner. `docs/data-model-plan.md` §1.
 - **Brain play B4** — crew frame *"jules is out this week"* (meal train).
   With B1; enough to reshoot tape.
 - **Brain play B2** — vision writes the note on the back of a photo-wall

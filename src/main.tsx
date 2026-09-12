@@ -1,24 +1,16 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ConvexReactClient } from "convex/react";
-import {
-  ConvexBetterAuthProvider,
-  type AuthClient,
-} from "@convex-dev/better-auth/react";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
 import App from "./App.tsx";
 import { getDataMode } from "./live/dataMode.ts";
-import { authClient, ensureGuestSession } from "./lib/authClient.ts";
 import { AuthIdentityBridge } from "./live/useAuthIdentity.ts";
 import { UpdateNudge } from "./components/UpdateNudge.tsx";
 import "./index.css";
 
 const url = import.meta.env.VITE_CONVEX_URL as string | undefined;
 const mode = getDataMode();
-
-// Guests sign in silently before first paint kicks off; the promise is
-// fire-and-forget because the canvas must render either way (§1).
-if (mode === "live" && url) void ensureGuestSession();
 
 const convexClient = url ? new ConvexReactClient(url) : null!;
 
@@ -43,12 +35,9 @@ function MissingConvexConfig() {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     {mode === "live" && url ? (
-      <ConvexBetterAuthProvider
-        client={convexClient}
-        // Better Auth infers a narrower plugin tuple than the provider's
-        // AuthClient union; the runtime shape is identical.
-        authClient={authClient as unknown as AuthClient}
-      >
+      // Guests sign in silently from AuthIdentityBridge once this provider
+      // settles; the canvas renders either way (§1).
+      <ConvexAuthProvider client={convexClient}>
         <ConvexQueryCacheProvider expiration={600_000}>
           <AuthIdentityBridge />
           <App />
@@ -58,7 +47,7 @@ createRoot(document.getElementById("root")!).render(
               provider, so mounting it there would throw. */}
           <UpdateNudge />
         </ConvexQueryCacheProvider>
-      </ConvexBetterAuthProvider>
+      </ConvexAuthProvider>
     ) : mode === "mock" ? (
       <App />
     ) : (

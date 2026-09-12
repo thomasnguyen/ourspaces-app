@@ -206,6 +206,14 @@ Friday 17:00 UTC stale-link refresh via `batch.ts`) ·
 `http.ts` (svix-verified inbound-mail webhook `/api/agentmail/webhook` → dedup
 via `components.agentMail.lib.ingestWebhook` → router; persistent-text-streaming's
 `/ask-stream`) ·
+`auth.ts` (Convex Auth: `convexAuth({ providers: [Anonymous] })` + the
+`currentUser` query the client adopts an identity from) ·
+`auth.config.ts` (the OIDC provider Convex validates JWTs against — the
+silently-always-signed-out footgun lives here) ·
+`components/authWellKnown/` (two-route component mounted at `/.well-known`;
+publishes `openid-configuration` + `jwks.json` at the SITE ROOT, which the app
+router can't do because it sits under `httpPrefix: "/api"` — see
+`docs/data-model-plan.md` §1 trap 1) ·
 `components/agentMail/` (OUR first-party AgentMail component — `convex.config.ts`,
 `schema.ts` [events dedup + inboundMessages], `lib.ts` [createInbox/sendMessage/
 replyToMessage/addLabels/ingestWebhook/listInbound]; no nested workpool, key

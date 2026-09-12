@@ -8,19 +8,21 @@
     "dev:backend": "convex dev",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "deploy": "npx @convex-dev/static-hosting deploy"
+    "deploy": "npx @convex-dev/static-hosting deploy",
+    "sync:skills": "./scripts/sync-codex-skills.sh"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.52",
     "@ai-sdk/openai-compatible": "^3.0.41",
     "@ai-sdk/provider": "^4.0.9",
     "@ai-sdk/provider-utils": "^5.0.34",
+    "@auth/core": "^0.41.3",
     "@convex-dev/action-cache": "^0.3.1",
     "@convex-dev/action-retrier": "^0.3.1",
     "@convex-dev/agent": "^0.7.1",
     "@convex-dev/aggregate": "^0.3.0",
+    "@convex-dev/auth": "^0.0.95",
     "@convex-dev/batch-worker": "^0.3.2",
-    "@convex-dev/better-auth": "^0.12.5",
     "@convex-dev/migrations": "^0.3.6",
     "@convex-dev/persistent-text-streaming": "^0.3.3",
     "@convex-dev/presence": "^0.4.0",
@@ -34,6 +36,7 @@
     "ai": "^7.0.85",
     "convex": "^1.45.0",
     "convex-helpers": "^0.1.123",
+    "jose": "^6.2.12",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "zod": "^4.5.4"
