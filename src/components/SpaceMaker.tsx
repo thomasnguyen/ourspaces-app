@@ -44,9 +44,11 @@ const SLOTS_THREE = [
 ];
 
 /**
- * The custom shape: your colour, your mark, your widgets. The swatches are
- * the identity colours the showcase spaces already wear (`@theme`), so a
- * hand-made space sits in the rail like it belongs there.
+ * Every shape is a starting point: pick one and the builder below fills
+ * with its colour, mark and widgets, all of which you can change. "blank"
+ * starts empty. The swatches are the identity colours the showcase spaces
+ * already wear (`@theme`), so a hand-made space sits in the rail like it
+ * belongs there.
  */
 const CUSTOM_COLORS = [
   "#7853ff",
@@ -70,7 +72,27 @@ const CUSTOM_TYPES: WidgetType[] = [
   "availability",
 ];
 const CUSTOM_MAX = SLOTS_FULL.length;
-const CUSTOM_ID = "custom";
+const CUSTOM_ID = "blank";
+
+type Draft = { color: string; icon: string; types: WidgetType[] };
+
+function draftFrom(template: SpaceTemplate): Draft {
+  return {
+    color: template.color,
+    icon: template.icon,
+    types: template.widgets.map((item) => item.type),
+  };
+}
+
+const BLANK: Draft = { color: CUSTOM_COLORS[0], icon: CUSTOM_MARKS[0], types: [] };
+
+function widgetEntry(type: WidgetType) {
+  for (const template of SPACE_TEMPLATES) {
+    const hit = template.widgets.find((item) => item.type === type);
+    if (hit) return hit;
+  }
+  return WIDGET_CATALOG.find((item) => item.type === type);
+}
 
 /**
  * A widget at postage-stamp size. Each type gets the shape it really has on
@@ -256,11 +278,7 @@ export function SpaceMaker({
   onMade: (slug: string) => void;
 }) {
   const [pickedId, setPickedId] = useState<string>(SPACE_TEMPLATES[0].id);
-  const [custom, setCustom] = useState({
-    color: CUSTOM_COLORS[0],
-    icon: CUSTOM_MARKS[0],
-    types: [] as WidgetType[],
-  });
+  const [custom, setCustom] = useState<Draft>(() => draftFrom(SPACE_TEMPLATES[0]));
   const [name, setName] = useState("");
   // Guests only: the keep-it panel is folded until they press the button.
   const [keeping, setKeeping] = useState(false);
@@ -303,18 +321,36 @@ export function SpaceMaker({
   if (!open) return null;
 
   const isCustom = pickedId === CUSTOM_ID;
-  const template: SpaceTemplate = isCustom
-    ? {
-        id: CUSTOM_ID,
-        name: "our space",
-        color: custom.color,
-        icon: custom.icon,
-        description: "",
-        widgets: custom.types
-          .map((type) => WIDGET_CATALOG.find((item) => item.type === type))
-          .filter((item): item is (typeof WIDGET_CATALOG)[number] => Boolean(item)),
-      }
-    : (SPACE_TEMPLATES.find((item) => item.id === pickedId) ?? SPACE_TEMPLATES[0]);
+  const preset = SPACE_TEMPLATES.find((item) => item.id === pickedId);
+  // The board and the space that gets made both come from the draft, so a
+  // tweaked preset is exactly what you saw.
+  const template: SpaceTemplate = {
+    id: pickedId,
+    name: preset?.name ?? "our space",
+    color: custom.color,
+    icon: custom.icon,
+    description: preset?.description ?? "",
+    widgets: custom.types
+      .map(widgetEntry)
+      .filter((item): item is NonNullable<typeof item> => Boolean(item)),
+  };
+  const pick = (id: string) => {
+    setPickedId(id);
+    const next = SPACE_TEMPLATES.find((item) => item.id === id);
+    setCustom(next ? draftFrom(next) : BLANK);
+  };
+  // A preset's own colour, mark and widgets always show as options, even
+  // the ones the blank list doesn't carry (birthday's cake, trip's weather).
+  const swatches = CUSTOM_COLORS.includes(custom.color)
+    ? CUSTOM_COLORS
+    : [custom.color, ...CUSTOM_COLORS];
+  const marks = CUSTOM_MARKS.includes(custom.icon)
+    ? CUSTOM_MARKS
+    : [custom.icon, ...CUSTOM_MARKS];
+  const types = [
+    ...custom.types.filter((type) => !CUSTOM_TYPES.includes(type)),
+    ...CUSTOM_TYPES,
+  ];
 
   const toggleType = (type: WidgetType) =>
     setCustom((prev) => {
@@ -354,7 +390,7 @@ export function SpaceMaker({
 
         {/* The board: the new space at postage-stamp size. Keyed on the
             template so the tiles re-land on every pick. */}
-        <div className="space-maker-board" key={template.id}>
+        <div className="space-maker-board" key={pickedId}>
           <div className="space-maker-board-head">
             <span className="space-maker-board-icon">{`${template.icon}\uFE0E`}</span>
             <input
@@ -408,7 +444,7 @@ export function SpaceMaker({
               </div>
             );
           })}
-          {isCustom && custom.types.length === 0 && (
+          {custom.types.length === 0 && (
             <span className="space-maker-empty">
               tap a widget below to put it on the wall
             </span>
@@ -434,7 +470,7 @@ export function SpaceMaker({
                 className={item.id === pickedId ? "is-picked" : ""}
                 style={{ "--shape-color": item.color } as CSSProperties}
                 disabled={settingUp}
-                onClick={() => setPickedId(item.id)}
+                onClick={() => pick(item.id)}
               >
                 <span aria-hidden="true">{`${item.icon}\uFE0E`}</span>
                 {item.name}
@@ -447,21 +483,20 @@ export function SpaceMaker({
               className={isCustom ? "is-picked" : ""}
               style={{ "--shape-color": custom.color } as CSSProperties}
               disabled={settingUp}
-              onClick={() => setPickedId(CUSTOM_ID)}
+              onClick={() => pick(CUSTOM_ID)}
             >
               <span aria-hidden="true">✎</span>
-              custom
+              blank
             </button>
           </li>
         </ul>
 
         <div className="space-maker-body">
-          {isCustom && (
-            <div className="space-maker-custom">
+          <div className="space-maker-custom">
               <div className="space-maker-custom-row">
                 <span className="space-maker-custom-label">colour</span>
                 <span className="space-maker-swatches">
-                  {CUSTOM_COLORS.map((color) => (
+                  {swatches.map((color) => (
                     <button
                       key={color}
                       type="button"
@@ -474,7 +509,7 @@ export function SpaceMaker({
                 </span>
                 <span className="space-maker-custom-label">mark</span>
                 <span className="space-maker-marks">
-                  {CUSTOM_MARKS.map((mark) => (
+                  {marks.map((mark) => (
                     <button
                       key={mark}
                       type="button"
@@ -494,8 +529,8 @@ export function SpaceMaker({
                   </small>
                 </span>
                 <span className="space-maker-types">
-                  {CUSTOM_TYPES.map((type) => {
-                    const item = WIDGET_CATALOG.find((entry) => entry.type === type);
+                  {types.map((type) => {
+                    const item = widgetEntry(type);
                     if (!item) return null;
                     const on = custom.types.includes(type);
                     return (
@@ -513,7 +548,6 @@ export function SpaceMaker({
                 </span>
               </div>
             </div>
-          )}
 
           {account.joined ? (
             <div className="space-maker-foot">

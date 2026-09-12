@@ -11,9 +11,12 @@ Backward-looking history lives in `hackathon.md`.
   strip below; the wall is the new space at postage-stamp size: dot-grid
   wall, hand-placed paper tiles with a per-type mini widget — countdown is
   a number, poll is bars, chat is bubbles — your cursor with your claimed
-  name, and the name typed straight onto the board), keep it. Sixth dock
-  item is **custom**: colour swatches (the identity tokens), a mark, and
-  widget pills you tap to put on the wall (max 6, the wall fills live).
+  name, and the name typed straight onto the board), keep it. Every preset
+  is a starting point: the builder in the strip (colour swatches = the
+  identity tokens, ten marks, widget pills, max 6 on the wall) is prefilled
+  by the pick and editable; **blank** starts empty. The couple preset was
+  removed 2026-09-12 (two pinks in the dock; "us two" is already a showcase
+  space). Presets: friend group, birthday, trip, game night.
   Joined people get one "make it" button. Guests get email → six slots
   inline at the bottom, folded until "keep it"; the sixth digit verifies,
   waits for `useAccount().joined` to flip, creates from the held draft, and
