@@ -71,7 +71,12 @@ member faces. Hot links keep their real content, with stable local art on seeded
 favorites. The three original shipping photos render as **illustrated project
 previews** (performance, search spec, release), shared with the full ship room;
 user uploads continue rendering as images. Labels sit on frame edges, and
-keepers keep their paper/pushpin treatment. Mobile explicitly stacks the widget
+keepers keep their paper/pushpin treatment. Their text uses IBM Plex Sans
+(22px title / 20px body / 16px author before camera scaling), with a 36px
+bottom inset on an opaque paper surface. The transparent torn edge is a
+separate decoration below the surface; it cannot eat into the author line.
+Credits follow the text. Hot-link type/domain share one metadata row;
+roundtable author names lead each reply inline. Mobile explicitly stacks the widget
 groups at viewport width, with section labels and a smaller pile fan.
 
 The problem it answers: a dev group drops links one at a time all week and ends
@@ -104,7 +109,15 @@ the *outer* cut: it narrows the pile first, so the new/hot/kept counts describe
 the tagged set, and the reading circle's own tag pills are buttons that set it
 (a rare tag picked there is carried into the row so it can be undone). Mock mode
 fakes the drop→enrich beat locally (`mockDropped` in `App.tsx`); live mode
-runs Firecrawl.
+runs Firecrawl. On phones, `all links` / `reading circle` switch between
+full-width panes; choosing a link opens the circle, and opening a hot link
+starts there directly. Ship rooms stack their image above the text on phones.
+List descriptions sit below the title at 16px / 1.5 and wrap
+to their full height; the reading-circle summary uses 18px / 1.55. Chat,
+letters, ship descriptions, recaps and editor fields share the app's regular
+IBM Plex Sans body style instead of compressed or display-weight prose.
+Short notes outside this room grow their paper surface with the content;
+unfolded letters keep their comment button above the reading area.
 
 Demo role: the volume story (47 links that don't wreck the canvas), Firecrawl
 on a live paste, and the **keep takeaway** climax — the note physically flies

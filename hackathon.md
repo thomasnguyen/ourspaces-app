@@ -12,7 +12,7 @@
 - **Auth:** Better Auth (anonymous guest sessions; passkey blocked by a peer-dep conflict)
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-12T05:45:55Z
+- **Last updated:** 2026-09-12T06:10:47Z
 
 ## Highlights
 
@@ -529,7 +529,7 @@ Gateway. Brought the Components/Schema/Scheduling bullets up to date with
 all 15 components now in real use.
 
 
-### 2026-09-12 - working tree
+### 2026-09-12 - 07ddee3
 Brought the build room closer to the approved pinboard reference: centered the
 five zones, enlarged the taped link pile, added illustrated project previews,
 and quieted the header while retaining the mail entry point and existing actions.
@@ -538,3 +538,11 @@ phone widgets now stack at viewport width. Softened the overpowering orange
 wall to a deeper burnt-orange theme after user feedback. Verified in the local browser on
 desktop and phone, including reading/ship rooms and frame focus/return.
 `npm run build` passes; no backend deployment in this session.
+
+### 2026-09-12 - working tree
+Made body copy across widgets, messages, reading rooms, letters, recaps and
+forms use regular IBM Plex Sans with larger sizes and line spacing. Keeper
+papers grow around the text, with the decorative tear below the author line;
+reading-list descriptions wrap below their titles. Phone reading rooms now
+offer full-width links and reading-circle views. Verified local desktop and
+phone views; `npm run build` passes. No backend changes or deployment.

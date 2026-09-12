@@ -99,6 +99,7 @@ export function ReadingRoom({
   const [filter, setFilter] = useState<Filter>("all");
   const [tag, setTag] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [mobileReading, setMobileReading] = useState(Boolean(initialLinkId));
   const [selectedId, setSelectedId] = useState(
     () => initialLinkId ?? ranked[0]?.id ?? "",
   );
@@ -254,12 +255,20 @@ export function ReadingRoom({
 
   return (
     <CanvasRoom
-      className="reading-room"
+      className={`reading-room${mobileReading ? " is-mobile-reading" : ""}`}
       origin={origin}
       label="back to the build room"
       closeRef={closeRoomRef}
       onClose={onClose}
     >
+      <nav className="rr-mobile-switch" aria-label="Reading room view">
+        <button type="button" aria-pressed={!mobileReading} onClick={() => setMobileReading(false)}>
+          all links
+        </button>
+        <button type="button" aria-pressed={mobileReading} onClick={() => setMobileReading(true)}>
+          reading circle
+        </button>
+      </nav>
       <div
         className="reading-room-body"
         onPointerMove={
@@ -434,6 +443,7 @@ export function ReadingRoom({
                         className="rr-row-open"
                         onClick={() => {
                           setSelectedId(link.id);
+                          setMobileReading(true);
                           playSound("tap");
                         }}
                       >

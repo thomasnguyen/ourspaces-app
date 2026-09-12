@@ -27,7 +27,7 @@ typography:
     letterSpacing: "-0.02em"
   body:
     fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
-    fontWeight: 500
+    fontWeight: 400
     fontSize: "1rem"
     lineHeight: 1.5
   label:
@@ -144,20 +144,22 @@ neon halos, no purple→blue washes. Color is flat and saturated or it is neutra
 
 **Display Font:** Bricolage Grotesque · **Body / Label Font:** IBM Plex Sans
 (both with `ui-sans-serif,
-system-ui, sans-serif` fallback). One family does everything.
+system-ui, sans-serif` fallback).
 
-**Character:** A warm, geometric-humanist sans carrying the entire interface.
-Hierarchy comes from *weight and size*, not from a second face. This is a
-committed identity choice — do not "upgrade" or pair it with a display serif or
-mono.
+**Character:** Bricolage gives names and numbers their chunky personality.
+IBM Plex Sans keeps sentences open and easy to read. Use regular weight for
+prose, with emphasis reserved for titles and names; no serif or mono.
 
 ### Hierarchy
 - **Name** (800, `clamp(1.25rem, 1rem + 1.4vw, 2rem)`, 1.1): space names, widget
   titles, section headers. The loud voice.
 - **Number** (700, `clamp(2rem, 1.2rem + 3vw, 3.5rem)`, 1): countdown digits,
   vote tallies, claim counts — numbers feel solid and proud.
-- **Body** (500, 1rem, 1.5): chat messages, note text, item labels. Keep prose
-  to ~65–75ch.
+- **Body** (400, `--text-body` / 1rem, 1.5): messages, descriptions, forms,
+  letters and recaps. Generous reading surfaces use 18px / 1.55. Compact
+  widget previews use 14px, with larger source sizes on scaled canvases.
+  Keep prose to ~65–75ch and make the container fit the copy.
+- **Caption** (500, `--text-caption` / 0.875rem, 1.4): bylines and helper text.
 - **Label** (600, 0.8125rem, 1.2): text inside sticker pills — chips, buttons,
   status.
 
