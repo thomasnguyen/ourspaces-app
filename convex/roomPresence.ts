@@ -47,12 +47,14 @@ export const disconnect = mutation({
   },
 });
 
-/** For the space list — "X online" per space without an active session. */
+/** For the space list — "X online" per space without an active session.
+ * `excludeUserId` drops the caller: the rail's dot means "someone else is
+ * there", while the header's "N here" counts everyone including you. */
 export const onlineCountForSpace = query({
-  args: { spaceId: v.string() },
+  args: { spaceId: v.string(), excludeUserId: v.optional(v.string()) },
   returns: v.number(),
-  handler: async (ctx, { spaceId }) => {
+  handler: async (ctx, { spaceId, excludeUserId }) => {
     const users = await presence.listRoom(ctx, spaceId, true);
-    return users.length;
+    return users.filter((user) => user.userId !== excludeUserId).length;
   },
 });

@@ -785,6 +785,35 @@
   }
 }
 
+/* The first three spaces are the worked examples; everything under the rule
+   is what a judge makes. White sticker on the black rail — the same die-cut
+   vocabulary as the active ring. */
+.rail-group-label {
+  display: inline-block;
+  margin-bottom: -6px;
+  border-radius: var(--radius-pill);
+  background: white;
+  color: var(--color-sticker);
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  rotate: -3deg;
+  animation: rail-tile-in var(--dur-arrive) var(--ease-pop) backwards;
+  animation-delay: 40ms;
+  pointer-events: none;
+}
+
+.rail-divider {
+  width: 30px;
+  height: 2px;
+  flex: 0 0 auto;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.16);
+  animation: rail-tile-in var(--dur-arrive) var(--ease-pop) backwards;
+  animation-delay: calc(60ms + var(--i, 0) * 40ms);
+}
+
 /* Sticker-wall resting tilt — straightens on hover, active keeps a stuck-on lean */
 :where(.space-link-wrap:nth-child(odd)) .space-link {
   rotate: -2deg;
@@ -12352,8 +12381,14 @@
   }
 
   .space-tooltip,
-  .rail-brand {
+  .rail-brand,
+  .rail-group-label {
     display: none;
+  }
+
+  .rail-divider {
+    width: 2px;
+    height: 30px;
   }
 
   .action-dock {
@@ -21256,11 +21291,6 @@
   .paper-bg[data-space-id="buildroom"] .header-actions { gap: 7px; }
   .paper-bg[data-space-id="buildroom"] .add-widget-button,
   .paper-bg[data-space-id="buildroom"] .invite-button { min-height: 34px; padding: 6px 14px; font-size: 12px; }
-  .paper-bg[data-space-id="buildroom"] .space-rail { width: 64px; left: 22px; top: 24px; padding: 12px 6px; border-radius: 22px; }
-  .paper-bg[data-space-id="buildroom"] .space-list { gap: 10px; }
-  .paper-bg[data-space-id="buildroom"] .space-link { width: 42px; height: 42px; border-radius: 12px; }
-  .paper-bg[data-space-id="buildroom"] .space-link.has-photo { width: 46px; height: 46px; border-radius: 13px; }
-  .paper-bg[data-space-id="buildroom"] .rail-brand { width: 30px; height: 30px; }
   .paper-bg[data-space-id="buildroom"] .action-dock { bottom: 18px; padding: 4px; }
   .paper-bg[data-space-id="buildroom"] .action-dock > button { min-height: 36px; padding: 7px 12px; font-size: 11px; }
   .paper-bg[data-space-id="buildroom"] .space-live-strip { left: 128px; bottom: 27px; padding: 0; background: transparent; box-shadow: none; color: var(--color-ink); font-size: 10px; font-weight: 500; }
