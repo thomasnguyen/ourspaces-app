@@ -117,7 +117,6 @@ function DeferredRoute({ children }: { children: ReactNode }) {
 }
 
 type Route = "space" | "home" | "cursors" | "widgets" | "live" | "join" | "test";
-type PickerMode = "widgets" | "spaces";
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
 type FrameLayout = Pick<Widget, "x" | "y" | "w" | "h">;
 type CanvasSize = { width: number; height: number };
@@ -302,7 +301,6 @@ export default function App() {
   const zoomPhaseRef = useRef(zoom.phase);
   zoomPhaseRef.current = zoom.phase;
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerMode, setPickerMode] = useState<PickerMode>("widgets");
   const [chatOpen, setChatOpen] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
   const [recapRunId, setRecapRunId] = useState(0);
@@ -1192,14 +1190,15 @@ export default function App() {
     setManagedWidgetId("");
   }, [restoreFrameEdit]);
 
-  const openPicker = (mode: PickerMode) => {
+  // Mock has no backend to make a space in, so the rail's "+" opens the
+  // widget picker too. Live mounts SpaceMaker (LiveSpace.tsx).
+  const openPicker = () => {
     if (focusedTarget) leaveFocus(false);
     playSound("tap");
     setManagedWidgetId("");
     setEditingWidgetId("");
     setSpaceDraft(null);
     setChatOpen(false);
-    setPickerMode(mode);
     setPickerOpen(true);
   };
 
@@ -2020,14 +2019,14 @@ export default function App() {
           color: activeSpaceCustomization.accent,
         }}
         onSelectSpace={selectSpace}
-        onCreateClick={() => openPicker("spaces")}
+        onCreateClick={openPicker}
       />
       <SpaceHeader
         // Keyed on the space so switching replays the entrance choreography.
         key={spaceId}
         spaceId={spaceId}
-        addOpen={pickerOpen && pickerMode === "widgets"}
-        onAddClick={() => openPicker("widgets")}
+        addOpen={pickerOpen}
+        onAddClick={openPicker}
         spaceMeta={activeSpaceCustomization}
         roomEditing={Boolean(spaceDraft)}
         onEditSpace={openSpaceEditor}
@@ -2449,7 +2448,6 @@ export default function App() {
       {spaceId === "crew" && <WelcomePill />}
       <WidgetPicker
         open={pickerOpen}
-        mode={pickerMode}
         onAddSticker={addSticker}
         onAddWidget={addWidget}
         onClose={() => setPickerOpen(false)}

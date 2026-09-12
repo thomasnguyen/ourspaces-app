@@ -8577,58 +8577,265 @@
   color: white;
 }
 
-.template-list {
+
+/* ── start a new space: the maker sheet ──
+   One sheet, three beats: pick a shape (the sheet drenches in its colour and
+   the mini board fills), call it something, keep it. The email + code live at
+   the bottom, folded until pressed — investment first, the gate last. */
+.widget-picker.space-maker {
+  width: min(600px, 100%);
+  padding: 0;
+  overflow: hidden;
+  transition:
+    opacity var(--dur-stage) var(--ease-glide),
+    translate var(--dur-stage) var(--ease-pop),
+    scale var(--dur-stage) var(--ease-pop);
+}
+
+@starting-style {
+  .widget-picker.space-maker {
+    opacity: 0;
+    translate: 0 18px;
+    scale: 0.96;
+  }
+}
+
+.space-maker > header {
+  padding: 20px 20px 0;
+  margin-bottom: 14px;
+}
+
+/* The board: the new space, wearing its colour head to toe. */
+.space-maker-board {
+  position: relative;
+  height: 232px;
+  margin: 0 20px;
+  border-radius: 16px;
+  background: var(--maker-color);
+  overflow: hidden;
+  transition: background var(--dur-base) var(--ease-glide);
+}
+
+.space-maker-board-head {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  right: 16px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 9px;
+}
+
+.space-maker-board-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  rotate: -3deg;
+  border-radius: 9px;
+  background: var(--color-sticker);
+  color: white;
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+.space-maker-board-name {
+  color: white;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.space-maker-board-name.is-default {
+  opacity: 0.62;
+}
+
+.space-maker-tiles {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 12px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.template-list button {
+/* Paper on the wall — the same tilted-sticker feel as the rail. Each one
+   lands in turn on every pick, which is what makes a template feel like a
+   room and not a list of features. */
+.space-maker-tile {
   display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 62px;
+  border-radius: 10px;
+  background: var(--color-card);
+  box-shadow: 0 6px 14px rgba(17, 17, 20, 0.28);
+  color: var(--color-ink);
+  padding: 9px 10px;
+  rotate: var(--tilt);
+  animation: space-maker-tile-in var(--dur-arrive) var(--ease-pop) backwards;
+  animation-delay: calc(40ms + var(--i, 0) * 45ms);
+}
+
+.space-maker-tile em {
+  font-size: 19px;
+  font-style: normal;
+  line-height: 1;
+}
+
+.space-maker-tile span {
+  align-self: flex-start;
+  border-radius: 999px;
+  background: var(--color-sticker);
+  color: white;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+@keyframes space-maker-tile-in {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+    scale: 0.7;
+  }
+}
+
+/* "yours" lands on the board the moment the code does. */
+.space-maker-stamp {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: 15px;
+  rotate: 4deg;
+}
+
+.space-maker-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 20px 20px;
+}
+
+.space-maker-shapes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.space-maker-shapes button {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
+  gap: 6px;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   color: white;
-  padding: 10px 12px;
+  padding: 7px 12px;
   cursor: pointer;
-  text-align: left;
-  transition: background 140ms ease-out;
+  font-size: 12px;
+  font-weight: 800;
+  transition:
+    background var(--dur-quick) var(--ease-glide),
+    border-color var(--dur-quick) var(--ease-glide),
+    translate var(--dur-quick) var(--ease-glide);
 }
 
-.template-list button:hover {
+.space-maker-shapes button span {
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+
+.space-maker-shapes button:hover {
   background: rgba(255, 255, 255, 0.12);
+  translate: 0 -1px;
 }
 
-.template-icon {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 10px;
+.space-maker-shapes button.is-picked {
+  border-color: var(--shape-color);
+  background: var(--shape-color);
+}
+
+.space-maker-shapes button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.space-maker-name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.space-maker-name .claim-name-input {
+  min-height: 42px;
+  font-family: var(--font-display);
   font-size: 16px;
 }
 
-.template-copy {
+.space-maker-name .claim-name-input:focus {
+  border-color: var(--maker-color);
+}
+
+.space-maker-foot {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.template-copy strong {
-  font-family: var(--font-display);
-  font-size: 14px;
+.space-maker-hint {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
-.template-copy span {
-  font-size: 11px;
-  opacity: 0.65;
+.space-maker-foot .claim-done {
+  flex: 0 0 auto;
+}
+
+/* The keep-it panel unfolds; grid rows so nothing jumps. */
+.space-maker-keep-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-stage) var(--ease-glide);
+}
+
+.space-maker-keep-wrap.is-open {
+  grid-template-rows: 1fr;
+}
+
+.space-maker-keep-wrap > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.space-maker-keep {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 14px;
+}
+
+.space-maker-keep .code-slot.is-next,
+.space-maker-keep .claim-name-input:focus {
+  border-color: var(--maker-color);
 }
 
 /* ── widget groups + per-widget threads ── */
@@ -9268,31 +9475,6 @@
 /* Join — the second CTA on the claim card, and the same form inside the
    "make your own space" nudge. It borrows the card's own shell, so it reads
    as one more step rather than a different screen. */
-/* "start a new space": name it, then pick the shape. */
-.template-name-label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 14px;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.template-busy {
-  margin: 12px 0 0;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 12px;
-  text-align: center;
-}
-
-.template-list button:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
 .claim-join-link {
   border: 0;
   background: none;
@@ -12210,6 +12392,7 @@
   .claim-card,
   .code-slot.just-landed,
   .join-stamp,
+  .space-maker-tile,
   .invite-popover,
   .arrival-toast,
   .member-face.is-new-arrival,

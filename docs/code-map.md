@@ -91,8 +91,10 @@ switches it back) ·
 
 **cursors/** — `registry.ts` + `styles.tsx` (8+ cursor styles) · `LiveCursor.tsx`
 
-**Join / make a space** — `components/JoinForm.tsx` (email → six digits →
-"you're in the book"; reloads on finish, see `docs/data-model-plan.md` §1) ·
+**Join / make a space** — `components/SpaceMaker.tsx` (rail "+": shape →
+name → keep it; guests do email + code inline and the sixth digit makes and
+opens the space) · `components/JoinForm.tsx` (email → six digits →
+"you're in the book" on the claim card; see `docs/data-model-plan.md` §1) ·
 `components/CodeSlots.tsx` (six painted boxes over one real input) ·
 `live/useJoin.ts` (`useJoin` two-step sign-in, `useAccount` guest-vs-joined) ·
 `live/useCreateSpace.ts` (template → space + its starting widgets) ·

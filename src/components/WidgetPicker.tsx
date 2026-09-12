@@ -1,7 +1,7 @@
-import { useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useState, type CSSProperties } from "react";
 import { STICKER_CATALOG } from "../data/stickers";
-import { SPACE_TEMPLATES, WIDGET_CATALOG } from "../data/templates";
-import type { SpaceTemplate, WidgetTemplate, WidgetType } from "../data/types";
+import { WIDGET_CATALOG } from "../data/templates";
+import type { WidgetTemplate, WidgetType } from "../data/types";
 
 const QUICK_TYPES: WidgetType[] = [
   "note",
@@ -161,30 +161,16 @@ function WidgetPreview({ item }: { item: WidgetTemplate }) {
 
 export function WidgetPicker({
   open,
-  mode = "widgets",
   onAddSticker,
   onAddWidget,
-  onCreateSpace,
-  creating = false,
-  createError,
-  spacesGate,
   onClose,
 }: {
   open: boolean;
-  mode?: "widgets" | "spaces";
   onAddSticker?: (stickerId: string) => void;
   onAddWidget?: (type: WidgetType) => void;
-  /** Live mode only. Left undefined in mock, where the templates stay inert. */
-  onCreateSpace?: (template: SpaceTemplate, name: string) => void;
-  creating?: boolean;
-  /** Surfaced so a failed create isn't a dead click. */
-  createError?: string | null;
-  /** Shown instead of the templates when the visitor can't make a space yet. */
-  spacesGate?: ReactNode;
   onClose: () => void;
 }) {
   const [showAll, setShowAll] = useState(false);
-  const [spaceName, setSpaceName] = useState("");
   const titleId = useId();
   const descriptionId = useId();
   const gridId = useId();
@@ -215,27 +201,21 @@ export function WidgetPicker({
 
   return (
     <div
-      className={`widget-picker-backdrop ${
-        mode === "widgets" ? "widget-picker-backdrop-popover" : ""
-      }`}
+      className="widget-picker-backdrop widget-picker-backdrop-popover"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className={`widget-picker ${mode === "widgets" ? "widget-picker-popover" : ""}`}
+        className="widget-picker widget-picker-popover"
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-labelledby={titleId}
-        aria-describedby={mode === "widgets" ? descriptionId : undefined}
+        aria-describedby={descriptionId}
       >
         <header>
           <div>
-            <h2 id={titleId}>
-              {mode === "widgets" ? "add to this space" : "start a new space"}
-            </h2>
-            {mode === "widgets" && (
-              <p id={descriptionId}>add content, or mark off a corner</p>
-            )}
+            <h2 id={titleId}>add to this space</h2>
+            <p id={descriptionId}>add content, or mark off a corner</p>
           </div>
           <button
             type="button"
@@ -247,8 +227,7 @@ export function WidgetPicker({
           </button>
         </header>
 
-        {mode === "widgets" ? (
-          <section>
+        <section>
             {frameItem && (
               <button
                 type="button"
@@ -332,52 +311,7 @@ export function WidgetPicker({
               </span>
               <span aria-hidden="true">{showAll ? "←" : "›"}</span>
             </button>
-          </section>
-        ) : (
-          <section>
-            {spacesGate ?? (
-              <>
-                <label className="template-name-label">
-                  call it
-                  <input
-                    className="claim-name-input"
-                    value={spaceName}
-                    maxLength={28}
-                    placeholder="the tahoe trip"
-                    onChange={(event) => setSpaceName(event.target.value)}
-                    aria-label="Name your space"
-                  />
-                </label>
-                <ul className="template-list">
-                  {SPACE_TEMPLATES.map((template) => (
-                    <li key={template.id}>
-                      <button
-                        type="button"
-                        style={{ borderColor: template.color }}
-                        disabled={creating}
-                        onClick={() => onCreateSpace?.(template, spaceName)}
-                      >
-                        <span className="template-icon" style={{ background: template.color }}>
-                          {template.icon}
-                        </span>
-                        <span className="template-copy">
-                          <strong>{template.name}</strong>
-                          <span>{template.description}</span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                {creating && (
-                  <p className="template-busy">setting the room up…</p>
-                )}
-                {createError && !creating && (
-                  <p className="join-form-error">{createError}</p>
-                )}
-              </>
-            )}
-          </section>
-        )}
+        </section>
       </div>
     </div>
   );
