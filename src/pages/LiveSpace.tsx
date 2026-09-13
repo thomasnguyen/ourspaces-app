@@ -2242,6 +2242,7 @@ export function LiveSpacePage({
                 onPollVote={handlers.onVote}
                 onWheelSpin={handlers.onWheelSpin}
                 onPlaylistTune={handlers.onPlaylistTune}
+                onLetterOpen={handlers.onLetterOpen}
                 buildRoomFeed={buildRoomFeed}
                 roundtableRepliesByWidget={roundtableRepliesByWidget}
                 paintStrokesByWidget={paintStrokesByWidget}

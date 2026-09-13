@@ -48,7 +48,7 @@ Product spec and positioning are **local-only** — see the bottom table.
 | Every subsystem explained: mail brain, Firecrawl, AI layer, components | `docs/architecture.md` |
 | Schema, auth (guest or join), Convex-as-state | `docs/data-model-plan.md` |
 | Email → canvas: the 3 mail cases, router, digest, status, open goals | `docs/mail.md` |
-| Mail arrival — the envelope that narrates the filing (spec for goals 0+1: stages, state, motion, lab, take reset) | `docs/mail-arrival.md` |
+| Mail arrival — the envelope that narrates the filing (spec + build decisions: stages, state, motion, `#/mail` lab, take reset) | `docs/mail-arrival.md` |
 | Next OpenAI / Firecrawl work (visible filing, recap strip, meal train) | `docs/todos.md` § Next up + `docs/mail.md` goals |
 | Every Firecrawl + AgentMail feature we use, in plain English (incl. mail-powered sign-in) | `docs/firecrawl-and-agentmail.md` |
 | Same, as a 19-slide light-mode deck (present or print to PDF) | `docs/firecrawl-and-agentmail.html` |

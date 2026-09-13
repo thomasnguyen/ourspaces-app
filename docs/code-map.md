@@ -32,7 +32,7 @@ same in every room: kicker (kind · tagline), the name big, then a handles
 row of two ink-tinted chips (inbox address, pencil "edit"); on the right ONE
 black sticker pill holding faces, "N here now", add and invite in the dock's
 vocabulary; CSS lives at the end of `index.css`
-under SPACE HEADER — THE NAMEPLATE, the build room fork only sets offsets;
+under SPACE HEADER — THE NAMEPLATE, the dev guild fork only sets offsets;
 presence/gestures) ·
 `WidgetCard.tsx` (widget shell: drag/resize/thread chip) · `WidgetEditorPanel.tsx`
 (per-type edit forms) · `WidgetPicker.tsx` · `WidgetThreadDock.tsx` ·
@@ -44,6 +44,11 @@ presence component's `roomPresence.onlineCountForSpace`, mounted by
 briefing, ↻ refresh, follow-up composer) ·
 `CanvasNavigator.tsx` (minimap) · `CanvasEdgePan.tsx` · `SpaceEditorPanel.tsx`
 (theme editor) · `ClaimCard.tsx` (identity claim) · `FirstRunSticky.tsx` ·
+`PlacementGhost.tsx` (pick it up, put it down — a sticker or widget chosen in
+the tray rides the cursor at its real footprint and lands where you click;
+shift-click keeps it in hand, esc/right-click drops it. Rendered inside
+`.space-canvas` by `Canvas.tsx` via `placingItem`; both App.tsx and
+LiveSpace.tsx own the `placing` state) ·
 `GhostCanvas.tsx` · `MemberFace.tsx` · `PhotoWallGallery.tsx` · `WelcomePill.tsx` ·
 `LinkQuestionStrip.tsx` (web post conversation starters in the thread dock) ·
 `CanvasRoom.tsx` (shared full-screen `<dialog>` shell: grows out of the card
@@ -73,6 +78,12 @@ rail: it is board content) · `UpdateNudge.tsx` +
 publish patches that row, the subscription invalidates, and every open tab is
 offered a refresh before its `React.lazy` chunks 404)
 
+`MailArrival.tsx` (mail arrival — the envelope that narrates the filing,
+`docs/mail-arrival.md`: page-level sibling of the header, slot measured off
+the nameplate; `MailArrivalLive` subscribes to `mailArrival.recentInbound`,
+`MailArrivalLab` runs `lib/mailArrival.ts` fixtures for `#/mail`; one
+`MailArrivalStage` draws envelopes, flights and the `↩ told holly` tick)
+
 **pages/** — `LiveSpace.tsx` (live canvas) · `Block.tsx` (mock `#/home`) ·
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
 `CursorLab.tsx` · `ArrivalLab.tsx` (`#/arrival` — the pile's ReadingRoom
@@ -93,10 +104,10 @@ blurb [`BLURBS`; poll vote, claim, spin wired to local state] and Esc/click
 flies it back; tiles use CSS `zoom` so cards keep their own layout; growing
 widgets are measured once via `scrollHeight`; the entrance waits two frames
 past first paint; lab pill: replay · pause · roll call · name tags · tilt ·
-size S/M/L · ½/1/2× — pill and cursor hide after 2s idle) · `labs.css` (cursor lab, widget lab, arrival lab, widget
+size S/M/L · ½/1/2× — pill and cursor hide after 2s idle) · `MailLabBar.tsx` (`#/mail`'s pill — lazy so labs.css stays off the space page; the route itself is the crew space with a lab flag, see `mailLabRequested` in App.tsx) · `labs.css` (cursor lab, widget lab, arrival lab, widget
 wall sections)
 
-**widgets/** — `buildroom.tsx` (the build room's four: `linkPile`, `hotLinks`,
+**widgets/** — `buildroom.tsx` (the dev guild's four: `linkPile`, `hotLinks`,
 `shipPost`, `roundtable`; also `ShipPreview`, the illustrated demo project
 captures shared with `ShipRoom`; all pure, fed one `BuildRoomFeed` prop threaded
 Canvas → WidgetCard) · `core.tsx` (sticker, frame, countdown, poll, note…) ·
@@ -132,7 +143,7 @@ opens the space) · `components/JoinForm.tsx` (email → six digits →
 `live/useJoin.ts` (`useJoin` two-step sign-in, `useAccount` guest-vs-joined) ·
 `live/useCreateSpace.ts` (template → space + its starting widgets) ·
 `live/adapt.ts` `spaceFromLive` (live row → the shape the canvas chrome reads;
-without it a new space renders as the crew).
+without it a new space renders as the group chat).
 
 **lib/** — `routes.ts` (hash + invite URLs) · `widgetDefaults.ts`
 (`WIDGET_BLUEPRINTS`) · `widgetLabels.ts` · `widgetThreads.ts` · `blockZoom.ts` ·
@@ -147,9 +158,12 @@ namespacing; `pileLinks()` folds the pile widget's `data.linkState`/`data.droppe
 over the fixtures) · `buildRoomPresentation.ts` (centered desktop overview scale from
 frame bounds + viewport padding, capped at `1`; recognized legacy demo layout
 adapter used by seed data and `useSpaceData`; pinned local cover fallback) ·
+`canvasPlacement.ts` (`visibleCanvasCenter` — new things land in the middle of
+what you're LOOKING at, never a fixed corner of the board — plus `canvasSlotFor`
+centre→top-left with board clamp, and `clampToBoard` for the placement ghost) ·
 `frameMembership.ts` (`widgetIsInsideFrame`, moved out of
 `Canvas.tsx`; `pileInsideFrame` makes the pile's frame open the room instead of
-zooming) · `flipLanding.ts` (`flyWidgetIn` — the kept-takeaway arc) ·
+zooming) · `flipLanding.ts` (`flyWidgetIn` — the kept-takeaway arc; `flyEnvelopeTo` — the mail envelope's filing flight, per-segment easing + the widget's lime wash) · `mailArrival.ts` (the mail arrival's stage clock, copy table and lab fixtures; shared by live and `#/mail`) ·
 `routes.ts` also exports `DEFAULT_SPACE_SLUG` (`#/` → `buildroom`) ·
 `mockArrival.ts` (the no-Firecrawl arrival: `pendingLinkRows`,
 `mockResolvedPatch` [title off the path], `guessLinkKind` [host heuristic —
@@ -172,7 +186,7 @@ character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
 wordmark + paper envelope), used by `convex/emails/signIn.ts`. The credential
 and all instructions remain HTML text; only decorative branding is raster.
 
-**photos/crew/** — seven casual camera-roll memories for the crew wall; generated
+**photos/crew/** — seven casual camera-roll memories for the group chat wall; generated
 `friday-at-mayas`, `roof-dusk`, and `paint-night` intentionally use imperfect
 iPhone framing/flash and matching cast continuity. `photos/thumbs/crew/` holds
 640×480 preview copies used during the pile-to-room animation.
@@ -195,7 +209,7 @@ plus three material departures: `link-card-riso.png`,
 pushpin used by the “same moon, both windows” quote scrap.
 
 **assets/space-covers/** — three generated square flash-photo covers used by
-the rail for `us two`, `the house`, and `game day`; Crew keeps its existing
+the rail for `long distance`, `the house`, and `game day`; the group chat keeps its existing
 snapshot cover.
 
 **assets/stickers/** — twelve generated transparent die-cut crew stickers mixing
@@ -283,6 +297,7 @@ send [rate-limiter wrapped], `ackInbound` [reply-in-thread + label], and
 `inbox.ts` (per-space email router: couple→letter widget, buildroom→pile drop +
 Firecrawl enrich, default→AI files into expense/itinerary/create/unfiled — each
 branch returns an `{label, reply}` ack the space mails back) ·
+`mailArrival.ts` (`recentInbound`: the bounded public query the envelope watches — sender, subject, verdict, reason, timestamps, never the body) · `shootReset.ts` (the mail beat's take reset: drop the take's events + mail-made widgets, restore the crew fixtures the beat touches, clear recaps) ·
 `digest.ts` (`weeklyDigestWorkflow`: durable multi-step weekly digest —
 recipients → snapshot → LLM compose → send, each independently retried;
 cron calls `start()` fire-and-forget with an `onComplete` logger; manual
@@ -334,9 +349,9 @@ the letter envelope + mail chip, "BUILD ROOM — COMPACT OVERVIEW" (~20762),
 app-wide reading typography (~21680: prose, inputs, paper sizing and
 mobile reading/ship rooms), "BUILD ROOM — COLOR PASS" (tonal
 panels, wall-shade shadows; the pegboard grid sits in the torch theme block
-near line 171), and "BUILD ROOM — ARRIVAL CHOREOGRAPHY" (end of file: the
+near line 171), then "BUILD ROOM — ARRIVAL CHOREOGRAPHY" (the
 pending row's stage text, caret, step ticks, tile scan line, and the
-`is-landing` print-in sequence). New CSS goes in a new banner section at the end.
+`is-landing` print-in sequence), and "MAIL ARRIVAL — THE ENVELOPE THAT THINKS OUT LOUD" (end of file: the envelope, the slip, the stamp, the flight endings, the widget wash, the reply tick). New CSS goes in a new banner section at the end.
 
 ## scripts/
 

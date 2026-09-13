@@ -5,6 +5,39 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Mail arrival — the envelope that thinks out loud (2026-09-13):** an
+  inbound email lands as a kraft envelope beside the space's address chip
+  (`components/MailArrival.tsx`, page-level, measured off the nameplate)
+  with a cream slip that narrates the wait — `opening it` → `reading it` /
+  `reading the pdf` → `deciding` (holds at `slow one — still reading` past
+  7s) — caret, three step dots, a scan line over the envelope. The verdict
+  stamps down as a black sticker (`RECEIPT` · `BOOKING` · `LETTER` · `3
+  LINKS` · `NOT SURE` · red `SPAM`), the because sentence prints in, then
+  `filing it → expenses` and the envelope FLIPs to the widget it filed into
+  (`flyEnvelopeTo` in `lib/flipLanding.ts`, per-segment easing so the throw
+  reads at 1×), the widget takes a held lime wash, and `↩ told holly` ticks
+  at its foot once the reply really went out. Spam slides off; unfiled with
+  nowhere to go fades late. Every tick is a field on the `emailEvents` row:
+  `label` (patched with `widgetId`/`because` in the four filing mutations),
+  `readingAt`, `repliedAt` (`inbox.markEvent`; `ackInbound` now returns
+  whether the reply went out). `mailArrival.recentInbound` is the bounded
+  query it watches (no body leaves the server). The unfiled AgentMail label
+  is now `unfiled` (was `filed`). **Lab: `#/mail`** — the crew space (mock
+  or live) with a pill: receipt · booking · letter · unfiled · spam · ¼
+  speed · replay · clear (`pages/MailLabBar.tsx`, lazy; fixtures in
+  `lib/mailArrival.ts`). Verified in mock via `.context/shot-mail-lab.mjs`
+  (frames in `/tmp/mail/`) and the live crew page mounts it clean; **not
+  yet verified with a real inbound email** — rehearse one receipt + one PDF
+  before shoot week. **Shared letter open** (mail goal 3): `open` is now
+  `data.sealed` on the widget via `updateWidgetData` when live
+  (`onLetterOpen` threaded Canvas → WidgetCard → LetterWidget), per-tab in
+  mock. **Take reset:** `npx convex run shootReset:shootReset
+  '{"slug":"crew","sinceMinutes":180}'` drops the take's events + mail-made
+  widgets, restores the tahoe tracker / potluck / cake poll (+ its votes)
+  to the fixtures, clears recaps. Shoot note: the seeded tahoe tracker sits
+  at x=1378, off-screen below ~1500px wide — frame the tracker (zoom out or
+  move it) before the take or the flight leaves the crop. Design decisions
+  in `docs/mail-arrival.md` § Design decisions.
 - **Prod cutover — done 2026-09-13. There is now ONE deployment and ONE
   database.** `prod:necessary-cobra-892` serves the public site *and* local
   `npm run dev` (`.env.local` points at it), so what you see locally is the

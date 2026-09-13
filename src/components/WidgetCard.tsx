@@ -260,6 +260,7 @@ function WidgetCardComponent({
   claimantId,
   onWheelSpin,
   onPlaylistTune,
+  onLetterOpen,
   buildRoomFeed,
   roundtableReplies,
   paintStrokes,
@@ -319,6 +320,7 @@ function WidgetCardComponent({
   claimantId?: string;
   onWheelSpin?: (widgetId: string, spin: { spinNonce: number; resultIndex: number }) => void;
   onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
+  onLetterOpen?: (widgetId: string, open: boolean) => void;
   buildRoomFeed?: BuildRoomFeed;
   roundtableReplies?: RoundtableReply[];
   paintStrokes?: CozyColorStroke[];
@@ -738,7 +740,13 @@ function WidgetCardComponent({
       content = <MessageWallWidget widget={widget} style={inner} />;
       break;
     case "letter":
-      content = <LetterWidget widget={widget} style={inner} />;
+      content = (
+        <LetterWidget
+          widget={widget}
+          style={inner}
+          onOpen={onLetterOpen ? (open) => onLetterOpen(widget.id, open) : undefined}
+        />
+      );
       break;
     case "quote":
       content = <QuoteWidget widget={widget} style={inner} />;
