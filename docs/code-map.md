@@ -78,18 +78,17 @@ offered a refresh before its `React.lazy` chunks 404)
 `CursorLab.tsx` · `ArrivalLab.tsx` (`#/arrival` — the pile's ReadingRoom
 with a black lab pill: drop one, one fails, replay, ¼ speed, clear; no
 Firecrawl, same fake resolve as mock mode) · `WidgetWall.tsx` (`#/wall` — the
-demo insert for "there's like thirty of these": 32 real `WidgetCard`s pulled
-from the seeded spaces [`PICKS`], dealt to three columns by a greedy packer,
-drifting in alternate directions on a tilted `preserve-3d` plane scaled to fit
-the viewport width, swaying or following the pointer; every card wears a
-name-tag pill (emoji + catalog label); a roll call lifts the card nearest
-the middle of a column every 1.6s, slows that column, and lights its tag
-lime; hover does the same and holds the column; click selects (lime ring,
-column pinned, rest dimmed) until click/Esc; tiles use CSS `zoom` so the
-cards keep their own layout and type; growing widgets are measured once via
-`scrollHeight`; the entrance waits two frames past first paint; lab pill:
-replay · pause · roll call · name tags · flat · ½/1/2× — pill and cursor hide
-after 2s idle) · `labs.css` (cursor lab, widget lab, arrival lab, widget
+demo insert for "there's like thirty of these", styled as the add-widget
+picker blown up: 32 real `WidgetCard`s from the seeded spaces [`PICKS`], each
+zoomed to fit a uniform gallery tile with emoji chip + name + blurb
+[`BLURBS`], dealt round-robin to three columns drifting on a gently tilted
+`preserve-3d` plane scaled to fit the viewport; a roll call lifts the tile
+nearest the middle of a column every 1.7s; hover lifts and holds the column;
+click FLIPs the widget (WAAPI) into a centered, usable spotlight [poll vote,
+claim, spin wired to local state] and Esc/click flies it back; growing
+widgets are measured once via `scrollHeight`; the entrance waits two frames
+past first paint; lab pill: replay · pause · roll call · flat · ½/1/2× — pill
+and cursor hide after 2s idle) · `labs.css` (cursor lab, widget lab, arrival lab, widget
 wall sections)
 
 **widgets/** — `buildroom.tsx` (the build room's four: `linkPile`, `hotLinks`,
