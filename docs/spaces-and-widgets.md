@@ -115,9 +115,13 @@ the tagged set, and the reading circle's own tag pills are buttons that set it
 narrates its arrival in the title's slot (`fetching host` → `reading the
 page` → `pulling out the title`, step ticks under the domain, a scan line on
 the tile) and prints its fields in one at a time on resolve — the clock is
-`droppedAt`, so the beat is identical in both modes. Mock mode
-fakes the drop→enrich beat locally (`mockDropped` in `App.tsx`, per-link
-clocks + a host-guessed kind); live mode runs Firecrawl. On phones, `all links` / `reading circle` switch between
+`droppedAt`, so the beat is identical in both modes. Your own
+drop pulls the reading circle along: it runs the same six steps as a ledger
+(numerals, elapsed times, the live step's detail on a cream slip) and the
+card prints in over it on landing. Mock mode fakes the drop→enrich beat
+locally (`mockDropped` in `App.tsx`, per-link clocks); live runs Firecrawl
+and holds on the last step until the patch lands. Both decide the kind with
+the same host heuristic (`guessLinkKind`). On phones, `all links` / `reading circle` switch between
 full-width panes; choosing a link opens the circle, and opening a hot link
 starts there directly. Ship rooms stack their image above the text on phones.
 List descriptions sit below the title at 16px / 1.5 and wrap

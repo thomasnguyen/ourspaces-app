@@ -135,7 +135,8 @@ adapter used by seed data and `useSpaceData`; pinned local cover fallback) ·
 zooming) · `flipLanding.ts` (`flyWidgetIn` — the kept-takeaway arc) ·
 `routes.ts` also exports `DEFAULT_SPACE_SLUG` (`#/` → `buildroom`) ·
 `mockArrival.ts` (the no-Firecrawl arrival: `pendingLinkRows`,
-`mockResolvedPatch` [title off the path, kind guessed off the host],
+`mockResolvedPatch` [title off the path], `guessLinkKind` [host heuristic —
+the live drop path uses it too, the scrape doesn't classify],
 `scheduleMockResolve` [per-link clocks, optional slow-mo scale + fail set];
 shared by App.tsx mock drops and the arrival lab so the beat can't drift) ·
 `linkQuestions.ts` (web post question threads:
