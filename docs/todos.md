@@ -765,6 +765,26 @@ Backward-looking history lives in `hackathon.md`.
      skips spaces with no activity since their last daily recap (8 spaces → 3
      on the dev deployment the day this landed), and the Friday link refresh
      only re-scrapes Firecrawl cards in spaces touched in the last 30 days.
+  6. **`stats.getLiveCounts` was the actual bandwidth bill, and the cursors
+     were not** (same day, after reading the dashboard's bytes-read
+     breakdown — `npx convex insights` does not expose it, so the first pass
+     ranked by call volume and OCC warnings and got this wrong). Database I/O
+     is the meter that went over Free (1.47 GB / 1 GB) and this one query was
+     **1.30 GB of it, 88%**: 843.85 MB under `shardedCounter/` plus 457.36 MB
+     of its own. Two compounding causes — it bundled the three sharded
+     totals (28 shard documents: 4 + 8 + 16) with "here now" behind a `now`
+     bucket, so a new cache key every 15s re-ran the shard reads four times a
+     minute per visitor forever; and it did `ctx.db.query("presence").take()`,
+     which made its read set the whole presence table, so every cursor
+     heartbeat invalidated it and dragged those shard reads through another
+     run. Now split: `getLiveTotals` (argument-free, cached until a counter
+     moves) + `getHereNow` (clock arg, reads the `by_updated` range added in
+     3). Tick 15s → 30s, matching the TTL being measured. `getLiveCounts`
+     stays as a thin legacy wrapper **only** until prod is redeployed — the
+     shipped bundle still calls it. Worth knowing: no `backendLive` widget
+     exists on any live board, and `visitorCount` is an unused prop, so all
+     of that bandwidth was computing numbers nothing on the live site
+     renders.
   Not done, by choice: the duplicate presence system stays. `roomPresence`
   (the component) and `presence` (hand-rolled) still both run — collapsing
   them would trade disconnect-accurate occupancy for sweep-lagged occupancy,
