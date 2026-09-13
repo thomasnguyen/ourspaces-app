@@ -59,7 +59,11 @@ Backward-looking history lives in `hackathon.md`.
   scrolls off. Strip box is dock-tall (54px default / 44px build room) at
   `bottom: 18px` so both sit on one midline; the default pill is drawn on a
   `::before` so it stays text-tall. Verified live with
-  `.context/shot-live-strip.mjs`. `npm run build` passed.
+  `.context/shot-live-strip.mjs`. The dock's chat dot went from lime to
+  white so lime in the bottom row is only the live pulse and the count
+  badge. Decision (user): the build room keeps its own compact-chrome
+  override block in `index.css`; chrome edits land in both forks, no
+  unification. `npm run build` passed.
 
 - **Build room color pass (2026-09-12):** the user asked for a more appealing
   orange. Decision: keep orange as the identity but stop treating it as one
