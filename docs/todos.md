@@ -782,6 +782,16 @@ Backward-looking history lives in `hackathon.md`.
   today (presence sweep, weekly digest, daily recap, Friday link refresh), and
   the recap one now fans out only over rooms with activity since their last
   daily recap (`recap.listSpacesDueForRecap`).
+- **Fixed 2026-09-13: every lab route blanked the app (mock mode).**
+  `mockLinks` / `mockReplyCounts` / `mockMessagesByThread` were `useMemo`s
+  sitting *below* the early returns for `#/home`, `#/widgets`, `#/wall`,
+  `#/arrival`, `#/cursors`. Those routes render a shorter hook list, React
+  threw "Rendered fewer hooks than expected" and tore down the tree — the
+  **widget lab / cursor lab pills are on every board**, so one click gave a
+  white page with no way back. Hoisted above the first early return in
+  `App.tsx`. Live mode never hit it (it early-returns to `LiveSpacePage`
+  before those hooks either way). Verified crew <-> widgets / home / wall.
+
 - **Live Convex still needs a re-seed** for the SomaFM playlist fields and the
   seeded buildclub / Tahoe web-post cards (`npx convex run seed:demo`).
 - **`prosemirror-sync` is wired in `convex.config.ts` but referenced nowhere
