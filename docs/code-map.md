@@ -101,7 +101,13 @@ is in the ABOUT section at the end of `index.css`. No rail: the top back link
 returns to `lastSpaceSlug()`; `spaceFromHash` preserves it when About opens.
 Only `LiveTotals` subscribes to Convex, and only in live mode. The preview
 is explicitly captioned, hides the poll’s live badge, and never writes to a
-room) ·
+room. It also owns `#/about/{convex,openai,agentmail,firecrawl}`: `About`
+listens for hash changes, `AboutOverview` renders the main page, `VENDORS`
+holds implementation-backed content/source paths, and `VendorPage` plus
+`VendorExample` render the deep dives. The four examples use local state;
+AgentMail reuses `LetterWidget`. Styles follow ABOUT in the MADE WITH
+section of `index.css`. `App.tsx` maps the entire `about/` prefix to this
+lazy page and preserves the last room) ·
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
 `CursorLab.tsx` · `ArrivalLab.tsx` (`#/arrival` — the pile's ReadingRoom
 with a black lab pill: drop one, one fails, replay, ¼ speed, clear; no

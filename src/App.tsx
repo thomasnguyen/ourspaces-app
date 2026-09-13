@@ -234,7 +234,7 @@ function routeFromHash(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "test") return "test";
   if (hash === "home") return "home";
-  if (hash === "about") return "about";
+  if (hash === "about" || hash.startsWith("about/")) return "about";
   if (hash === "join" || hash.startsWith("join/")) return "join";
   if (hash === "live" || hash.startsWith("live/")) return "live";
   if (hash === "cursors" || hash.startsWith("cursors/")) return "cursors";
@@ -269,7 +269,7 @@ function spaceFromHash(): string {
   if (hash.startsWith("mail/")) return hash.slice("mail/".length) || "crew";
   // #/about is its own page, but it keeps a back door to the room you came
   // from, and spaceId has to still be that room when you take it.
-  if (hash === "about") return lastSpaceSlug();
+  if (hash === "about" || hash.startsWith("about/")) return lastSpaceSlug();
   if (hash.startsWith("space/")) {
     const slug = hash.slice("space/".length) || DEFAULT_SPACE_SLUG;
     rememberSpaceSlug(slug);
