@@ -91,6 +91,7 @@ export function Canvas({
   claimantId,
   onWheelSpin,
   onPlaylistTune,
+  onLetterOpen,
   buildRoomFeed,
   roundtableRepliesByWidget = {},
   paintStrokesByWidget = {},
@@ -162,6 +163,7 @@ export function Canvas({
   claimantId?: string;
   onWheelSpin?: (widgetId: string, spin: { spinNonce: number; resultIndex: number }) => void;
   onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
+  onLetterOpen?: (widgetId: string, open: boolean) => void;
   buildRoomFeed?: BuildRoomFeed;
   roundtableRepliesByWidget?: Record<string, RoundtableReply[]>;
   paintStrokesByWidget?: Record<string, CozyColorStroke[]>;
@@ -303,6 +305,7 @@ export function Canvas({
         onPollVote={onPollVote}
         onWheelSpin={onWheelSpin}
         onPlaylistTune={onPlaylistTune}
+        onLetterOpen={onLetterOpen}
         buildRoomFeed={buildRoomFeed}
         roundtableReplies={roundtableRepliesByWidget[widget.id]}
         paintStrokes={paintStrokesByWidget[widget.id]}
@@ -344,6 +347,7 @@ export function Canvas({
       onRsvp,
       onWheelSpin,
       onPlaylistTune,
+      onLetterOpen,
       onPaintClear,
       onPaintStroke,
       onWidgetDelete,

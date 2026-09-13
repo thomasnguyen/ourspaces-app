@@ -95,7 +95,8 @@ outbound digest cron (convex/crons.ts) → weeklyDigestWorkflow (durable,
   digest: `ackInbound` (convex/agentmail.ts) replies in-thread ("Logged $84
   from Sam on the expense tracker.", "Dropped 3 links into the pile.") and
   labels the message with the router's verdict (`receipt`/`booking`/`letter`/
-  `links`/`spam`/`filed`) — mirroring AgentMail's own smart-labeling pattern.
+  `links`/`spam`/`unfiled`) — mirroring AgentMail's own smart-labeling pattern.
+  The same word is the stamp on the envelope when it lands (`docs/mail-arrival.md`).
 - Both the Firecrawl scrape (buildroom links) and the AgentMail send retry
   transient failures with backoff (`@convex-dev/action-retrier`); the scrape
   is also cached by URL (`@convex-dev/action-cache`, 1h TTL) so a re-shared
@@ -132,6 +133,12 @@ outbound digest cron (convex/crons.ts) → weeklyDigestWorkflow (durable,
       that now files off the document. *Not yet exercised by a real inbound
       email with a real attachment — needs one send to confirm the webhook
       carries `attachments` rather than needing the message re-fetch fallback.*
+- [x] **Arrival choreography** (2026-09-13) — `docs/mail-arrival.md`. Every
+      tick is a field on `emailEvents` (`label`, `readingAt`, `repliedAt`);
+      lab at `#/mail`; take reset `shootReset:shootReset`. *Not yet exercised
+      by a real inbound email — rehearse before shoot week.*
+- [x] **Shared letter open** (2026-09-13) — `sealed` flips on the widget via
+      `updateWidgetData` (`onLetterOpen`), so both people see it open.
 - [ ] **Prod cutover** (before demo/submission): key on `--prod`, second
       webhook → `necessary-cobra-892`, bind addresses to prod space ids via
       `setSpaceInbox` (do NOT re-create inboxes). Steps in the setup doc.
@@ -145,15 +152,14 @@ outbound digest cron (convex/crons.ts) → weeklyDigestWorkflow (durable,
    `src/data/recap.ts` "never writes to the canvas." Unfiled stays an envelope
    you open and file. Pitch: *the space has a brain. mail it something it
    would recognize.*
-1. **Arrival choreography** — spec'd in full in `docs/mail-arrival.md` (2026-09-13).
+1. ~~**Arrival choreography**~~ — built 2026-09-13, `docs/mail-arrival.md`.
    An emailed widget should *land* (envelope drop,
    house motion, sound) rather than reactive-pop into place. Split screen,
    send from a phone, watch it arrive. Tier 0/1 motion per eye-candy. The
    flap sentence from (0) is what you read when it lands.
 2. **Prod cutover** (above) — cheap, do it near the demo-record date so dev
    testing doesn't spam the prod canvases.
-3. **Shared letter opening** — `sealed` flips via `updateWidgetData` so both
-   people see it open live (currently per-tab local state).
+3. ~~**Shared letter opening**~~ — built 2026-09-13 (`onLetterOpen`).
 4. **Guardrail check before going public** — the inboxes are printed in the
    UI; the router already discards spam and defaults to unfiled, but eyeball
    the first day of strangers' mail (commons space plan, playbook §5).

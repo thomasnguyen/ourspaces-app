@@ -1,6 +1,8 @@
 # Mail arrival — the envelope that thinks out loud
 
-Spec, not built. Written 2026-09-13. Sibling of the link arrival in the build
+Written 2026-09-13; **built the same day** — see § Design decisions at the
+end for what changed on contact with the code. Verified in the `#/mail` lab
+and on the live crew page; not yet with a real inbound email. Sibling of the link arrival in the build
 room (`docs/todos.md` "Link arrival narrates itself"); same idea at the other
 entrance. Mail system itself: `docs/mail.md` (goals 0 + 1 are this doc).
 
@@ -207,3 +209,9 @@ events through the same `MailArrival`.
 
 **8. Second arrival stacks.** +22px x, +14px y per live envelope, like
 `addLetter`'s drift. Batches are an edge case; one envelope is the design.
+
+**9. Shoot note.** The flight ends wherever the widget is on screen. The
+seeded tahoe tracker sits at canvas x=1378, which is past the right edge
+below ~1500px wide — frame it (zoom out, or move the tracker) before the
+take, or the envelope leaves the crop. `flyEnvelopeTo` still washes the
+widget and the tick still lands; it just happens out of frame.

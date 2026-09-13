@@ -1471,9 +1471,20 @@ export function ItineraryWidget({ widget, style }: { widget: Widget; style: Styl
   );
 }
 
-/** An emailed letter: sealed kraft envelope → click → the letter unfolds. */
-export function LetterWidget({ widget, style }: { widget: Widget; style: Style }) {
-  const [open, setOpen] = useState(false);
+/** An emailed letter: sealed kraft envelope → click → the letter unfolds.
+ *  With `onOpen` wired (live), open/closed is `data.sealed` on the widget —
+ *  one person opening it opens it on every screen (docs/mail.md goal 3).
+ *  Without it (mock), it's per-tab state as before. */
+export function LetterWidget({
+  widget,
+  style,
+  onOpen,
+}: {
+  widget: Widget;
+  style: Style;
+  onOpen?: (open: boolean) => void;
+}) {
+  const [localOpen, setLocalOpen] = useState(false);
   const data = widget.data as {
     from?: string;
     subject?: string;
@@ -1481,7 +1492,10 @@ export function LetterWidget({ widget, style }: { widget: Widget; style: Style }
     receivedAt?: number;
     unfiled?: boolean;
     because?: string;
+    sealed?: boolean;
   };
+  const open = onOpen ? data.sealed === false : localOpen;
+  const setOpen = (next: boolean) => (onOpen ? onOpen(next) : setLocalOpen(next));
   const received = data.receivedAt
     ? new Date(data.receivedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
     : "";

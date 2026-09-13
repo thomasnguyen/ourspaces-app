@@ -414,6 +414,18 @@ export function useLiveHandlers(
     });
   }, [identity.name, spaceId, updateData]);
 
+  /* A letter opened on one phone opens on every screen: `sealed` is the
+     widget's own data, not tab state (docs/mail.md goal 3). */
+  const onLetterOpen = useCallback((widgetId: string, open: boolean) => {
+    if (!spaceId) return;
+    const widget = widgetsRef.current.find((row) => row.id === widgetId);
+    if (!widget) return;
+    void updateData({ spaceId: spaceId as never,
+      id: widgetId as never,
+      data: { ...widget.data, sealed: !open },
+    });
+  }, [spaceId, updateData]);
+
   const onDelete = useCallback((widget: Widget) => {
     if (!spaceId) return;
     playSound("tap");
@@ -476,6 +488,7 @@ export function useLiveHandlers(
     onClaim,
     onWheelSpin,
     onPlaylistTune,
+    onLetterOpen,
     onResolveLink,
     onSearchTopic,
     onCrawlSite,
