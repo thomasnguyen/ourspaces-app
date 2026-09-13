@@ -622,6 +622,32 @@ export function SpaceHeader({
           </div>
           <div className="space-title-row">
             <h1><span className="space-title-text">{name}</span></h1>
+          </div>
+          {/* The name's handles: the inbox address first (mail in → widgets
+              out is a demo beat), then the pencil. Two quiet chips in the
+              room's ink, one family. */}
+          <div className="space-title-handles">
+            {mailAddress && (
+              <button
+                type="button"
+                className={`space-mail-chip ${mailCopied ? "is-copied" : ""}`}
+                title="email this space — mail becomes widgets"
+                onClick={() => {
+                  navigator.clipboard
+                    ?.writeText(mailAddress)
+                    .then(() => {
+                      setMailCopied(true);
+                      window.setTimeout(() => setMailCopied(false), 1600);
+                    })
+                    .catch(() => {});
+                }}
+              >
+                <span className="space-mail-mark" aria-hidden="true">✉</span>
+                <span className="space-mail-address">
+                  {mailCopied ? "copied!" : mailAddress}
+                </span>
+              </button>
+            )}
             <button
               type="button"
               className={`space-edit-button ${roomEditing ? "is-active" : ""}`}
@@ -629,30 +655,10 @@ export function SpaceHeader({
               aria-expanded={roomEditing}
               aria-label={`Edit ${name}`}
             >
-              <span className="space-edit-mark" aria-hidden="true">⌄</span>
+              <span className="space-edit-mark" aria-hidden="true">✎</span>
+              <span className="space-edit-label">edit</span>
             </button>
           </div>
-          {mailAddress && (
-            <button
-              type="button"
-              className={`space-mail-chip ${mailCopied ? "is-copied" : ""}`}
-              title="email this space — mail becomes widgets"
-              onClick={() => {
-                navigator.clipboard
-                  ?.writeText(mailAddress)
-                  .then(() => {
-                    setMailCopied(true);
-                    window.setTimeout(() => setMailCopied(false), 1600);
-                  })
-                  .catch(() => {});
-              }}
-            >
-              <span className="space-mail-mark" aria-hidden="true">✉</span>
-              <span className="space-mail-address">
-                {mailCopied ? "copied!" : mailAddress}
-              </span>
-            </button>
-          )}
         </div>
 
         <div className="space-header-side">

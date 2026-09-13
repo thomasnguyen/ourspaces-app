@@ -22345,7 +22345,7 @@
 
 @media (min-width: 801px) {
   .paper-bg[data-space-id="buildroom"] .space-scroll {
-    padding: 82px 36px 84px 104px;
+    padding: 150px 36px 84px 104px;
     scrollbar-width: none;
   }
   .paper-bg[data-space-id="buildroom"] .space-scroll::-webkit-scrollbar { display: none; }
@@ -23098,79 +23098,105 @@
 
 /* ================================================================
    SPACE HEADER — THE NAMEPLATE
-   One row for every room. Left: the name in display type, a round
-   chevron that opens the space editor, and the inbox address as a
-   tinted chip in the room's ink. Right: ONE black sticker pill in the
-   action dock's vocabulary — faces, "N here now", a hairline, add,
-   invite — instead of four separate pills. The kicker/tagline row is
-   gone from the header; it was the first thing to fade on scroll
-   anyway. Rooms differ only by ink and offsets, never by structure.
+   The same structure in every room; rooms differ only by ink and
+   offsets. Left, three lines: the kicker (kind · tagline), the name
+   big in display type, then the name's handles — the inbox address
+   and a pencil "edit" — as two quiet chips tinted in the room's ink.
+   Right: ONE black sticker pill in the action dock's vocabulary —
+   faces, "N here now", a hairline, add, invite — instead of four
+   separate pills.
    ================================================================ */
 
 .space-header {
-  align-items: center;
+  align-items: flex-start;
   gap: 24px;
 }
 
 .space-title-block {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 14px;
-  max-width: none;
-}
-
-.space-title-block .space-meta {
-  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 640px;
 }
 
 .space-title-block h1 {
-  margin: 0;
-  font-size: 2.75rem;
-}
-
-.space-title-text {
-  -webkit-line-clamp: 1;
+  margin: 3px 0 0;
+  font-size: 3.25rem;
 }
 
 .space-title-row {
+  gap: 0;
+}
+
+.space-title-handles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
+  margin-top: 12px;
 }
 
+/* One chip family: 30px tall, ink tint, black on hover. */
+.space-mail-chip,
 .space-edit-button {
-  width: 34px;
-  min-height: 34px;
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 6px;
   margin: 0;
-  padding: 0;
-  justify-content: center;
-  border-radius: 50%;
-}
-
-.space-edit-mark {
-  font-family: var(--font-display);
-  font-size: 1.375rem;
-  font-weight: 800;
-  line-height: 1;
-  translate: 0 -3px;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--space-heading-color, var(--color-ink)) 12%, transparent);
+  color: var(--space-heading-color, var(--color-ink));
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  opacity: 1;
+  transition:
+    background var(--dur-quick) var(--ease-glide),
+    color var(--dur-quick) var(--ease-glide),
+    translate var(--dur-quick) var(--ease-glide);
 }
 
 .space-mail-chip {
-  margin: 0;
-  padding: 7px 12px;
-  font-size: 12px;
-  background: color-mix(in srgb, var(--space-heading-color, var(--color-ink)) 12%, transparent);
-  color: var(--space-heading-color, var(--color-ink));
+  font-family: var(--font-sans);
+  font-weight: 600;
 }
 
-.space-mail-chip:hover {
+.space-edit-button {
+  width: auto;
+  justify-content: flex-start;
+  padding-right: 11px;
+}
+
+.space-edit-mark {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1;
+  translate: 0;
+}
+
+.space-mail-chip:hover,
+.space-edit-button:hover,
+.space-edit-button:focus-visible,
+.space-edit-button.is-active {
   transform: none;
+  translate: 0 -1px;
   background: var(--color-sticker);
-  color: var(--color-card);
+  color: white;
+  opacity: 1;
 }
 
 .space-mail-chip.is-copied {
   background: var(--color-lime);
   color: var(--color-ink);
+}
+
+/* Entrance: the handles follow the name out, address then pencil. */
+.space-header.is-entering .space-mail-chip {
+  animation: space-header-in var(--dur-arrive) var(--ease-glide) 280ms both;
 }
 
 @media (min-width: 801px) {

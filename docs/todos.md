@@ -47,6 +47,17 @@ Backward-looking history lives in `hackathon.md`.
   ready-to-swap alternates in the v2 script. Theme id stays `torch`.
   `npm run build` passed. No deployment.
 
+- **Header nameplate v2 (2026-09-12):** the user rejected the chevron and
+  said they liked the other rooms' tall header — "but make it better". So
+  every room (build room included) now gets the tall block: kicker, name at
+  3.25rem, then a handles row under the name — inbox address chip + pencil
+  "edit" chip, both 30px tall and tinted 12% of the room's ink, black on
+  hover. The single black pill on the right stays, top-aligned. The build
+  room's scroll padding-top went 82 → 150px so the frame-fit overview camera
+  (which reads that padding) keeps the five zones clear of the taller
+  header. Verified live at 1440 / 1024 / 390 in the build room, crew, house.
+  `npm run build` passed.
+
 - **Header nameplate (2026-09-12):** the user asked for a header redesign
   for the build room and every other room. Decision: one structure
   everywhere, rooms differ only by ink and offsets. Left: name at 2.75rem,
