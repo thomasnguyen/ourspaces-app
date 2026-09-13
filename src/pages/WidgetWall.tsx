@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import "./labs.css";
@@ -22,32 +23,35 @@ import { createDemoWidget } from "../lib/widgetDefaults";
  * Hash route: /#/wall
  *
  * Real WidgetCards from the seeded spaces (the crew's cake poll, the couple's
- * letter, the build room's pile), not screenshots. Five columns drift on a
- * tilted plane in alternating directions; a roll call lifts one card at a
- * time, slows its column, and stamps its name on a black sticker pill. The
- * pointer adds parallax; hovering a card lifts it and holds its column.
- * The lab pill (bottom-left) and the cursor hide after 2s idle, so a
- * recording is clean. `replay` re-runs the entrance.
+ * letter, the build room's pile), not screenshots. Three columns drift on a
+ * tilted plane in alternating directions; every card wears a name tag; a roll
+ * call lifts one card at a time, slows its column, and lights its tag lime.
+ * The pointer adds parallax; hovering a card lifts it and holds its column;
+ * clicking one selects it — it stays up, ringed in lime, its column pinned
+ * while the rest keep flowing — until you click again, click the wall, or
+ * press Esc. The lab pill (bottom-left) and the cursor hide after 2s idle,
+ * so a recording is clean. `replay` re-runs the entrance.
  */
 
-const COLS = 5;
-const COL_W = 300;
-const GAP = 22;
-const ZOOM = 0.66;
-const STICKER_ZOOM = 0.95;
-const LIFT = 56;
-const BASE_SPEED = 36;
+const COLS = 3;
+const COL_W = 440;
+const GAP = 26;
+const ZOOM = 0.86;
+const STICKER_ZOOM = 1.1;
+const LIFT = 64;
+const BASE_SPEED = 34;
 const VARIANCE = 0.45;
 const PARALLAX_DEG = 5;
-const ROLL_EVERY = 1500;
-const ROLL_HOLD = 1150;
+const ROLL_EVERY = 1600;
+const ROLL_HOLD = 1200;
 const IDLE_AFTER = 2200;
 const SPEEDS = [0.5, 1, 2];
+const PLANE_W = COLS * COL_W + (COLS - 1) * GAP;
 
-const TILTED = { tilt: 16, turn: -14, depth: 120, scale: 1.08 };
+const TILTED = { tilt: 16, turn: -14, depth: 120 };
+const FLAT = { tilt: 0, turn: 0, depth: 0 };
 /* Mirrors WidgetCard's widgetGrows: these render at content height. */
 const GROWS = new Set<Widget["type"]>(["dailyQ", "availability", "linkShelf", "playlist"]);
-const FLAT = { tilt: 0, turn: 0, depth: 0, scale: 1 };
 
 type WallTile = {
   widget: Widget;
@@ -59,7 +63,7 @@ type WallTile = {
   h: number;
 };
 
-type Lit = { id: string; tile: WallTile };
+type Picked = { id: string; tile: WallTile };
 
 const WEB_POST: Widget = {
   id: "wall-web-post",
@@ -174,15 +178,21 @@ function columnFactor(index: number) {
   return 1 + VARIANCE * pseudo;
 }
 
-/* Entrance order: the middle column first, then outward. */
+/* Entrance and roll-call order: the middle column first, then outward. */
+const MID = Math.floor(COLS / 2);
 function entranceRank(c: number) {
-  const mid = Math.floor(COLS / 2);
-  return Math.abs(c - mid) * 2 - (c < mid ? 1 : 0);
+  return Math.abs(c - MID) * 2 - (c < MID ? 1 : 0);
 }
+const ROLL_ORDER = [MID, ...Array.from({ length: COLS }, (_, i) => i).filter((i) => i !== MID)];
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function tileFromId(columns: WallTile[][], id: string) {
+  const [c, , k] = id.split("-").map(Number);
+  return { c, tile: columns[c]?.[k] };
+}
 
 export function WidgetWall() {
   const stageRef = useRef<HTMLDivElement>(null);
@@ -197,14 +207,17 @@ export function WidgetWall() {
   const hoverId = useRef<string | null>(null);
   const hoverCol = useRef(-1);
   const litCol = useRef(-1);
+  const selectedRef = useRef<{ id: string; col: number } | null>(null);
   const speedMul = useRef(1);
   const pausedRef = useRef(false);
 
-  const [lit, setLit] = useState<Lit | null>(null);
+  const [lit, setLit] = useState<Picked | null>(null);
+  const [selected, setSelected] = useState<Picked | null>(null);
   const [runKey, setRunKey] = useState(0);
   const [flat, setFlat] = useState(false);
   const [paused, setPaused] = useState(false);
   const [rollCall, setRollCall] = useState(true);
+  const [labels, setLabels] = useState(true);
   const [speedIndex, setSpeedIndex] = useState(1);
   const [idle, setIdle] = useState(false);
   const [reduced, setReduced] = useState(prefersReducedMotion);
@@ -215,7 +228,6 @@ export function WidgetWall() {
       ? { w: 1440, h: 900 }
       : { w: window.innerWidth, h: window.innerHeight },
   );
-  const viewportH = viewport.h;
 
   const columns = useMemo(() => packColumns(buildTiles(measured)), [measured]);
   const periods = useMemo(
@@ -223,8 +235,8 @@ export function WidgetWall() {
     [columns],
   );
   const copies = useMemo(
-    () => periods.map((period) => Math.max(2, Math.ceil((viewportH * 1.3) / period) + 1)),
-    [periods, viewportH],
+    () => periods.map((period) => Math.max(2, Math.ceil((viewport.h * 1.3) / period) + 1)),
+    [periods, viewport.h],
   );
   const baseVelocities = useMemo(
     () => columns.map((_, c) => BASE_SPEED * columnFactor(c) * (c % 2 === 0 ? 1 : -1)),
@@ -258,9 +270,9 @@ export function WidgetWall() {
     if (Object.keys(next).length) setMeasured(next);
   }, []);
 
-  /* The entrance waits for the wall's first paint — 96 cards take a beat to
-     lay out, and an animation that starts under that beat is already over
-     by the first frame anyone sees. */
+  /* The entrance waits for the wall's first paint — the cards take a beat
+     to lay out, and an animation that starts under that beat is already
+     over by the first frame anyone sees. */
   useEffect(() => {
     setEntered(false);
     let second = 0;
@@ -287,15 +299,17 @@ export function WidgetWall() {
     pausedRef.current = paused;
   }, [paused]);
 
-  /* The drift. Plane tilt follows the pointer, or sways on its own. */
+  /* The drift. Plane tilt follows the pointer, or sways on its own. A
+     hovered or selected column holds; a roll-called one eases to ¼. */
   useEffect(() => {
     let raf = 0;
     let last: number | null = null;
     let t0: number | null = null;
-    const planeW = COLS * COL_W + (COLS - 1) * GAP;
+    /* Three columns always fit the frame with a margin; the mask only has
+       to dissolve the top and bottom, never a column. */
     const geom = flat
-      ? { ...FLAT, scale: Math.min(1, (viewport.w - 64) / planeW) }
-      : TILTED;
+      ? { ...FLAT, scale: Math.min(1, (viewport.w - 64) / PLANE_W) }
+      : { ...TILTED, scale: Math.max(0.7, (viewport.w - 120) / PLANE_W) };
 
     const tick = (ts: number) => {
       if (last === null) {
@@ -323,7 +337,7 @@ export function WidgetWall() {
       const plane = planeRef.current;
       if (plane) {
         plane.style.transform =
-          `translate(-50%, -50%) scale(${geom.scale}) ` +
+          `translate(-50%, -50%) scale(${geom.scale.toFixed(4)}) ` +
           `rotateX(${(geom.tilt + damped.current.y).toFixed(3)}deg) ` +
           `rotateY(${(geom.turn + damped.current.x).toFixed(3)}deg) ` +
           `translateZ(${-geom.depth}px)`;
@@ -333,14 +347,9 @@ export function WidgetWall() {
         const period = periods[c];
         const track = trackRefs.current[c];
         if (!period || !track) continue;
+        const held = hoverCol.current === c || selectedRef.current?.col === c;
         const factor =
-          pausedRef.current || reduced
-            ? 0
-            : hoverCol.current === c
-              ? 0
-              : litCol.current === c
-                ? 0.25
-                : 1;
+          pausedRef.current || reduced ? 0 : held ? 0 : litCol.current === c ? 0.25 : 1;
         const target = baseVelocities[c] * factor * speedMul.current;
         const ease = 1 - Math.exp(-dt / (target === 0 ? 0.18 : 0.3));
         velocities.current[c] += (target - velocities.current[c]) * ease;
@@ -356,15 +365,15 @@ export function WidgetWall() {
     return () => cancelAnimationFrame(raf);
   }, [flat, reduced, periods, baseVelocities, runKey, viewport.w]);
 
-  /* Roll call: one card at a time, the one nearest the middle of its column. */
+  /* Roll call: one card at a time, the one nearest the middle of its
+     column. Sits out while the pointer or a selection owns the spotlight. */
   useEffect(() => {
     if (!rollCall || reduced) return;
     let step = 0;
     let hold = 0;
-    const seq = [2, 0, 3, 1, 4];
     const ping = () => {
-      if (hoverId.current) return;
-      const c = seq[(step + Math.floor(step / seq.length)) % seq.length] % COLS;
+      if (hoverId.current || selectedRef.current) return;
+      const c = ROLL_ORDER[(step + Math.floor(step / ROLL_ORDER.length)) % ROLL_ORDER.length];
       step++;
       const col = columns[c];
       const period = periods[c];
@@ -417,12 +426,37 @@ export function WidgetWall() {
     };
   }, []);
 
+  const deselect = useCallback(() => {
+    selectedRef.current = null;
+    setSelected(null);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") deselect();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [deselect]);
+
   const releaseHover = useCallback(() => {
     if (!hoverId.current) return;
     hoverId.current = null;
     hoverCol.current = -1;
     setLit(null);
   }, []);
+
+  const tileAt = useCallback(
+    (clientX: number, clientY: number) => {
+      const hit = document.elementFromPoint(clientX, clientY);
+      const tileEl = hit?.closest?.("[data-tile]") as HTMLElement | null;
+      if (!tileEl) return null;
+      const id = tileEl.dataset.tile ?? "";
+      const { c, tile } = tileFromId(columns, id);
+      return tile ? { id, c, tile } : null;
+    },
+    [columns],
+  );
 
   const onPointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -433,22 +467,18 @@ export function WidgetWall() {
         x: (event.clientX - rect.left) / rect.width - 0.5,
         y: (event.clientY - rect.top) / rect.height - 0.5,
       };
-      const hit = document.elementFromPoint(event.clientX, event.clientY);
-      const tileEl = hit?.closest?.("[data-tile]") as HTMLElement | null;
-      if (!tileEl) {
+      const hit = tileAt(event.clientX, event.clientY);
+      if (!hit) {
         releaseHover();
         return;
       }
-      const id = tileEl.dataset.tile ?? "";
-      if (id === hoverId.current) return;
-      const [c, , k] = id.split("-").map(Number);
-      const tile = columns[c]?.[k];
-      if (!tile) return;
-      hoverId.current = id;
-      hoverCol.current = c;
-      setLit({ id, tile });
+      if (hit.id === hoverId.current) return;
+      hoverId.current = hit.id;
+      hoverCol.current = hit.c;
+      litCol.current = -1;
+      setLit({ id: hit.id, tile: hit.tile });
     },
-    [columns, releaseHover],
+    [tileAt, releaseHover],
   );
 
   const onPointerLeave = useCallback(() => {
@@ -457,8 +487,23 @@ export function WidgetWall() {
     releaseHover();
   }, [releaseHover]);
 
+  /* Click a card: it stays up. Click it again, the wall, or Esc: it drops. */
+  const onStageClick = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      const hit = tileAt(event.clientX, event.clientY);
+      if (!hit || selectedRef.current?.id === hit.id) {
+        deselect();
+        return;
+      }
+      selectedRef.current = { id: hit.id, col: hit.c };
+      setSelected({ id: hit.id, tile: hit.tile });
+    },
+    [tileAt, deselect],
+  );
+
   const replay = () => {
     releaseHover();
+    deselect();
     setLit(null);
     setPaused(false);
     setRunKey((key) => key + 1);
@@ -474,10 +519,13 @@ export function WidgetWall() {
     <div className={`widget-wall paper-bg ${idle ? "is-idle" : ""}`}>
       <div
         ref={stageRef}
-        className={`ww-stage ${flat ? "is-flat" : ""} ${reduced ? "is-reduced" : ""}`}
+        className={`ww-stage ${flat ? "is-flat" : ""} ${reduced ? "is-reduced" : ""} ${
+          labels ? "" : "no-labels"
+        } ${selected ? "has-selection" : ""}`}
         style={stageVars}
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
+        onClick={onStageClick}
       >
         <div ref={planeRef} className={`ww-plane ${entered ? "is-in" : ""}`}>
           {columns.map((col, c) => (
@@ -497,10 +545,13 @@ export function WidgetWall() {
                     {col.map((tile, k) => {
                       const id = `${c}-${i}-${k}`;
                       const isLit = lit?.id === id;
+                      const isSelected = selected?.id === id;
                       return (
                         <div
                           key={id}
-                          className={`ww-tile ${isLit ? "is-lit" : ""}`}
+                          className={`ww-tile ${isLit ? "is-lit" : ""} ${
+                            isSelected ? "is-selected" : ""
+                          }`}
                           data-tile={id}
                           data-col={c}
                           data-type={tile.widget.type}
@@ -521,12 +572,10 @@ export function WidgetWall() {
                               roundtableReplies={roundtableReplies[tile.widget.id]}
                             />
                           </div>
-                          {isLit && (
-                            <span className="ww-tag" style={{ zoom: 1 / tile.zoom }}>
-                              <i aria-hidden="true">{tile.emoji}</i>
-                              {tile.label}
-                            </span>
-                          )}
+                          <span className="ww-tag" style={{ zoom: 1 / tile.zoom }}>
+                            <i aria-hidden="true">{tile.emoji}</i>
+                            {tile.label}
+                          </span>
                         </div>
                       );
                     })}
@@ -556,6 +605,9 @@ export function WidgetWall() {
           }}
         >
           roll call
+        </button>
+        <button type="button" className={labels ? "is-on" : ""} onClick={() => setLabels((v) => !v)}>
+          name tags
         </button>
         <button type="button" className={flat ? "is-on" : ""} onClick={() => setFlat((v) => !v)}>
           flat

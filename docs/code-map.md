@@ -79,14 +79,16 @@ offered a refresh before its `React.lazy` chunks 404)
 with a black lab pill: drop one, one fails, replay, ¼ speed, clear; no
 Firecrawl, same fake resolve as mock mode) · `WidgetWall.tsx` (`#/wall` — the
 demo insert for "there's like thirty of these": 32 real `WidgetCard`s pulled
-from the seeded spaces [`PICKS`], dealt to five columns by a greedy packer,
-drifting in alternate directions on a tilted `preserve-3d` plane that sways
-or follows the pointer; a roll call lifts the card nearest the middle of a
-column every 1.5s, slows that column, and stamps its catalog name on a black
-sticker pill; tiles use CSS `zoom` so the cards keep their own layout and
-type; growing widgets are measured once via `scrollHeight`; the entrance
-waits two frames past first paint so it's never eaten by the 96-card layout;
-lab pill: replay · pause · roll call · flat · ½/1/2× — pill and cursor hide
+from the seeded spaces [`PICKS`], dealt to three columns by a greedy packer,
+drifting in alternate directions on a tilted `preserve-3d` plane scaled to fit
+the viewport width, swaying or following the pointer; every card wears a
+name-tag pill (emoji + catalog label); a roll call lifts the card nearest
+the middle of a column every 1.6s, slows that column, and lights its tag
+lime; hover does the same and holds the column; click selects (lime ring,
+column pinned, rest dimmed) until click/Esc; tiles use CSS `zoom` so the
+cards keep their own layout and type; growing widgets are measured once via
+`scrollHeight`; the entrance waits two frames past first paint; lab pill:
+replay · pause · roll call · name tags · flat · ½/1/2× — pill and cursor hide
 after 2s idle) · `labs.css` (cursor lab, widget lab, arrival lab, widget
 wall sections)
 
