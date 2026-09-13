@@ -77,7 +77,18 @@ offered a refresh before its `React.lazy` chunks 404)
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
 `CursorLab.tsx` · `ArrivalLab.tsx` (`#/arrival` — the pile's ReadingRoom
 with a black lab pill: drop one, one fails, replay, ¼ speed, clear; no
-Firecrawl, same fake resolve as mock mode) · `labs.css`
+Firecrawl, same fake resolve as mock mode) · `WidgetWall.tsx` (`#/wall` — the
+demo insert for "there's like thirty of these": 32 real `WidgetCard`s pulled
+from the seeded spaces [`PICKS`], dealt to five columns by a greedy packer,
+drifting in alternate directions on a tilted `preserve-3d` plane that sways
+or follows the pointer; a roll call lifts the card nearest the middle of a
+column every 1.5s, slows that column, and stamps its catalog name on a black
+sticker pill; tiles use CSS `zoom` so the cards keep their own layout and
+type; growing widgets are measured once via `scrollHeight`; the entrance
+waits two frames past first paint so it's never eaten by the 96-card layout;
+lab pill: replay · pause · roll call · flat · ½/1/2× — pill and cursor hide
+after 2s idle) · `labs.css` (cursor lab, widget lab, arrival lab, widget
+wall sections)
 
 **widgets/** — `buildroom.tsx` (the build room's four: `linkPile`, `hotLinks`,
 `shipPost`, `roundtable`; also `ShipPreview`, the illustrated demo project
