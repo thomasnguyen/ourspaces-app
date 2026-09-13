@@ -24,10 +24,15 @@ Backward-looking history lives in `hackathon.md`.
   every tile's centre through a virtual camera (rotateY −13°, rotateX 16°,
   depth 80, perspective 2000, the pointer/sway added to the angles) and
   writes a plain 2D `translate + scale` per tile; cards stay flat rectangles
-  Chrome paints crisp, the wall repaints every frame (8ms avg in headless
-  software raster, so the GPU path is comfortably 60fps). Track offsets are
-  snapped to device pixels and cards carry no transform/opacity/will-change
-  of their own. `tilt` in the pill (on by default) switches to the flat 2D
+  Chrome paints crisp. **Smoothness pass (same night, "can we make it
+  smoother? maybe with javascript?"):** every `.ww-tile` is now its own
+  compositor layer (`will-change: transform`), so the per-frame projection
+  moves on the GPU with no repaint — the layer rasters once at device
+  resolution and the projected scale only nudges it ±15%, which 2× clips
+  show stays as sharp as the repaint version (probe at 1728×1080@2×: 8.3ms
+  avg rAF interval, 0.6ms jitter, no long tasks, `.context/shot-wall-smooth.mjs`).
+  Track offsets are snapped to device pixels and cards carry no
+  transform/opacity of their own beyond that hint. `tilt` in the pill (on by default) switches to the flat 2D
   wall. Columns drift up/down alternately at golden-ratio-spread speeds,
   loop seamlessly, and enter middle-first with a 70ms stagger on
   `--ease-pop`. Roll call lifts the card

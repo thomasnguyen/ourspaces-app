@@ -773,10 +773,17 @@
   gap: var(--ww-gap);
 }
 
+/* Every card is its own compositor layer: the per-frame projection
+   (translate + scale, written by the rAF loop) then moves on the GPU with
+   no repaint, so the drift stays smooth on a big Retina screen. The layer
+   rasters once at device resolution; the projected scale only nudges it
+   ±15%, which stays sharp — unlike a CSS perspective, which resampled
+   everything. */
 .ww-tile {
   position: relative;
   flex: 0 0 auto;
   cursor: pointer;
+  will-change: transform;
 }
 
 .widget-wall.is-idle .ww-tile {
