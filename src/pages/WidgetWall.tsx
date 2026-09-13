@@ -23,23 +23,23 @@ import { createDemoWidget } from "../lib/widgetDefaults";
  * now." Hash route: /#/wall
  *
  * Every card is a real WidgetCard from the seeded spaces (the crew's cake
- * poll, the couple's letter, the build room's pile), framed in a uniform
- * gallery tile with its emoji, name and a one-line blurb — the add-widget
- * picker's vocabulary, blown up. Three columns drift on a gently tilted
- * plane in alternating directions; a roll call lifts one tile at a time;
- * hover lifts a tile and holds its column. Click a tile and the widget flies
- * out to a big centered spotlight you can use (vote, spin, claim); click
- * anywhere or Esc and it flies back into its frame. The lab pill and the
+ * poll, the couple's letter, the build room's pile), floating in a uniform
+ * gallery slot with its emoji, name and a one-line blurb centered under it —
+ * the add-widget picker's vocabulary, blown up, without the boxes. Three
+ * columns drift on a gently tilted plane in alternating directions; a roll
+ * call lifts one at a time; hover lifts one and holds its column. Click one
+ * and the widget flies out to a big centered spotlight you can use (vote,
+ * spin, claim); click anywhere or Esc and it flies back into its slot. The lab pill and the
  * cursor hide after 2s idle, so a recording is clean. `replay` re-runs the
  * entrance.
  */
 
 const COLS = 3;
 const COL_W = 420;
-const TILE_H = 344;
-const FRAME_H = 232;
-const FRAME_PAD = 22;
-const GAP = 24;
+const TILE_H = 312;
+const FRAME_H = 236;
+const FRAME_PAD = 16;
+const GAP = 36;
 const STICKER_ZOOM = 1.1;
 const LIFT = 40;
 const BASE_SPEED = 30;
@@ -707,8 +707,10 @@ export function WidgetWall() {
                             </div>
                           </div>
                           <div className="ww-caption">
-                            <span className="ww-chip" aria-hidden="true">{tile.emoji}</span>
-                            <strong className="ww-name">{tile.label}</strong>
+                            <span className="ww-caption-row">
+                              <span className="ww-chip" aria-hidden="true">{tile.emoji}</span>
+                              <strong className="ww-name">{tile.label}</strong>
+                            </span>
                             <span className="ww-blurb">{tile.blurb}</span>
                           </div>
                         </div>

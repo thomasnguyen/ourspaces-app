@@ -80,8 +80,8 @@ with a black lab pill: drop one, one fails, replay, ¼ speed, clear; no
 Firecrawl, same fake resolve as mock mode) · `WidgetWall.tsx` (`#/wall` — the
 demo insert for "there's like thirty of these", styled as the add-widget
 picker blown up: 32 real `WidgetCard`s from the seeded spaces [`PICKS`], each
-zoomed to fit a uniform gallery tile with emoji chip + name + blurb
-[`BLURBS`], dealt round-robin to three columns drifting on a gently tilted
+zoomed to fit a uniform slot (no box) with emoji chip + name + blurb centered
+under it [`BLURBS`], dealt round-robin to three columns drifting on a gently tilted
 `preserve-3d` plane scaled to fit the viewport; a roll call lifts the tile
 nearest the middle of a column every 1.7s; hover lifts and holds the column;
 click FLIPs the widget (WAAPI) into a centered, usable spotlight [poll vote,
