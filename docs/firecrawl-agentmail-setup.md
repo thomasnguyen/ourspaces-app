@@ -38,6 +38,17 @@ Web-post scrape (`scrapeLink`) does **not** need the webhook secret. This app mo
 
 5. Confirm: add a web post on a live space, paste `https://firecrawl.dev`. You should get a title/summary (and a cover or the paper fallback).
 
+### Credits — 20,000 applied 2026-09-12
+
+Hackathon coupon `CONVEXALLGAS` (from the Luma registration email) redeemed on
+the Firecrawl account → **20,000 credits**, on top of the free plan's 1,000/cycle.
+The Billing header tile only shows the free cycle (`778 of 1,000`); the coupon
+balance lives on the **usage page**. Applying the coupon does not change the
+key, so `FIRECRAWL_API_KEY` stays as-is.
+
+Practical effect: stop rationing Firecrawl. Durable crawls, screenshot covers,
+and `searchTopic` are all affordable for the rest of the build and the demo.
+
 ---
 
 ## AgentMail
