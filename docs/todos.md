@@ -8,8 +8,10 @@ Backward-looking history lives in `hackathon.md`.
 - **Direct room navigation (2026-09-13):** retired the home/block page.
   `#/home` now redirects to `#/space/crew`; About’s entry buttons and the
   invalid-invite return link go straight to the crew. Removed the sidebar’s
-  redundant all-spaces grid button. Bare `#/` opens `#/space/buildroom`,
-  and every generated room link includes its slug, including the build room.
+  redundant all-spaces grid button. The bare URL and `#/` now open
+  `#/space/crew` (updated per user preference); the build room keeps its
+  explicit `#/space/buildroom` URL. Every generated room link includes its slug.
+  The Welcome entry and cold About return also default to the crew.
   Removed the block route and its transition wiring from `App.tsx`.
   Verified on port 5174: old URL redirects, sidebar room switches, About
   entry/return links, browser history, and desktop/phone layouts. The first

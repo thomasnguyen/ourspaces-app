@@ -20,13 +20,14 @@ are not.
 | 1221–1394 | Widget CRUD/layout (`addWidget`, `moveWidget`, drag handlers, frame layout) |
 | 1396–1580 | Widget interactions (poll/wheel/rsvp/dailyQ), threads, delete/undo |
 | 1582–1670 | Recap ("catch me up") + mock follow-up chat + sound toggle |
-| 1640–1717 | Route early-returns → pages (live/join/space → `LiveSpacePage`, legacy home → crew, bare root → named build room) |
+| 1640–1717 | Route early-returns → pages (live/join/space → `LiveSpacePage`, legacy home + bare root → crew) |
 | 1719–2130 | Mock-mode derived data + the big JSX render (`Rail`, `Canvas` ~1921, panels, docks, toasts) |
 
 `src/pages/LiveSpace.tsx` (~2060 lines) is the LIVE twin of App.tsx's inline canvas.
 
 `lib/routes.ts` always generates `#/space/<slug>`. App’s hash listener uses
-`replaceState` for legacy aliases: `#/home` → crew; bare `#/` → buildroom.
+`replaceState` for legacy aliases: `#/home` and the bare URL/`#/` → crew.
+The build room remains at `#/space/buildroom`.
 
 ## src/ directories
 

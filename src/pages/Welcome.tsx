@@ -262,7 +262,7 @@ export function Welcome() {
           className="welcome-cta"
           onClick={() => {
             playSound("place");
-            window.location.hash = "#/space/buildroom";
+            window.location.hash = "#/space/crew";
           }}
         >
           Get started <span aria-hidden="true">→</span>

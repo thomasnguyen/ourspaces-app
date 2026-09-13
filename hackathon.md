@@ -12,7 +12,7 @@
 - **Auth:** Better Auth (anonymous guest sessions; passkey blocked by a peer-dep conflict)
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-13T19:26:26Z
+- **Last updated:** 2026-09-13T19:39:59Z
 
 ## Highlights
 
@@ -632,3 +632,9 @@ About’s entry buttons go to the crew, and its back link remembers the room.
 Removed the block route and transition wiring from `App.tsx`; room URLs all
 carry their slug. Browser-verified redirects, sidebar switches, About links,
 history, and desktop/phone layouts. `npm run build` passes. Not deployed.
+
+### 2026-09-13 - working tree
+Changed the default room to the crew. The bare URL, `#/`, and legacy home
+address now open `#/space/crew`; the build room keeps its explicit URL.
+Welcome entry and cold About return follow the same default. Verified all
+four addresses in the local live browser; no console errors. Build passes.

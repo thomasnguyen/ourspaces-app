@@ -279,7 +279,7 @@ function spaceFromHash(): string {
 /**
  * Look prototype — crew + league canvases, widget picker, cursor lab.
  * Hash routes: #/space/buildroom · #/space/crew · #/about · #/cursors · #/widgets
- * Old #/home links redirect to the crew; bare #/ links name the build room.
+ * Old #/home and bare #/ links redirect to the crew.
  */
 export default function App() {
   const [route, setRoute] = useState<Route>(routeFromHash);
