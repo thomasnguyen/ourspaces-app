@@ -12,7 +12,7 @@
 - **Auth:** Better Auth (anonymous guest sessions; passkey blocked by a peer-dep conflict)
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-13T18:28:48Z
+- **Last updated:** 2026-09-13T18:50:02Z
 
 ## Highlights
 
@@ -608,3 +608,12 @@ keeps the block reachable (`src/components/Rail.tsx`). Live totals retain the
 existing Convex subscription; the preview vote stays local. Verified in the
 browser at desktop, tablet, and phone widths, including navigation and reduced
 motion; reviewed a motion capture. `npm run build` passes. Not deployed.
+
+### 2026-09-13 - working tree
+Added dedicated Convex, OpenAI, AgentMail, and Firecrawl pages from About,
+with interactive examples, implementation-backed workflows, source links,
+and expandable technical notes. Examples stay local; room data is untouched.
+Fixed a React effect cleanup crash that blanked About during navigation.
+Verified on port 5174 at desktop and phone widths, including history, return
+room, disclosures, reduced motion, and a motion capture; no console errors.
+`npm run build` passes. Not deployed.

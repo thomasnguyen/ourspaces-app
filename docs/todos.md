@@ -5,6 +5,20 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Vendor stories (2026-09-13):** the four vendor names on About now open
+  `#/about/convex`, `#/about/openai`, `#/about/agentmail`, and
+  `#/about/firecrawl`. Each has an interactive, explicitly illustrative
+  example; a four-step workflow; implementation-backed capability details;
+  expandable technical notes with source links; and a direct room link.
+  Vendor-to-vendor navigation stays inside About and preserves the return
+  room. The user chose visual examples + expandable technical detail.
+  Examples are local UI state and do not invoke APIs or mutate room data.
+  Verified on port 5174 at desktop, 390px, and 320px: all four deep links,
+  examples, technical disclosures, browser history, return room, live About
+  totals, and reduced motion; no console errors. Fixed the blank-page React
+  crash by keeping the scroll-reset effect void (do not return `scrollTo`).
+  `npm run build` passes. Local frontend change; not deployed.
+
 - **About redesign (2026-09-13):** `#/about` now opens with a full-color
   birthday collage and a sample cake poll you can vote on. The preview uses
   the real poll component, keeps its vote local, and labels itself a preview;
