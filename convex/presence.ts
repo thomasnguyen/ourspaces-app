@@ -376,12 +376,18 @@ export const cleanup = internalMutation({
   returns: v.null(),
   handler: async (ctx) => {
     const staleBefore = Date.now() - PRESENCE_SWEEP_AFTER_MS;
-    // This sweep is what holds the table at "cursors seen in the last two
-    // minutes", so it reads all of them — staleness has no cross-space index
-    // (by_space_updated is per room). One row per live cursor per minute.
-    const rows = await ctx.db.query("presence").collect();
-    for (const row of rows) {
-      if (row.updatedAt < staleBefore) await ctx.db.delete(row._id);
+    // Reads ONLY the rows it is about to delete. This used to collect the
+    // whole table and filter in memory, which made the sweep's read set every
+    // presence row in the app — so it took an OCC conflict from every
+    // heartbeat that landed while it ran, and each loser re-executed. The
+    // by_updated range stops at `staleBefore`, and a live cursor writes `now`,
+    // so the two no longer overlap. See the index comment in schema.ts.
+    const stale = await ctx.db
+      .query("presence")
+      .withIndex("by_updated", (q) => q.lt("updatedAt", staleBefore))
+      .collect();
+    for (const row of stale) {
+      await ctx.db.delete(row._id);
     }
     return null;
   },

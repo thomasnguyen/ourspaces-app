@@ -644,9 +644,10 @@ Backward-looking history lives in `hackathon.md`.
   **not** create inboxes again) are in `docs/firecrawl-agentmail-setup.md`
   § Prod. The 3-inbox free tier is per **org** and shared dev↔prod, which is
   why prod has to reuse the same three addresses.
-- **The daily recap cron is commented out** in `convex/crons.ts` — deliberate,
-  re-enable `recap.generateAll` closer to the deadline. Only the presence
-  sweep (1 min) and the Friday digest run today.
+- ~~The daily recap cron is commented out~~ — stale note. All four crons run
+  today (presence sweep, weekly digest, daily recap, Friday link refresh), and
+  the recap one now fans out only over rooms with activity since their last
+  daily recap (`recap.listSpacesDueForRecap`).
 - **Live Convex still needs a re-seed** for the SomaFM playlist fields and the
   seeded buildclub / Tahoe web-post cards (`npx convex run seed:demo`).
 - **`prosemirror-sync` is wired in `convex.config.ts` but referenced nowhere
@@ -674,6 +675,46 @@ Backward-looking history lives in `hackathon.md`.
   first if the build breaks for no reason.
 
 ## Now also working
+
+- **The deployment went over the Free plan limit, and the cursor stream was
+  why** (2026-09-12). Five changes, all verified live on `dusty-condor-648`:
+  1. **Solo rooms no longer stream cursors.** `usePresence` wrote a presence
+     row every 90ms whenever the pointer moved — ~11 mutations/sec, each one
+     invalidating `listHereNow` for every subscriber in the room, so a
+     four-person room cost ~220 function calls/sec. The 90ms stream is now
+     gated on `peersLive`: alone, you write only the entrance heartbeat and
+     the keepalive. Measured with a WS counter in the driver: 5 seconds of
+     continuous mouse movement alone went **50 heartbeats → 0**, and the
+     stream still runs at full 10/s the moment someone else walks in.
+     The gesture path is deliberately NOT gated — a drag's updates keep
+     `gesture.updatedAt` fresh, and a stale one makes `finishGesture` refuse
+     the commit, so a solo drag would silently not move the widget.
+  2. **A tab now filters out its own earlier identity.** Found while
+     verifying (1): a first load writes presence under a local
+     `crypto.randomUUID()`, then `adoptAuthUserId` swaps in the Convex user
+     id, and the orphaned row rendered as a peer — a first-time visitor
+     watched a second cursor wearing their own name and face for up to 30s.
+     `selfIds` in `usePresence` remembers every id the tab has used. This
+     also defeated (1): the ghost read as company.
+  3. **The presence sweep reads only what it deletes.** `presence.cleanup`
+     collected the whole table every minute, making its read set every row,
+     so it took an OCC conflict from every heartbeat that landed mid-sweep
+     (310 retries in 72h) and each loser re-executed. New `by_updated` index
+     + a range read; a live cursor writes `now` and no longer overlaps.
+  4. **Idle heartbeats halved.** `KEEPALIVE_MS` 10s → 20s (still 10s of slack
+     under the 30s TTL) and the presence component's room heartbeat 10s → 30s
+     (`ROOM_HEARTBEAT_MS` in `LiveSpace.tsx`) — that one writes through the
+     component's own sessions/workers tables and was the single largest OCC
+     source on the deployment (413 conflicts). Occupancy now clears up to 30s
+     after someone leaves, which a badge can afford.
+  5. **The two metered crons stopped paying for dead rooms.** The daily recap
+     skips spaces with no activity since their last daily recap (8 spaces → 3
+     on the dev deployment the day this landed), and the Friday link refresh
+     only re-scrapes Firecrawl cards in spaces touched in the last 30 days.
+  Not done, by choice: the duplicate presence system stays. `roomPresence`
+  (the component) and `presence` (hand-rolled) still both run — collapsing
+  them would trade disconnect-accurate occupancy for sweep-lagged occupancy,
+  and that is a product call, not a cost one.
 
 - Playlist widget is a real SomaFM room radio: play/pause, 6 stations,
   live track titles, Convex-synced station so others can tap join.
