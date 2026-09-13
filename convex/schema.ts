@@ -71,6 +71,13 @@ export default defineSchema({
     ),
     // One lowercase sentence from the router: why it landed where it did (B1).
     because: v.optional(v.string()),
+    // The arrival choreography reads these (docs/mail-arrival.md): the
+    // verdict the envelope stamps (receipt · booking · letter · links ·
+    // unfiled · spam), when the router started reading, when the reply went
+    // out. All optional, no backfill — old rows just never narrated.
+    label: v.optional(v.string()),
+    readingAt: v.optional(v.number()),
+    repliedAt: v.optional(v.number()),
     createdAt: v.number(),
   }).index("by_space", ["spaceId"]), // activity-log widget, newest first
 

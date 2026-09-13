@@ -24085,7 +24085,9 @@
   }
 }
 
-/* the widget it filed into takes a lime wash on impact */
+/* the widget it filed into takes a lime wash on impact — held for a beat,
+   then it lifts off. Over cream paper a faint tint reads as nothing, so
+   this one is loud and ringed; a 16% wash is for the dark reading room. */
 .widget-group.is-mail-washed::after {
   content: "";
   position: absolute;
@@ -24093,8 +24095,19 @@
   z-index: 5;
   border-radius: 12px;
   pointer-events: none;
-  background: color-mix(in srgb, var(--color-lime) 24%, transparent);
-  animation: rr-land-flash calc(1.4s * var(--arrival-slow)) var(--ease-glide) forwards;
+  background: color-mix(in srgb, var(--color-lime) 42%, transparent);
+  box-shadow: 0 0 0 3px var(--color-lime);
+  animation: mail-wash calc(1.4s * var(--arrival-slow)) var(--ease-glide) forwards;
+}
+
+@keyframes mail-wash {
+  0%,
+  38% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 /* `↩ told holly` — a small tick at the widget's foot, gone after a beat */
@@ -24132,8 +24145,9 @@
   }
 }
 
-/* the lab pill sits clear of the rail and the action dock */
-.mail-lab-bar {
+/* the lab pill sits clear of the rail and the action dock (labs.css loads
+   lazily after this file, so the selector has to outrank .arrival-lab-bar) */
+.arrival-lab-bar.mail-lab-bar {
   left: auto;
   right: 28px;
   bottom: 92px;

@@ -269,11 +269,13 @@ export async function routeSmart(
   }
 
   // Unfiled (or the model was unsure/unavailable): a sealed envelope on canvas.
+  // One word at both ends: the AgentMail label matches the stamp on the object.
   await ctx.runMutation(internal.inbox.addLetter, {
     eventId: event._id,
     unfiled: true,
     because,
+    label: "unfiled",
   });
-  return { label: "filed", reply: `Left it on your canvas as a sealed envelope.${read}` };
+  return { label: "unfiled", reply: `Left it on your canvas as a sealed envelope.${read}` };
 }
 
