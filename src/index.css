@@ -23190,9 +23190,13 @@
    offsets. Left, three lines: the kicker (kind · tagline), the name
    big in display type, then the name's handles — the inbox address
    and a pencil "edit" — as two quiet chips tinted in the room's ink.
-   Right: ONE black sticker pill in the action dock's vocabulary —
-   faces, "N here now", a hairline, add, invite — instead of four
-   separate pills.
+   Right: ONE black sticker pill with two textures. The status half
+   sits on flat black: the face stack wearing the lime live badge on
+   its corner, then the count with the number leading ("4" in display
+   type, "here now" demoted). The action half is two keys — add and
+   invite as filled chips that read as pressable at rest, white
+   glyphs that light lime on hover, lime fill while open. No hairline;
+   the keys carry the split. Lime appears once at rest: the badge.
    ================================================================ */
 
 .space-header {
@@ -23287,11 +23291,121 @@
   animation: space-header-in var(--dur-arrive) var(--ease-glide) 280ms both;
 }
 
+/* ── the status half (all widths) ── */
+
+.header-faces {
+  position: relative;
+}
+
+/* A tighter stack that fans open when you hover the crowd — each face
+   steps out so you can see who is here. Layout-cheap: four faces in an
+   absolutely positioned header. */
+.header-faces > * + *,
+.header-seed-faces > * + *,
+.header-live-faces > * + *,
+.self-chip + .header-seed-faces,
+.header-live-faces + .header-seed-faces {
+  margin-left: -11px;
+  transition: margin-left var(--dur-base) var(--ease-glide);
+}
+
+.space-presence:hover .header-faces > * + *,
+.space-presence:hover .header-seed-faces > * + *,
+.space-presence:hover .header-live-faces > * + *,
+.space-presence:hover .self-chip + .header-seed-faces,
+.space-presence:hover .header-live-faces + .header-seed-faces {
+  margin-left: -3px;
+}
+
+/* the live badge: lime, ringed in sticker black so it sits ON the last face */
+.header-live-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  z-index: 1;
+  width: 11px;
+  height: 11px;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--color-lime);
+  box-shadow:
+    0 0 0 2.5px var(--color-sticker),
+    0 0 0 2.5px rgba(201, 255, 61, 0.5);
+  animation: presence-badge 2.2s ease-out infinite;
+}
+
+@keyframes presence-badge {
+  0% {
+    box-shadow:
+      0 0 0 2.5px var(--color-sticker),
+      0 0 0 2.5px rgba(201, 255, 61, 0.5);
+  }
+  60%,
+  100% {
+    box-shadow:
+      0 0 0 2.5px var(--color-sticker),
+      0 0 0 9px rgba(201, 255, 61, 0);
+  }
+}
+
+/* "+N" is a count, not a fifth person: grey fill, smaller type */
+.header-face-overflow {
+  background: color-mix(in srgb, white 16%, var(--color-sticker));
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* the count: number leads in display type, the words step back */
+.presence-count {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  animation: presence-count-in var(--dur-arrive) var(--ease-pop) both;
+}
+
+@keyframes presence-count-in {
+  from {
+    opacity: 0;
+    scale: 0.7;
+    translate: 0 5px;
+  }
+}
+
+.presence-words {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* stroke glyphs that weigh the same as the type (the unicode + and ↗
+   rendered as two different fonts at two different weights) */
+.header-key-glyph {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  font-size: 0;
+  transition:
+    color var(--dur-quick) var(--ease-glide),
+    translate var(--dur-quick) var(--ease-glide),
+    rotate var(--dur-quick) var(--ease-glide);
+}
+
 @media (min-width: 801px) {
   .space-header-side {
     flex-direction: row;
     align-items: center;
-    gap: 2px;
+    gap: 6px;
     padding: 5px 5px 5px 6px;
     border-radius: 999px;
     background: var(--color-sticker);
@@ -23300,50 +23414,88 @@
 
   .space-presence {
     min-height: 36px;
-    gap: 8px;
+    gap: 10px;
+    padding-right: 8px;
+  }
+
+  /* faces carry the live badge here; the label's dot is the phone fallback */
+  .header-faces ~ .space-presence-label .presence-pulse {
+    display: none;
   }
 
   .space-presence-label {
-    padding: 0 12px 0 4px;
+    gap: 5px;
+    padding: 0;
     background: transparent;
     font-size: 12px;
   }
 
+  /* ── the action half: two keys ── */
   .header-actions {
-    gap: 2px;
+    gap: 3px;
   }
 
   .header-actions::before {
-    content: "";
-    width: 1px;
-    height: 20px;
-    margin: 0 6px 0 2px;
-    background: rgba(255, 255, 255, 0.14);
+    content: none;
   }
 
   .add-widget-button,
   .invite-button {
-    min-height: 36px;
-    padding: 7px 13px;
-    background: transparent;
+    min-height: 34px;
+    gap: 6px;
+    padding: 0 13px 0 11px;
+    background: rgba(255, 255, 255, 0.1);
     box-shadow: none;
-    font-size: 13px;
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: 0;
     transition:
       background var(--dur-quick) var(--ease-glide),
       color var(--dur-quick) var(--ease-glide),
       translate var(--dur-quick) var(--ease-glide);
   }
 
+  .add-widget-button .header-key-glyph,
+  .invite-button .header-key-glyph {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
   .add-widget-button:hover,
   .invite-button:hover {
-    translate: 0 -2px;
+    translate: 0 -1px;
     box-shadow: none;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  /* hover reward: the glyph lights lime, the arrow leans into its corner */
+  .add-widget-button:hover .header-key-glyph,
+  .invite-button:hover .header-key-glyph {
+    color: var(--color-lime);
+  }
+
+  .add-widget-button:hover .header-key-glyph {
+    rotate: 90deg;
+  }
+
+  .invite-button:hover .header-key-glyph {
+    translate: 1px -1px;
+  }
+
+  .add-widget-button:active,
+  .invite-button:active {
+    translate: 0 1px;
   }
 
   .add-widget-button.is-active,
-  .invite-button.is-active {
+  .invite-button.is-active,
+  .add-widget-button.is-active:hover,
+  .invite-button.is-active:hover {
     background: var(--color-lime);
+    color: var(--color-sticker);
+  }
+
+  .add-widget-button.is-active .header-key-glyph,
+  .invite-button.is-active .header-key-glyph {
     color: var(--color-sticker);
   }
 

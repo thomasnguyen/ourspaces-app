@@ -689,7 +689,7 @@ export function SpaceHeader({
         <div className="space-header-side">
           <div className="space-presence" aria-label={presenceDescription}>
             {(self || visibleLivePeers.length > 0 || visibleOnline.length > 0) && (
-              <div className="header-faces">
+              <div className={`header-faces ${displayCount > 0 ? "is-live" : ""}`}>
                 {self && (
                   <button
                     type="button"
@@ -725,11 +725,23 @@ export function SpaceHeader({
                     )}
                   </div>
                 )}
+                {/* The live badge sits on the stack: these faces are the
+                    ones here. The label's own dot only shows when the faces
+                    are hidden (phones). */}
+                {displayCount > 0 && <i className="header-live-dot" aria-hidden="true" />}
               </div>
             )}
             <span className="space-presence-label">
               {displayCount > 0 && <span className="presence-pulse" aria-hidden="true" />}
-              {presenceLabel}
+              {displayCount > 0 ? (
+                <>
+                  {/* keyed so a change of count rolls the number in */}
+                  <b key={displayCount} className="presence-count">{displayCount}</b>
+                  <span className="presence-words">here now</span>
+                </>
+              ) : (
+                <span className="presence-words">{presenceLabel}</span>
+              )}
             </span>
           </div>
 
@@ -740,7 +752,9 @@ export function SpaceHeader({
               onClick={onAddClick}
               aria-expanded={addOpen}
             >
-              <span className="add-widget-icon" aria-hidden="true">+</span>
+              <svg className="add-widget-icon header-key-glyph" viewBox="0 0 12 12" aria-hidden="true">
+                <path d="M6 1.75v8.5M1.75 6h8.5" />
+              </svg>
               add
             </button>
             <button
@@ -752,7 +766,9 @@ export function SpaceHeader({
               aria-controls="invite-popover"
               aria-label="Open invite options"
             >
-              <span className="invite-button-icon" aria-hidden="true">↗</span>
+              <svg className="invite-button-icon header-key-glyph" viewBox="0 0 12 12" aria-hidden="true">
+                <path d="M2.75 9.25l6.5-6.5M4.25 2.75h5v5" />
+              </svg>
               <span className="invite-button-label">invite</span>
             </button>
           </div>
