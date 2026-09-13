@@ -47,6 +47,27 @@ Backward-looking history lives in `hackathon.md`.
   ready-to-swap alternates in the v2 script. Theme id stays `torch`.
   `npm run build` passed. No deployment.
 
+- **Header nameplate (2026-09-12):** the user asked for a header redesign
+  for the build room and every other room. Decision: one structure
+  everywhere, rooms differ only by ink and offsets. Left: name at 2.75rem,
+  one line, a round tinted chevron (all rooms — `✎ edit` is gone) that opens
+  the editor, and the inbox address as a chip tinted 12% of the room's ink
+  (black on hover, lime when copied). Right: the four separate pills (faces,
+  "N here now", add, invite) collapsed into ONE black sticker pill in the
+  action dock's vocabulary — faces inside the pill, hairline, transparent
+  add/invite that fill white/12% on hover and lime when active. The
+  kicker/tagline row is hidden in the header (first to fade on scroll
+  anyway). Pill arrives on `space-header-in` at 200ms; faces/buttons keep
+  their existing stagger inside it. Mail chip wraps under the title at
+  narrow desktop; phone (≤800px) keeps separate pills, and the build room's
+  phone header now uses the shared grid instead of absolute positioning.
+  The build room's desktop fork lost every header rule except top/left/right;
+  the crew's "edit recedes" override went too so the chevron matches. CSS is
+  appended at the end of `index.css` (SPACE HEADER — THE NAMEPLATE) so it
+  wins the cascade. Verified live at 1440, 1024, and 390 in the build room,
+  crew, house, and game day via `.context/shot-headers*.mjs`. `npm run
+  build` passed.
+
 - **Bottom gutter dedupe (2026-09-12):** the user flagged the live strip
   repeating the header ("3 here now" twice, the room name twice) and the strip
   + dock "hanging out" separately. Decision: one fact, one home. The header

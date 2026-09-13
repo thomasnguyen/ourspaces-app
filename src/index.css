@@ -16277,18 +16277,8 @@
     font-size: 0.75rem;
   }
 
-  /* Header: edit recedes until needed. */
-  .paper-bg[data-space-id^="crew"] .space-edit-button {
-    background: transparent;
-    opacity: 0.66;
-  }
-
-  .paper-bg[data-space-id^="crew"] .space-edit-button:hover,
-  .paper-bg[data-space-id^="crew"] .space-edit-button:focus-visible,
-  .paper-bg[data-space-id^="crew"] .space-edit-button.is-active {
-    background: rgba(17, 17, 20, 0.08);
-    opacity: 1;
-  }
+  /* Header: the chevron is the same round tint in every room now (see
+     SPACE HEADER — THE NAMEPLATE); the crew no longer hides it. */
 
   /* Dock: chat is the product action; map/reset/sound are utilities. */
   .paper-bg[data-space-id^="crew"] .action-dock-chat {
@@ -19240,11 +19230,6 @@
   }
 }
 
-.paper-bg.space-theme-lagoon[data-space-id^="crew"] .space-edit-button:hover,
-.paper-bg.space-theme-lagoon[data-space-id^="crew"] .space-edit-button:focus-visible,
-.paper-bg.space-theme-lagoon[data-space-id^="crew"] .space-edit-button.is-active {
-  background: rgba(255, 255, 255, 0.18);
-}
 
 /* —— Crew spruce alternate ————————————————————————————————————————————
  * The runner-up dark remix, kept as a selectable theme preset: deep spruce
@@ -22367,39 +22352,13 @@
   .paper-bg[data-space-id="buildroom"] .canvas-stage {
     margin-left: max(0px, calc((100% - var(--build-room-width, 100%)) / 2));
   }
+  /* Header: the nameplate (end of file) is the design; only the offsets are
+     the build room's own. */
   .paper-bg[data-space-id="buildroom"] .space-header {
     top: 26px;
     left: 128px;
     right: 32px;
-    align-items: center;
-    gap: 18px;
   }
-  .paper-bg[data-space-id="buildroom"] .space-title-block {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    max-width: none;
-  }
-  .paper-bg[data-space-id="buildroom"] .space-meta { display: none; }
-  .paper-bg[data-space-id="buildroom"] .space-title-row { flex: none; gap: 4px; }
-  .paper-bg[data-space-id="buildroom"] .space-title-block h1 { margin: 0; font-size: 1.85rem; }
-  .paper-bg[data-space-id="buildroom"] .space-edit-button { padding: 0 5px; min-height: 28px; background: transparent; }
-  .paper-bg[data-space-id="buildroom"] .space-edit-label { display: none; }
-  .paper-bg[data-space-id="buildroom"] .space-edit-mark { font-size: 1.25rem; }
-  .paper-bg[data-space-id="buildroom"] .space-mail-chip {
-    margin: 0;
-    font-size: 11px;
-    padding: 7px 10px;
-    background: color-mix(in srgb, var(--space-heading-color, var(--color-ink)) 13%, transparent);
-    color: var(--space-heading-color, var(--color-ink));
-  }
-  .paper-bg[data-space-id="buildroom"] .space-mail-chip:hover { background: var(--color-sticker); color: var(--color-card); }
-  .paper-bg[data-space-id="buildroom"] .space-header-side { flex-direction: row; align-items: center; gap: 16px; }
-  .paper-bg[data-space-id="buildroom"] .space-presence { min-height: 32px; gap: 7px; }
-  .paper-bg[data-space-id="buildroom"] .space-presence-label { background: transparent; color: var(--space-heading-color, var(--color-ink)); padding: 0; font-size: 11px; }
-  .paper-bg[data-space-id="buildroom"] .header-actions { gap: 7px; }
-  .paper-bg[data-space-id="buildroom"] .add-widget-button,
-  .paper-bg[data-space-id="buildroom"] .invite-button { min-height: 34px; padding: 6px 14px; font-size: 12px; }
   .paper-bg[data-space-id="buildroom"] .action-dock { bottom: 18px; padding: 4px; }
   .paper-bg[data-space-id="buildroom"] .action-dock > button { min-height: 36px; padding: 7px 12px; font-size: 11px; }
   .paper-bg[data-space-id="buildroom"] .space-live-strip { left: 128px; bottom: 18px; min-height: 44px; padding: 0; color: var(--space-heading-color, var(--color-ink)); font-size: 10px; font-weight: 500; }
@@ -22410,9 +22369,7 @@
 }
 
 @media (min-width: 801px) and (max-width: 1150px) {
-  .paper-bg[data-space-id="buildroom"] .space-title-block { flex-direction: column; align-items: flex-start; gap: 5px; }
   .paper-bg[data-space-id="buildroom"] .space-header { top: 18px; }
-  .paper-bg[data-space-id="buildroom"] .space-header-side { gap: 9px; }
 }
 
 @media (max-width: 800px) {
@@ -22446,17 +22403,15 @@
   .paper-bg[data-space-id="buildroom"] .widget-group:has(.is-keeper) { height: 235px !important; }
   .paper-bg[data-space-id="buildroom"] .widget-group:has(.widget-ship-post) { height: 295px !important; margin-top: 10px; }
   .paper-bg[data-space-id="buildroom"] .widget-group:has(.widget-roundtable) { height: 315px !important; }
-  .paper-bg[data-space-id="buildroom"] .space-header { left: 18px; right: 18px; top: 18px; display: block; }
-  .paper-bg[data-space-id="buildroom"] .space-meta { display: none; }
-  .paper-bg[data-space-id="buildroom"] .space-title-block h1 { font-size: 1.4rem; margin: 0; }
-  .paper-bg[data-space-id="buildroom"] .space-title-row { gap: 0; }
-  .paper-bg[data-space-id="buildroom"] .space-edit-button { width: 24px; min-height: 28px; margin: 0; background: transparent; }
-  .paper-bg[data-space-id="buildroom"] .space-presence { position: absolute; right: 0; top: 0; }
+  /* Phone header: same grid as every other room (title block | side column);
+     the build room only trims sizes. */
+  .paper-bg[data-space-id="buildroom"] .space-header { left: 18px; right: 18px; top: 18px; }
+  .paper-bg[data-space-id="buildroom"] .space-title-block h1 { font-size: 1.6rem; }
   .paper-bg[data-space-id="buildroom"] .space-presence-label { padding: 5px 8px; font-size: 10px; }
-  .paper-bg[data-space-id="buildroom"] .header-actions { position: absolute; top: 40px; right: 0; gap: 5px; }
+  .paper-bg[data-space-id="buildroom"] .header-actions { gap: 5px; }
   .paper-bg[data-space-id="buildroom"] .header-actions button { min-height: 30px; font-size: 11px; padding: 5px 10px; }
   .paper-bg[data-space-id="buildroom"] .invite-button { width: 34px; }
-  .paper-bg[data-space-id="buildroom"] .space-mail-chip { margin-top: 14px; max-width: 225px; padding: 5px 9px; font-size: 10px; }
+  .paper-bg[data-space-id="buildroom"] .space-mail-chip { max-width: 225px; padding: 5px 9px; font-size: 10px; }
   .paper-bg[data-space-id="buildroom"] .space-live-strip { display: none; }
   .br-pile-card { padding: 30px 20px 20px; gap: 13px; width: 76%; }
   .br-pile-fan { right: 24px; }
@@ -23139,4 +23094,152 @@
 
 .paper-bg.space-theme-torch .br-pile-fan-card {
   box-shadow: 2px 5px 6px var(--wall-shadow);
+}
+
+/* ================================================================
+   SPACE HEADER — THE NAMEPLATE
+   One row for every room. Left: the name in display type, a round
+   chevron that opens the space editor, and the inbox address as a
+   tinted chip in the room's ink. Right: ONE black sticker pill in the
+   action dock's vocabulary — faces, "N here now", a hairline, add,
+   invite — instead of four separate pills. The kicker/tagline row is
+   gone from the header; it was the first thing to fade on scroll
+   anyway. Rooms differ only by ink and offsets, never by structure.
+   ================================================================ */
+
+.space-header {
+  align-items: center;
+  gap: 24px;
+}
+
+.space-title-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  max-width: none;
+}
+
+.space-title-block .space-meta {
+  display: none;
+}
+
+.space-title-block h1 {
+  margin: 0;
+  font-size: 2.75rem;
+}
+
+.space-title-text {
+  -webkit-line-clamp: 1;
+}
+
+.space-title-row {
+  gap: 6px;
+}
+
+.space-edit-button {
+  width: 34px;
+  min-height: 34px;
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.space-edit-mark {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 800;
+  line-height: 1;
+  translate: 0 -3px;
+}
+
+.space-mail-chip {
+  margin: 0;
+  padding: 7px 12px;
+  font-size: 12px;
+  background: color-mix(in srgb, var(--space-heading-color, var(--color-ink)) 12%, transparent);
+  color: var(--space-heading-color, var(--color-ink));
+}
+
+.space-mail-chip:hover {
+  transform: none;
+  background: var(--color-sticker);
+  color: var(--color-card);
+}
+
+.space-mail-chip.is-copied {
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+
+@media (min-width: 801px) {
+  .space-header-side {
+    flex-direction: row;
+    align-items: center;
+    gap: 2px;
+    padding: 5px 5px 5px 6px;
+    border-radius: 999px;
+    background: var(--color-sticker);
+    box-shadow: 0 6px 0 rgba(17, 17, 20, 0.18);
+  }
+
+  .space-presence {
+    min-height: 36px;
+    gap: 8px;
+  }
+
+  .space-presence-label {
+    padding: 0 12px 0 4px;
+    background: transparent;
+    font-size: 12px;
+  }
+
+  .header-actions {
+    gap: 2px;
+  }
+
+  .header-actions::before {
+    content: "";
+    width: 1px;
+    height: 20px;
+    margin: 0 6px 0 2px;
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  .add-widget-button,
+  .invite-button {
+    min-height: 36px;
+    padding: 7px 13px;
+    background: transparent;
+    box-shadow: none;
+    font-size: 13px;
+    transition:
+      background var(--dur-quick) var(--ease-glide),
+      color var(--dur-quick) var(--ease-glide),
+      translate var(--dur-quick) var(--ease-glide);
+  }
+
+  .add-widget-button:hover,
+  .invite-button:hover {
+    translate: 0 -2px;
+    box-shadow: none;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .add-widget-button.is-active,
+  .invite-button.is-active {
+    background: var(--color-lime);
+    color: var(--color-sticker);
+  }
+
+  .invite-button-label {
+    min-width: 0;
+  }
+
+  /* The pill arrives first; its faces and buttons pop in on their own
+     existing stagger inside it. */
+  .space-header.is-entering .space-header-side {
+    animation: space-header-in var(--dur-arrive) var(--ease-glide) 200ms both;
+  }
 }
