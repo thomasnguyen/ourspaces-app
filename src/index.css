@@ -24278,6 +24278,13 @@
   }
 }
 
+/* a letter widget made by the email in flight waits, unseen, for the
+   envelope to land on it — then the group's own opacity transition brings
+   it in under the wash */
+.widget-group.is-mail-incoming {
+  opacity: 0;
+}
+
 /* `↩ told holly` — a small tick at the widget's foot, gone after a beat */
 .mail-reply-tick {
   position: absolute;

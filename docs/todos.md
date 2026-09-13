@@ -35,7 +35,7 @@ Backward-looking history lives in `hackathon.md`.
   `readingAt`, `repliedAt` (`inbox.markEvent`; `ackInbound` now returns
   whether the reply went out). `mailArrival.recentInbound` is the bounded
   query it watches (no body leaves the server). The unfiled AgentMail label
-  is now `unfiled` (was `filed`). **Lab: `#/mail`** — the crew space (mock
+  is now `unfiled` (was `filed`). **Lab: `#/mail`** (the crew) or **`#/mail/<slug>`** — the real space (mock
   or live) with a pill: receipt · booking · letter · unfiled · spam · ¼
   speed · replay · clear (`pages/MailLabBar.tsx`, lazy; fixtures in
   `lib/mailArrival.ts`). Verified in mock via `.context/shot-mail-lab.mjs`
@@ -47,7 +47,9 @@ Backward-looking history lives in `hackathon.md`.
   mock. **Take reset:** `npx convex run shootReset:shootReset
   '{"slug":"crew","sinceMinutes":180}'` drops the take's events + mail-made
   widgets, restores the tahoe tracker / potluck / cake poll (+ its votes)
-  to the fixtures, clears recaps. Shoot note: the seeded tahoe tracker sits
+  to the fixtures, clears recaps. A letter target (the widget this very email made) stays hidden from the
+  verdict until the envelope lands on it, so the envelope that lands IS the
+  letter — verified on `#/mail/couple`. Shoot note: the seeded tahoe tracker sits
   at x=1378, off-screen below ~1500px wide — frame the tracker (zoom out or
   move it) before the take or the flight leaves the crop. Design decisions
   in `docs/mail-arrival.md` § Design decisions.

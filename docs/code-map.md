@@ -122,7 +122,7 @@ blurb [`BLURBS`; poll vote, claim, spin wired to local state] and Esc/click
 flies it back; tiles use CSS `zoom` so cards keep their own layout; growing
 widgets are measured once via `scrollHeight`; the entrance waits two frames
 past first paint; lab pill: replay · pause · roll call · name tags · tilt ·
-size S/M/L · ½/1/2× — pill and cursor hide after 2s idle) · `MailLabBar.tsx` (`#/mail`'s pill — lazy so labs.css stays off the space page; the route itself is the crew space with a lab flag, see `mailLabRequested` in App.tsx) · `labs.css` (cursor lab, widget lab, arrival lab, widget
+size S/M/L · ½/1/2× — pill and cursor hide after 2s idle) · `MailLabBar.tsx` (the `#/mail` / `#/mail/<slug>` pill — lazy so labs.css stays off the space page; the route itself is the real space with a lab flag, see `mailLabRequested` in App.tsx) · `labs.css` (cursor lab, widget lab, arrival lab, widget
 wall sections)
 
 **widgets/** — `buildroom.tsx` (the dev guild's four: `linkPile`, `hotLinks`,
