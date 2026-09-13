@@ -47,6 +47,20 @@ Backward-looking history lives in `hackathon.md`.
   ready-to-swap alternates in the v2 script. Theme id stays `torch`.
   `npm run build` passed. No deployment.
 
+- **Bottom gutter dedupe (2026-09-12):** the user flagged the live strip
+  repeating the header ("3 here now" twice, the room name twice) and the strip
+  + dock "hanging out" separately. Decision: one fact, one home. The header
+  keeps faces + "N here now"; the title keeps the name; the strip is now a
+  pulse line only — `● live · last change 19h ago`, the gesture line when
+  someone has a hand on something, "nothing on the board yet" only while the
+  board is empty (a populated count is a stat, not news). The name stays in
+  the DOM collapsed (`grid-template-columns: 0fr`) and opens on
+  `.is-canvas-away` so the strip becomes the wayfinder exactly when the title
+  scrolls off. Strip box is dock-tall (54px default / 44px build room) at
+  `bottom: 18px` so both sit on one midline; the default pill is drawn on a
+  `::before` so it stays text-tall. Verified live with
+  `.context/shot-live-strip.mjs`. `npm run build` passed.
+
 - **Build room color pass (2026-09-12):** the user asked for a more appealing
   orange. Decision: keep orange as the identity but stop treating it as one
   flat fill. `--color-buildroom` is now `oklch(0.62 0.175 41)` (richer, a hair

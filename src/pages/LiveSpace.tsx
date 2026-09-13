@@ -2089,7 +2089,6 @@ export function LiveSpacePage({
       {mode === "live" && (
         <SpaceLiveStrip
           spaceName={boardRows?.space?.name}
-          hereCount={hereCount}
           boardCount={boardRows?.widgets.length}
           lastChangeAt={lastChangeAt}
           gestures={liveGestures}
