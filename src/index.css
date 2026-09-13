@@ -12576,8 +12576,10 @@
   color: white;
 }
 
+/* White, not lime: the count badge next to it is already the lime pop, and
+   the two live pulses (header presence, live strip) own lime in this row. */
 .action-dock-chat > span:first-child {
-  color: var(--color-lime);
+  color: rgba(255, 255, 255, 0.55);
   font-size: 8px;
 }
 
