@@ -13,54 +13,98 @@ import "./labs.css";
 import { WidgetCard } from "../components/WidgetCard";
 import { DECISION_WIDGET, getSpace } from "../data/spaces";
 import { WIDGET_CATALOG } from "../data/templates";
-import type { Widget } from "../data/types";
+import type { Widget, WidgetType } from "../data/types";
 import { mockBuildRoomFeed, mockRoundtableReplies } from "../lib/buildRoomFeed";
 import { createDemoWidget } from "../lib/widgetDefaults";
 
 /**
- * Widget wall — every widget on one drifting wall, for the demo line
- * "you can put pretty much anything in it. there's like thirty of these now."
- * Hash route: /#/wall
+ * Widget wall — the whole catalog as a drifting picker screen, for the demo
+ * line "you can put pretty much anything in it. there's like thirty of these
+ * now." Hash route: /#/wall
  *
- * Real WidgetCards from the seeded spaces (the crew's cake poll, the couple's
- * letter, the build room's pile), not screenshots. Three columns drift on a
- * tilted plane in alternating directions; every card wears a name tag; a roll
- * call lifts one card at a time, slows its column, and lights its tag lime.
- * The pointer adds parallax; hovering a card lifts it and holds its column;
- * clicking one selects it — it stays up, ringed in lime, its column pinned
- * while the rest keep flowing — until you click again, click the wall, or
- * press Esc. The lab pill (bottom-left) and the cursor hide after 2s idle,
- * so a recording is clean. `replay` re-runs the entrance.
+ * Every card is a real WidgetCard from the seeded spaces (the crew's cake
+ * poll, the couple's letter, the build room's pile), framed in a uniform
+ * gallery tile with its emoji, name and a one-line blurb — the add-widget
+ * picker's vocabulary, blown up. Three columns drift on a gently tilted
+ * plane in alternating directions; a roll call lifts one tile at a time;
+ * hover lifts a tile and holds its column. Click a tile and the widget flies
+ * out to a big centered spotlight you can use (vote, spin, claim); click
+ * anywhere or Esc and it flies back into its frame. The lab pill and the
+ * cursor hide after 2s idle, so a recording is clean. `replay` re-runs the
+ * entrance.
  */
 
 const COLS = 3;
-const COL_W = 440;
-const GAP = 26;
-const ZOOM = 0.86;
+const COL_W = 420;
+const TILE_H = 344;
+const FRAME_H = 232;
+const FRAME_PAD = 22;
+const GAP = 24;
 const STICKER_ZOOM = 1.1;
-const LIFT = 64;
-const BASE_SPEED = 34;
+const LIFT = 40;
+const BASE_SPEED = 30;
 const VARIANCE = 0.45;
-const PARALLAX_DEG = 5;
-const ROLL_EVERY = 1600;
+const PARALLAX_DEG = 4;
+const ROLL_EVERY = 1700;
 const ROLL_HOLD = 1200;
 const IDLE_AFTER = 2200;
 const SPEEDS = [0.5, 1, 2];
 const PLANE_W = COLS * COL_W + (COLS - 1) * GAP;
+const POP = "cubic-bezier(0.2, 0.9, 0.3, 1.18)";
+const GLIDE = "cubic-bezier(0.16, 1, 0.3, 1)";
 
-const TILTED = { tilt: 16, turn: -14, depth: 120 };
+/* A long perspective and a shallow pitch: enough tilt to read as a wall,
+   not enough to magnify the near edge into soft text. */
+const TILTED = { tilt: 11, turn: -9, depth: 80 };
 const FLAT = { tilt: 0, turn: 0, depth: 0 };
 /* Mirrors WidgetCard's widgetGrows: these render at content height. */
-const GROWS = new Set<Widget["type"]>(["dailyQ", "availability", "linkShelf", "playlist"]);
+const GROWS = new Set<WidgetType>(["dailyQ", "availability", "linkShelf", "playlist"]);
+
+/* What each one is for, in the picker's plain voice. */
+const BLURBS: Partial<Record<WidgetType, string>> = {
+  poll: "vote on anything",
+  linkPile: "drop links, read together",
+  countdown: "count down to the day",
+  quote: "a line worth keeping",
+  cozyColor: "color a postcard together",
+  rsvp: "who's in, who's out",
+  potluck: "who brings what",
+  wheel: "let the wheel decide",
+  weather: "the forecast for the day",
+  dailyQ: "one question, everyone answers",
+  sticker: "stick it anywhere",
+  hotLinks: "what the room is reading",
+  note: "write it down for everyone",
+  letter: "an email, folded onto the board",
+  sports: "the score, live",
+  media: "one photo, pinned",
+  jokeRegistry: "inside jokes, ranked",
+  shipPost: "show what you shipped",
+  expenseSplit: "who owes who",
+  linkShelf: "links worth saving",
+  messageWall: "notes for the birthday kid",
+  playlist: "a station for the room",
+  dualClock: "two time zones, one board",
+  photoWall: "the camera roll, shared",
+  roundtable: "a question for the table",
+  itinerary: "the plan, day by day",
+  decision: "a decision, on the record",
+  availability: "find a day that works",
+  chat: "the room's chat, on the board",
+  backendLive: "the backend, counting live",
+  linkCard: "a link, read and discussed",
+};
 
 type WallTile = {
   widget: Widget;
   spaceId: string;
   label: string;
   emoji: string;
+  blurb: string;
+  /** Rendered height of the widget in its own px (seeded h, or measured). */
+  natural: number;
+  /** Preview zoom inside the frame. */
   zoom: number;
-  /** Height in plane px (already zoomed). */
-  h: number;
 };
 
 type Picked = { id: string; tile: WallTile };
@@ -87,8 +131,7 @@ const WEB_POST: Widget = {
   },
 };
 
-/* One of each, the most lived-in instance, in an order that mixes tall and
-   short so the greedy packer below deals a good hand to every column. */
+/* One of each, the most lived-in instance. Order is the deal order. */
 const PICKS: ({ space: string; id: string } | { widget: Widget; space?: string })[] = [
   { space: "crew", id: "poll-cake" },
   { space: "buildroom", id: "br-pile" },
@@ -133,42 +176,37 @@ function catalogLabel(widget: Widget) {
 }
 
 /* Some widgets grow past their seeded height (the availability sheet, the
-   link shelf) — `measured` carries what they actually rendered at. */
+   link shelf) — `measured` carries what they actually rendered at, so the
+   preview zoom fits the real card, not the seed. */
 function buildTiles(measured: Record<string, number>): WallTile[] {
   const tiles: WallTile[] = [];
+  const availW = COL_W - FRAME_PAD * 2;
+  const availH = FRAME_H - FRAME_PAD * 2;
   for (const pick of PICKS) {
-    const seeded =
+    const widget =
       "widget" in pick
         ? pick.widget
         : getSpace(pick.space).widgets.find((item) => item.id === pick.id);
-    if (!seeded) continue;
-    const widget =
-      measured[seeded.id] && measured[seeded.id] > seeded.h
-        ? { ...seeded, h: measured[seeded.id] }
-        : seeded;
-    const base = widget.type === "sticker" ? STICKER_ZOOM : ZOOM;
-    const zoom = Math.min(base, COL_W / widget.w);
+    if (!widget) continue;
+    const natural = Math.max(widget.h, measured[widget.id] ?? 0);
+    const cap = widget.type === "sticker" ? STICKER_ZOOM : 1;
+    const zoom = Math.min(cap, availW / widget.w, availH / natural);
     tiles.push({
       widget,
       spaceId: pick.space ?? "widget-wall",
       ...catalogLabel(widget),
+      blurb: BLURBS[widget.type] ?? "",
+      natural,
       zoom,
-      h: widget.h * zoom,
     });
   }
   return tiles;
 }
 
-/* Deal each tile to the shortest column so the loops stay similar length. */
+/* Deal round-robin: uniform tiles, so every column loops the same length. */
 function packColumns(tiles: WallTile[]): WallTile[][] {
   const cols: WallTile[][] = Array.from({ length: COLS }, () => []);
-  const heights = new Array<number>(COLS).fill(0);
-  for (const tile of tiles) {
-    let c = 0;
-    for (let i = 1; i < COLS; i++) if (heights[i] < heights[c]) c = i;
-    cols[c].push(tile);
-    heights[c] += tile.h + GAP;
-  }
+  tiles.forEach((tile, i) => cols[i % COLS].push(tile));
   return cols;
 }
 
@@ -194,20 +232,32 @@ function tileFromId(columns: WallTile[][], id: string) {
   return { c, tile: columns[c]?.[k] };
 }
 
+/* The transform that puts `el` (laid out at `dst`) over `src`. */
+function flipTransform(src: DOMRect, dst: DOMRect) {
+  const sx = src.width / dst.width;
+  const sy = src.height / dst.height;
+  const dx = src.left + src.width / 2 - (dst.left + dst.width / 2);
+  const dy = src.top + src.height / 2 - (dst.top + dst.height / 2);
+  return `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+}
+
 export function WidgetWall() {
   const stageRef = useRef<HTMLDivElement>(null);
   const planeRef = useRef<HTMLDivElement>(null);
   const trackRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const focusRef = useRef<HTMLDivElement>(null);
 
   const offsets = useRef<number[]>([]);
   const velocities = useRef<number[]>([]);
   const pointer = useRef({ x: 0, y: 0 });
   const pointerIn = useRef(false);
-  const damped = useRef({ x: 0, y: 0 });
+  const damped = useRef({ x: 0, y: 0, depth: 0 });
   const hoverId = useRef<string | null>(null);
   const hoverCol = useRef(-1);
   const litCol = useRef(-1);
   const selectedRef = useRef<{ id: string; col: number } | null>(null);
+  const sourceRect = useRef<DOMRect | null>(null);
+  const closing = useRef(false);
   const speedMul = useRef(1);
   const pausedRef = useRef(false);
 
@@ -217,12 +267,13 @@ export function WidgetWall() {
   const [flat, setFlat] = useState(false);
   const [paused, setPaused] = useState(false);
   const [rollCall, setRollCall] = useState(true);
-  const [labels, setLabels] = useState(true);
   const [speedIndex, setSpeedIndex] = useState(1);
   const [idle, setIdle] = useState(false);
   const [reduced, setReduced] = useState(prefersReducedMotion);
   const [measured, setMeasured] = useState<Record<string, number>>({});
   const [entered, setEntered] = useState(false);
+  const [pollVotes, setPollVotes] = useState<Record<string, string>>({});
+  const [overrides, setOverrides] = useState<Record<string, Widget["data"]>>({});
   const [viewport, setViewport] = useState(() =>
     typeof window === "undefined"
       ? { w: 1440, h: 900 }
@@ -230,10 +281,11 @@ export function WidgetWall() {
   );
 
   const columns = useMemo(() => packColumns(buildTiles(measured)), [measured]);
-  const periods = useMemo(
-    () => columns.map((col) => col.reduce((sum, tile) => sum + tile.h + GAP, 0)),
+  const kinds = useMemo(
+    () => new Set(columns.flat().map((tile) => tile.widget.type)).size,
     [columns],
   );
+  const periods = useMemo(() => columns.map((col) => col.length * (TILE_H + GAP)), [columns]);
   const copies = useMemo(
     () => periods.map((period) => Math.max(2, Math.ceil((viewport.h * 1.3) / period) + 1)),
     [periods, viewport.h],
@@ -244,6 +296,23 @@ export function WidgetWall() {
   );
   const feed = useMemo(() => mockBuildRoomFeed("buildroom"), []);
   const roundtableReplies = useMemo(() => mockRoundtableReplies("buildroom"), []);
+
+  /* A vote or a spin in the spotlight shows on the wall copy too. */
+  const widgetFor = useCallback(
+    (tile: WallTile) =>
+      overrides[tile.widget.id]
+        ? { ...tile.widget, data: overrides[tile.widget.id] }
+        : tile.widget,
+    [overrides],
+  );
+  const patchData = useCallback(
+    (tile: WallTile, patch: (data: Widget["data"]) => Widget["data"]) =>
+      setOverrides((current) => ({
+        ...current,
+        [tile.widget.id]: patch(current[tile.widget.id] ?? tile.widget.data),
+      })),
+    [],
+  );
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -258,12 +327,12 @@ export function WidgetWall() {
   }, []);
 
   /* One measure pass: a growing widget's body scrolls past the seeded
-     height; take what it rendered at so tiles never overlap. */
+     height; take what it rendered at so the preview zoom fits it. */
   useLayoutEffect(() => {
     const next: Record<string, number> = {};
-    for (const tile of document.querySelectorAll<HTMLElement>(".ww-tile[data-grows]")) {
-      const id = tile.dataset.widget ?? "";
-      const body = tile.querySelector<HTMLElement>(".widget-group-body");
+    for (const el of document.querySelectorAll<HTMLElement>(".ww-preview[data-grows]")) {
+      const id = el.dataset.widget ?? "";
+      const body = el.querySelector<HTMLElement>(".widget-group-body");
       if (!id || !body || next[id]) continue;
       next[id] = body.scrollHeight;
     }
@@ -287,9 +356,9 @@ export function WidgetWall() {
 
   /* Fresh offsets per run so replay starts from the same dealt hand. */
   useEffect(() => {
-    offsets.current = periods.map((period, c) => period * ((c * 0.37) % 1));
+    offsets.current = periods.map((period, c) => period * ((c * 0.37 + 0.2) % 1));
     velocities.current = periods.map(() => 0);
-    damped.current = { x: 0, y: 0 };
+    damped.current = { x: 0, y: 0, depth: 0 };
   }, [periods, runKey]);
 
   useEffect(() => {
@@ -299,14 +368,13 @@ export function WidgetWall() {
     pausedRef.current = paused;
   }, [paused]);
 
-  /* The drift. Plane tilt follows the pointer, or sways on its own. A
-     hovered or selected column holds; a roll-called one eases to ¼. */
+  /* The drift. Plane tilt follows the pointer, or sways on its own; it eases
+     back when a widget is in the spotlight. A hovered or spotlit column
+     holds; the others slow to half behind the spotlight. */
   useEffect(() => {
     let raf = 0;
     let last: number | null = null;
     let t0: number | null = null;
-    /* Three columns always fit the frame with a margin; the mask only has
-       to dissolve the top and bottom, never a column. */
     const geom = flat
       ? { ...FLAT, scale: Math.min(1, (viewport.w - 64) / PLANE_W) }
       : { ...TILTED, scale: Math.max(0.7, (viewport.w - 120) / PLANE_W) };
@@ -319,28 +387,30 @@ export function WidgetWall() {
       const dt = Math.min(0.05, Math.max(0, ts - last) / 1000);
       last = ts;
       const elapsed = (ts - (t0 ?? ts)) / 1000;
+      const focused = selectedRef.current !== null;
 
       let targetX = 0;
       let targetY = 0;
-      if (!flat && !reduced) {
+      if (!flat && !reduced && !focused) {
         if (pointerIn.current) {
           targetX = pointer.current.x * PARALLAX_DEG;
           targetY = -pointer.current.y * PARALLAX_DEG;
         } else {
-          targetX = Math.sin(elapsed / 6.5) * 3;
-          targetY = Math.cos(elapsed / 8.2) * 2;
+          targetX = Math.sin(elapsed / 6.5) * 2.5;
+          targetY = Math.cos(elapsed / 8.2) * 1.5;
         }
       }
       const damp = 1 - Math.exp(-dt / 0.35);
       damped.current.x += (targetX - damped.current.x) * damp;
       damped.current.y += (targetY - damped.current.y) * damp;
+      damped.current.depth += ((focused ? 180 : 0) - damped.current.depth) * damp;
       const plane = planeRef.current;
       if (plane) {
         plane.style.transform =
           `translate(-50%, -50%) scale(${geom.scale.toFixed(4)}) ` +
           `rotateX(${(geom.tilt + damped.current.y).toFixed(3)}deg) ` +
           `rotateY(${(geom.turn + damped.current.x).toFixed(3)}deg) ` +
-          `translateZ(${-geom.depth}px)`;
+          `translateZ(${(-geom.depth - damped.current.depth).toFixed(1)}px)`;
       }
 
       for (let c = 0; c < periods.length; c++) {
@@ -348,8 +418,7 @@ export function WidgetWall() {
         const track = trackRefs.current[c];
         if (!period || !track) continue;
         const held = hoverCol.current === c || selectedRef.current?.col === c;
-        const factor =
-          pausedRef.current || reduced ? 0 : held ? 0 : litCol.current === c ? 0.25 : 1;
+        const factor = pausedRef.current || reduced ? 0 : held ? 0 : focused ? 0.5 : 1;
         const target = baseVelocities[c] * factor * speedMul.current;
         const ease = 1 - Math.exp(-dt / (target === 0 ? 0.18 : 0.3));
         velocities.current[c] += (target - velocities.current[c]) * ease;
@@ -365,8 +434,8 @@ export function WidgetWall() {
     return () => cancelAnimationFrame(raf);
   }, [flat, reduced, periods, baseVelocities, runKey, viewport.w]);
 
-  /* Roll call: one card at a time, the one nearest the middle of its
-     column. Sits out while the pointer or a selection owns the spotlight. */
+  /* Roll call: one tile at a time, the one nearest the middle of its
+     column. Sits out while the pointer or the spotlight owns attention. */
   useEffect(() => {
     if (!rollCall || reduced) return;
     let step = 0;
@@ -382,14 +451,12 @@ export function WidgetWall() {
       const total = count * period - GAP;
       const shift = period / 2 - (offsets.current[c] ?? 0);
       let best = { d: Infinity, id: "", k: 0 };
-      let top = 0;
       for (let k = 0; k < col.length; k++) {
-        const center = top + col[k].h / 2;
+        const center = k * (TILE_H + GAP) + TILE_H / 2;
         for (let i = 0; i < count; i++) {
           const y = -total / 2 + shift + i * period + center;
           if (Math.abs(y) < best.d) best = { d: Math.abs(y), id: `${c}-${i}-${k}`, k };
         }
-        top += col[k].h + GAP;
       }
       litCol.current = c;
       setLit({ id: best.id, tile: col[best.k] });
@@ -399,7 +466,7 @@ export function WidgetWall() {
         setLit((current) => (current?.id === best.id ? null : current));
       }, ROLL_HOLD);
     };
-    const first = window.setTimeout(ping, 1200);
+    const first = window.setTimeout(ping, 1400);
     const every = window.setInterval(ping, ROLL_EVERY);
     return () => {
       window.clearTimeout(first);
@@ -426,18 +493,21 @@ export function WidgetWall() {
     };
   }, []);
 
-  const deselect = useCallback(() => {
-    selectedRef.current = null;
-    setSelected(null);
-  }, []);
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") deselect();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [deselect]);
+  /* Spotlight in: the widget flies from its frame to the middle (FLIP). */
+  useLayoutEffect(() => {
+    const el = focusRef.current;
+    const src = sourceRect.current;
+    if (!selected || !el || !src) return;
+    const dst = el.getBoundingClientRect();
+    const anim = el.animate(
+      [
+        { transform: flipTransform(src, dst), opacity: 0.9 },
+        { transform: "none", opacity: 1 },
+      ],
+      { duration: 560, easing: reduced ? GLIDE : POP, fill: "both" },
+    );
+    return () => anim.cancel();
+  }, [selected, reduced]);
 
   const releaseHover = useCallback(() => {
     if (!hoverId.current) return;
@@ -446,6 +516,46 @@ export function WidgetWall() {
     setLit(null);
   }, []);
 
+  /* Spotlight out: fly back to wherever the frame has drifted to. */
+  const closeSpotlight = useCallback(() => {
+    const el = focusRef.current;
+    const sel = selectedRef.current;
+    if (!sel || closing.current) return;
+    if (!el) {
+      selectedRef.current = null;
+      setSelected(null);
+      return;
+    }
+    closing.current = true;
+    const from = getComputedStyle(el).transform;
+    el.getAnimations().forEach((animation) => animation.cancel());
+    const home = document
+      .querySelector<HTMLElement>(`[data-tile="${sel.id}"] .ww-preview`)
+      ?.getBoundingClientRect();
+    const dst = el.getBoundingClientRect();
+    const to = home ? flipTransform(home, dst) : "scale(0.6)";
+    const anim = el.animate(
+      [
+        { transform: from === "none" ? "none" : from, opacity: 1 },
+        { transform: to, opacity: home ? 0.9 : 0 },
+      ],
+      { duration: 380, easing: GLIDE, fill: "forwards" },
+    );
+    anim.onfinish = () => {
+      closing.current = false;
+      selectedRef.current = null;
+      setSelected(null);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeSpotlight();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [closeSpotlight]);
+
   const tileAt = useCallback(
     (clientX: number, clientY: number) => {
       const hit = document.elementFromPoint(clientX, clientY);
@@ -453,7 +563,7 @@ export function WidgetWall() {
       if (!tileEl) return null;
       const id = tileEl.dataset.tile ?? "";
       const { c, tile } = tileFromId(columns, id);
-      return tile ? { id, c, tile } : null;
+      return tile ? { id, c, tile, el: tileEl } : null;
     },
     [columns],
   );
@@ -487,42 +597,62 @@ export function WidgetWall() {
     releaseHover();
   }, [releaseHover]);
 
-  /* Click a card: it stays up. Click it again, the wall, or Esc: it drops. */
+  /* Click a tile: its widget flies out to the spotlight. */
   const onStageClick = useCallback(
     (event: ReactMouseEvent<HTMLDivElement>) => {
+      if (selectedRef.current) return;
       const hit = tileAt(event.clientX, event.clientY);
-      if (!hit || selectedRef.current?.id === hit.id) {
-        deselect();
-        return;
-      }
+      if (!hit) return;
+      const preview = hit.el.querySelector<HTMLElement>(".ww-preview");
+      sourceRect.current = (preview ?? hit.el).getBoundingClientRect();
       selectedRef.current = { id: hit.id, col: hit.c };
+      litCol.current = -1;
+      setLit(null);
       setSelected({ id: hit.id, tile: hit.tile });
     },
-    [tileAt, deselect],
+    [tileAt],
   );
 
   const replay = () => {
     releaseHover();
-    deselect();
+    closing.current = false;
+    selectedRef.current = null;
+    setSelected(null);
     setLit(null);
     setPaused(false);
     setRunKey((key) => key + 1);
   };
 
+  const focusZoom = selected
+    ? Math.min(
+        1.8,
+        Math.max(
+          1,
+          Math.min(
+            (viewport.w * 0.62) / selected.tile.widget.w,
+            (viewport.h * 0.56) / selected.tile.natural,
+          ),
+        ),
+      )
+    : 1;
+
   const stageVars = {
     "--ww-col": `${COL_W}px`,
+    "--ww-tile-h": `${TILE_H}px`,
+    "--ww-frame-h": `${FRAME_H}px`,
+    "--ww-frame-pad": `${FRAME_PAD}px`,
     "--ww-gap": `${GAP}px`,
     "--ww-lift": `${LIFT}px`,
   } as CSSProperties;
 
   return (
-    <div className={`widget-wall paper-bg ${idle ? "is-idle" : ""}`}>
+    <div
+      className={`widget-wall paper-bg ${idle ? "is-idle" : ""} ${selected ? "has-spotlight" : ""}`}
+      style={stageVars}
+    >
       <div
         ref={stageRef}
-        className={`ww-stage ${flat ? "is-flat" : ""} ${reduced ? "is-reduced" : ""} ${
-          labels ? "" : "no-labels"
-        } ${selected ? "has-selection" : ""}`}
-        style={stageVars}
+        className={`ww-stage ${flat ? "is-flat" : ""} ${reduced ? "is-reduced" : ""}`}
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
         onClick={onStageClick}
@@ -545,37 +675,42 @@ export function WidgetWall() {
                     {col.map((tile, k) => {
                       const id = `${c}-${i}-${k}`;
                       const isLit = lit?.id === id;
-                      const isSelected = selected?.id === id;
+                      const isAway = selected?.id === id;
                       return (
                         <div
                           key={id}
-                          className={`ww-tile ${isLit ? "is-lit" : ""} ${
-                            isSelected ? "is-selected" : ""
-                          }`}
+                          className={`ww-tile ${isLit ? "is-lit" : ""} ${isAway ? "is-away" : ""}`}
                           data-tile={id}
                           data-col={c}
                           data-type={tile.widget.type}
-                          data-widget={tile.widget.id}
-                          data-grows={GROWS.has(tile.widget.type) ? "1" : undefined}
-                          style={{
-                            zoom: tile.zoom,
-                            width: tile.widget.w,
-                            height: tile.widget.h,
-                          }}
                         >
-                          <div className="ww-tile-inner">
-                            <WidgetCard
-                              widget={tile.widget}
-                              spaceId={tile.spaceId}
-                              canvasScale={1}
-                              buildRoomFeed={feed}
-                              roundtableReplies={roundtableReplies[tile.widget.id]}
-                            />
+                          <div className="ww-frame">
+                            <div
+                              className="ww-preview"
+                              data-widget={tile.widget.id}
+                              data-grows={GROWS.has(tile.widget.type) ? "1" : undefined}
+                              style={{
+                                zoom: tile.zoom,
+                                width: tile.widget.w,
+                                height: tile.natural,
+                              }}
+                            >
+                              <WidgetCard
+                                widget={widgetFor(tile)}
+                                spaceId={tile.spaceId}
+                                canvasScale={1}
+                                pollSelection={pollVotes[tile.widget.id]}
+                                claimantId="you"
+                                buildRoomFeed={feed}
+                                roundtableReplies={roundtableReplies[tile.widget.id]}
+                              />
+                            </div>
                           </div>
-                          <span className="ww-tag" style={{ zoom: 1 / tile.zoom }}>
-                            <i aria-hidden="true">{tile.emoji}</i>
-                            {tile.label}
-                          </span>
+                          <div className="ww-caption">
+                            <span className="ww-chip" aria-hidden="true">{tile.emoji}</span>
+                            <strong className="ww-name">{tile.label}</strong>
+                            <span className="ww-blurb">{tile.blurb}</span>
+                          </div>
                         </div>
                       );
                     })}
@@ -586,6 +721,69 @@ export function WidgetWall() {
           ))}
         </div>
       </div>
+
+      <header className="ww-header">
+        <h2>add a widget</h2>
+        <p>{kinds} kinds · tap one to look closer</p>
+      </header>
+
+      {selected && (
+        <div className="ww-focus" onClick={closeSpotlight}>
+          <div
+            ref={focusRef}
+            className="ww-focus-card"
+            onClick={(event) => {
+              event.stopPropagation();
+              const target = event.target as HTMLElement;
+              if (target.closest("button, input, a, textarea, select, [role='button']")) return;
+              closeSpotlight();
+            }}
+          >
+            <div
+              className="ww-focus-zoom"
+              style={{
+                zoom: focusZoom,
+                width: selected.tile.widget.w,
+                height: selected.tile.natural,
+              }}
+            >
+              <WidgetCard
+                widget={widgetFor(selected.tile)}
+                spaceId={selected.tile.spaceId}
+                canvasScale={1}
+                pollSelection={pollVotes[selected.tile.widget.id]}
+                onPollVote={(_, optionId) =>
+                  setPollVotes((current) => ({ ...current, [selected.tile.widget.id]: optionId }))
+                }
+                claimantId="you"
+                onClaim={(_, itemName) =>
+                  patchData(selected.tile, (data) => ({
+                    ...data,
+                    items: (Array.isArray(data.items) ? data.items : []).map((item) => {
+                      const row = item as Record<string, unknown>;
+                      if (row.name !== itemName) return item;
+                      const mine = row.byUserId === "you";
+                      return mine
+                        ? { ...row, claimed: false, by: null, byUserId: undefined }
+                        : { ...row, claimed: true, by: "You", byUserId: "you" };
+                    }),
+                  }))
+                }
+                onWheelSpin={(_, spin) =>
+                  patchData(selected.tile, (data) => ({ ...data, ...spin, spunBy: "You" }))
+                }
+                buildRoomFeed={feed}
+                roundtableReplies={roundtableReplies[selected.tile.widget.id]}
+              />
+            </div>
+          </div>
+          <div className="ww-focus-caption" onClick={(event) => event.stopPropagation()}>
+            <span className="ww-chip" aria-hidden="true">{selected.tile.emoji}</span>
+            <strong>{selected.tile.label}</strong>
+            <span>{selected.tile.blurb}</span>
+          </div>
+        </div>
+      )}
 
       <div className="arrival-lab-bar ww-bar">
         <span className="arrival-lab-kicker">widget wall</span>
@@ -605,9 +803,6 @@ export function WidgetWall() {
           }}
         >
           roll call
-        </button>
-        <button type="button" className={labels ? "is-on" : ""} onClick={() => setLabels((v) => !v)}>
-          name tags
         </button>
         <button type="button" className={flat ? "is-on" : ""} onClick={() => setFlat((v) => !v)}>
           flat
