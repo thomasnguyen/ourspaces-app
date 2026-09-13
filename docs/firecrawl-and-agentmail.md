@@ -5,7 +5,7 @@ Plain-English tour of every sponsor surface in the app: what it does, where you
 
 Keys, webhook URLs and setup live in `docs/firecrawl-agentmail-setup.md`.
 The mail system's design and open goals live in `docs/mail.md`.
-Updated 2026-09-12.
+Updated 2026-09-13.
 
 ---
 
@@ -257,7 +257,8 @@ AgentMail**, from `ourspaces@agentmail.to`.
 **Where you see it:** the claim card. Type an address, get a code, type it back,
 you're in. No password, ever.
 
-**File:** `convex/otp.ts` → `EmailOtp` · `convex/auth.ts`
+**Files:** `convex/otp.ts` → `EmailOtp` · `convex/auth.ts` ·
+`convex/emails/signIn.ts` (subject, plain text and responsive HTML)
 
 **Why it's a good story, not just a shortcut:**
 
@@ -265,8 +266,12 @@ you're in. No password, ever.
   real job.
 - **It must not create a fourth inbox.** The free tier caps at 3 and all three
   are spoken for, so OTP rides the account-level inbox deliberately.
-- **Six digits from the CSPRNG**, 10-minute expiry (the library default is an
-  hour, which is a long time for a six-digit number to stay live).
+- **Six digits from the CSPRNG**, 20-minute expiry. One constant drives the
+  actual auth lifetime and the email's expiry copy.
+- **The email looks like OurSpaces.** A generated violet envelope masthead,
+  bold sans-serif type, one selectable code block and short instructions.
+  The code and instructions are HTML text; the illustration carries no
+  credential or required step. Plain-text mail has the same instructions.
 - **Rate-limited on the destination address**, not the caller — 2 in a burst,
   refilling 3/hour. Anonymous sign-in is free and unlimited so an attacker
   controls their own userId; the resource worth protecting is the *victim's

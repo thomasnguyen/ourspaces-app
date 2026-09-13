@@ -12,7 +12,7 @@
 - **Auth:** Better Auth (anonymous guest sessions; passkey blocked by a peer-dep conflict)
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-13T17:11:56Z
+- **Last updated:** 2026-09-13T17:24:34Z
 
 ## Highlights
 
@@ -589,3 +589,12 @@ built-in image generation tool: a small envelope header and a violet room-key
 ticket. Proposed clearer code hierarchy, shorter copy and sans-serif type;
 recorded the handoff in `docs/todos.md`. These are visual proposals only:
 no template, sender setting or backend changes. `npm run build` passes.
+
+### 2026-09-13 - working tree
+Built the approved envelope email: generated violet masthead, selectable code,
+short instructions and sans-serif fallbacks (`convex/emails/signIn.ts`). Changed
+the real code expiry and both email formats to a shared 20-minute setting;
+updated the AgentMail sender name to OurSpaces. Browser-verified at desktop,
+390px and 320px, plus images hidden. Build and Convex push pass; published to
+the connected dev deployment and verified the hosted image. No email sent
+during verification.
