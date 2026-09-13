@@ -134,7 +134,7 @@ function AboutOverview() {
             A shared canvas for everything that makes your group <em>your group.</em>
           </p>
           <div className="about-hero-actions">
-            <a className="about-button" href="#/home">find your space <span>↗</span></a>
+            <a className="about-button" href="#/space/crew">step into the crew <span>↗</span></a>
             <button className="about-text-button" onClick={showRooms}>take a look around <span>↓</span></button>
           </div>
           <p className="about-invitation">Walk in. Pick a room. Make yourself at home.</p>
@@ -211,7 +211,7 @@ function AboutOverview() {
       </section>
 
       <footer className="about-footer about-wrap">
-        <div className="about-footer-invite"><h2>There’s room for you.</h2><a className="about-button" href="#/home">come on in <span>↗</span></a></div>
+        <div className="about-footer-invite"><h2>There’s room for you.</h2><a className="about-button" href="#/space/crew">come on in <span>↗</span></a></div>
         <div className="about-footer-meta"><a className="about-brand" href="#/about"><img src="/assets/ourspace-mark.png" alt="" /><span>ourspaces</span></a><span>group chats forget. spaces remember.</span><a href={REPO_URL} target="_blank" rel="noreferrer">made in the open ↗</a></div>
       </footer>
     </main>

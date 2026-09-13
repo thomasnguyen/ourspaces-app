@@ -24486,13 +24486,10 @@
 .about-footer-meta > span, .about-footer-meta > a:last-child { color: var(--about-muted); font-size: 12px; }
 .about-footer-meta .about-brand > span { font-size: 19px; }
 .about-footer-meta .about-brand > img { width: 24px; height: 24px; }
-/* Shared by the block and both room paths; a sibling of the rail so its
+/* Shared by both room paths; a sibling of the rail so its
    entrance transform never traps the fixed corner link. */
 .app-about-link { position: fixed; z-index: 40; right: 18px; bottom: 9px; display: inline-flex; gap: 6px; padding: 3px 9px; border-radius: var(--radius-pill); background: var(--color-sticker); color: color-mix(in srgb, var(--color-card) 75%, var(--color-sticker)); text-decoration: none; font: 500 11px/1.4 var(--font-sans); transition: color var(--dur-quick) var(--ease-glide); }
 .app-about-link:hover { color: var(--color-card); }
-.rail-block { display: grid; place-items: center; width: 32px; height: 28px; margin-top: 3px; color: color-mix(in srgb, var(--color-card) 65%, var(--color-sticker)); transition: color var(--dur-quick) var(--ease-glide); }
-.rail-block:hover { color: var(--color-card); }
-.rail-block svg { width: 17px; height: 17px; }
 @media (min-width: 801px) {
   .paper-bg .lab-links { bottom: 42px; }
 }
@@ -24532,7 +24529,6 @@
   .about-footer-meta { gap: 22px; }
   .about-footer-meta > span { order: 2; width: 100%; }
   .app-about-link { bottom: 158px; right: 15px; }
-  .rail-block { display: none; }
 }
 @media (max-width: 420px) {
   .about-brand { gap: 7px; }
@@ -24557,7 +24553,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .about-board { animation: none; }
-  .about-page *, .app-about-link, .rail-block { transition: none; }
+  .about-page *, .app-about-link { transition: none; }
 }
 
 /* —— made with: the four integration stories under #/about/… ——————— */

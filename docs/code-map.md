@@ -8,22 +8,25 @@ are not.
 
 | ~Lines | Section |
 |---|---|
-| 1–97 | Imports, lazy routes (`CursorLab`, `WidgetLab`, `BlockPage`, `LiveBlockPage`, `Welcome`) |
+| 1–97 | Imports, lazy routes (`CursorLab`, `WidgetLab`, `Welcome`, `AboutPage`) |
 | 99–150 | Local types (`Route`, `WidgetPlacement`, `FocusedTarget`…) + camera/zoom constants |
 | 152–241 | Geometry helpers + hash routing helpers (`routeFromHash`, `spaceFromHash`) |
 | 248–333 | `App()` state: ~35 `useState` + ~12 refs (canvas pan/scale, focus, picker, thread dock…) |
 | 335–444 | Camera core: `applyCanvasScale`, `animateCanvasCamera` |
 | 446–800 | Focus system: `focusCameraTarget`, `leaveFocus`, `focusFrame`, `focusWidgetThread` |
-| 802–884 | Block zoom in/out transitions |
+| — | Home/block route and transition wiring retired; legacy hashes redirect to rooms |
 | 886–1101 | ~11 `useEffect`s (route/hash listeners, resize fitting, camera cleanup) |
 | 1103–1208 | Navigation + panel openers (`selectSpace`, `openPicker`, `openWidgetEditor`, `saveSpace`) |
 | 1221–1394 | Widget CRUD/layout (`addWidget`, `moveWidget`, drag handlers, frame layout) |
 | 1396–1580 | Widget interactions (poll/wheel/rsvp/dailyQ), threads, delete/undo |
 | 1582–1670 | Recap ("catch me up") + mock follow-up chat + sound toggle |
-| 1640–1717 | Route early-returns → pages (live/join/space → `LiveSpacePage`, home → `(Live)BlockPage`) |
+| 1640–1717 | Route early-returns → pages (live/join/space → `LiveSpacePage`, legacy home → crew, bare root → named build room) |
 | 1719–2130 | Mock-mode derived data + the big JSX render (`Rail`, `Canvas` ~1921, panels, docks, toasts) |
 
 `src/pages/LiveSpace.tsx` (~2060 lines) is the LIVE twin of App.tsx's inline canvas.
+
+`lib/routes.ts` always generates `#/space/<slug>`. App’s hash listener uses
+`replaceState` for legacy aliases: `#/home` → crew; bare `#/` → buildroom.
 
 ## src/ directories
 
@@ -42,9 +45,10 @@ presence/gestures) ·
 `WidgetCard.tsx` (widget shell: drag/resize/thread chip) · `WidgetEditorPanel.tsx`
 (per-type edit forms) · `WidgetPicker.tsx` · `WidgetThreadDock.tsx` ·
 `GlobalChatPanel.tsx` · `ThreadContent.tsx` (messages + composer + promote) ·
-`Rail.tsx` (space rail; the brand mark opens `#/about`, a small grid icon
-opens `#/home`, and a sibling fixed `about ↗` link sits bottom-right on the
-block and both room paths. Both About links remember the current room before
+`Rail.tsx` (space rail; the brand mark opens `#/about`, and a sibling fixed
+`about ↗` link sits bottom-right on both room paths. Room tiles handle all
+space navigation; the all-spaces grid button is retired. Both About links
+remember the current room before
 navigating, including the default `#/` room; `OnlineCountSuffix` shows "· N here" per space via the
 presence component's `roomPresence.onlineCountForSpace`, mounted by
 `LiveSpace.tsx`'s `RoomPresenceHeartbeat` once a room is entered) ·
@@ -92,7 +96,8 @@ the nameplate; `MailArrivalLive` subscribes to `mailArrival.recentInbound`,
 `MailArrivalLab` runs `lib/mailArrival.ts` fixtures for `#/mail`; one
 `MailArrivalStage` draws envelopes, flights and the `↩ told holly` tick)
 
-**pages/** — `LiveSpace.tsx` (live canvas) · `Block.tsx` (mock `#/home`) ·
+**pages/** — `LiveSpace.tsx` (live canvas) ·
+`Block.tsx` + `LiveBlock.tsx` (retired block views; no route/import from App) ·
 `About.tsx` (`#/about` — a standalone brand page: birthday collage with a
 local interactive cake poll using `PollWidget`, real live totals, three
 outcome-led explanations, five direct room links, origin story, maker credits,
@@ -110,8 +115,8 @@ from the vendors’ brand assets, embedded in `VENDOR_LOGOS` with source URLs.
 The vendor links sit directly below the About hero, before live totals.
 Styles follow ABOUT in the MADE WITH
 section of `index.css`. `App.tsx` maps the entire `about/` prefix to this
-lazy page and preserves the last room) ·
-`LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
+lazy page and preserves the last room. Entry buttons go to `#/space/crew`) ·
+`Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
 `CursorLab.tsx` · `ArrivalLab.tsx` (`#/arrival` — the pile's ReadingRoom
 with a black lab pill: drop one, one fails, replay, ¼ speed, clear; no
 Firecrawl, same fake resolve as mock mode) · `WidgetWall.tsx` (`#/wall` — the

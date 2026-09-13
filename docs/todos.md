@@ -5,6 +5,17 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Direct room navigation (2026-09-13):** retired the home/block page.
+  `#/home` now redirects to `#/space/crew`; About’s entry buttons and the
+  invalid-invite return link go straight to the crew. Removed the sidebar’s
+  redundant all-spaces grid button. Bare `#/` opens `#/space/buildroom`,
+  and every generated room link includes its slug, including the build room.
+  Removed the block route and its transition wiring from `App.tsx`.
+  Verified on port 5174: old URL redirects, sidebar room switches, About
+  entry/return links, browser history, and desktop/phone layouts. The first
+  live visit still shows the existing name picker. `npm run build` passes.
+  Local frontend only.
+
 - **Vendor section placement + logos (2026-09-13):** moved the four vendor
   links directly below the About hero, before the live totals and room story.
   About and vendor heroes use the vendors’ original SVG wordmarks, embedded
@@ -34,8 +45,8 @@ Backward-looking history lives in `hackathon.md`.
   Short outcome-led sections lead into five room links, Thomas + Holly’s
   origin story, and a compact maker section with expandable technical detail.
   The rail logo opens About. A quiet `about ↗` link is fixed bottom-right on
-  the block and both canvas paths (above the rail on mobile); the rail’s small
-  grid icon keeps a direct route to the block. Back returns to the last room.
+  both canvas paths (above the rail on mobile). Back returns to the last room;
+  entry buttons now open the crew, and the all-spaces grid icon is retired.
   Uses existing artwork and house tokens. Browser-verified at 1440, 800,
   390, and 320px, including the preview vote, room links, logo/back flow,
   live totals, mobile corner link, and reduced motion. `npm run build` passes.
