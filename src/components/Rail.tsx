@@ -134,7 +134,14 @@ export function Rail({
 }) {
   return (
     <aside className="space-rail">
-      <a className="rail-brand" href="/" aria-label="OurSpaces home">
+      {/* The mark goes to the block — the street of rooms with the live
+          totals on it — not back to the default room you may already be in. */}
+      <a
+        className="rail-brand"
+        href="#/home"
+        title="the block"
+        aria-label="The block — every space"
+      >
         <img src="/assets/ourspace-mark.png" alt="" />
       </a>
 
@@ -209,6 +216,16 @@ export function Rail({
             <span>+</span>
           </button>
           <span className="space-tooltip">new space</span>
+        </div>
+
+        <div
+          className="space-link-wrap"
+          style={{ "--i": SPACES.length + 2 } as CSSProperties}
+        >
+          <a className="rail-about" href="#/about" aria-label="What is this?">
+            <span aria-hidden="true">?</span>
+          </a>
+          <span className="space-tooltip">what is this?</span>
         </div>
       </div>
     </aside>
