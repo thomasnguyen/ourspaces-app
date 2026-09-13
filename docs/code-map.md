@@ -73,7 +73,9 @@ offered a refresh before its `React.lazy` chunks 404)
 
 **pages/** — `LiveSpace.tsx` (live canvas) · `Block.tsx` (mock `#/home`) ·
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
-`CursorLab.tsx` · `labs.css`
+`CursorLab.tsx` · `ArrivalLab.tsx` (`#/arrival` — the pile's ReadingRoom
+with a black lab pill: drop 1/3/6, one fails, ¼ speed, clear; no Firecrawl,
+same fake resolve as mock mode) · `labs.css`
 
 **widgets/** — `buildroom.tsx` (the build room's four: `linkPile`, `hotLinks`,
 `shipPost`, `roundtable`; also `ShipPreview`, the illustrated demo project
@@ -130,6 +132,10 @@ adapter used by seed data and `useSpaceData`; pinned local cover fallback) ·
 `Canvas.tsx`; `pileInsideFrame` makes the pile's frame open the room instead of
 zooming) · `flipLanding.ts` (`flyWidgetIn` — the kept-takeaway arc) ·
 `routes.ts` also exports `DEFAULT_SPACE_SLUG` (`#/` → `buildroom`) ·
+`mockArrival.ts` (the no-Firecrawl arrival: `pendingLinkRows`,
+`mockResolvedPatch` [title off the path, kind guessed off the host],
+`scheduleMockResolve` [per-link clocks, optional slow-mo scale + fail set];
+shared by App.tsx mock drops and the arrival lab so the beat can't drift) ·
 `linkQuestions.ts` (web post question threads:
 `<widgetId>::q:<id>` ride the normal message pipes; canned fallback generator)
 

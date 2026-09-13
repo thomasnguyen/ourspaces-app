@@ -21,8 +21,17 @@ Backward-looking history lives in `hackathon.md`.
   out instead of flipping as a wall, and `mockLinkKind` guesses the verdict
   off the host (github→repo, youtube→video, HN/reddit→discussion, docs.→docs).
   Header pill now reads "reading N pages…". CSS: "BUILD ROOM — ARRIVAL
-  CHOREOGRAPHY" at the end of `index.css`. Verified in mock via
-  `.context/shot-arrival.mjs` (frame sequence in `/tmp/arrival/`); not yet
+  CHOREOGRAPHY" at the end of `index.css`. **Second pass (same day):** the
+  title gets a lime highlighter swipe that hugs the words and lifts off, the
+  verdict stamps down (scale 1.45, −6°, pop), the tile squashes on landing,
+  pending rows deal in at 110ms apart, the live tick no longer pulses (caret
+  + scan line are enough), failed rows land too (red-tinted wash, black
+  `retry` pill — it was invisible before), and every duration is multiplied
+  by `--arrival-slow`. **Test area: `#/arrival`** (`pages/ArrivalLab.tsx`) —
+  the real ReadingRoom over the fixtures with a lab pill: drop 1 / 3 / 6,
+  one fails, ¼ speed, clear. Mock helpers moved to `lib/mockArrival.ts` so
+  App.tsx and the lab share one fake. Verified via
+  `.context/shot-arrival-lab.mjs` (frames in `/tmp/arrival/`); not yet
   verified live (no credits spent). Brainstorm + the unbuilt directions
   (research-bar narration, crawl counter hero, mail envelope) stay in
   `docs/local/build-room-arrival.md`.

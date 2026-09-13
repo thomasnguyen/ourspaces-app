@@ -21332,13 +21332,19 @@
 }
 
 .rr-retry {
-  padding: 4px 11px;
+  padding: 5px 12px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(17, 17, 20, 0.25);
-  background: transparent;
+  border: 0;
+  background: var(--color-sticker);
+  color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
+  transition: translate var(--dur-quick) var(--ease-glide);
+}
+
+.rr-retry:hover {
+  translate: 0 -1px;
 }
 
 .rr-kept-flag {
@@ -23274,10 +23280,23 @@
    BUILD ROOM — ARRIVAL CHOREOGRAPHY
    A dropped link narrates itself in the slot the title will fill:
    fetching → reading → pulling the title. On resolve the real fields print
-   in one at a time (title wipe, kind verdict pops, summary prints, tile
-   settles). The clock is the row's own droppedAt (ReadingRoom.tsx
-   arrivalStage), so mock and live play the same beat.
+   in one at a time — tile settles (squash), title wipes in and gets a lime
+   highlighter swipe, the kind verdict stamps down, the summary prints last.
+   The clock is the row's own droppedAt (ReadingRoom.tsx arrivalStage), so
+   mock and live play the same beat. `--arrival-slow` (the #/arrival lab's
+   ¼-speed switch) stretches every duration here; the JS clock stretches with
+   it via ReadingRoom's clockScale.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --arrival-slow: 1;
+}
+
+/* ── the drop: fresh rows deal in from the bar, wider stagger than the pile ── */
+
+.rr-row.is-pending {
+  animation-delay: calc(var(--i, 0) * 110ms * var(--arrival-slow));
+}
 
 /* ── the pending row ── */
 
@@ -23288,7 +23307,7 @@
   color: var(--color-ink);
   font-weight: 600;
   /* keyed remount per stage: each new line rolls up into the slot */
-  animation: rr-stage-in var(--dur-base) var(--ease-glide) both;
+  animation: rr-stage-in calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide) both;
 }
 
 @keyframes rr-stage-in {
@@ -23303,7 +23322,7 @@
   width: 6px;
   height: 0.8em;
   background: var(--color-ink);
-  animation: rr-caret 0.9s steps(2, jump-none) infinite;
+  animation: rr-caret calc(0.9s * var(--arrival-slow)) steps(2, jump-none) infinite;
 }
 
 @keyframes rr-caret {
@@ -23317,7 +23336,9 @@
   color: var(--color-muted);
 }
 
-/* the three step ticks under the domain: done = ink, live = lime */
+/* the three step ticks under the domain: done = ink, live = lime.
+   No pulse on the live one — the caret and the scan line already say
+   "working"; a third loop is noise. */
 .rr-row-steps {
   display: inline-flex;
   align-items: center;
@@ -23331,8 +23352,8 @@
   box-shadow: inset 0 0 0 1.5px var(--color-ink);
   opacity: 0.3;
   transition:
-    background var(--dur-base) var(--ease-glide),
-    opacity var(--dur-base) var(--ease-glide);
+    background calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide),
+    opacity calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide);
 }
 
 .rr-row[data-stage="1"] .rr-row-steps i:nth-child(1),
@@ -23347,7 +23368,6 @@
 .rr-row[data-stage="2"] .rr-row-steps i:nth-child(3) {
   opacity: 1;
   background: var(--color-lime);
-  animation: rr-enrich-pulse 0.9s var(--ease-glide) infinite;
 }
 
 /* the tile is a scanner while the page is being read */
@@ -23365,7 +23385,7 @@
   height: 2px;
   background: #fff;
   opacity: 0.9;
-  animation: rr-scan 1.1s var(--ease-glide) infinite;
+  animation: rr-scan calc(1.1s * var(--arrival-slow)) var(--ease-glide) infinite;
 }
 
 @keyframes rr-scan {
@@ -23382,7 +23402,11 @@
   inset: 0;
   pointer-events: none;
   background: color-mix(in srgb, var(--color-lime) 16%, transparent);
-  animation: rr-land-flash 1.4s var(--ease-glide) forwards;
+  animation: rr-land-flash calc(1.4s * var(--arrival-slow)) var(--ease-glide) forwards;
+}
+
+.rr-row.is-failed.is-landing::after {
+  background: color-mix(in srgb, #b3402a 10%, transparent);
 }
 
 @keyframes rr-land-flash {
@@ -23391,19 +23415,26 @@
   }
 }
 
-/* 1 · tile settles — the scanner stops and the monogram lands */
+/* 1 · tile lands — the scanner stops, the monogram squashes and settles */
 .rr-row.is-landing .rr-row-tile {
-  animation: rr-land-tile var(--dur-arrive) var(--ease-pop) both;
+  animation: rr-land-tile calc(420ms * var(--arrival-slow)) var(--ease-glide) both;
 }
 
 @keyframes rr-land-tile {
-  from {
+  0% {
     scale: 0.82;
+  }
+  55% {
+    scale: 1.08 0.93;
+  }
+  100% {
+    scale: 1;
   }
 }
 
 .rr-row.is-landing .rr-row-tile img {
-  animation: rr-land-cover 600ms var(--ease-glide) 500ms both;
+  animation: rr-land-cover calc(600ms * var(--arrival-slow)) var(--ease-glide)
+    calc(500ms * var(--arrival-slow)) both;
 }
 
 @keyframes rr-land-cover {
@@ -23413,26 +23444,67 @@
   }
 }
 
-/* 2 · title prints left to right into the slot the stage text held */
+/* 2 · title prints left to right into the slot the stage text held, then a
+   lime highlighter swipes across it and lifts off — read it, it's real */
 .rr-row.is-landing .rr-row-title > strong {
-  animation: rr-print 420ms var(--ease-glide) 60ms both;
+  position: relative;
+  isolation: isolate;
+  /* hug the words, not the column, so the highlighter ends where the title does */
+  width: fit-content;
+  max-width: 100%;
+  animation: rr-print calc(420ms * var(--arrival-slow)) var(--ease-glide)
+    calc(60ms * var(--arrival-slow)) both;
 }
 
-/* 3 · the kind verdict pops in — the classification becoming visible */
+.rr-row.is-landing .rr-row-title > strong::before {
+  content: "";
+  position: absolute;
+  inset: -1px -5px;
+  z-index: -1;
+  border-radius: 3px;
+  background: var(--color-lime);
+  transform-origin: left center;
+  animation: rr-highlight calc(760ms * var(--arrival-slow)) var(--ease-glide)
+    calc(380ms * var(--arrival-slow)) both;
+}
+
+@keyframes rr-highlight {
+  0% {
+    scale: 0 1;
+    transform-origin: left center;
+  }
+  48% {
+    scale: 1 1;
+    transform-origin: left center;
+  }
+  52% {
+    scale: 1 1;
+    transform-origin: right center;
+  }
+  100% {
+    scale: 0 1;
+    transform-origin: right center;
+  }
+}
+
+/* 3 · the kind verdict stamps down — the classification becoming visible */
 .rr-row.is-landing .rr-row-kind {
-  animation: rr-land-kind var(--dur-arrive) var(--ease-pop) 380ms both;
+  animation: rr-land-kind calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-pop)
+    calc(620ms * var(--arrival-slow)) both;
 }
 
 @keyframes rr-land-kind {
   from {
     opacity: 0;
-    scale: 0.5;
+    scale: 1.45;
+    rotate: -6deg;
   }
 }
 
 /* 4 · the one-line summary prints last */
 .rr-row.is-landing .rr-row-desc {
-  animation: rr-print var(--dur-stage) var(--ease-glide) 520ms both;
+  animation: rr-print calc(var(--dur-stage) * var(--arrival-slow)) var(--ease-glide)
+    calc(760ms * var(--arrival-slow)) both;
 }
 
 @keyframes rr-print {
@@ -23453,6 +23525,7 @@
   .rr-row.is-landing .rr-row-tile,
   .rr-row.is-landing .rr-row-tile img,
   .rr-row.is-landing .rr-row-title > strong,
+  .rr-row.is-landing .rr-row-title > strong::before,
   .rr-row.is-landing .rr-row-kind,
   .rr-row.is-landing .rr-row-desc {
     animation: none;
