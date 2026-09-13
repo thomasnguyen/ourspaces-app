@@ -255,15 +255,18 @@ function demoModeRequested() {
     import.meta.env.VITE_DEMO === "1";
 }
 
-/** `#/mail` — the mail arrival lab (docs/mail-arrival.md): not a page of its
-    own but the crew space with fixtures fired at it, mock or live. */
+/** `#/mail` (the crew) or `#/mail/<slug>` — the mail arrival lab
+    (docs/mail-arrival.md): not a page of its own but the real space with
+    fixtures fired at it, mock or live. */
 function mailLabRequested() {
-  return window.location.hash.replace(/^#\/?/, "").split("?")[0] === "mail";
+  const hash = window.location.hash.replace(/^#\/?/, "").split("?")[0];
+  return hash === "mail" || hash.startsWith("mail/");
 }
 
 function spaceFromHash(): string {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "mail") return "crew";
+  if (hash.startsWith("mail/")) return hash.slice("mail/".length) || "crew";
   // #/about is its own page, but it keeps a back door to the room you came
   // from, and spaceId has to still be that room when you take it.
   if (hash === "about") return lastSpaceSlug();

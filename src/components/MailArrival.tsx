@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -89,10 +90,16 @@ function measureSlot() {
   return { left: 520, top: 40 };
 }
 
+function findWidget(widgetId: string) {
+  return (
+    Array.from(document.querySelectorAll<HTMLElement>(".widget-group[data-widget-id]")).find(
+      (node) => node.dataset.widgetId === widgetId,
+    ) ?? null
+  );
+}
+
 function measureWidgetFoot(widgetId: string) {
-  const element = Array.from(
-    document.querySelectorAll<HTMLElement>(".widget-group[data-widget-id]"),
-  ).find((node) => node.dataset.widgetId === widgetId);
+  const element = findWidget(widgetId);
   if (!element) return null;
   const rect = element.getBoundingClientRect();
   if (rect.width === 0) return null;
@@ -352,6 +359,20 @@ function MailEnvelope({
     }
     return undefined;
   }, [phase, kind, event.widgetId, scale]);
+
+  /* A letter is a new widget made by this very email, so the one on the
+     canvas would appear before the envelope gets there — two envelopes for
+     a beat. Keep it hidden from the verdict until the flight lands (the wash
+     in flyEnvelopeTo reveals it); the envelope that lands IS the letter.
+     Layout effect so it never paints once un-hidden. */
+  useLayoutEffect(() => {
+    if (!event.widgetId) return;
+    if (phase !== "decided" && phase !== "filing" && phase !== "flying") return;
+    const target = findWidget(event.widgetId);
+    if (!target || target.dataset.widgetType !== "letter") return;
+    target.classList.add("is-mail-incoming");
+    return () => target.classList.remove("is-mail-incoming");
+  }, [event.widgetId, phase]);
 
   useEffect(() => {
     if (phase !== "flying" || !ref.current || !event.widgetId || flown.current) return;

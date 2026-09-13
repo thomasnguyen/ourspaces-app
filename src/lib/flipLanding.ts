@@ -38,6 +38,8 @@ export async function flyEnvelopeTo(envelope: HTMLElement, widgetId: string, sca
   const target = await waitForWidget(widgetId, 4000);
   if (!target) return false;
   const wash = () => {
+    // a hidden letter target shows itself under the landing (MailArrival)
+    target.classList.remove("is-mail-incoming");
     target.classList.add("is-mail-washed");
     window.setTimeout(() => target.classList.remove("is-mail-washed"), 1400 * scale);
   };

@@ -202,15 +202,22 @@ stamp and the reason land in one reactive tick; spam / links / reading /
 replied go through `inbox.markEvent`. The AgentMail label for an unfiled
 email is now `unfiled` (was `filed`) — one word at both ends.
 
-**7. The lab is the crew space.** `#/mail` is not a page of its own: it is
-`#/space/crew` with a lab flag, mock or live, so the envelope lands on the
-real header and flies to the real tahoe tracker. The pill fires fixture
-events through the same `MailArrival`.
+**7. The lab is the real space.** `#/mail` (the crew) or `#/mail/<slug>` is
+not a page of its own: it is that space with a lab flag, mock or live, so the
+envelope lands on the real header and flies to the real tahoe tracker (or
+the couple's letter). The pill fires fixture events through the same
+`MailArrival`.
 
 **8. Second arrival stacks.** +22px x, +14px y per live envelope, like
 `addLetter`'s drift. Batches are an edge case; one envelope is the design.
 
-**9. Shoot note.** The flight ends wherever the widget is on screen. The
+**9. The envelope that lands IS the letter.** A letter widget is made by
+the very email in flight, so it would pop onto the canvas before the
+envelope gets there — two envelopes for a beat. A letter target is hidden
+(`is-mail-incoming`) from the verdict until the flight lands; the wash
+reveals it. Trackers and the pile are never hidden: they were already there.
+
+**10. Shoot note.** The flight ends wherever the widget is on screen. The
 seeded tahoe tracker sits at canvas x=1378, which is past the right edge
 below ~1500px wide — frame it (zoom out, or move the tracker) before the
 take, or the envelope leaves the crop. `flyEnvelopeTo` still washes the
