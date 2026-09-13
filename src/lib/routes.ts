@@ -1,17 +1,16 @@
-/** The space `#/` lands on — the demo's opening beat. */
+/** The space a bare URL opens — always shown with its explicit room slug. */
 export const DEFAULT_SPACE_SLUG = "buildroom";
 
 export function normalSpaceHash(slug: string) {
-  return slug === DEFAULT_SPACE_SLUG ? "#/" : `#/space/${encodeURIComponent(slug)}`;
+  return `#/space/${encodeURIComponent(slug)}`;
 }
 
 export function inviteUrlForSpace(slug: string) {
   return `${window.location.origin}${window.location.pathname}#/join/${encodeURIComponent(slug)}`;
 }
 
-/** `#/about` is an overlay, not a room — it opens over whatever canvas you
- *  were already on, so hitting it from the crew space doesn't quietly move
- *  you to the build room. Session-scoped: a cold link falls back to `#/`. */
+/** About remembers the room you came from. A cold link returns to the
+ *  build room at its explicit `#/space/buildroom` address. */
 const LAST_SPACE_KEY = "ourspaces:last-space";
 
 export function rememberSpaceSlug(slug: string) {

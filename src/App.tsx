@@ -65,11 +65,6 @@ import { widgetSupportsThread } from "./lib/widgetThreads";
 import { linkCardQuestions, questionThreadId } from "./lib/linkQuestions";
 import { LinkQuestionStrip } from "./components/LinkQuestionStrip";
 import { LiveSpacePage } from "./pages/LiveSpace";
-import {
-  ZOOM_LANDING_MS,
-  useBlockZoom,
-  type BlockZoomMode,
-} from "./lib/blockZoom";
 import { getDataMode } from "./live/dataMode";
 import { getIdentity } from "./live/identity";
 import { useCanvasSpacePan } from "./lib/canvasSpacePan";
@@ -77,7 +72,7 @@ import {
   buildRoomOverviewScale,
   withBuildRoomCover,
 } from "./lib/buildRoomPresentation";
-import { DEFAULT_SPACE_SLUG, lastSpaceSlug, rememberSpaceSlug } from "./lib/routes";
+import { DEFAULT_SPACE_SLUG, lastSpaceSlug, normalSpaceHash, rememberSpaceSlug } from "./lib/routes";
 import { pileInsideFrame } from "./lib/frameMembership";
 import {
   linkReplyCounts,
@@ -103,12 +98,6 @@ const ArrivalLab = lazy(() =>
 const WidgetWall = lazy(() =>
   import("./pages/WidgetWall").then((module) => ({ default: module.WidgetWall })),
 );
-const BlockPage = lazy(() =>
-  import("./pages/Block").then((module) => ({ default: module.BlockPage })),
-);
-const LiveBlockPage = lazy(() =>
-  import("./pages/LiveBlock").then((module) => ({ default: module.LiveBlockPage })),
-);
 const Welcome = lazy(() => import("./pages/Welcome"));
 const AboutPage = lazy(() =>
   import("./pages/About").then((module) => ({ default: module.About })),
@@ -128,7 +117,7 @@ function DeferredRoute({ children }: { children: ReactNode }) {
   );
 }
 
-type Route = "space" | "home" | "about" | "cursors" | "widgets" | "arrival" | "wall" | "live" | "join" | "test";
+type Route = "space" | "about" | "cursors" | "widgets" | "arrival" | "wall" | "live" | "join" | "test";
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
 type FrameLayout = Pick<Widget, "x" | "y" | "w" | "h">;
 type CanvasSize = { width: number; height: number };
@@ -233,7 +222,6 @@ function roomOriginFor(widgetId: string): RoomOrigin {
 function routeFromHash(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "test") return "test";
-  if (hash === "home") return "home";
   if (hash === "about" || hash.startsWith("about/")) return "about";
   if (hash === "join" || hash.startsWith("join/")) return "join";
   if (hash === "live" || hash.startsWith("live/")) return "live";
@@ -265,6 +253,7 @@ function mailLabRequested() {
 
 function spaceFromHash(): string {
   const hash = window.location.hash.replace(/^#\/?/, "");
+  if (hash === "home") return "crew";
   if (hash === "mail") return "crew";
   if (hash.startsWith("mail/")) return hash.slice("mail/".length) || "crew";
   // #/about is its own page, but it keeps a back door to the room you came
@@ -289,15 +278,13 @@ function spaceFromHash(): string {
 
 /**
  * Look prototype — crew + league canvases, widget picker, cursor lab.
- * Hash routes: #/  ·  #/home  ·  #/about  ·  #/space/league  ·  #/cursors  ·  #/widgets
+ * Hash routes: #/space/buildroom · #/space/crew · #/about · #/cursors · #/widgets
+ * Old #/home links redirect to the crew; bare #/ links name the build room.
  */
 export default function App() {
   const [route, setRoute] = useState<Route>(routeFromHash);
   const [spaceId, setSpaceId] = useState(spaceFromHash);
   const demoMode = demoModeRequested();
-  const zoom = useBlockZoom();
-  const zoomPhaseRef = useRef(zoom.phase);
-  zoomPhaseRef.current = zoom.phase;
   const [pickerOpen, setPickerOpen] = useState(false);
   // Whatever you picked off the tray, riding the cursor until you click it down.
   const [placing, setPlacing] = useState<PlacingItem | null>(null);
@@ -828,121 +815,24 @@ export default function App() {
     ],
   );
 
-  const startBlockZoomIn = useCallback(
-    (id: string, mode: BlockZoomMode, blockScroll: { left: number; top: number }) => {
-      if (route !== "home") return;
-      zoom.beginZoomIn(id, mode, blockScroll);
-    },
-    [route, zoom.beginZoomIn],
-  );
-
-  const completeBlockZoomIn = useCallback(
-    (id: string) => {
-      zoom.completeZoomIn(id);
-      restoreFrameEdit();
-      frameEditSnapshot.current = null;
-      setFocusedTarget(null);
-      canvasReturnView.current = null;
-      chatReturnView.current = null;
-      setPickerOpen(false);
-      setChatOpen(false);
-      setRecapOpen(false);
-      setManagedWidgetId("");
-      setEditingWidgetId("");
-      setSpaceDraft(null);
-      setCanvasScale(1);
-      canvasScaleRef.current = 1;
-      setCanvasAwayFromHome(false);
-      setRoute("space");
-      setSpaceId(id);
-      window.location.hash = id === DEFAULT_SPACE_SLUG ? "#/" : `#/space/${id}`;
-    },
-    [restoreFrameEdit, zoom.completeZoomIn],
-  );
-
-  const beginZoomOut = useCallback(() => {
-    if (route !== "space" || zoomPhaseRef.current !== "idle") return false;
-
-    const mobile = window.matchMedia("(max-width: 800px)").matches;
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    const viewport = canvasViewportRef.current;
-    const exitCamera = {
-      scale: canvasScaleRef.current,
-      scrollLeft: viewport?.scrollLeft ?? 0,
-      scrollTop: viewport?.scrollTop ?? 0,
-    };
-
-    if (mobile) {
-      playSound("tap");
-      setRoute("home");
-      window.location.hash = "#/home";
-      return true;
-    }
-
-    const mode: BlockZoomMode = reducedMotion ? "fade" : "fly";
-    if (!zoom.beginZoomOut(spaceId, mode, exitCamera)) return false;
-    zoomPhaseRef.current = "zooming-out";
-
-    playSound("tap");
-    restoreFrameEdit();
-    frameEditSnapshot.current = null;
-    setFocusedTarget(null);
-    canvasReturnView.current = null;
-    chatReturnView.current = null;
-    setPickerOpen(false);
-    setChatOpen(false);
-    setRecapOpen(false);
-    setManagedWidgetId("");
-    setEditingWidgetId("");
-    setSpaceDraft(null);
-    setCanvasScale(1);
-    canvasScaleRef.current = 1;
-    applyCanvasScale(1);
-    setCanvasAwayFromHome(false);
-    setRoute("home");
-    window.location.hash = "#/home";
-    return true;
-  }, [applyCanvasScale, restoreFrameEdit, route, spaceId, zoom.beginZoomOut]);
-
-  const completeBlockZoomOut = useCallback(() => {
-    playSound("place");
-    zoomPhaseRef.current = "idle";
-    zoom.finishZoomOut();
-  }, [zoom.finishZoomOut]);
-
-  useEffect(() => {
-    if (zoom.phase !== "landing") return;
-    const timer = window.setTimeout(() => zoom.finishLanding(), ZOOM_LANDING_MS);
-    return () => window.clearTimeout(timer);
-  }, [zoom.finishLanding, zoom.phase]);
-
   useEffect(() => {
     preloadSounds();
   }, []);
 
   useEffect(() => {
     const onHash = () => {
-      const nextRoute = routeFromHash();
-      if (
-        nextRoute === "home" &&
-        route === "space" &&
-        zoomPhaseRef.current === "idle" &&
-        !window.matchMedia("(max-width: 800px)").matches &&
-        !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ) {
-        if (beginZoomOut()) return;
+      const hash = window.location.hash.replace(/^#\/?/, "");
+      if (hash === "home" || hash === "") {
+        const slug = hash === "home" ? "crew" : DEFAULT_SPACE_SLUG;
+        window.history.replaceState(window.history.state, "", normalSpaceHash(slug));
       }
-
-      setRoute(nextRoute);
-      if (zoom.phase !== "zooming-out") {
-        setSpaceId(spaceFromHash());
-      }
+      setRoute(routeFromHash());
+      setSpaceId(spaceFromHash());
     };
+    onHash();
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
-  }, [beginZoomOut, route, zoom.phase]);
+  }, []);
 
   useEffect(() => {
     if (!lastDeletedWidget) return;
@@ -1167,7 +1057,7 @@ export default function App() {
     setManagedWidgetId("");
     setEditingWidgetId("");
     setSpaceDraft(null);
-    window.location.hash = id === DEFAULT_SPACE_SLUG ? "#/" : `#/space/${id}`;
+    window.location.hash = normalSpaceHash(id);
   };
 
   const openWidgetThread = (widget: Widget) => {
@@ -1868,61 +1758,14 @@ export default function App() {
         slug={spaceId}
         isInviteEntry
         onSelectSpace={(id) => {
-          window.location.hash = id === DEFAULT_SPACE_SLUG ? "#/" : `#/space/${id}`;
+          window.location.hash = normalSpaceHash(id);
         }}
       />
     );
   }
 
   if (route === "space" && !mockModeRequested()) {
-    return <LiveSpacePage slug={spaceId} mailLab={mailLabRequested()} onSelectSpace={(id) => { window.location.hash = id === DEFAULT_SPACE_SLUG ? "#/" : `#/space/${id}`; }} />;
-  }
-
-  if (route === "home") {
-    if (!mockModeRequested()) {
-      return (
-        <DeferredRoute>
-        <LiveBlockPage
-          onEnterSpace={selectSpace}
-          zoomPhase={zoom.phase}
-          zoomSpaceId={zoom.spaceId}
-          zoomMode={zoom.mode}
-          blockScroll={zoom.blockScroll}
-          exitCamera={zoom.exitCamera}
-          onZoomInStart={startBlockZoomIn}
-          onZoomInComplete={completeBlockZoomIn}
-          onZoomOutComplete={completeBlockZoomOut}
-        />
-        </DeferredRoute>
-      );
-    }
-    return (
-      <DeferredRoute>
-      <BlockPage
-        onEnterSpace={selectSpace}
-        addedWidgets={addedWidgets}
-        widgetPlacements={widgetPlacements}
-        widgetDataOverrides={widgetDataOverrides}
-        deletedWidgetIds={deletedWidgetIds}
-        pollSelections={pollSelections}
-        rsvpSelections={rsvpSelections}
-        dailyAnswers={dailyAnswers}
-        dailyReactions={dailyReactions}
-        promoted={promoted}
-        spaceCustomizations={spaceCustomizations}
-        backendLiveCounts={backendLiveCounts}
-        visitorCount={buildClubVisitors}
-        zoomPhase={zoom.phase}
-        zoomSpaceId={zoom.spaceId}
-        zoomMode={zoom.mode}
-        blockScroll={zoom.blockScroll}
-        exitCamera={zoom.exitCamera}
-        onZoomInStart={startBlockZoomIn}
-        onZoomInComplete={completeBlockZoomIn}
-        onZoomOutComplete={completeBlockZoomOut}
-      />
-      </DeferredRoute>
-    );
+    return <LiveSpacePage slug={spaceId} mailLab={mailLabRequested()} onSelectSpace={(id) => { window.location.hash = normalSpaceHash(id); }} />;
   }
 
   const baseSpace = getSpace(spaceId);
@@ -2039,7 +1882,7 @@ export default function App() {
         focusedTarget?.kind === "widget" ? "has-widget-focus" : ""
       } ${
         canvasCameraAnimating ? "is-canvas-camera-animating" : ""
-      } ${zoom.phase === "landing" ? "is-zoom-landing" : ""} space-theme-${activeSpaceCustomization.theme}`}
+      } space-theme-${activeSpaceCustomization.theme}`}
       style={spaceCustomizationStyle(activeSpaceCustomization)}
       data-space-id={spaceId}
     >
@@ -2062,7 +1905,6 @@ export default function App() {
         roomEditing={Boolean(spaceDraft)}
         onEditSpace={openSpaceEditor}
         visitorCount={spaceId === "buildclub" ? buildClubVisitors : undefined}
-        entrance={zoom.phase !== "landing"}
       />
       {/* Mock mode has no inbox to watch; the #/mail lab fires fixtures at
           the same envelope the live page mounts. */}
@@ -2251,7 +2093,6 @@ export default function App() {
               visitorCount={
                 spaceId === "buildclub" ? buildClubVisitors : undefined
               }
-              entrance={zoom.phase !== "landing"}
             />
           </div>
         </div>

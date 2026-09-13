@@ -139,7 +139,7 @@ export function Rail({
   return (
     <>
     <aside className="space-rail">
-      {/* The mark opens the story; the small grid below opens the block. */}
+      {/* The mark opens the story; room tiles handle all space navigation. */}
       <a
         className="rail-brand"
         href="#/about"
@@ -221,16 +221,6 @@ export function Rail({
             <span>+</span>
           </button>
           <span className="space-tooltip">new space</span>
-        </div>
-
-        <div
-          className="space-link-wrap"
-          style={{ "--i": SPACES.length + 2 } as CSSProperties}
-        >
-          <a className="rail-block" href="#/home" title="all spaces" aria-label="All spaces">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="6" height="6" rx="1" /><rect x="12" y="2" width="6" height="6" rx="1" /><rect x="2" y="12" width="6" height="6" rx="1" /><rect x="12" y="12" width="6" height="6" rx="1" /></svg>
-          </a>
-          <span className="space-tooltip">all spaces</span>
         </div>
       </div>
     </aside>

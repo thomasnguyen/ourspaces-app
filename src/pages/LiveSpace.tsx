@@ -2415,7 +2415,7 @@ export function LiveSpacePage({
               ? "That space may have moved or been closed."
               : "It may have been renamed, or it never existed."}
           </p>
-          <a href="#/home" className="invalid-invite-back">back to the block →</a>
+          <a href="#/space/crew" className="invalid-invite-back">visit the crew →</a>
         </div>
       ) : (
         <ClaimCard
