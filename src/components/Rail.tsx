@@ -1,4 +1,4 @@
-import { DEFAULT_SPACE_SLUG } from "../lib/routes";
+import { DEFAULT_SPACE_SLUG, rememberSpaceSlug } from "../lib/routes";
 import { Fragment, type CSSProperties } from "react";
 import { useQuery } from "convex-helpers/react/cache";
 import { api } from "../../convex/_generated/api";
@@ -132,15 +132,20 @@ export function Rail({
   onSelectSpace?: (id: string) => void;
   onCreateClick?: () => void;
 }) {
+  const rememberCurrentSpace = () => {
+    if (activeId) rememberSpaceSlug(activeId);
+  };
+
   return (
+    <>
     <aside className="space-rail">
-      {/* The mark goes to the block — the street of rooms with the live
-          totals on it — not back to the default room you may already be in. */}
+      {/* The mark opens the story; the small grid below opens the block. */}
       <a
         className="rail-brand"
-        href="#/home"
-        title="the block"
-        aria-label="The block — every space"
+        href="#/about"
+        title="about ourspaces"
+        aria-label="About OurSpaces"
+        onClick={rememberCurrentSpace}
       >
         <img src="/assets/ourspace-mark.png" alt="" />
       </a>
@@ -222,12 +227,14 @@ export function Rail({
           className="space-link-wrap"
           style={{ "--i": SPACES.length + 2 } as CSSProperties}
         >
-          <a className="rail-about" href="#/about" aria-label="What is this?">
-            <span aria-hidden="true">?</span>
+          <a className="rail-block" href="#/home" title="all spaces" aria-label="All spaces">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="6" height="6" rx="1" /><rect x="12" y="2" width="6" height="6" rx="1" /><rect x="2" y="12" width="6" height="6" rx="1" /><rect x="12" y="12" width="6" height="6" rx="1" /></svg>
           </a>
-          <span className="space-tooltip">what is this?</span>
+          <span className="space-tooltip">all spaces</span>
         </div>
       </div>
     </aside>
+    <a className="app-about-link" href="#/about" onClick={rememberCurrentSpace}>about <span>↗</span></a>
+    </>
   );
 }

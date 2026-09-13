@@ -24349,335 +24349,215 @@
   }
 }
 
-/* —— about (#/about) ——————————————————————————————————————————————————— */
-/* A page, not a card: the room is the pitch, but the room can't hold a
-   paragraph. This is the one surface in the app that is allowed to be read
-   rather than used, so it gets a measure, a scale, and vertical air. The rail
-   is deliberately absent — you are outside the rooms here. */
+/* —— about (#/about) — the shared wall, outside the rooms ——————————— */
 .about-page {
+  --about-muted: color-mix(in srgb, var(--color-card) 64%, var(--color-sticker));
+  --about-rule: color-mix(in srgb, var(--color-card) 17%, var(--color-sticker));
   min-height: 100dvh;
-  padding: 30px clamp(20px, 6vw, 72px) 90px;
-  color: var(--color-card);
-  font-family: var(--font-sans);
-  font-size: var(--text-body);
-  line-height: var(--text-body--line-height);
-  animation: about-in var(--dur-stage) var(--ease-glide) both;
-}
-
-@keyframes about-in {
-  from {
-    opacity: 0;
-    translate: 0 12px;
-  }
-}
-
-.about-bar {
-  display: flex;
-  max-width: 1180px;
-  margin: 0 auto 56px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.about-back {
-  display: inline-flex;
-  padding: 9px 18px 9px 14px;
-  gap: 8px;
-  align-items: center;
-  border-radius: var(--radius-pill);
+  overflow: clip;
   background: var(--color-sticker);
   color: var(--color-card);
-  font-size: var(--text-caption);
-  font-weight: 500;
-  text-decoration: none;
-  transition:
-    translate var(--dur-quick) var(--ease-glide),
-    background var(--dur-quick) ease-out,
-    color var(--dur-quick) ease-out;
+  font: var(--text-body)/1.55 var(--font-sans);
 }
-
-.about-back:hover {
-  translate: -3px 0;
-  background: var(--color-lime);
-  color: var(--color-sticker);
+.about-page :is(h1, h2, h3, p, figure) { margin: 0; }
+.about-page :is(h1, h2, h3) { text-wrap: balance; }
+.about-page p { text-wrap: pretty; }
+.about-page a { text-decoration: none; }
+.about-wrap { width: min(100% - 112px, 1280px); margin-inline: auto; }
+.about-bar { display: flex; align-items: center; justify-content: space-between; padding-block: 30px; }
+.about-brand { display: inline-flex; align-items: center; gap: 10px; color: var(--color-card); }
+.about-brand img { width: 33px; height: 33px; object-fit: contain; }
+.about-brand > span { font: 800 1.5rem/1 var(--font-display); letter-spacing: -.035em; }
+.about-brand small { margin-left: 8px; padding: 4px 10px; border: 1px solid var(--about-rule); border-radius: var(--radius-pill); font-size: 12px; color: var(--about-muted); }
+.about-back { display: inline-flex; align-items: center; gap: 12px; color: var(--about-muted); font-size: 14px; transition: color var(--dur-quick) var(--ease-glide); }
+.about-back span { transition: translate var(--dur-quick) var(--ease-glide); }
+.about-back:hover { color: var(--color-card); }
+.about-back:hover span { translate: -4px 0; }
+.about-hero { display: grid; grid-template-columns: 1fr 1.05fr; gap: 48px; align-items: center; padding-block: 64px 76px; }
+.about-intro { color: var(--about-muted); font-size: 14px; }
+.about-hero h1 { margin-block: 22px 26px; font-size: clamp(3.5rem, 6.35vw, 5.7rem); letter-spacing: -.04em; line-height: 1.02; }
+.about-hero h1 > span { color: var(--color-couple); }
+.about-lede { max-width: 39ch; font-size: 18px; line-height: 1.6; color: color-mix(in srgb, var(--color-card) 80%, var(--color-sticker)); }
+.about-lede em { font-style: normal; color: var(--color-card); }
+.about-hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 24px; margin-top: 30px; }
+.about-button { display: inline-flex; align-items: center; justify-content: space-between; gap: 30px; padding: 14px 22px; border-radius: var(--radius-pill); background: var(--color-card); color: var(--color-ink); font-size: 15px; font-weight: 600; transition: translate var(--dur-quick) var(--ease-glide), background var(--dur-quick) var(--ease-glide); }
+.about-button span { font-size: 22px; line-height: 1; transition: translate var(--dur-quick) var(--ease-glide); }
+.about-button:hover { translate: 0 -3px; }
+.about-button:hover span { translate: 2px -2px; }
+.about-text-button { display: inline-flex; gap: 12px; padding: 8px 0; border: 0; background: none; color: var(--color-card); cursor: pointer; font-size: 14px; }
+.about-text-button span { transition: translate var(--dur-quick) var(--ease-glide); }
+.about-text-button:hover span { translate: 0 4px; }
+.about-page .about-invitation { margin-top: 18px; color: var(--about-muted); font-size: 12px; }
+/* A local, explicitly captioned preview. The original poll supplies its
+   actual interaction; the page never writes a sample vote to a live room. */
+.about-preview { min-width: 0; padding-top: 18px; }
+.about-board-frame { container-type: inline-size; aspect-ratio: 600 / 565; }
+.about-board { position: relative; width: 600px; height: 540px; zoom: calc(100cqw / 600px); background: var(--color-crew); border-radius: 10px; rotate: 3deg; animation: about-board-arrive var(--dur-hero) var(--ease-glide) backwards; }
+.about-board-label { position: absolute; top: 22px; left: 24px; display: inline-flex; align-items: center; gap: 24px; padding: 9px 15px; border-radius: var(--radius-pill); background: var(--color-sticker); font-size: 14px; font-weight: 600; rotate: -3deg; }
+.about-board-label > span { color: var(--color-lime); font-size: 19px; }
+.about-photo { position: absolute; left: 30px; top: 98px; width: 267px; padding: 10px 10px 0; background: var(--color-card); rotate: -9deg; }
+.about-photo img { display: block; width: 100%; height: 195px; object-fit: cover; }
+.about-photo figcaption { padding-block: 10px 12px; color: var(--color-ink); text-align: center; font-size: 14px; font-weight: 600; }
+.about-photo::before { content: ""; position: absolute; width: 85px; height: 27px; top: -12px; left: 90px; background: color-mix(in srgb, var(--color-mat) 85%, transparent); rotate: 5deg; }
+.about-ours { position: absolute; width: 205px; height: auto; top: 51px; right: 12px; rotate: 9deg; }
+.about-preview-poll { position: absolute; width: 294px; height: 257px; left: 283px; top: 199px; rotate: 1deg; color: var(--color-ink); }
+.about-preview-poll .live-label { display: none; }
+.about-preview-poll .poll-content { padding-top: 17px; }
+.about-preview-poll .poll-heading h3 { text-wrap: nowrap; }
+.about-preview-poll .poll-row { cursor: pointer; }
+.about-note { position: absolute; width: 254px; left: 28px; top: 362px; padding: 15px 18px 13px; background: var(--color-card); color: var(--color-ink); rotate: -6deg; }
+.about-note > span { color: var(--color-couple); font-size: 11px; font-weight: 600; }
+.about-note p { margin-top: 9px; font-size: 22px; line-height: 1.2; letter-spacing: -.02em; }
+.about-note strong { font-weight: 500; }
+.about-note small { display: block; margin-top: 8px; text-align: right; font-size: 12px; }
+.about-cake { position: absolute; width: 122px; right: -18px; bottom: 7px; rotate: 8deg; pointer-events: none; }
+.about-board-tag { position: absolute; left: 315px; bottom: 24px; font: 700 18px/1 var(--font-display); rotate: -5deg; }
+.about-page .about-preview-caption { position: relative; display: flex; justify-content: center; gap: 10px; color: var(--about-muted); font-size: 13px; }
+.about-preview-caption > span { color: var(--color-couple); font-size: 18px; }
+.about-preview-caption.has-vote > span { color: var(--color-lime); }
+@keyframes about-board-arrive { from { opacity: .2; transform: translate(18px, 30px) rotate(-5deg) scale(.95); } }
+.about-live { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; border-block: 1px solid var(--about-rule); padding-block: 22px; }
+.about-live-label { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; color: var(--about-muted); }
+.about-live-label i { width: 6px; height: 6px; border-radius: 50%; background: var(--color-lime); }
+.about-live dl { display: flex; flex-wrap: wrap; gap: 32px; margin: 0; }
+.about-live dl > div { display: flex; align-items: baseline; gap: 8px; }
+.about-live dd { margin: 0; font: 700 18px/1 var(--font-display); }
+.about-live dt { font-size: 13px; color: var(--about-muted); }
+.about-how { display: grid; grid-template-columns: 1fr 1.05fr; gap: 90px; padding-block: 112px 100px; }
+.about-page h2 { font-size: clamp(2.25rem, 4vw, 3.5rem); letter-spacing: -.035em; line-height: 1.08; }
+.about-how-heading h2 > span { color: var(--about-muted); }
+.about-how-heading > p { margin-top: 23px; max-width: 37ch; color: var(--about-muted); font-size: 17px; }
+.about-how-heading > img { display: block; width: 158px; height: 115px; object-fit: contain; margin: 23px 0 0 22px; rotate: -8deg; }
+.about-ways article { display: flex; gap: 22px; padding-block: 27px; border-bottom: 1px solid var(--about-rule); }
+.about-ways article:first-child { padding-top: 2px; }
+.about-ways article:last-child { border-bottom: 0; }
+.about-way-mark { flex: 0 0 42px; color: var(--way-color); font: 700 46px/1 var(--font-display); }
+.about-ways h3 { font-size: 23px; letter-spacing: -.025em; line-height: 1.25; }
+.about-ways p { margin-top: 11px; max-width: 46ch; color: var(--about-muted); font-size: 16px; }
+.about-way-note { display: block; margin-top: 13px; font-size: 12px; color: var(--color-card); }
+.about-rooms { padding-bottom: 100px; scroll-margin-top: 40px; }
+.about-section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 35px; margin-bottom: 35px; }
+.about-section-heading h2 span { color: var(--color-couple); }
+.about-section-heading > p { max-width: 36ch; color: var(--about-muted); font-size: 15px; }
+.about-room-list { border-top: 1px solid var(--about-rule); }
+.about-room { position: relative; display: flex; align-items: center; gap: 24px; padding: 18px 14px 18px 0; border-bottom: 1px solid var(--about-rule); color: var(--color-card); transition: background var(--dur-quick) var(--ease-glide); }
+.about-room-picture { display: grid; place-items: center; flex: 0 0 60px; width: 60px; height: 60px; overflow: hidden; border-radius: 12px; background: var(--room-color); rotate: -4deg; transition: rotate var(--dur-quick) var(--ease-glide); }
+.about-room-picture img { width: 100%; height: 100%; object-fit: cover; }
+.about-room-picture > span { font: 800 23px/1 var(--font-display); }
+.about-room-name { flex: 1; font: 800 clamp(1.4rem, 2.4vw, 2rem)/1.15 var(--font-display); letter-spacing: -.03em; }
+.about-room-detail { width: 35%; color: var(--about-muted); font-size: 15px; }
+.about-room-arrow { margin-left: auto; font-size: 28px; color: var(--room-color); transition: translate var(--dur-quick) var(--ease-glide); }
+.about-room:hover { background: var(--room-color); }
+.about-room:hover :is(.about-room-detail, .about-room-arrow) { color: var(--color-card); }
+.about-room:hover .about-room-picture { rotate: 0deg; }
+.about-room:hover .about-room-arrow { translate: 3px -3px; }
+.about-wall-link { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-top: 22px; color: var(--about-muted); font-size: 14px; }
+.about-wall-link > span { color: var(--color-card); }
+.about-wall-link:hover > span { color: var(--color-couple); }
+.about-story { background: var(--color-trip); color: var(--color-ink); }
+.about-story-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; align-items: center; padding-block: 66px; }
+.about-sticker { display: inline-block; padding: 7px 14px; border-radius: var(--radius-pill); background: var(--color-sticker); color: var(--color-card); font-size: 12px; font-weight: 500; rotate: -4deg; }
+.about-story h2 { margin-top: 30px; }
+.about-story-copy p { max-width: 47ch; font-size: 17px; }
+.about-story-copy p + p { margin-top: 17px; }
+.about-signature { display: flex; gap: 20px; align-items: center; margin-top: 22px; font: 800 25px/1 var(--font-display); letter-spacing: -.02em; }
+.about-signature span { font-size: 32px; }
+.about-made { padding-block: 100px 60px; }
+.about-makers { display: flex; gap: 35px; padding-block: 14px 38px; }
+.about-makers > div { flex: 1; }
+.about-makers > div > span { font: 800 27px/1.2 var(--font-display); letter-spacing: -.03em; }
+.about-makers p { max-width: 24ch; margin-top: 11px; color: var(--about-muted); font-size: 14px; }
+.about-under-hood { border-block: 1px solid var(--about-rule); }
+.about-under-hood summary { display: flex; justify-content: space-between; align-items: center; padding-block: 19px; font-size: 14px; color: var(--about-muted); cursor: pointer; list-style: none; }
+.about-under-hood summary::-webkit-details-marker { display: none; }
+.about-under-hood summary > span { font-size: 24px; line-height: 1; transition: rotate var(--dur-quick) var(--ease-glide); }
+.about-under-hood[open] summary { color: var(--color-card); }
+.about-under-hood[open] summary > span { rotate: 45deg; }
+.about-tech { padding-bottom: 28px; }
+.about-tech > p { max-width: 72ch; color: var(--about-muted); font-size: 15px; }
+.about-tech dl { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 50px; margin-block: 28px; }
+.about-tech dt { font-size: 14px; font-weight: 600; }
+.about-tech dd { margin: 4px 0 0; font-size: 14px; color: var(--about-muted); }
+.about-tech > a { color: var(--color-card); font-size: 14px; }
+.about-tech > a:hover { color: var(--color-couple); }
+.about-footer { padding-bottom: 28px; }
+.about-footer-invite { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-block: 16px 62px; }
+.about-footer .about-footer-invite h2 { font-size: clamp(2rem, 3.7vw, 3.2rem); }
+.about-footer-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; padding-top: 24px; border-top: 1px solid var(--about-rule); }
+.about-footer-meta > span, .about-footer-meta > a:last-child { color: var(--about-muted); font-size: 12px; }
+.about-footer-meta .about-brand > span { font-size: 19px; }
+.about-footer-meta .about-brand > img { width: 24px; height: 24px; }
+/* Shared by the block and both room paths; a sibling of the rail so its
+   entrance transform never traps the fixed corner link. */
+.app-about-link { position: fixed; z-index: 40; right: 18px; bottom: 9px; display: inline-flex; gap: 6px; padding: 3px 9px; border-radius: var(--radius-pill); background: var(--color-sticker); color: color-mix(in srgb, var(--color-card) 75%, var(--color-sticker)); text-decoration: none; font: 500 11px/1.4 var(--font-sans); transition: color var(--dur-quick) var(--ease-glide); }
+.app-about-link:hover { color: var(--color-card); }
+.rail-block { display: grid; place-items: center; width: 32px; height: 28px; margin-top: 3px; color: color-mix(in srgb, var(--color-card) 65%, var(--color-sticker)); transition: color var(--dur-quick) var(--ease-glide); }
+.rail-block:hover { color: var(--color-card); }
+.rail-block svg { width: 17px; height: 17px; }
+@media (min-width: 801px) {
+  .paper-bg .lab-links { bottom: 42px; }
 }
-
-.about-mark {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  rotate: -4deg;
+@media (max-width: 1100px) {
+  .about-wrap { width: calc(100% - 72px); }
+  .about-hero { gap: 30px; padding-top: 45px; }
+  .about-hero h1 { font-size: clamp(3.4rem, 6.2vw, 5rem); }
+  .about-hero-actions { gap: 14px; }
+  .about-how, .about-story-inner { gap: 45px; }
+  .about-room-detail { width: 40%; }
 }
-
-.about-hero {
-  max-width: 1180px;
-  margin: 0 auto 96px;
+@media (max-width: 800px) {
+  .about-wrap { width: calc(100% - 40px); }
+  .about-bar { padding-block: 22px; }
+  .about-hero { grid-template-columns: 1fr; gap: 44px; padding-block: 36px 45px; }
+  .about-hero h1 { font-size: clamp(3.4rem, 10.5vw, 5.5rem); }
+  .about-hero-copy { max-width: 580px; }
+  .about-lede { max-width: 46ch; }
+  .about-preview { width: min(100% - 12px, 560px); margin-inline: auto; }
+  .about-how { grid-template-columns: 1fr; gap: 34px; padding-block: 64px; }
+  .about-how-heading { position: relative; }
+  .about-how-heading > img { position: absolute; width: 110px; height: 95px; right: 10px; top: 0; margin: 0; }
+  .about-how-heading h2 { padding-right: 100px; }
+  .about-how-heading > p { max-width: 50ch; }
+  .about-ways article:first-child { padding-top: 15px; }
+  .about-section-heading { align-items: flex-start; flex-direction: column; gap: 18px; margin-bottom: 28px; }
+  .about-rooms { padding-bottom: 64px; }
+  .about-room { gap: 16px; }
+  .about-room-detail { display: none; }
+  .about-room-picture { flex-basis: 50px; width: 50px; height: 50px; }
+  .about-story-inner { grid-template-columns: 1fr; gap: 30px; padding-block: 44px; }
+  .about-story h2 { margin-top: 22px; }
+  .about-made { padding-block: 64px 40px; }
+  .about-makers { display: grid; grid-template-columns: 1fr 1fr; gap: 30px 24px; padding-bottom: 30px; }
+  .about-makers > div > span { font-size: 24px; }
+  .about-tech dl { grid-template-columns: 1fr; gap: 20px; }
+  .about-footer-invite { align-items: flex-start; flex-direction: column; padding-bottom: 40px; }
+  .about-footer-meta { gap: 22px; }
+  .about-footer-meta > span { order: 2; width: 100%; }
+  .app-about-link { bottom: 158px; right: 15px; }
+  .rail-block { display: none; }
 }
-
-.about-kicker {
-  margin: 0 0 14px;
-  color: color-mix(in srgb, var(--color-card) 52%, transparent);
-  font-size: var(--text-caption);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+@media (max-width: 420px) {
+  .about-brand { gap: 7px; }
+  .about-brand > span { font-size: 20px; }
+  .about-brand img { width: 27px; height: 27px; }
+  .about-brand small { display: none; }
+  .about-back { gap: 6px; font-size: 12px; }
+  .about-hero h1 { font-size: clamp(2.65rem, 14vw, 3.4rem); }
+  .about-intro { font-size: 12px; }
+  .about-lede { font-size: 16px; }
+  .about-button { gap: 20px; padding: 12px 18px; font-size: 14px; }
+  .about-text-button { gap: 8px; font-size: 12px; }
+  .about-hero-actions { gap: 17px; }
+  .about-how-heading > img { width: 82px; right: 0; }
+  .about-how-heading h2 { padding-right: 75px; font-size: 2.1rem; }
+  .about-ways article { gap: 14px; }
+  .about-way-mark { flex-basis: 32px; font-size: 37px; }
+  .about-ways h3 { font-size: 21px; }
+  .about-live dl { gap: 14px; }
+  .about-live dl > div { gap: 5px; }
+  .about-live dt { font-size: 11px; }
 }
-
-.about-hero h1 {
-  max-width: 16ch;
-  margin: 0 0 26px;
-  font-family: var(--font-display);
-  font-size: clamp(2.6rem, 7.4vw, 5.4rem);
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  line-height: 0.94;
-}
-
-.about-lede {
-  max-width: 62ch;
-  margin: 0;
-  font-size: clamp(1.06rem, 1.6vw, 1.32rem);
-  line-height: 1.5;
-  color: color-mix(in srgb, var(--color-card) 82%, transparent);
-}
-
-/* Real rows off the sharded counter, on a live subscription — the only
-   numbers on the page, and so the only ones never typed in. */
-.about-totals {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 42px 0 0;
-  gap: 14px;
-}
-
-.about-totals div {
-  display: flex;
-  padding: 14px 22px;
-  gap: 4px;
-  flex-direction: column;
-  border-radius: 18px;
-  background: var(--color-sticker);
-}
-
-.about-totals dd {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 2.1rem;
-  font-weight: 800;
-  line-height: 1;
-  color: var(--color-lime);
-}
-
-.about-totals dt {
-  color: color-mix(in srgb, var(--color-card) 58%, transparent);
-  font-size: var(--text-caption);
-}
-
-.about-section {
-  max-width: 1180px;
-  margin: 0 auto 96px;
-}
-
-.about-section h2 {
-  margin: 0 0 10px;
-  font-family: var(--font-display);
-  font-size: clamp(1.5rem, 2.6vw, 2.1rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-}
-
-.about-section-lede {
-  max-width: 58ch;
-  margin: 0 0 30px;
-  color: color-mix(in srgb, var(--color-card) 70%, transparent);
-  font-size: var(--text-caption);
-  line-height: 1.6;
-}
-
-.about-things-grid {
-  display: grid;
-  margin-top: 30px;
-  gap: 18px;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-}
-
-.about-things-grid article {
-  padding: 26px 26px 30px;
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--color-card) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-card) 11%, transparent);
-}
-
-/* The numeral does the work a screenshot would, and doesn't go stale. */
-.about-numeral {
-  display: block;
-  margin-bottom: 16px;
-  color: var(--color-lime);
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.about-things-grid h3 {
-  margin: 0 0 10px;
-  font-family: var(--font-display);
-  font-size: 1.32rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.about-things-grid p {
-  margin: 0;
-  color: color-mix(in srgb, var(--color-card) 72%, transparent);
-  font-size: var(--text-caption);
-  line-height: 1.6;
-}
-
-/* The widgets are the real seeded ones, so the strip scrolls rather than
-   squashing them — a widget at the wrong size stops being the thing it is. */
-.about-strip {
-  display: flex;
-  margin: 0 0 22px;
-  padding-bottom: 14px;
-  gap: 18px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  /* The last card runs off under a fade rather than stopping at a hard cut,
-     so the strip reads as "there are more of these" instead of as clipped. */
-  mask-image: linear-gradient(to right, #000 88%, transparent 100%);
-}
-
-.about-strip-tile {
-  position: relative;
-  flex: 0 0 auto;
-  pointer-events: none;
-}
-
-/* A WidgetCard is a canvas object: absolutely placed, rotated, wearing its
-   drag handles. Pin it into the tile and take the chrome off — the same
-   thing the wall does at #/wall. */
-.about-strip-tile .widget-group {
-  position: relative !important;
-  left: auto !important;
-  top: auto !important;
-  width: 100% !important;
-  height: 100% !important;
-  rotate: 0deg;
-}
-
-.about-strip-tile .widget-management {
-  display: none;
-}
-
-.about-inline-link {
-  color: var(--color-lime);
-  font-size: var(--text-caption);
-  font-weight: 500;
-  text-decoration: none;
-  border-bottom: 1.5px solid color-mix(in srgb, var(--color-lime) 40%, transparent);
-  transition: border-color var(--dur-quick) ease-out;
-}
-
-.about-inline-link::after {
-  content: " →";
-}
-
-.about-inline-link:hover {
-  border-bottom-color: var(--color-lime);
-}
-
-.about-work {
-  display: grid;
-  margin: 0 0 30px;
-  gap: 0;
-  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
-  column-gap: 40px;
-}
-
-.about-work div {
-  display: flex;
-  padding: 14px 0;
-  gap: 16px;
-  align-items: baseline;
-  justify-content: space-between;
-  border-top: 1px solid color-mix(in srgb, var(--color-card) 13%, transparent);
-}
-
-.about-work dt {
-  flex: 0 0 auto;
-  font-family: var(--font-display);
-  font-size: var(--text-caption);
-  font-weight: 700;
-}
-
-.about-work dd {
-  margin: 0;
-  color: color-mix(in srgb, var(--color-card) 62%, transparent);
-  font-size: var(--text-caption);
-  line-height: 1.45;
-  text-align: right;
-}
-
-.about-who p {
-  max-width: 62ch;
-  margin: 0;
-  color: color-mix(in srgb, var(--color-card) 82%, transparent);
-  font-size: clamp(1rem, 1.3vw, 1.14rem);
-  line-height: 1.6;
-}
-
-.about-links {
-  display: flex;
-  max-width: 1180px;
-  margin: 0 auto;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.about-links a {
-  padding: 12px 22px;
-  border: 1.5px solid color-mix(in srgb, var(--color-card) 28%, transparent);
-  border-radius: var(--radius-pill);
-  color: var(--color-card);
-  font-size: var(--text-caption);
-  font-weight: 500;
-  text-decoration: none;
-  transition:
-    translate var(--dur-quick) var(--ease-glide),
-    background var(--dur-quick) ease-out,
-    border-color var(--dur-quick) ease-out,
-    color var(--dur-quick) ease-out;
-}
-
-.about-links a::after {
-  content: " →";
-}
-
-.about-links a:hover {
-  translate: 0 -2px;
-  border-color: transparent;
-  background: var(--color-card);
-  color: var(--color-ink);
-}
-
-@media (max-width: 720px) {
-  .about-page {
-    padding-bottom: 64px;
-  }
-
-  .about-hero,
-  .about-section {
-    margin-bottom: 64px;
-  }
-
-  .about-work div {
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .about-work dd {
-    text-align: left;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .about-board { animation: none; }
+  .about-page *, .app-about-link, .rail-block { transition: none; }
 }
