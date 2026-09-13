@@ -438,9 +438,9 @@ export function LiveSpacePage({
      under and read with the same query the rail reads. The header and the
      canvas's live strip both take this number, so they cannot disagree. */
   const hereCount = useQuery(
-    api.roomPresence.onlineCountForSpace,
-    space?.slug ? { spaceId: space.slug } : "skip",
-  );
+    api.roomPresence.onlineForSpace,
+    space?.slug ? { spaceId: space.slug, userId: identity.userId } : "skip",
+  )?.total;
   /* The board's raw rows, for their createdAt — the adapted widgets the page
      draws with drop it. Same query + args as useSpaceData's, so the client
      shares one subscription rather than opening a second. */

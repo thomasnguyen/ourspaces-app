@@ -47,9 +47,39 @@ export const disconnect = mutation({
   },
 });
 
-/** For the space list — "X online" per space without an active session.
- * `excludeUserId` drops the caller: the rail's dot means "someone else is
- * there", while the header's "N here" counts everyone including you. */
+/**
+ * Room occupancy for the space list — both numbers the UI wants, from ONE
+ * subscription.
+ *
+ * The rail asks two questions about every tile: "N here" (everyone, in the
+ * tooltip) and "is someone ELSE there" (the lime dot). Those used to be two
+ * calls to a count-only query with different args — and different args mean
+ * different cache keys, so each tile held two live subscriptions doing the
+ * same `listRoom` read. That was the largest bandwidth line in the presence
+ * component. Returning both numbers means every caller passes identical args,
+ * which is what lets convex-helpers' query cache collapse them into one.
+ */
+export const onlineForSpace = query({
+  args: { spaceId: v.string(), userId: v.optional(v.string()) },
+  returns: v.object({ total: v.number(), others: v.number() }),
+  handler: async (ctx, { spaceId, userId }) => {
+    const users = await presence.listRoom(ctx, spaceId, true);
+    const total = users.length;
+    return {
+      total,
+      others: userId
+        ? users.filter((user) => user.userId !== userId).length
+        : total,
+    };
+  },
+});
+
+/**
+ * Legacy count-only shape. Superseded by `onlineForSpace`; kept ONLY because
+ * the deployed bundle still calls it, and dropping it would break the live
+ * site until the frontend is redeployed. Delete once prod is on a build that
+ * uses the pair above — nothing in src/ calls it any more.
+ */
 export const onlineCountForSpace = query({
   args: { spaceId: v.string(), excludeUserId: v.optional(v.string()) },
   returns: v.number(),
