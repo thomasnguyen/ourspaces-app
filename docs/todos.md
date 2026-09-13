@@ -5,6 +5,78 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Prod cutover — done 2026-09-13. There is now ONE deployment and ONE
+  database.** `prod:necessary-cobra-892` serves the public site *and* local
+  `npm run dev` (`.env.local` points at it), so what you see locally is the
+  demo data. Steps taken: 9 env vars copied to prod; `npx convex deploy`
+  (explicit `--env-file` with `CONVEX_DEPLOYMENT=prod:…`, because the CLI
+  prompts for confirmation otherwise and that fails in a non-interactive
+  shell); full snapshot `npx convex export --include-file-storage` from dev →
+  `npx convex import --prod --replace-all` (2421 documents, all tables +
+  file storage; the snapshot is the rollback, in `.private/snapshots/`);
+  static re-upload **after** the import, because `_components/staticHosting`
+  is in the snapshot and importing it points prod's file manifest at dev's
+  blob ids; new AgentMail webhook; dev webhook deleted.
+  - **`npm run deploy` is now the single ship command** and runs without a
+    prompt. **Do NOT run `convex dev`** — it pushes to the retired
+    `dusty-condor-648`, which nothing reads, so changes silently do nothing.
+  - Migrating the data fixed two things on its own: the build room renders
+    **bottle green** (not the rejected orange) and the shipping wall shows
+    dashboard screenshots (not the old people-shots). Those were stale *prod
+    seed data*, not code.
+  - Still burning quota: the retired dev deployment's four crons keep firing
+    against the same team Free quota. Worth neutralising before the deadline.
+- **The nameplate came from a stale fixture, not the DB (2026-09-13).**
+  `LiveSpace.tsx` did `if (fixture) return fixture`, so the five showcase
+  slugs always rendered `src/data/spaces.ts` names — which had drifted to the
+  pre-rename copy ("the group chat", "long distance", "the dev guild") while
+  the DB, every doc and the demo script say "the crew", "us two", "the build
+  room". Nobody saw it because the old deployed bundle read the DB; shipping
+  the current build to prod surfaced it. Fixed both ends: fixtures renamed,
+  and the live row now wins on name/tagline/icon (the fixture stays the
+  source for layout, widgets, canvas size, faces).
+
+- **Pick it up, put it down — adding is now click-to-place (2026-09-13):**
+  adding a sticker or a widget used to drop it at a fixed spot — mock mode used
+  the viewport centre, live mode used `canvasWidth/canvasHeight` minus a
+  gutter, i.e. the **bottom-right corner of a 1640×1080 board**, so on any
+  panned or zoomed view the new thing landed off-screen. Now the tray hands it
+  to the cursor: `src/components/PlacementGhost.tsx` renders the sticker art or
+  a dashed card at the widget's real footprint, follows the pointer, and
+  `onPlaceItem(point, keepPlacing)` creates it centred on the click.
+  Shift-click keeps it in hand for another, esc/right-click drops it, and the
+  ghost seeds at the tray button you clicked so it reads as peeled off that
+  sheet. Both canvases share the flow (`placing` state in `App.tsx` and
+  `LiveSpace.tsx`, `placingItem` prop on `Canvas.tsx`); `WidgetPicker` now
+  hands back the click point. New `src/lib/canvasPlacement.ts` holds the
+  placement math (`visibleCanvasCenter` moved out of App.tsx). Verified in the
+  browser on mock `#/space/trip` and on the live crew board (sticker synced to
+  Convex, then deleted); `npm run build` passes.
+
+
+- **Room rename + rail reorder (2026-09-13):** the rail put the dev guild
+  first; Thomas asked for it **third**, then for names that are "easily
+  recognizable". `SPACES` in `src/data/spaces.ts` is now ordered
+  `crew · couple · buildroom · house · league`, and three display names
+  changed: **the crew → the group chat**, **us two → long distance**,
+  **the build room → the dev guild**. Slugs, ids, filenames and CSS hooks are
+  untouched — see the name/slug key at the top of `docs/spaces-and-widgets.md`.
+  `SPACES_BY_ID` no longer spreads `SPACES[0..4]` positionally (reordering used
+  to hand a room someone else's meta); it looks up by id. Two showcase strings
+  lost their new-name echo on the home board: couple → "two time zones · …",
+  buildroom → "link pile · ships, roundtables, hot takes". Also renamed in the
+  two room back-buttons, the first-run pill, the home board facts and the
+  emailed-links reply body. `DEFAULT_SPACE_SLUG` is still `buildroom`, so `#/`
+  still opens the dev guild — being third in the rail and being the landing
+  room are separate. **Live rows keep their old names until
+  `npx convex run seed:backfillSpaceNames` is run** (new, non-destructive,
+  idempotent — patches `name` only; `seedMissing` skips existing spaces, which
+  is why a plain reseed wouldn't do it). Not run yet. The `by_name "the crew"`
+  fallback in `convex/spaces.ts` is the *historical* name for pre-slug rows and
+  is commented as such — don't "fix" it. `npm run build` and
+  `npx tsc -p convex --noEmit` pass; rail order and all three headers verified
+  in the browser at 1440.
+
 - **Sign-in email implementation (2026-09-13):** approved the envelope
   direction. `convex/emails/signIn.ts` owns subject, plain text and responsive
   HTML; `otp.ts` uses its shared **20-minute** lifetime for the real auth
@@ -783,6 +855,9 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Broken / known issues
 
+- ~~**Mail is dev-only until the prod cutover.**~~ — **done 2026-09-13.** See
+  the entry at the top of "Now working"; the old text below is kept only so
+  the dev-era details stay findable.
 - **Mail is dev-only until the prod cutover.** Inboxes, webhook and secret are
   bound on the dev deployment (`dusty-condor-648`); production
   (`necessary-cobra-892`) has no AgentMail webhook yet, so email → canvas does

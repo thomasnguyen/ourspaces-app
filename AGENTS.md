@@ -73,8 +73,15 @@ Convex hackathon entry; deadline Sep 22 2026. Doc index: `docs/doc-map.md`
 
 ## Commands
 
-`npm run dev` · `npm run dev:backend` (`convex dev`) · `npm run build` ·
-`npx convex deploy`.
+`npm run dev` (frontend) · `npm run build` (the check) · `npm run deploy`
+(ships backend + frontend to prod).
+
+**One deployment, one database.** `prod:necessary-cobra-892` serves both
+the public site and local `npm run dev` — `.env.local` points at it, so what
+you see locally IS the demo data. There is no separate dev database any more.
+Backend changes go out with `npm run deploy`; **do not run `convex dev`** —
+it pushes to the retired `dusty-condor-648`, which nothing reads, so your
+changes would silently do nothing.
 
 <!-- convex-ai-start -->
 

@@ -112,17 +112,21 @@ Free tier (no card): 3 inboxes, 3,000 emails/month — exactly our three spaces.
 - Creating a webhook via API returns the `whsec_…` secret in the response —
   no console needed with an unrestricted key.
 
-**Prod cutover (before demo/submission):**
+**Prod cutover — DONE 2026-09-13.** `necessary-cobra-892` is now the only
+deployment that matters:
 
-1. `npx convex env set AGENTMAIL_API_KEY … --prod` and create a **second**
-   webhook pointing at `https://necessary-cobra-892.convex.site/api/agentmail/webhook`,
-   set its secret with `--prod`. (Two webhooks = dev AND prod both mirror
-   inbound mail into their own data — decide if dev should stay subscribed.)
-2. Bind the same three inbox addresses to the **prod** space ids via
-   `agentmail:setSpaceInbox` (don't run `ensureShowcaseInboxes` on prod — the
-   inboxes already exist, creation would 403 `resource_taken`).
-
----
+- All 9 env vars set on prod (copied from dev via `npx convex env list >
+  file` → `npx convex env set --force --prod < file`; `SITE_URL` rewritten to
+  the prod origin, `AGENTMAIL_WEBHOOK_SECRET` set from the new webhook).
+- Prod webhook `ep_3JHatnLPRNLD5GrC1spksFlx5Yz` → `message.received` →
+  `https://necessary-cobra-892.convex.site/api/agentmail/webhook`. Verified
+  mounted: an unsigned POST returns `401 bad signature`.
+- **The dev webhook was deleted.** Two webhooks meant every inbound email
+  filed onto the dev board AND the prod board. Dev is retired, so mail now
+  lands once. To bring it back: POST to `/v0/webhooks` and set the returned
+  `whsec_` on dev.
+- Inbox bindings did **not** need `setSpaceInbox` — `inboxId`/`inboxAddress`
+  live on the `spaces` doc, so they rode across in the snapshot import.
 
 ## Prod
 
