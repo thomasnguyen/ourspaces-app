@@ -5,7 +5,10 @@ import { useSpaceData } from "../live/useSpaceData";
 import { BlockPage, type BlockPageProps } from "./Block";
 import type { SpaceCustomization } from "../data/spaceThemes";
 
-const COUNT_TICK_MS = 15_000;
+// Matches the presence TTL the server filters on: ticking faster than the
+// window being measured just buys re-executions. Only `getHereNow` rides this
+// cadence now — the totals are argument-free and update when they change.
+const COUNT_TICK_MS = 30_000;
 const bucketNow = () => Math.floor(Date.now() / COUNT_TICK_MS) * COUNT_TICK_MS;
 
 type LiveBlockZoomProps = Pick<
@@ -26,7 +29,20 @@ export function LiveBlockPage({
     const id = window.setInterval(() => setNowBucket(bucketNow()), COUNT_TICK_MS);
     return () => window.clearInterval(id);
   }, []);
-  const liveCounts = useQuery(api.stats.getLiveCounts, { now: nowBucket });
+  // Two queries, deliberately: the totals read 28 counter shards and must not
+  // re-run on the clock, while "here now" must. Bundled, the clock dragged the
+  // shard reads with it four times a minute per visitor. See convex/stats.ts.
+  const totals = useQuery(api.stats.getLiveTotals, {});
+  const hereNow = useQuery(api.stats.getHereNow, { now: nowBucket });
+  const liveCounts =
+    totals && hereNow !== undefined
+      ? [
+          { label: "spaces", value: totals.spaces },
+          { label: "widgets", value: totals.widgets },
+          { label: "messages", value: totals.messages },
+          { label: "here now", value: hereNow },
+        ]
+      : [];
   const buildroom = useSpaceData("buildroom");
   const crew = useSpaceData("crew");
   const couple = useSpaceData("couple");
@@ -51,8 +67,8 @@ export function LiveBlockPage({
         dailyReactions={{}}
         promoted={false}
         spaceCustomizations={emptyCustomizations}
-        backendLiveCounts={liveCounts?.counts ?? []}
-        visitorCount={liveCounts?.counts.find((count) => count.label === "here now")?.value ?? 0}
+        backendLiveCounts={liveCounts}
+        visitorCount={hereNow ?? 0}
         liveWidgets={liveWidgets}
         {...zoomProps}
       />

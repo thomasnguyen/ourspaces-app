@@ -1,4 +1,5 @@
 import { internalMutation, query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { ShardedCounter } from "@convex-dev/sharded-counter";
 import { components } from "./_generated/api";
@@ -20,7 +21,74 @@ export const spacesCounter = counters.for("spaces");
 export const widgetsCounter = counters.for("widgets");
 export const messagesCounter = counters.for("messages");
 
-/** Live counts for the build club "live backend" widget. */
+type LiveTotals = { spaces: number; widgets: number; messages: number };
+
+/** The three global totals, read from the sharded counters. 28 shard
+ *  documents (4 + 8 + 16) per read, which is why `getLiveTotals` below takes
+ *  NO clock argument — see the comment there. */
+async function readTotals(ctx: QueryCtx): Promise<LiveTotals> {
+  const [spaces, widgets, messages] = await Promise.all([
+    spacesCounter.count(ctx),
+    widgetsCounter.count(ctx),
+    messagesCounter.count(ctx),
+  ]);
+  return { spaces, widgets, messages };
+}
+
+/** How many cursors are fresh right now. Reads the `by_updated` range rather
+ *  than the table: a `.take()` over the whole table makes the caller's read
+ *  set EVERY presence row, so every cursor heartbeat in the app invalidated
+ *  it — and whatever else that query happened to read came along for the
+ *  ride. take() stays as a guard if a sweep is missed. */
+async function readHereNow(ctx: QueryCtx, now: number): Promise<number> {
+  const staleBefore = now - PRESENCE_TTL_MS;
+  const fresh = await ctx.db
+    .query("presence")
+    .withIndex("by_updated", (q) => q.gte("updatedAt", staleBefore))
+    .take(MAX_PRESENCE_SCAN);
+  return Math.max(fresh.length, 1);
+}
+
+/**
+ * The totals, with no clock argument — and that is the whole point.
+ *
+ * These three numbers were the app's largest single consumer of database
+ * bandwidth (1.30 GB of 1.47 GB in Sep 2026), for two compounding reasons.
+ * They were bundled with "here now" into one query that took a `now` bucket,
+ * so a fresh cache key every 15s forced the 28 shard reads to re-execute four
+ * times a minute per visitor, forever, whether or not a single thing had been
+ * created. And that same query scanned the presence table, so every cursor
+ * heartbeat invalidated it and dragged the shard reads through another run.
+ *
+ * Argument-free, this is cached until a counter actually moves — which is
+ * exactly when the number on screen should change.
+ */
+export const getLiveTotals = query({
+  args: {},
+  returns: v.object({
+    spaces: v.number(),
+    widgets: v.number(),
+    messages: v.number(),
+  }),
+  handler: async (ctx): Promise<LiveTotals> => await readTotals(ctx),
+});
+
+/** "here now" — the one count that genuinely needs the clock, kept apart from
+ *  the totals so the expensive half doesn't re-run on its cadence. */
+export const getHereNow = query({
+  args: { now: v.number() },
+  returns: v.number(),
+  handler: async (ctx, { now }) => await readHereNow(ctx, now),
+});
+
+/**
+ * Legacy shape: the totals and "here now" in one array.
+ *
+ * Superseded by getLiveTotals + getHereNow (see above) and kept ONLY because
+ * a deployed bundle is still calling it — removing it would break the live
+ * site until the frontend is redeployed. Delete it once prod is on a build
+ * that uses the split pair; nothing in src/ calls it any more.
+ */
 export const getLiveCounts = query({
   // `now` is an argument, not Date.now() in the handler. A query is cached
   // against its args, so a clock read inside would freeze at whatever the
@@ -31,25 +99,16 @@ export const getLiveCounts = query({
     counts: v.array(v.object({ label: v.string(), value: v.number() })),
   }),
   handler: async (ctx, { now }) => {
-    const [spaces, widgets, messages, presence] = await Promise.all([
-      spacesCounter.count(ctx),
-      widgetsCounter.count(ctx),
-      messagesCounter.count(ctx),
-      // Bounded: the cleanup cron sweeps this table every minute, so it holds
-      // only recent rows. take() keeps it from ever becoming a full scan if a
-      // sweep is missed.
-      ctx.db.query("presence").take(MAX_PRESENCE_SCAN),
+    const [totals, hereNow] = await Promise.all([
+      readTotals(ctx),
+      readHereNow(ctx, now),
     ]);
-
-    const staleBefore = now - PRESENCE_TTL_MS;
-    const hereNow = presence.filter((row) => row.updatedAt >= staleBefore).length;
-
     return {
       counts: [
-        { label: "spaces", value: spaces },
-        { label: "widgets", value: widgets },
-        { label: "messages", value: messages },
-        { label: "here now", value: Math.max(hereNow, 1) },
+        { label: "spaces", value: totals.spaces },
+        { label: "widgets", value: totals.widgets },
+        { label: "messages", value: totals.messages },
+        { label: "here now", value: hereNow },
       ],
     };
   },
