@@ -1336,3 +1336,18 @@ Backward-looking history lives in `hackathon.md`.
   clamp + nowrap, drop bar cedes width first) and the row grid caps the title
   column at `min(290px, 48%)` so the description column never crushes to a
   sliver.
+- **Presence pill redesign (2026-09-13).** The header's black pill read as
+  four words in a bar: status ("4 here now") and actions (add, invite) at the
+  same weight, nothing looked pressable, and lime was spent three times
+  (dot, +, ↗). Decision: one sticker, two textures. Status half on flat
+  black — the lime live dot moved off the label onto the face stack's corner
+  as an online badge (ringed in sticker black), the count now leads with the
+  number in Bricolage 15px and "here now" demoted to 78% Plex; the number is
+  keyed so a count change rolls in on `pop`. Action half — add and invite
+  became two filled keys (white 10%, 18% + lift on hover, lime while open)
+  with stroke-SVG glyphs that weigh the same as the type; glyphs are white at
+  rest and light lime on hover, so lime appears once at rest. Hairline gone.
+  "+N" overflow is a grey chip, not a fifth face. Hovering the crowd fans the
+  faces apart (-11px → -3px overlap). Phone keeps the old separate pills and
+  the label's own dot. Pill went from 391×51 to 354×46 on the crew.
+

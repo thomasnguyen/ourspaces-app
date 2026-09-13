@@ -30,8 +30,13 @@ are not.
 **components/** — `Canvas.tsx` (canvas + `SpaceHeader` — the nameplate, the
 same in every room: kicker (kind · tagline), the name big, then a handles
 row of two ink-tinted chips (inbox address, pencil "edit"); on the right ONE
-black sticker pill holding faces, "N here now", add and invite in the dock's
-vocabulary; CSS lives at the end of `index.css`
+black sticker pill with two textures: the status half on flat black (face
+stack wearing the lime live badge `.header-live-dot` on its corner, then the
+count with the number leading in display type — `.presence-count` is keyed
+on the count so a change rolls the number in) and the action half as two
+filled keys (add, invite: stroke-SVG `.header-key-glyph`s, white at rest,
+lime on hover, lime fill while open). Hovering the crowd fans the faces
+apart. CSS lives at the end of `index.css`
 under SPACE HEADER — THE NAMEPLATE, the dev guild fork only sets offsets;
 presence/gestures) ·
 `WidgetCard.tsx` (widget shell: drag/resize/thread chip) · `WidgetEditorPanel.tsx`
