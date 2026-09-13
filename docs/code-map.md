@@ -49,10 +49,12 @@ briefing, ↻ refresh, follow-up composer) ·
 `CanvasRoom.tsx` (shared full-screen `<dialog>` shell: grows out of the card
 that opened it via `--room-origin-*`, shrinks back on close) ·
 `ReadingRoom.tsx` (the pile's full view — single-link drop bar + a research bar
-[`onSearch` topic / `onCrawl` site], the arrival choreography — `arrivalStage`
-/ `arrivalLabel` key a pending row's narration off its `droppedAt`, and a
-pending→ready flip gets an `is-landing` window so the fields print in
-staggered — a tag row over the `all / new / hot /
+[`onSearch` topic / `onCrawl` site], the arrival choreography — `ARRIVAL_STEPS` (the six real
+Firecrawl/room steps) + `arrivalStage` / `arrivalLabel` / `arrivalDetail`
+key a pending row's narration off its `droppedAt`; your own drop pulls the
+reading circle along (`followRef`, `followDrops` prop) where the same steps
+run as a ledger; a pending→ready flip gets an `is-landing` window so the
+fields print in staggered on both the row and the circle — a tag row over the `all / new / hot /
 discussed / kept` filters, per-person runs, wrapping link descriptions, mobile
 links/reading-circle switch, reading circle whose tag
 pills set the same tag filter) · `CrawlStrip.tsx` (live Firecrawl crawl panel —
@@ -74,8 +76,8 @@ offered a refresh before its `React.lazy` chunks 404)
 **pages/** — `LiveSpace.tsx` (live canvas) · `Block.tsx` (mock `#/home`) ·
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
 `CursorLab.tsx` · `ArrivalLab.tsx` (`#/arrival` — the pile's ReadingRoom
-with a black lab pill: drop 1/3/6, one fails, ¼ speed, clear; no Firecrawl,
-same fake resolve as mock mode) · `labs.css`
+with a black lab pill: drop one, one fails, replay, ¼ speed, clear; no
+Firecrawl, same fake resolve as mock mode) · `labs.css`
 
 **widgets/** — `buildroom.tsx` (the build room's four: `linkPile`, `hotLinks`,
 `shipPost`, `roundtable`; also `ShipPreview`, the illustrated demo project

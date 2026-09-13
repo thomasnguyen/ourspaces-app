@@ -23292,12 +23292,6 @@
   --arrival-slow: 1;
 }
 
-/* ── the drop: fresh rows deal in from the bar, wider stagger than the pile ── */
-
-.rr-row.is-pending {
-  animation-delay: calc(var(--i, 0) * 110ms * var(--arrival-slow));
-}
-
 /* ── the pending row ── */
 
 .rr-row.is-pending .rr-row-title strong.rr-row-stage {
@@ -23358,16 +23352,26 @@
 
 .rr-row[data-stage="1"] .rr-row-steps i:nth-child(1),
 .rr-row[data-stage="2"] .rr-row-steps i:nth-child(-n + 2),
-.rr-row[data-stage="3"] .rr-row-steps i {
+.rr-row[data-stage="3"] .rr-row-steps i:nth-child(-n + 3),
+.rr-row[data-stage="4"] .rr-row-steps i:nth-child(-n + 4),
+.rr-row[data-stage="5"] .rr-row-steps i:nth-child(-n + 5) {
   opacity: 1;
   background: var(--color-ink);
 }
 
 .rr-row[data-stage="0"] .rr-row-steps i:nth-child(1),
 .rr-row[data-stage="1"] .rr-row-steps i:nth-child(2),
-.rr-row[data-stage="2"] .rr-row-steps i:nth-child(3) {
+.rr-row[data-stage="2"] .rr-row-steps i:nth-child(3),
+.rr-row[data-stage="3"] .rr-row-steps i:nth-child(4),
+.rr-row[data-stage="4"] .rr-row-steps i:nth-child(5),
+.rr-row[data-stage="5"] .rr-row-steps i:nth-child(6) {
   opacity: 1;
   background: var(--color-lime);
+}
+
+.rr-row-steps i {
+  width: 6px;
+  height: 6px;
 }
 
 /* the tile is a scanner while the page is being read */
@@ -23516,6 +23520,131 @@
   }
 }
 
+/* ── the reading circle follows your drop ──
+   For one link the circle is the payoff: it swaps to the row the moment you
+   drop, runs the same six steps as a ledger where "why it matters" will go,
+   and when Firecrawl comes back the real card prints in over it. */
+
+.rr-hero-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  animation: rr-stage-in calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide) both;
+}
+
+.rr-hero-stage .rr-row-caret {
+  width: 9px;
+  height: 0.7em;
+  background: var(--color-lime);
+}
+
+.rr-circle.is-pending .rr-hero-snap img {
+  filter: saturate(0.2) brightness(0.7);
+}
+
+.rr-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rr-steps li {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  column-gap: 12px;
+  align-items: baseline;
+  opacity: 0.32;
+  transition:
+    opacity calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide),
+    translate calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide);
+  animation: rr-fade-up var(--dur-base) var(--ease-glide) calc(120ms + var(--i, 0) * 45ms) backwards;
+}
+
+.rr-steps li.is-done {
+  opacity: 0.72;
+}
+
+.rr-steps li.is-live {
+  opacity: 1;
+}
+
+.rr-steps li i {
+  align-self: center;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.7);
+  transition: background calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide);
+}
+
+.rr-steps li.is-done i {
+  background: #fff;
+  box-shadow: none;
+}
+
+.rr-steps li.is-live i {
+  background: var(--color-lime);
+  box-shadow: none;
+  animation: rr-land-tile calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-pop) both;
+}
+
+.rr-steps li strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
+.rr-steps li span {
+  grid-column: 2;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.7);
+  /* the detail line only opens on the live step */
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide);
+}
+
+.rr-steps li.is-live span {
+  grid-template-rows: 1fr;
+}
+
+.rr-steps li span em {
+  min-height: 0;
+  font-style: normal;
+}
+
+/* the landing on the circle: the card prints in over the ledger */
+.rr-circle.is-landing .rr-hero-title {
+  animation: rr-print calc(var(--dur-stage) * var(--arrival-slow)) var(--ease-glide)
+    calc(60ms * var(--arrival-slow)) both;
+}
+
+.rr-circle.is-landing .rr-hero-snap {
+  animation: rr-land-tile calc(420ms * var(--arrival-slow)) var(--ease-glide) both;
+}
+
+.rr-circle.is-landing .rr-why p {
+  animation: rr-print calc(600ms * var(--arrival-slow)) var(--ease-glide)
+    calc(240ms * var(--arrival-slow)) both;
+}
+
+.rr-circle.is-landing .rr-tags li {
+  animation: rr-land-kind calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-pop)
+    calc((560ms + var(--i, 0) * 70ms) * var(--arrival-slow)) both;
+}
+
+.rr-circle.is-landing .rr-questions li {
+  animation: rr-fade-up calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-glide)
+    calc((780ms + var(--i, 0) * 120ms) * var(--arrival-slow)) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rr-row.is-pending .rr-row-title strong.rr-row-stage,
   .rr-row-caret,
@@ -23527,7 +23656,15 @@
   .rr-row.is-landing .rr-row-title > strong,
   .rr-row.is-landing .rr-row-title > strong::before,
   .rr-row.is-landing .rr-row-kind,
-  .rr-row.is-landing .rr-row-desc {
+  .rr-row.is-landing .rr-row-desc,
+  .rr-hero-stage,
+  .rr-steps li,
+  .rr-steps li i,
+  .rr-circle.is-landing .rr-hero-title,
+  .rr-circle.is-landing .rr-hero-snap,
+  .rr-circle.is-landing .rr-why p,
+  .rr-circle.is-landing .rr-tags li,
+  .rr-circle.is-landing .rr-questions li {
     animation: none;
   }
 }

@@ -69,13 +69,13 @@ export function mockResolvedPatch(link: BuildRoomLink): Partial<BuildRoomLink> {
     status: "ready",
     kind: mockLinkKind(link.url),
     title,
-    description: "fresh drop — the room hasn't read this one yet.",
-    whyItMatters: "you just dropped this. tell the room why it matters.",
+    description: "fresh drop — you're the first here. tell the room why it matters.",
+    whyItMatters: "",
     questions: cannedLinkQuestions(title),
   };
 }
 
-export const MOCK_RESOLVE_BASE_MS = 2300;
+export const MOCK_RESOLVE_BASE_MS = 3400;
 export const MOCK_RESOLVE_STEP_MS = 520;
 
 /** Each link resolves on its own clock (they genuinely do live: separate

@@ -671,6 +671,10 @@
   translate: 0 1px;
 }
 
+.arrival-lab-bar button.is-main {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .arrival-lab-bar button.is-on {
   background: var(--color-lime);
   color: var(--color-sticker);
