@@ -5,18 +5,18 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
-- **The about card + a way to the block (2026-09-13):** `#/about` is a
-  linkable address that opens a paper sheet over whatever room you are in —
-  what a space is, three things to try, who made it, what it runs on, a live
-  `spaces / widgets / messages` band off `stats.getLiveTotals`, and links to
-  the block and the repo. It is the only `CanvasRoom` that does not black out
-  the canvas (transparent shell, 46% backdrop) so the claim and the running
-  board sit in one frame. `spaceFromHash` maps `about` to `lastSpaceSlug()`,
-  so opening it from the crew room does not move you to the build room, and
-  closing restores that hash. The rail's brand mark now goes to `#/home` (the
-  block, via the existing zoom-out) instead of back to the default room, and a
-  quiet `?` chip at the rail's foot opens the card.
-  `components/AboutRoom.tsx`, mounted beside `<App/>` in `main.tsx`.
+- **The about page + a way to the block (2026-09-13):** `#/about` is a real
+  lazy route (`src/pages/About.tsx`) — what a space is, a live
+  `spaces / widgets / messages` band off `stats.getLiveTotals`, the three
+  things you do here, a scrolling strip of six real seeded `WidgetCard`s,
+  the named Convex component work, who built it, and links out to the block,
+  the wall and the repo. Shipped first as a card floating over the canvas;
+  replaced with the page because the card couldn't hold a paragraph. The
+  back link returns you to the room you came from (`spaceFromHash` maps
+  `about` → `lastSpaceSlug()`), not to the default one. The rail's brand
+  mark now goes to `#/home` (the block, via the existing zoom-out) instead
+  of back to the build room, and a quiet `?` chip at the rail's foot opens
+  the page.
 
 - **Mail arrival — the envelope that thinks out loud (2026-09-13):** an
   inbound email lands as a kraft envelope beside the space's address chip
@@ -1122,7 +1122,9 @@ Backward-looking history lives in `hackathon.md`.
   nothing — so the root stays a live room. And the block (`#/home`) already
   is a lobby with real rooms and real counts, it was just unreachable: the
   rail brand pointed at `/`, which is the build room. Shipped instead: brand
-  → the block, plus the `#/about` card above. The stronger remaining
+  → the block, plus the `#/about` page above. A page at a non-root hash
+  carries none of that judge risk either way — the scrape only ever hits the
+  root URL, and the root is still a live room. The stronger remaining
   legitimacy lever is the URL — `necessary-cobra-892.convex.site` reads like
   a test deploy. **Open:** whether we own a domain to point at it (custom
   domains need Convex Pro).
