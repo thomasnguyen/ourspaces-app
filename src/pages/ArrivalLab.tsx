@@ -61,19 +61,23 @@ export function ArrivalLab() {
     );
   };
 
-  const next = (count: number) => {
-    const taken = new Set(dropped.map((link) => link.url));
-    const fresh = SAMPLE_URLS.filter((url) => !taken.has(url));
-    const pool = fresh.length >= count ? fresh : SAMPLE_URLS;
-    return pool.slice(0, count).map((url) =>
-      taken.has(url) ? `${url}${url.includes("?") ? "&" : "?"}again=${Date.now()}` : url,
-    );
+  /* One link at a time — that's what people do. Cycle the samples. */
+  const nextUrl = () => {
+    const taken = new Set(dropped.map((link) => link.url.replace(/[?&]again=\d+$/, "")));
+    const fresh = SAMPLE_URLS.find((url) => !taken.has(url));
+    return fresh ?? `${SAMPLE_URLS[dropped.length % SAMPLE_URLS.length]}?again=${Date.now()}`;
   };
 
   const clear = () => {
     cancels.current.forEach((cancel) => cancel());
     cancels.current = [];
     setDropped([]);
+  };
+
+  const replay = () => {
+    const last = dropped[0]?.url ?? SAMPLE_URLS[0];
+    clear();
+    window.setTimeout(() => drop([last]), 60);
   };
 
   return (
@@ -96,13 +100,15 @@ export function ArrivalLab() {
           window.location.hash = "#/space/buildroom";
         }}
         clockScale={scale}
+        followDrops
         extra={
           <div className="arrival-lab-bar">
             <span className="arrival-lab-kicker">arrival lab</span>
-            <button type="button" onClick={() => drop(next(1))}>drop 1</button>
-            <button type="button" onClick={() => drop(next(3))}>drop 3</button>
-            <button type="button" onClick={() => drop(next(6))}>drop 6</button>
-            <button type="button" onClick={() => drop(next(2), true)}>one fails</button>
+            <button type="button" className="is-main" onClick={() => drop([nextUrl()])}>
+              drop one
+            </button>
+            <button type="button" onClick={() => drop([nextUrl()], true)}>one fails</button>
+            <button type="button" onClick={replay}>replay</button>
             <i aria-hidden="true" />
             <button
               type="button"

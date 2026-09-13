@@ -37,33 +37,45 @@ const LANDING_MS = 1800;
 
 /* ── arrival stages ──────────────────────────────────────────────────────
  * A pending row narrates what the room is doing with it, in the slot the
- * title will fill — so the resolve is a swap, not a reflow. The clock is the
- * row's own `droppedAt`, which makes the beat identical in mock and live
- * mode: live just holds on the last stage until Firecrawl comes back.
+ * title will fill — so the resolve is a swap, not a reflow. The steps are
+ * the real ones: Firecrawl renders the page in a browser, keeps the main
+ * content, converts it to text, summarises it, and runs an LLM extract for
+ * title / summary / site / author / date / cover; then the room decides the
+ * kind and files it. The clock is the row's own `droppedAt`, which makes the
+ * beat identical in mock and live mode: live just holds on the last step
+ * until Firecrawl comes back.
  */
-export type ArrivalStage = 0 | 1 | 2 | 3;
+export const ARRIVAL_STEPS: { label: (link: BuildRoomLink) => string; detail: string }[] = [
+  { label: (link) => `fetching ${link.domain}`, detail: "asking the site for the page" },
+  { label: () => "rendering it", detail: "loading it like a browser — scripts, lazy images, all of it" },
+  { label: () => "keeping the article", detail: "dropping the nav, the ads, the footer" },
+  { label: () => "reading it", detail: "turning the page into plain text" },
+  { label: () => "pulling out the facts", detail: "title, one-line summary, site, author, date, cover" },
+  { label: () => "deciding what it is", detail: "article, repo, video, docs, tool or discussion" },
+];
 
-const STAGE_AT_MS = [0, 700, 1500, 7000];
+const STEP_AT_MS = [0, 450, 950, 1450, 2000, 2600];
+const SLOW_AFTER_MS = 8000;
 
-export function arrivalStage(link: BuildRoomLink, now: number, scale = 1): ArrivalStage {
+export function arrivalStage(link: BuildRoomLink, now: number, scale = 1): number {
   const age = (now - link.droppedAt) / scale;
-  if (age >= STAGE_AT_MS[3]) return 3;
-  if (age >= STAGE_AT_MS[2]) return 2;
-  if (age >= STAGE_AT_MS[1]) return 1;
-  return 0;
+  let stage = 0;
+  for (let index = 0; index < STEP_AT_MS.length; index += 1) {
+    if (age >= STEP_AT_MS[index]) stage = index;
+  }
+  return stage;
 }
 
-export function arrivalLabel(link: BuildRoomLink, stage: ArrivalStage) {
-  switch (stage) {
-    case 0:
-      return `fetching ${link.domain}`;
-    case 1:
-      return "reading the page";
-    case 2:
-      return "pulling out the title";
-    default:
-      return "slow page — still reading";
-  }
+export function arrivalSlow(link: BuildRoomLink, now: number, scale = 1) {
+  return (now - link.droppedAt) / scale >= SLOW_AFTER_MS;
+}
+
+export function arrivalLabel(link: BuildRoomLink, stage: number, slow: boolean) {
+  return slow ? "slow page — still reading" : ARRIVAL_STEPS[stage].label(link);
+}
+
+export function arrivalDetail(stage: number, slow: boolean) {
+  return slow ? "hanging on — the page is taking its time" : ARRIVAL_STEPS[stage].detail;
 }
 
 function relDrop(at: number) {
@@ -105,6 +117,7 @@ export function ReadingRoom({
   onZone,
   onClose,
   clockScale = 1,
+  followDrops = false,
   extra,
 }: {
   pileId: string;
@@ -128,6 +141,9 @@ export function ReadingRoom({
   /** Slow-mo for the arrival lab: stretches the stage clock (CSS side is
       the `--arrival-slow` custom property). */
   clockScale?: number;
+  /** Follow every own drop into the circle, not just the drop bar's (the lab
+      drops from its own pill). */
+  followDrops?: boolean;
   /** Lab chrome rendered inside the room's top layer. */
   extra?: ReactNode;
 }) {
@@ -164,12 +180,25 @@ export function ReadingRoom({
      mock resolves on a timer, live resolves when the Firecrawl patch lands. */
   const statusRef = useRef<Map<string, BuildRoomLink["status"]>>(new Map());
   const [landing, setLanding] = useState<Set<string>>(() => new Set());
+  /* Your own drop takes the reading circle with it: the row on the left and
+     the circle on the right tell the same story, then the circle becomes
+     the card. Armed by the drop bar, spent by the first row it produces. */
+  const followRef = useRef(false);
   useEffect(() => {
     const seen = statusRef.current;
     const landed: string[] = [];
     for (const link of links) {
       const before = seen.get(link.id);
       if (before === "pending" && link.status !== "pending") landed.push(link.id);
+      if (
+        before === undefined &&
+        link.status === "pending" &&
+        link.droppedBy === userId &&
+        (followRef.current || followDrops)
+      ) {
+        followRef.current = false;
+        setSelectedId(link.id);
+      }
       seen.set(link.id, link.status);
     }
     if (landed.length === 0) return;
@@ -310,6 +339,9 @@ export function ReadingRoom({
       : linkThreadId(pileId, selected.id)
     : "";
   const replies = messagesByThread[threadId] ?? [];
+  const selectedStage =
+    selected?.status === "pending" ? arrivalStage(selected, now, clockScale) : null;
+  const selectedSlow = Boolean(selected && selectedStage !== null && arrivalSlow(selected, now, clockScale));
 
   const dropCount = parseDroppedUrls(paste).length;
 
@@ -317,6 +349,9 @@ export function ReadingRoom({
     const urls = parseDroppedUrls(paste);
     if (urls.length === 0) return;
     playSound("place");
+    followRef.current = true;
+    setFilter("all");
+    setTag(null);
     onDrop?.(urls);
     setPaste("");
   };
@@ -429,12 +464,6 @@ export function ReadingRoom({
                   )}
                 </form>
               )}
-              {enriching > 0 && (
-                <span className="rr-enriching">
-                  <i aria-hidden="true">✦</i> reading {enriching} page
-                  {enriching === 1 ? "" : "s"}…
-                </span>
-              )}
             </div>
           </header>
 
@@ -509,6 +538,7 @@ export function ReadingRoom({
                   {run.map((link, index) => {
                     const pending = link.status === "pending";
                     const stage = pending ? arrivalStage(link, now, clockScale) : null;
+                    const slow = pending && arrivalSlow(link, now, clockScale);
                     return (
                     <li
                       key={link.id}
@@ -518,6 +548,7 @@ export function ReadingRoom({
                         landing.has(link.id) ? " is-landing" : ""
                       }`}
                       data-stage={stage ?? undefined}
+                      data-slow={slow || undefined}
                       style={{ "--i": runOffsets[runIndex] + index } as CSSProperties}
                     >
                       <button
@@ -543,8 +574,8 @@ export function ReadingRoom({
                         </span>
                         <span className="rr-row-title">
                           {stage !== null ? (
-                            <strong className="rr-row-stage" key={stage}>
-                              {arrivalLabel(link, stage)}
+                            <strong className="rr-row-stage" key={`${stage}-${slow}`}>
+                              {arrivalLabel(link, stage, slow)}
                               <i className="rr-row-caret" />
                             </strong>
                           ) : (
@@ -562,20 +593,16 @@ export function ReadingRoom({
                             )}
                             {stage !== null && (
                               <b className="rr-row-steps" aria-hidden="true">
-                                <i /><i /><i />
+                                {ARRIVAL_STEPS.map((_, step) => (
+                                  <i key={step} />
+                                ))}
                               </b>
                             )}
                           </em>
                         </span>
                         <span className="rr-row-desc">
-                          {pending
-                            ? stage === 0
-                              ? "asking the site for the page"
-                              : stage === 1
-                                ? "turning it into text the room can use"
-                                : stage === 2
-                                  ? "title, a one-line summary, what kind of thing it is"
-                                  : "hanging on — the page is taking its time"
+                          {stage !== null
+                            ? arrivalDetail(stage, slow)
                             : link.status === "failed"
                               ? "couldn't read that page — kept the link"
                               : link.description}
@@ -648,7 +675,12 @@ export function ReadingRoom({
         </section>
 
         {selected && (
-          <aside className="rr-circle" aria-label="Reading circle">
+          <aside
+            className={`rr-circle${selected.status === "pending" ? " is-pending" : ""}${
+              landing.has(selected.id) ? " is-landing" : ""
+            }`}
+            aria-label="Reading circle"
+          >
             <header className="rr-circle-head">
               <h3>reading circle</h3>
               <span className="rr-circle-faces">
@@ -676,9 +708,19 @@ export function ReadingRoom({
                   <em className="rr-hero-domain">
                     {selected.domain} <i aria-hidden="true">↗</i>
                   </em>
-                  <strong className="rr-hero-title">
-                    {selected.title || selected.domain}
-                  </strong>
+                  {selectedStage !== null ? (
+                    <strong
+                      className="rr-hero-title rr-hero-stage"
+                      key={`${selectedStage}-${selectedSlow}`}
+                    >
+                      {arrivalLabel(selected, selectedStage, selectedSlow)}
+                      <i className="rr-row-caret" />
+                    </strong>
+                  ) : (
+                    <strong className="rr-hero-title">
+                      {selected.title || selected.domain}
+                    </strong>
+                  )}
                   <span className="rr-hero-by">
                     dropped by {selected.droppedByName.toLowerCase()} ·{" "}
                     {relDrop(selected.droppedAt)}
@@ -697,7 +739,41 @@ export function ReadingRoom({
                 </span>
               </a>
 
-              <section className="rr-why">
+              {selectedStage !== null ? (
+                <section className="rr-why rr-reading" key="why-reading">
+                  <h4>what the room is doing</h4>
+                  <ol className="rr-steps">
+                    {ARRIVAL_STEPS.map((step, index) => (
+                      <li
+                        key={index}
+                        className={
+                          index < selectedStage
+                            ? "is-done"
+                            : index === selectedStage
+                              ? "is-live"
+                              : ""
+                        }
+                        style={{ "--i": index } as CSSProperties}
+                      >
+                        <i aria-hidden="true" />
+                        <strong>
+                          {index === selectedStage
+                            ? arrivalLabel(selected, index, selectedSlow)
+                            : step.label(selected)}
+                        </strong>
+                        <span>
+                          <em>
+                            {index === selectedStage
+                              ? arrivalDetail(index, selectedSlow)
+                              : step.detail}
+                          </em>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              ) : (
+              <section className="rr-why" key={`why-${selected.status}`}>
                 <h4>why it matters</h4>
                 <p>{linkSummary(selected)}</p>
                 {selected.status === "ready" && (
@@ -728,8 +804,9 @@ export function ReadingRoom({
                   </ul>
                 )}
               </section>
+              )}
 
-              <ul className="rr-questions">
+              <ul className="rr-questions" key={`q-${selected.status}`}>
                 {selected.questions.map((question, index) => {
                   const qThread = linkQuestionThreadId(pileId, selected.id, question.id);
                   const count = messagesByThread[qThread]?.length ?? 0;
