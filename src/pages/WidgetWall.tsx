@@ -18,34 +18,34 @@ import { mockBuildRoomFeed, mockRoundtableReplies } from "../lib/buildRoomFeed";
 import { createDemoWidget } from "../lib/widgetDefaults";
 
 /**
- * Widget wall — the whole catalog as a drifting picker screen, for the demo
- * line "you can put pretty much anything in it. there's like thirty of these
- * now." Hash route: /#/wall
+ * Widget wall — every widget on one drifting wall, for the demo line
+ * "you can put pretty much anything in it. there's like thirty of these now."
+ * Hash route: /#/wall
  *
- * Every card is a real WidgetCard from the seeded spaces (the crew's cake
- * poll, the couple's letter, the build room's pile), floating in a uniform
- * gallery slot with its emoji, name and a one-line blurb centered under it —
- * the add-widget picker's vocabulary, blown up, without the boxes. Three
- * columns drift on a gently tilted plane in alternating directions; a roll
- * call lifts one at a time; hover lifts one and holds its column. Click one
- * and the widget flies out to a big centered spotlight you can use (vote,
- * spin, claim); click anywhere or Esc and it flies back into its slot. The lab pill and the
- * cursor hide after 2s idle, so a recording is clean. `replay` re-runs the
- * entrance.
+ * Real WidgetCards from the seeded spaces (the crew's cake poll, the couple's
+ * letter, the build room's pile), not screenshots, each wearing a black
+ * sticker name tag. Three columns drift on a gently tilted plane in
+ * alternating directions; a roll call lifts one card at a time and lights
+ * its tag lime; hover does the same and holds the column. Click a card and
+ * the widget flies out to a big centered spotlight you can use (vote, spin,
+ * claim); click anywhere or Esc and it flies back. The lab pill (bottom-left)
+ * and the cursor hide after 2s idle, so a recording is clean. `replay`
+ * re-runs the entrance; `size` steps the cards S / M / L.
  */
 
 const COLS = 3;
-const COL_W = 420;
-const TILE_H = 312;
-const FRAME_H = 236;
-const FRAME_PAD = 16;
-const GAP = 36;
-const STICKER_ZOOM = 1.1;
-const LIFT = 40;
-const BASE_SPEED = 30;
+const COL_W = 400;
+const GAP = 26;
+const SIZES = [
+  { name: "S", zoom: 0.56 },
+  { name: "M", zoom: 0.68 },
+  { name: "L", zoom: 0.82 },
+];
+const LIFT = 56;
+const BASE_SPEED = 34;
 const VARIANCE = 0.45;
 const PARALLAX_DEG = 4;
-const ROLL_EVERY = 1700;
+const ROLL_EVERY = 1600;
 const ROLL_HOLD = 1200;
 const IDLE_AFTER = 2200;
 const SPEEDS = [0.5, 1, 2];
@@ -60,7 +60,7 @@ const FLAT = { tilt: 0, turn: 0, depth: 0 };
 /* Mirrors WidgetCard's widgetGrows: these render at content height. */
 const GROWS = new Set<WidgetType>(["dailyQ", "availability", "linkShelf", "playlist"]);
 
-/* What each one is for, in the picker's plain voice. */
+/* What each one is for — shown under the spotlight, in the picker's voice. */
 const BLURBS: Partial<Record<WidgetType, string>> = {
   poll: "vote on anything",
   linkPile: "drop links, read together",
@@ -103,8 +103,9 @@ type WallTile = {
   blurb: string;
   /** Rendered height of the widget in its own px (seeded h, or measured). */
   natural: number;
-  /** Preview zoom inside the frame. */
   zoom: number;
+  /** Height in plane px (already zoomed). */
+  h: number;
 };
 
 type Picked = { id: string; tile: WallTile };
@@ -131,7 +132,8 @@ const WEB_POST: Widget = {
   },
 };
 
-/* One of each, the most lived-in instance. Order is the deal order. */
+/* One of each, the most lived-in instance, in an order that mixes tall and
+   short so the greedy packer below deals a good hand to every column. */
 const PICKS: ({ space: string; id: string } | { widget: Widget; space?: string })[] = [
   { space: "crew", id: "poll-cake" },
   { space: "buildroom", id: "br-pile" },
@@ -176,12 +178,9 @@ function catalogLabel(widget: Widget) {
 }
 
 /* Some widgets grow past their seeded height (the availability sheet, the
-   link shelf) — `measured` carries what they actually rendered at, so the
-   preview zoom fits the real card, not the seed. */
-function buildTiles(measured: Record<string, number>): WallTile[] {
+   link shelf) — `measured` carries what they actually rendered at. */
+function buildTiles(measured: Record<string, number>, base: number): WallTile[] {
   const tiles: WallTile[] = [];
-  const availW = COL_W - FRAME_PAD * 2;
-  const availH = FRAME_H - FRAME_PAD * 2;
   for (const pick of PICKS) {
     const widget =
       "widget" in pick
@@ -189,8 +188,8 @@ function buildTiles(measured: Record<string, number>): WallTile[] {
         : getSpace(pick.space).widgets.find((item) => item.id === pick.id);
     if (!widget) continue;
     const natural = Math.max(widget.h, measured[widget.id] ?? 0);
-    const cap = widget.type === "sticker" ? STICKER_ZOOM : 1;
-    const zoom = Math.min(cap, availW / widget.w, availH / natural);
+    const cap = widget.type === "sticker" ? Math.min(1.1, base * 1.3) : base;
+    const zoom = Math.min(cap, COL_W / widget.w);
     tiles.push({
       widget,
       spaceId: pick.space ?? "widget-wall",
@@ -198,15 +197,22 @@ function buildTiles(measured: Record<string, number>): WallTile[] {
       blurb: BLURBS[widget.type] ?? "",
       natural,
       zoom,
+      h: natural * zoom,
     });
   }
   return tiles;
 }
 
-/* Deal round-robin: uniform tiles, so every column loops the same length. */
+/* Deal each tile to the shortest column so the loops stay similar length. */
 function packColumns(tiles: WallTile[]): WallTile[][] {
   const cols: WallTile[][] = Array.from({ length: COLS }, () => []);
-  tiles.forEach((tile, i) => cols[i % COLS].push(tile));
+  const heights = new Array<number>(COLS).fill(0);
+  for (const tile of tiles) {
+    let c = 0;
+    for (let i = 1; i < COLS; i++) if (heights[i] < heights[c]) c = i;
+    cols[c].push(tile);
+    heights[c] += tile.h + GAP;
+  }
   return cols;
 }
 
@@ -254,7 +260,6 @@ export function WidgetWall() {
   const damped = useRef({ x: 0, y: 0, depth: 0 });
   const hoverId = useRef<string | null>(null);
   const hoverCol = useRef(-1);
-  const litCol = useRef(-1);
   const selectedRef = useRef<{ id: string; col: number } | null>(null);
   const sourceRect = useRef<DOMRect | null>(null);
   const closing = useRef(false);
@@ -267,6 +272,8 @@ export function WidgetWall() {
   const [flat, setFlat] = useState(false);
   const [paused, setPaused] = useState(false);
   const [rollCall, setRollCall] = useState(true);
+  const [labels, setLabels] = useState(true);
+  const [sizeIndex, setSizeIndex] = useState(1);
   const [speedIndex, setSpeedIndex] = useState(1);
   const [idle, setIdle] = useState(false);
   const [reduced, setReduced] = useState(prefersReducedMotion);
@@ -280,12 +287,14 @@ export function WidgetWall() {
       : { w: window.innerWidth, h: window.innerHeight },
   );
 
-  const columns = useMemo(() => packColumns(buildTiles(measured)), [measured]);
-  const kinds = useMemo(
-    () => new Set(columns.flat().map((tile) => tile.widget.type)).size,
+  const columns = useMemo(
+    () => packColumns(buildTiles(measured, SIZES[sizeIndex].zoom)),
+    [measured, sizeIndex],
+  );
+  const periods = useMemo(
+    () => columns.map((col) => col.reduce((sum, tile) => sum + tile.h + GAP, 0)),
     [columns],
   );
-  const periods = useMemo(() => columns.map((col) => col.length * (TILE_H + GAP)), [columns]);
   const copies = useMemo(
     () => periods.map((period) => Math.max(2, Math.ceil((viewport.h * 1.3) / period) + 1)),
     [periods, viewport.h],
@@ -327,12 +336,12 @@ export function WidgetWall() {
   }, []);
 
   /* One measure pass: a growing widget's body scrolls past the seeded
-     height; take what it rendered at so the preview zoom fits it. */
+     height; take what it rendered at so tiles never overlap. */
   useLayoutEffect(() => {
     const next: Record<string, number> = {};
-    for (const el of document.querySelectorAll<HTMLElement>(".ww-preview[data-grows]")) {
-      const id = el.dataset.widget ?? "";
-      const body = el.querySelector<HTMLElement>(".widget-group-body");
+    for (const tile of document.querySelectorAll<HTMLElement>(".ww-tile[data-grows]")) {
+      const id = tile.dataset.widget ?? "";
+      const body = tile.querySelector<HTMLElement>(".widget-group-body");
       if (!id || !body || next[id]) continue;
       next[id] = body.scrollHeight;
     }
@@ -434,7 +443,7 @@ export function WidgetWall() {
     return () => cancelAnimationFrame(raf);
   }, [flat, reduced, periods, baseVelocities, runKey, viewport.w]);
 
-  /* Roll call: one tile at a time, the one nearest the middle of its
+  /* Roll call: one card at a time, the one nearest the middle of its
      column. Sits out while the pointer or the spotlight owns attention. */
   useEffect(() => {
     if (!rollCall || reduced) return;
@@ -451,18 +460,18 @@ export function WidgetWall() {
       const total = count * period - GAP;
       const shift = period / 2 - (offsets.current[c] ?? 0);
       let best = { d: Infinity, id: "", k: 0 };
+      let top = 0;
       for (let k = 0; k < col.length; k++) {
-        const center = k * (TILE_H + GAP) + TILE_H / 2;
+        const center = top + col[k].h / 2;
         for (let i = 0; i < count; i++) {
           const y = -total / 2 + shift + i * period + center;
           if (Math.abs(y) < best.d) best = { d: Math.abs(y), id: `${c}-${i}-${k}`, k };
         }
+        top += col[k].h + GAP;
       }
-      litCol.current = c;
       setLit({ id: best.id, tile: col[best.k] });
       window.clearTimeout(hold);
       hold = window.setTimeout(() => {
-        litCol.current = -1;
         setLit((current) => (current?.id === best.id ? null : current));
       }, ROLL_HOLD);
     };
@@ -472,7 +481,6 @@ export function WidgetWall() {
       window.clearTimeout(first);
       window.clearInterval(every);
       window.clearTimeout(hold);
-      litCol.current = -1;
     };
   }, [rollCall, reduced, columns, periods, copies, runKey]);
 
@@ -493,7 +501,7 @@ export function WidgetWall() {
     };
   }, []);
 
-  /* Spotlight in: the widget flies from its frame to the middle (FLIP). */
+  /* Spotlight in: the widget flies from its card to the middle (FLIP). */
   useLayoutEffect(() => {
     const el = focusRef.current;
     const src = sourceRect.current;
@@ -516,7 +524,7 @@ export function WidgetWall() {
     setLit(null);
   }, []);
 
-  /* Spotlight out: fly back to wherever the frame has drifted to. */
+  /* Spotlight out: fly back to wherever the card has drifted to. */
   const closeSpotlight = useCallback(() => {
     const el = focusRef.current;
     const sel = selectedRef.current;
@@ -530,7 +538,7 @@ export function WidgetWall() {
     const from = getComputedStyle(el).transform;
     el.getAnimations().forEach((animation) => animation.cancel());
     const home = document
-      .querySelector<HTMLElement>(`[data-tile="${sel.id}"] .ww-preview`)
+      .querySelector<HTMLElement>(`[data-tile="${sel.id}"] .ww-tile-inner`)
       ?.getBoundingClientRect();
     const dst = el.getBoundingClientRect();
     const to = home ? flipTransform(home, dst) : "scale(0.6)";
@@ -585,7 +593,6 @@ export function WidgetWall() {
       if (hit.id === hoverId.current) return;
       hoverId.current = hit.id;
       hoverCol.current = hit.c;
-      litCol.current = -1;
       setLit({ id: hit.id, tile: hit.tile });
     },
     [tileAt, releaseHover],
@@ -597,16 +604,15 @@ export function WidgetWall() {
     releaseHover();
   }, [releaseHover]);
 
-  /* Click a tile: its widget flies out to the spotlight. */
+  /* Click a card: its widget flies out to the spotlight. */
   const onStageClick = useCallback(
     (event: ReactMouseEvent<HTMLDivElement>) => {
       if (selectedRef.current) return;
       const hit = tileAt(event.clientX, event.clientY);
       if (!hit) return;
-      const preview = hit.el.querySelector<HTMLElement>(".ww-preview");
-      sourceRect.current = (preview ?? hit.el).getBoundingClientRect();
+      const inner = hit.el.querySelector<HTMLElement>(".ww-tile-inner");
+      sourceRect.current = (inner ?? hit.el).getBoundingClientRect();
       selectedRef.current = { id: hit.id, col: hit.c };
-      litCol.current = -1;
       setLit(null);
       setSelected({ id: hit.id, tile: hit.tile });
     },
@@ -638,9 +644,6 @@ export function WidgetWall() {
 
   const stageVars = {
     "--ww-col": `${COL_W}px`,
-    "--ww-tile-h": `${TILE_H}px`,
-    "--ww-frame-h": `${FRAME_H}px`,
-    "--ww-frame-pad": `${FRAME_PAD}px`,
     "--ww-gap": `${GAP}px`,
     "--ww-lift": `${LIFT}px`,
   } as CSSProperties;
@@ -652,7 +655,9 @@ export function WidgetWall() {
     >
       <div
         ref={stageRef}
-        className={`ww-stage ${flat ? "is-flat" : ""} ${reduced ? "is-reduced" : ""}`}
+        className={`ww-stage ${flat ? "is-flat" : ""} ${reduced ? "is-reduced" : ""} ${
+          labels ? "" : "no-labels"
+        }`}
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
         onClick={onStageClick}
@@ -683,36 +688,29 @@ export function WidgetWall() {
                           data-tile={id}
                           data-col={c}
                           data-type={tile.widget.type}
+                          data-widget={tile.widget.id}
+                          data-grows={GROWS.has(tile.widget.type) ? "1" : undefined}
+                          style={{
+                            zoom: tile.zoom,
+                            width: tile.widget.w,
+                            height: tile.natural,
+                          }}
                         >
-                          <div className="ww-frame">
-                            <div
-                              className="ww-preview"
-                              data-widget={tile.widget.id}
-                              data-grows={GROWS.has(tile.widget.type) ? "1" : undefined}
-                              style={{
-                                zoom: tile.zoom,
-                                width: tile.widget.w,
-                                height: tile.natural,
-                              }}
-                            >
-                              <WidgetCard
-                                widget={widgetFor(tile)}
-                                spaceId={tile.spaceId}
-                                canvasScale={1}
-                                pollSelection={pollVotes[tile.widget.id]}
-                                claimantId="you"
-                                buildRoomFeed={feed}
-                                roundtableReplies={roundtableReplies[tile.widget.id]}
-                              />
-                            </div>
+                          <div className="ww-tile-inner">
+                            <WidgetCard
+                              widget={widgetFor(tile)}
+                              spaceId={tile.spaceId}
+                              canvasScale={1}
+                              pollSelection={pollVotes[tile.widget.id]}
+                              claimantId="you"
+                              buildRoomFeed={feed}
+                              roundtableReplies={roundtableReplies[tile.widget.id]}
+                            />
                           </div>
-                          <div className="ww-caption">
-                            <span className="ww-caption-row">
-                              <span className="ww-chip" aria-hidden="true">{tile.emoji}</span>
-                              <strong className="ww-name">{tile.label}</strong>
-                            </span>
-                            <span className="ww-blurb">{tile.blurb}</span>
-                          </div>
+                          <span className="ww-tag" style={{ zoom: 1 / tile.zoom }}>
+                            <i aria-hidden="true">{tile.emoji}</i>
+                            {tile.label}
+                          </span>
                         </div>
                       );
                     })}
@@ -723,11 +721,6 @@ export function WidgetWall() {
           ))}
         </div>
       </div>
-
-      <header className="ww-header">
-        <h2>add a widget</h2>
-        <p>{kinds} kinds · tap one to look closer</p>
-      </header>
 
       {selected && (
         <div className="ww-focus" onClick={closeSpotlight}>
@@ -806,8 +799,17 @@ export function WidgetWall() {
         >
           roll call
         </button>
+        <button type="button" className={labels ? "is-on" : ""} onClick={() => setLabels((v) => !v)}>
+          name tags
+        </button>
         <button type="button" className={flat ? "is-on" : ""} onClick={() => setFlat((v) => !v)}>
           flat
+        </button>
+        <button
+          type="button"
+          onClick={() => setSizeIndex((index) => (index + 1) % SIZES.length)}
+        >
+          size · {SIZES[sizeIndex].name}
         </button>
         <button
           type="button"

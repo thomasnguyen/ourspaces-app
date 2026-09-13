@@ -5,39 +5,44 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
-- **Widget wall, the "thirty of these" insert (2026-09-12, third pass —
-  now a picker screen):** `#/wall` (`pages/WidgetWall.tsx`, CSS at the end
-  of `pages/labs.css`) shows the whole catalog as a drifting add-widget
-  gallery for the 0:12 line. Thomas's steer after two passes: "make it more
-  like widgets… like a widget selection screen", and click should enlarge.
-  So: 32 real `WidgetCard`s from the seeded rooms (the crew's cake poll, the
-  couple's letter and postcard, the build room's pile, both stickers), each
-  floating in a **uniform gallery slot** (420×312, no box — a boxed pass with
-  translucent tiles and hairline borders got "too much of the outer widget
-  border", so the widget sits straight on the wall, bottom-aligned in a
-  236px frame) with an emoji chip + name (Bricolage 19px) + a one-line blurb
-  centered under it (`BLURBS`, plain voice: "vote on anything", "count down
-  to the day", "color a postcard together"). A sheet header top-left: **add a widget · 31 kinds · tap one
-  to look closer**. Three columns dealt round-robin drift up/down on a
-  gently tilted plane (rotateX 11° / rotateY −9°, perspective 2200 — the
-  earlier 16°/1200 magnified the near edge and small text went soft, which
-  read as "buggy"), scaled to fit the viewport width so the mask only
-  dissolves top and bottom. Roll call lifts the tile nearest the middle of
-  the next column every 1.7s (lifts with a shadow, name goes lime); hover does
-  the same and holds the column. **Click = spotlight:** the widget FLIPs
-  (WAAPI, `--ease-pop`, 560ms) from its frame to the middle at up to 1.8×,
-  the wall dims to 32% and recedes 180px, the columns slow to half, the
-  frame keeps its empty slot, and the name + blurb pop in under it in lime.
-  It's usable there — poll vote, potluck claim, wheel spin are wired to
-  local state and show on the wall copy after. Click anywhere or Esc and it
-  flies back (glide, 380ms) to wherever its frame drifted. Lab pill: replay
-  · pause · roll call · flat · ½/1/2×; pill and cursor hide after 2.2s idle.
-  Gotchas kept from the earlier passes: `zoom` on the preview so cards keep
-  their own layout; growing widgets measured once via `scrollHeight`; the
-  entrance waits two rAFs past first paint. Verified in mock mode with
-  frames (`.context/shot-wall-gallery.mjs`: settled, flight in, spotlight,
-  flight out, flat). Not linked from the canvas; the widget lab header has
-  a "widget wall →" link.
+- **Widget wall, the "thirty of these" insert (2026-09-12, four passes in
+  one evening — this is where it landed):** `#/wall` (`pages/WidgetWall.tsx`,
+  CSS at the end of `pages/labs.css`) puts every widget on one drifting wall
+  for the 0:12 line. 32 real `WidgetCard`s from the seeded rooms (the crew's
+  cake poll, the couple's letter and postcard, the build room's pile, both
+  stickers), each wearing a **black sticker name tag** on its bottom-left
+  corner (emoji + catalog name, counter-zoomed so it's the same size on
+  every card), dealt greedy-shortest to three masonry columns on a gently
+  tilted plane (rotateX 11° / rotateY −9°, perspective 2200 — the first
+  16°/1200 magnified the near edge and small text went soft, which read as
+  "buggy") scaled to fit the viewport width. Columns drift up/down
+  alternately at golden-ratio-spread speeds, loop seamlessly, and enter
+  middle-first with a 70ms stagger on `--ease-pop`. Roll call lifts the card
+  nearest the middle of the next column every 1.6s (translateZ +
+  drop-shadow, straightens, tag swings up lime and 1.3×); hover does the
+  same and holds the column. **Click = spotlight:** the widget FLIPs (WAAPI,
+  `--ease-pop`, 560ms) from its card to the middle at up to 1.8×, the wall
+  dims to 32% and recedes 180px, columns slow to half, the card's slot stays
+  empty, and an emoji chip + name + one-line blurb (`BLURBS`: "vote on
+  anything", "count down to the day") pop in under it in lime. It's usable
+  there — poll vote, potluck claim, wheel spin are wired to local state and
+  show on the wall copy after. Click anywhere or Esc flies it back (glide,
+  380ms) to wherever its card drifted. Lab pill: replay · pause · roll call
+  · name tags · flat · **size S/M/L** (card zoom 0.56 / 0.68 / 0.82; Thomas
+  asked for "a little smaller" after the 0.86 pass, M is the new default) ·
+  ½/1/2×; pill and cursor hide after 2.2s idle. History, so nobody re-walks
+  it: pass 1 was five columns at 0.66 with only a roll-call tag ("looks
+  amazing"), pass 2 three columns at 0.86 with tags on every card + a sticky
+  click-select ring, pass 3 a picker-screen gallery with uniform translucent
+  tiles, captions and an "add a widget · 31 kinds" header ("too much of the
+  outer widget border"), then floating slots with centered captions —
+  Thomas preferred pass 2, smaller. Gotchas kept: `zoom` on tiles so cards
+  keep their own layout; growing widgets measured once via `scrollHeight`;
+  the entrance waits two rAFs past first paint. Verified in mock mode with
+  frames (`.context/shot-wall-tags.mjs`: M, spotlight, S) and earlier a 12s
+  recording scrubbed at 6fps (`.context/video-wall.mjs`, Homebrew ffmpeg —
+  Playwright's bundled build has no `fps` filter). Not linked from the
+  canvas; the widget lab header has a "widget wall →" link.
 - **Link arrival narrates itself (2026-09-12):** a dropped link no longer
   sits as a bare url under a global "enriching…" pill. The row runs the
   story in the slot the title will fill — `fetching github.com` →
