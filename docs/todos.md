@@ -32,7 +32,17 @@ Backward-looking history lives in `hackathon.md`.
   show stays as sharp as the repaint version (probe at 1728×1080@2×: 8.3ms
   avg rAF interval, 0.6ms jitter, no long tasks, `.context/shot-wall-smooth.mjs`).
   Track offsets are snapped to device pixels and cards carry no
-  transform/opacity of their own beyond that hint. `tilt` in the pill (on by default) switches to the flat 2D
+  transform/opacity of their own beyond that hint. **Jagged-edge fix
+  (same night, "why do i see jagged border here???"):** the pile's black
+  card stair-stepped on Thomas's screen — it multiplies a paper texture
+  over near-black (`background-blend-mode`) and sits rotated ~3° (its own
+  −2° plus the scrapbook tilt); on a GPU-rasterized layer that blend path
+  can drop edge anti-aliasing (headless software raster does not reproduce
+  it — the diagnosis is by elimination: the tape, pills and plain paper
+  cards beside it were smooth). Ten widgets use the same multiply-texture
+  trick, so on the wall every `.widget-group` sits straight (`rotate: 0`,
+  the tags keep their angle and the JS tilt supplies the depth) and the pile
+  card is flat black with no texture. `tilt` in the pill (on by default) switches to the flat 2D
   wall. Columns drift up/down alternately at golden-ratio-spread speeds,
   loop seamlessly, and enter middle-first with a 70ms stagger on
   `--ease-pop`. Roll call lifts the card

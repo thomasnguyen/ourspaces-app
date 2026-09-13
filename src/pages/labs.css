@@ -835,14 +835,28 @@
   height: 100% !important;
 }
 
-.ww-focus-zoom .widget-group,
-.ww-tile.is-lit .widget-group {
+/* Cards sit straight on the wall (the JS tilt supplies the depth, the tags
+   keep the scrapbook angle). Ten widgets multiply a paper texture over
+   their colour, and a rotated blend-mode edge on a GPU layer can lose its
+   anti-aliasing — the stair-step Thomas saw on the pile card. */
+.ww-tile .widget-group,
+.ww-focus-zoom .widget-group {
   rotate: 0deg;
 }
 
 .ww-tile .widget-management,
 .ww-focus-zoom .widget-management {
   display: none;
+}
+
+/* The pile's black card multiplies a paper texture over near-black. On a
+   GPU-rasterized layer that blend path can lose edge anti-aliasing, and
+   the card is rotated, so its edge stair-stepped on Thomas's screen. On
+   the wall it's a flat black card; the texture was invisible at this size. */
+.ww-tile .br-pile-card,
+.ww-focus-zoom .br-pile-card {
+  background-image: none;
+  background-blend-mode: normal;
 }
 
 .ww-tile .widget-group:hover .widget-shell:not(.widget-frame) {
