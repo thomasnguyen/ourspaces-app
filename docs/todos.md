@@ -5,18 +5,19 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
-- **The about page + a way to the block (2026-09-13):** `#/about` is a real
-  lazy route (`src/pages/About.tsx`) — what a space is, a live
-  `spaces / widgets / messages` band off `stats.getLiveTotals`, the three
-  things you do here, a scrolling strip of six real seeded `WidgetCard`s,
-  the named Convex component work, who built it, and links out to the block,
-  the wall and the repo. Shipped first as a card floating over the canvas;
-  replaced with the page because the card couldn't hold a paragraph. The
-  back link returns you to the room you came from (`spaceFromHash` maps
-  `about` → `lastSpaceSlug()`), not to the default one. The rail's brand
-  mark now goes to `#/home` (the block, via the existing zoom-out) instead
-  of back to the build room, and a quiet `?` chip at the rail's foot opens
-  the page.
+- **About redesign (2026-09-13):** `#/about` now opens with a full-color
+  birthday collage and a sample cake poll you can vote on. The preview uses
+  the real poll component, keeps its vote local, and labels itself a preview;
+  the live totals still subscribe to `stats.getLiveTotals` in live mode only.
+  Short outcome-led sections lead into five room links, Thomas + Holly’s
+  origin story, and a compact maker section with expandable technical detail.
+  The rail logo opens About. A quiet `about ↗` link is fixed bottom-right on
+  the block and both canvas paths (above the rail on mobile); the rail’s small
+  grid icon keeps a direct route to the block. Back returns to the last room.
+  Uses existing artwork and house tokens. Browser-verified at 1440, 800,
+  390, and 320px, including the preview vote, room links, logo/back flow,
+  live totals, mobile corner link, and reduced motion. `npm run build` passes.
+  Local frontend change; not deployed.
 
 - **Mail arrival — the envelope that thinks out loud (2026-09-13):** an
   inbound email lands as a kraft envelope beside the space's address chip
@@ -1115,6 +1116,13 @@ Backward-looking history lives in `hackathon.md`.
   the demo spaces — strangers get write access) around Sep 16.
 
 ## Decisions
+
+- 2026-09-13: **About is the logo destination.** The user asked for a full
+  redesign and a small visible About link. The logo and bottom-right link
+  open `#/about` and remember the current room, including the default route.
+  A small grid icon in the rail opens the block. The About page uses the
+  app’s existing artwork and an explicitly local preview poll; the site’s
+  root continues to open a live room. Technical detail is expandable.
 
 - 2026-09-13: **No marketing landing page — the block is the front door.**
   Asked whether OurSpaces should have one, for legitimacy. Two reasons not

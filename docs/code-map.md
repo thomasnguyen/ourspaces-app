@@ -42,8 +42,10 @@ presence/gestures) ·
 `WidgetCard.tsx` (widget shell: drag/resize/thread chip) · `WidgetEditorPanel.tsx`
 (per-type edit forms) · `WidgetPicker.tsx` · `WidgetThreadDock.tsx` ·
 `GlobalChatPanel.tsx` · `ThreadContent.tsx` (messages + composer + promote) ·
-`Rail.tsx` (space rail; the brand mark goes to `#/home` — the block — and a
-quiet `?` chip at the bottom goes to `#/about`; `OnlineCountSuffix` shows "· N here" per space via the
+`Rail.tsx` (space rail; the brand mark opens `#/about`, a small grid icon
+opens `#/home`, and a sibling fixed `about ↗` link sits bottom-right on the
+block and both room paths. Both About links remember the current room before
+navigating, including the default `#/` room; `OnlineCountSuffix` shows "· N here" per space via the
 presence component's `roomPresence.onlineCountForSpace`, mounted by
 `LiveSpace.tsx`'s `RoomPresenceHeartbeat` once a room is entered) ·
 `ActionDock.tsx` (bottom dock + catch-me-up panel:
@@ -91,18 +93,15 @@ the nameplate; `MailArrivalLive` subscribes to `mailArrival.recentInbound`,
 `MailArrivalStage` draws envelopes, flights and the `↩ told holly` tick)
 
 **pages/** — `LiveSpace.tsx` (live canvas) · `Block.tsx` (mock `#/home`) ·
-`About.tsx` (`#/about` — the "what is this / who made it" page, and the only
-surface in the app meant to be *read* rather than used: hero, a live
-`spaces / widgets / messages` band off `stats.getLiveTotals`, the three
-things you do here, a horizontal strip of six REAL seeded `WidgetCard`s
-[`STRIP`; a WidgetCard places itself off its canvas x/y, so each tile hands
-it a box and `.about-strip-tile .widget-group` pins it — same deal
-`#/wall` makes], the named Convex component work, and who built it. No rail:
-you are outside the rooms. `spaceFromHash` maps `about` to `lastSpaceSlug()`
-(`src/lib/routes.ts`, sessionStorage) so the back link returns you to the
-room you actually came from, not the default one. The totals render only
-when `getDataMode() === "live"` — the mock branch has no Convex client in
-context) ·
+`About.tsx` (`#/about` — a standalone brand page: birthday collage with a
+local interactive cake poll using `PollWidget`, real live totals, three
+outcome-led explanations, five direct room links, origin story, maker credits,
+and expandable Convex detail. Uses existing photo/sticker assets; all styling
+is in the ABOUT section at the end of `index.css`. No rail: the top back link
+returns to `lastSpaceSlug()`; `spaceFromHash` preserves it when About opens.
+Only `LiveTotals` subscribes to Convex, and only in live mode. The preview
+is explicitly captioned, hides the poll’s live badge, and never writes to a
+room) ·
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
 `CursorLab.tsx` · `ArrivalLab.tsx` (`#/arrival` — the pile's ReadingRoom
 with a black lab pill: drop one, one fails, replay, ¼ speed, clear; no

@@ -12,7 +12,7 @@
 - **Auth:** Better Auth (anonymous guest sessions; passkey blocked by a peer-dep conflict)
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-13T17:24:34Z
+- **Last updated:** 2026-09-13T18:28:48Z
 
 ## Highlights
 
@@ -598,3 +598,13 @@ updated the AgentMail sender name to OurSpaces. Browser-verified at desktop,
 390px and 320px, plus images hidden. Build and Convex push pass; published to
 the connected dev deployment and verified the hosted image. No email sent
 during verification.
+
+### 2026-09-13 - working tree
+Redesigned About as a shared wall: custom sticker/photo collage, interactive
+sample cake poll, direct links into five rooms, origin story, and expandable
+technical credits (`src/pages/About.tsx`, `src/index.css`). The logo and a
+small corner link now open About and preserve the return room; a grid icon
+keeps the block reachable (`src/components/Rail.tsx`). Live totals retain the
+existing Convex subscription; the preview vote stays local. Verified in the
+browser at desktop, tablet, and phone widths, including navigation and reduced
+motion; reviewed a motion capture. `npm run build` passes. Not deployed.
