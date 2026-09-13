@@ -13,17 +13,24 @@ Backward-looking history lives in `hackathon.md`.
   stickers), each wearing a **black sticker name tag** on its bottom-left
   corner (emoji + catalog name, counter-zoomed so it's the same size on
   every card), dealt greedy-shortest to three masonry columns sized with
-  `zoom` to fit the viewport width. **Flat by default, on purpose:** Thomas
-  asked "why does it look blurred?" and 2× clips proved it — under a CSS
-  `perspective` Chrome resamples every drifting layer and small text goes
-  soft at any angle (a flat plane inside the perspective was as soft as the
-  tilted one; the same card with perspective removed was crisp). So the
-  stage has no perspective, track offsets are snapped to device pixels, and
-  the cards carry no transform/opacity/will-change of their own; `tilt` in
-  the pill opts into the 3D plane (rotateX 11° / rotateY −9°, perspective
-  2200) for a shot where depth matters more than sharpness. Columns drift
-  up/down alternately at golden-ratio-spread speeds, loop seamlessly, and
-  enter middle-first with a 70ms stagger on `--ease-pop`. Roll call lifts the card
+  `zoom` to fit the viewport width, on a tilted wall. **The 3D is done in
+  JavaScript, not CSS:** Thomas asked "why does it look blurred?" and 2×
+  clips proved it — under a CSS `perspective` Chrome resamples every
+  drifting layer and small text goes soft at any angle (a flat plane inside
+  the perspective was as soft as the tilted one; the same card with
+  perspective removed was crisp). Thomas: "can we do javascript 3d? it
+  doesn't have to be performant, this is only for the video." So there is no
+  `perspective`/`preserve-3d` anywhere: each frame the rAF loop projects
+  every tile's centre through a virtual camera (rotateY −13°, rotateX 16°,
+  depth 80, perspective 2000, the pointer/sway added to the angles) and
+  writes a plain 2D `translate + scale` per tile; cards stay flat rectangles
+  Chrome paints crisp, the wall repaints every frame (8ms avg in headless
+  software raster, so the GPU path is comfortably 60fps). Track offsets are
+  snapped to device pixels and cards carry no transform/opacity/will-change
+  of their own. `tilt` in the pill (on by default) switches to the flat 2D
+  wall. Columns drift up/down alternately at golden-ratio-spread speeds,
+  loop seamlessly, and enter middle-first with a 70ms stagger on
+  `--ease-pop`. Roll call lifts the card
   nearest the middle of the next column every 1.6s (translateZ +
   drop-shadow, straightens, tag swings up lime and 1.3×); hover does the
   same and holds the column. **Click = spotlight:** the widget FLIPs (WAAPI,
@@ -48,7 +55,9 @@ Backward-looking history lives in `hackathon.md`.
   frames (`.context/shot-wall-tags.mjs`: M, spotlight, S;
   `.context/shot-wall-sharp.mjs`: 2× clips of one card with `FLAT=1` /
   `PLAIN=1` / `NOZOOM=1` overrides — the sharpness experiment;
-  `.context/shot-wall-2d.mjs`: the flat default at 2×) and earlier a 12s
+  `.context/shot-wall-2d.mjs`: the flat wall at 2×;
+  `.context/shot-wall-js3d.mjs`: the JS-projected tilt at 2× with a card
+  clip, hover, spotlight and a frame-time sample) and earlier a 12s
   recording scrubbed at 6fps (`.context/video-wall.mjs`, Homebrew ffmpeg —
   Playwright's bundled build has no `fps` filter). Not linked from the
   canvas; the widget lab header has a "widget wall →" link.
