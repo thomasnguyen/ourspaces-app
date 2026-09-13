@@ -166,8 +166,8 @@ export function WidgetPicker({
   onClose,
 }: {
   open: boolean;
-  onAddSticker?: (stickerId: string) => void;
-  onAddWidget?: (type: WidgetType) => void;
+  onAddSticker?: (stickerId: string, origin?: { x: number; y: number }) => void;
+  onAddWidget?: (type: WidgetType, origin?: { x: number; y: number }) => void;
   onClose: () => void;
 }) {
   const [showAll, setShowAll] = useState(false);
@@ -232,8 +232,11 @@ export function WidgetPicker({
               <button
                 type="button"
                 className="widget-picker-frame-option"
-                onClick={() => {
-                  onAddWidget?.(frameItem.type);
+                onClick={(event) => {
+                  onAddWidget?.(frameItem.type, {
+                    x: event.clientX,
+                    y: event.clientY,
+                  });
                   onClose();
                 }}
               >
@@ -263,8 +266,13 @@ export function WidgetPicker({
                   >
                     <button
                       type="button"
-                      onClick={() => {
-                        onAddSticker?.(sticker.id);
+                      onClick={(event) => {
+                        // Hand back where it was peeled from — the ghost lifts
+                        // off this exact spot and follows the cursor.
+                        onAddSticker?.(sticker.id, {
+                          x: event.clientX,
+                          y: event.clientY,
+                        });
                         onClose();
                       }}
                       aria-label={`Add ${sticker.label} sticker`}
@@ -287,8 +295,11 @@ export function WidgetPicker({
                 <li key={item.type}>
                   <button
                     type="button"
-                    onClick={() => {
-                      onAddWidget?.(item.type);
+                    onClick={(event) => {
+                      onAddWidget?.(item.type, {
+                        x: event.clientX,
+                        y: event.clientY,
+                      });
                       onClose();
                     }}
                   >

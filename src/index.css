@@ -7921,6 +7921,88 @@
   letter-spacing: 0.01em;
 }
 
+/* ── pick it up, put it down: the placement ghost ── */
+.placement-ghost {
+  position: absolute;
+  z-index: 60;
+  pointer-events: none;
+  animation: placement-ghost-lift var(--dur-base) var(--ease-pop) backwards;
+}
+
+.space-canvas.is-placing {
+  cursor: crosshair;
+}
+
+.placement-ghost img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  scale: 1.04;
+  opacity: 0.94;
+  filter: drop-shadow(5px 9px 0 rgba(11, 11, 14, 0.28));
+}
+
+.placement-ghost-card {
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed rgba(17, 17, 20, 0.45);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-card) 82%, transparent);
+  box-shadow: 5px 9px 0 rgba(11, 11, 14, 0.16);
+  color: var(--color-ink);
+  text-align: center;
+}
+
+.placement-ghost-emoji {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.placement-ghost-label {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.placement-ghost-hint {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  translate: -50% 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  box-shadow: 0 4px 0 rgba(11, 11, 14, 0.22);
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 5px 11px;
+  white-space: nowrap;
+}
+
+@keyframes placement-ghost-lift {
+  from {
+    opacity: 0;
+    scale: 0.82;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placement-ghost {
+    animation: none;
+  }
+}
+
 .first-run-sticky {
   box-shadow:
     0 8px 0 rgba(126, 77, 0, 0.16),
@@ -22795,7 +22877,7 @@
 /* the slip arrives with the mail rather than blinking into place */
 @media (prefers-reduced-motion: no-preference) {
   .because-slip {
-    animation: because-slip-in var(--dur-slow) var(--ease-pop) both;
+    animation: because-slip-in var(--dur-stage) var(--ease-pop) both;
   }
 }
 
@@ -23713,5 +23795,367 @@
   .rr-circle.is-landing .rr-tags li,
   .rr-circle.is-landing .rr-questions li {
     animation: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIL ARRIVAL — THE ENVELOPE THAT THINKS OUT LOUD
+   An inbound email lands as a kraft envelope beside the space's address
+   chip (page-level, components/MailArrival.tsx) and a cream slip under it
+   narrates the wait: opening → reading → deciding, caret + three step
+   dots, a scan line over the envelope. The verdict stamps down, the reason
+   prints in, then the envelope flies to the widget it filed into
+   (lib/flipLanding.ts flyEnvelopeTo) and the widget takes a lime wash.
+   Same vocabulary as the link arrival above — its keyframes are reused
+   (rr-stage-in, rr-land-kind, rr-print, rr-land-flash) and every duration
+   is multiplied by `--arrival-slow` for the #/mail lab's ¼ speed.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.mail-arrival {
+  position: absolute;
+  inset: 0;
+  z-index: 44;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.mail-envelope {
+  position: absolute;
+  width: 168px;
+  /* a second arrival stacks with the letter drift */
+  translate: calc(var(--i, 0) * 22px) calc(var(--i, 0) * 14px);
+  transform-origin: 50% 60%;
+  will-change: transform;
+}
+
+/* ── the envelope: the letter widget's own material, six-tenths size ── */
+
+.mail-env-paper {
+  position: relative;
+  height: 104px;
+  border-radius: 8px;
+  background: var(--color-mat);
+  box-shadow:
+    0 1px 0 rgba(17, 17, 20, 0.26),
+    0 18px 34px -12px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(17, 17, 20, 0.12);
+  rotate: -2.5deg;
+  overflow: hidden;
+}
+
+.mail-envelope.is-landing .mail-env-paper {
+  animation: mail-land calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-snap) both;
+}
+
+@keyframes mail-land {
+  0% {
+    translate: 0 -110px;
+    scale: 0.92;
+    opacity: 0;
+  }
+  55% {
+    translate: 0 0;
+    opacity: 1;
+    /* impact — squash */
+    scale: 1.07 0.9;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+.mail-env-paper .letter-seal {
+  top: 58%;
+  width: 26px;
+  height: 26px;
+  margin: -14px 0 0 -13px;
+  font-size: 11px;
+}
+
+.mail-env-paper .letter-stamp {
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 31px;
+  font-size: 12px;
+}
+
+.mail-env-from {
+  position: absolute;
+  left: 12px;
+  right: 40px;
+  bottom: 9px;
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mail-env-from strong {
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1.15;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mail-env-from em {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-ink) 62%, var(--color-mat));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* the envelope is being read: a scan line sweeps it */
+.mail-env-scan {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: #fff;
+  opacity: 0.85;
+  animation: mail-scan calc(1.1s * var(--arrival-slow)) var(--ease-glide) infinite;
+}
+
+@keyframes mail-scan {
+  to {
+    translate: 0 104px;
+  }
+}
+
+/* the verdict: a black sticker stamped on the flap, the link kind's move */
+.mail-env-verdict {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  translate: -50% -50%;
+  rotate: -7deg;
+  padding: 4px 11px 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  animation: rr-land-kind calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-pop) both;
+}
+
+.mail-envelope.is-kind-spam .mail-env-verdict {
+  background: #b3402a;
+}
+
+/* ── the slip: cream, a hair of rotation, the narration ── */
+
+.mail-slip {
+  position: absolute;
+  left: 4px;
+  top: calc(100% + 8px);
+  width: max-content;
+  max-width: 270px;
+  display: grid;
+  gap: 4px;
+  padding: 8px 12px 9px;
+  border-radius: 2px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  rotate: -1deg;
+  transform-origin: left top;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+  transition: opacity calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide);
+}
+
+.mail-envelope.is-landing .mail-slip {
+  animation: mail-slip-in calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-pop)
+    calc(200ms * var(--arrival-slow)) both;
+}
+
+@keyframes mail-slip-in {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+    scale: 0.96;
+  }
+}
+
+.mail-slip header {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-muted);
+}
+
+.mail-slip-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  /* keyed remount per line: each new line rolls up into the slot */
+  animation: rr-stage-in calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide) both;
+}
+
+/* the reason prints in like the link's summary does */
+.mail-slip-line.is-because {
+  display: block;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 13px;
+  animation: rr-print calc(var(--dur-stage) * var(--arrival-slow)) var(--ease-glide) both;
+}
+
+.mail-slip .rr-row-caret {
+  width: 7px;
+  height: 0.75em;
+}
+
+/* three step dots: done = ink, live = lime; all ink once decided */
+.mail-slip-steps {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mail-slip-steps i {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1.5px var(--color-ink);
+  opacity: 0.3;
+  transition:
+    background calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide),
+    opacity calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide);
+}
+
+.mail-envelope[data-stage="1"] .mail-slip-steps i:nth-child(1),
+.mail-envelope[data-stage="2"] .mail-slip-steps i:nth-child(-n + 2),
+.mail-envelope[data-stage="3"] .mail-slip-steps i {
+  opacity: 1;
+  background: var(--color-ink);
+}
+
+.mail-envelope[data-stage="0"] .mail-slip-steps i:nth-child(1),
+.mail-envelope[data-stage="1"] .mail-slip-steps i:nth-child(2),
+.mail-envelope[data-stage="2"] .mail-slip-steps i:nth-child(3) {
+  opacity: 1;
+  background: var(--color-lime);
+}
+
+/* ── the endings ── */
+
+/* filed: the slip goes as the envelope leaves; the widget carries the reason */
+.mail-envelope.is-flying .mail-slip {
+  opacity: 0;
+}
+
+/* spam: stays sealed for the beat, then slides off — on glide, no overshoot */
+.mail-envelope.is-tossing {
+  animation: mail-toss calc(var(--dur-stage) * var(--arrival-slow)) var(--ease-glide) forwards;
+}
+
+@keyframes mail-toss {
+  to {
+    translate: -160px 40px;
+    rotate: -16deg;
+    opacity: 0;
+  }
+}
+
+/* unfiled with nowhere to go: the envelope is the object; it fades late */
+.mail-envelope.is-stay {
+  animation: mail-stay calc(4000ms * var(--arrival-slow)) linear forwards;
+}
+
+@keyframes mail-stay {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* the widget it filed into takes a lime wash on impact */
+.widget-group.is-mail-washed::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: 5;
+  border-radius: 12px;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--color-lime) 24%, transparent);
+  animation: rr-land-flash calc(1.4s * var(--arrival-slow)) var(--ease-glide) forwards;
+}
+
+/* `↩ told holly` — a small tick at the widget's foot, gone after a beat */
+.mail-reply-tick {
+  position: absolute;
+  z-index: 45;
+  padding: 4px 10px 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  animation: mail-tick calc(4500ms * var(--arrival-slow)) var(--ease-pop) both;
+}
+
+@keyframes mail-tick {
+  0% {
+    opacity: 0;
+    translate: 0 6px;
+    scale: 0.9;
+  }
+  8%,
+  84% {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -4px;
+    scale: 1;
+  }
+}
+
+/* the lab pill sits clear of the rail and the action dock */
+.mail-lab-bar {
+  left: auto;
+  right: 28px;
+  bottom: 92px;
+  z-index: 60;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mail-envelope.is-landing .mail-env-paper,
+  .mail-envelope.is-landing .mail-slip,
+  .mail-env-scan,
+  .mail-env-verdict,
+  .mail-slip-line,
+  .mail-envelope.is-tossing,
+  .mail-envelope.is-stay,
+  .widget-group.is-mail-washed::after,
+  .mail-reply-tick {
+    animation: none;
+  }
+
+  .mail-envelope.is-tossing,
+  .mail-envelope.is-stay {
+    opacity: 0;
+    transition: opacity var(--dur-base) linear;
   }
 }

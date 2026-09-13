@@ -22,6 +22,7 @@ import {
   type ThreadDockSize,
 } from "./components/WidgetThreadDock";
 import { WidgetPicker } from "./components/WidgetPicker";
+import type { PlacingItem } from "./components/PlacementGhost";
 import { WidgetEditorPanel } from "./components/WidgetEditorPanel";
 import { WelcomePill } from "./components/WelcomePill";
 import {
@@ -31,7 +32,8 @@ import {
   type ChatMessage,
 } from "./data/chat";
 import { RECAP_LINES, type RecapTurn } from "./data/recap";
-import { DECISION_WIDGET, canvasSizeFor, getSpace } from "./data/spaces";
+import { DECISION_WIDGET, canvasSizeFor, getSpace, getWidgets } from "./data/spaces";
+import { MailArrival } from "./components/MailArrival";
 import { getStickerDefinition } from "./data/stickers";
 import {
   defaultSpaceCustomization,
@@ -179,33 +181,6 @@ function defaultCanvasSize(spaceId: string): CanvasSize {
   return canvasSizeFor(spaceId);
 }
 
-function visibleCanvasCenter(
-  size: { w: number; h: number },
-  scale: number,
-  nudge: number,
-): CanvasPoint {
-  const canvas = document.querySelector<HTMLElement>(".space-canvas");
-  const viewport = document.querySelector<HTMLElement>(".space-scroll");
-  const canvasRect = canvas?.getBoundingClientRect();
-  const viewportRect = viewport?.getBoundingClientRect();
-
-  if (canvasRect && viewportRect) {
-    return {
-      x:
-        (viewportRect.left + viewportRect.width / 2 - canvasRect.left) / scale +
-        nudge,
-      y:
-        (viewportRect.top + viewportRect.height / 2 - canvasRect.top) / scale +
-        nudge,
-    };
-  }
-
-  return {
-    x: 420 + size.w / 2 + nudge,
-    y: 180 + size.h / 2 + nudge,
-  };
-}
-
 function easeOutQuint(progress: number) {
   return 1 - Math.pow(1 - progress, 5);
 }
@@ -276,8 +251,15 @@ function demoModeRequested() {
     import.meta.env.VITE_DEMO === "1";
 }
 
+/** `#/mail` — the mail arrival lab (docs/mail-arrival.md): not a page of its
+    own but the crew space with fixtures fired at it, mock or live. */
+function mailLabRequested() {
+  return window.location.hash.replace(/^#\/?/, "").split("?")[0] === "mail";
+}
+
 function spaceFromHash(): string {
   const hash = window.location.hash.replace(/^#\/?/, "");
+  if (hash === "mail") return "crew";
   if (hash.startsWith("space/")) return hash.slice("space/".length) || DEFAULT_SPACE_SLUG;
   if (hash === "join") return "__invalid_invite__";
   if (hash.startsWith("join/")) {
@@ -303,6 +285,11 @@ export default function App() {
   const zoomPhaseRef = useRef(zoom.phase);
   zoomPhaseRef.current = zoom.phase;
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Whatever you picked off the tray, riding the cursor until you click it down.
+  const [placing, setPlacing] = useState<PlacingItem | null>(null);
+  const [placingOrigin, setPlacingOrigin] = useState<
+    { x: number; y: number } | undefined
+  >(undefined);
   const [chatOpen, setChatOpen] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
   const [recapRunId, setRecapRunId] = useState(0);
@@ -1197,6 +1184,7 @@ export default function App() {
   const openPicker = () => {
     if (focusedTarget) leaveFocus(false);
     playSound("tap");
+    setPlacing(null);
     setManagedWidgetId("");
     setEditingWidgetId("");
     setSpaceDraft(null);
@@ -1331,16 +1319,42 @@ export default function App() {
     [addWidgetAt],
   );
 
-  const addWidget = (type: WidgetType) => {
-    const blueprint = getWidgetBlueprint(type);
-    if (!blueprint) return;
+  // Picking from the tray doesn't place anything — it puts the thing in your
+  // hand. `placeItem` runs when you click the board, at that exact point.
+  const addWidget = (type: WidgetType, origin?: { x: number; y: number }) => {
+    if (!getWidgetBlueprint(type)) return;
+    playSound("tap");
+    setPlacing({ kind: "widget", type });
+    setPlacingOrigin(origin);
+  };
 
-    const size = WIDGET_SIZES[type] ?? { w: blueprint.w, h: blueprint.h };
-    const count = addedWidgets[spaceId]?.length ?? 0;
-    const nudge = (count % 4) * 18;
+  const addSticker = (stickerId: string, origin?: { x: number; y: number }) => {
+    if (!getStickerDefinition(stickerId)) return;
+    playSound("tap");
+    setPlacing({ kind: "sticker", stickerId });
+    setPlacingOrigin(origin);
+  };
+
+  const placeItem = (point: CanvasPoint, keepPlacing: boolean) => {
+    if (!placing) return;
+    if (!keepPlacing) setPlacing(null);
+
+    if (placing.kind === "sticker") {
+      const sticker = getStickerDefinition(placing.stickerId);
+      if (!sticker) return;
+      addWidgetAt(
+        "sticker",
+        point,
+        { stickerId: sticker.id },
+        { w: sticker.width, h: sticker.height },
+      );
+      return;
+    }
+
+    const type = placing.type;
     const addedWidget = addWidgetAt(
       type,
-      visibleCanvasCenter(size, canvasScaleRef.current, nudge),
+      point,
       type === "linkCard" ? freshWidgetData(type, {}) : undefined,
     );
 
@@ -1373,22 +1387,6 @@ export default function App() {
       setBuildClubFirstRun(false);
       setBuildClubVisitors(incrementBuildClubVisitorCount());
     }
-  };
-
-  const addSticker = (stickerId: string) => {
-    const sticker = getStickerDefinition(stickerId);
-    if (!sticker) return;
-
-    const size = { w: sticker.width, h: sticker.height };
-    const count = addedWidgets[spaceId]?.length ?? 0;
-    const nudge = (count % 4) * 18;
-
-    addWidgetAt(
-      "sticker",
-      visibleCanvasCenter(size, canvasScaleRef.current, nudge),
-      { stickerId },
-      size,
-    );
   };
 
   const moveWidget = (widgetId: string, x: number, y: number) => {
@@ -1859,7 +1857,7 @@ export default function App() {
   }
 
   if (route === "space" && !mockModeRequested()) {
-    return <LiveSpacePage slug={spaceId} onSelectSpace={(id) => { window.location.hash = id === DEFAULT_SPACE_SLUG ? "#/" : `#/space/${id}`; }} />;
+    return <LiveSpacePage slug={spaceId} mailLab={mailLabRequested()} onSelectSpace={(id) => { window.location.hash = id === DEFAULT_SPACE_SLUG ? "#/" : `#/space/${id}`; }} />;
   }
 
   if (route === "home") {
@@ -2048,6 +2046,9 @@ export default function App() {
         visitorCount={spaceId === "buildclub" ? buildClubVisitors : undefined}
         entrance={zoom.phase !== "landing"}
       />
+      {/* Mock mode has no inbox to watch; the #/mail lab fires fixtures at
+          the same envelope the live page mounts. */}
+      {mailLabRequested() && <MailArrival widgets={getWidgets(spaceId)} lab />}
       {focusedTarget && (
         <nav className="canvas-focus-hud" aria-label="Focused canvas item">
           <button
@@ -2224,6 +2225,10 @@ export default function App() {
               }
               firstRunActive={firstRunActive}
               onFirstRunPlace={handleFirstRunPlace}
+              placingItem={placing}
+              placingOrigin={placingOrigin}
+              onPlaceItem={placeItem}
+              onPlaceCancel={() => setPlacing(null)}
               viewportRef={canvasViewportRef}
               visitorCount={
                 spaceId === "buildclub" ? buildClubVisitors : undefined

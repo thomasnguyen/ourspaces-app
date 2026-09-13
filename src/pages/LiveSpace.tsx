@@ -24,8 +24,12 @@ import { GlobalChatPanel } from "../components/GlobalChatPanel";
 import { Rail } from "../components/Rail";
 import { SpaceEditorPanel } from "../components/SpaceEditorPanel";
 import { SpaceLiveStrip } from "../components/SpaceLiveStrip";
+import { MailArrival } from "../components/MailArrival";
 import { WidgetEditorPanel } from "../components/WidgetEditorPanel";
 import { WidgetPicker } from "../components/WidgetPicker";
+import { placingSize, type PlacingItem } from "../components/PlacementGhost";
+import type { CanvasPoint } from "../components/FirstRunSticky";
+import { canvasSlotFor } from "../lib/canvasPlacement";
 import { SpaceMaker } from "../components/SpaceMaker";
 import {
   WidgetThreadDock,
@@ -67,7 +71,7 @@ import { useLiveSpace } from "../live/useLiveSpace";
 import { usePresence } from "../live/usePresence";
 import useRoomPresence from "@convex-dev/presence/react";
 import { useShowAfter } from "../lib/entrance";
-import { freshWidgetData, getWidgetBlueprint, WIDGET_SIZES } from "../lib/widgetDefaults";
+import { freshWidgetData, getWidgetBlueprint } from "../lib/widgetDefaults";
 import { widgetLabel } from "../lib/widgetLabels";
 import { widgetSupportsThread } from "../lib/widgetThreads";
 import { RSVP_CHOICES, type RsvpStatus } from "../widgets/extras";
@@ -302,10 +306,13 @@ export function LiveSpacePage({
   slug = DEFAULT_SPACE_SLUG,
   onSelectSpace,
   isInviteEntry = false,
+  mailLab = false,
 }: {
   slug?: string;
   onSelectSpace?: (id: string) => void;
   isInviteEntry?: boolean;
+  /** #/mail — the mail arrival lab over this (the crew) space */
+  mailLab?: boolean;
 }) {
   const { space, snapshot, widgets, status, mode } = useLiveSpace(slug);
   const showLoading = useShowAfter(status === "loading");
@@ -333,6 +340,11 @@ export function LiveSpacePage({
   const [recapHover, setRecapHover] = useState<string | null>(null);
   const [highlightMessageId, setHighlightMessageId] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Whatever you picked off the tray, riding the cursor until you click it down.
+  const [placing, setPlacing] = useState<PlacingItem | null>(null);
+  const [placingOrigin, setPlacingOrigin] = useState<
+    { x: number; y: number } | undefined
+  >(undefined);
   // The rail's "+" opens the space maker; the dock's add opens the widget
   // picker.
   const [spacePickerOpen, setSpacePickerOpen] = useState(false);
@@ -404,10 +416,20 @@ export function LiveSpacePage({
   // A space someone made has no fixture, and getSpace() would hand back the
   // CREW's name/colour/faces for it. Prefer the live row whenever the slug
   // isn't one of the seeded showcase spaces.
+  // ...but the fixture is a LAYOUT source (widgets, canvas size, faces), not
+  // the source of truth for what the room is called. The live row wins on the
+  // nameplate fields, so renaming a space in the DB actually shows up instead
+  // of being masked by a stale fixture.
   const mockSpace = useMemo(() => {
     const fixture = SPACES_BY_ID[slug];
-    if (fixture) return fixture;
-    return space ? spaceFromLive(space) : getSpace(slug);
+    if (!fixture) return space ? spaceFromLive(space) : getSpace(slug);
+    if (!space) return fixture;
+    return {
+      ...fixture,
+      name: space.name ?? fixture.name,
+      tagline: space.tagline ?? fixture.tagline,
+      icon: space.icon ?? fixture.icon,
+    };
   }, [slug, space]);
   const isInvalidInvite = isInviteEntry && !SPACES_BY_ID[slug] && status === "missing";
   // A slug the backend has no space for. Authoritative in live mode: a slug
@@ -1868,6 +1890,7 @@ export function LiveSpacePage({
   const openWidgetPicker = () => {
     if (focusedTarget) leaveFocus(false);
     playSound("tap");
+    setPlacing(null);
     setManagedWidgetId("");
     setEditingWidgetId("");
     setSpaceDraft(null);
@@ -1983,44 +2006,62 @@ export function LiveSpacePage({
     [handlers, identity.userId],
   );
 
-  const addWidget = async (type: WidgetType) => {
+  // Picking from the tray puts the thing in your hand; `placeItem` commits it
+  // where you click. Nothing lands off-screen in a corner of the board.
+  const addWidget = (type: WidgetType, origin?: { x: number; y: number }) => {
+    if (!getWidgetBlueprint(type) || !space) return;
+    playSound("tap");
+    setPlacing({ kind: "widget", type });
+    setPlacingOrigin(origin);
+    setPickerOpen(false);
+  };
+
+  const addSticker = (stickerId: string, origin?: { x: number; y: number }) => {
+    if (!getStickerDefinition(stickerId) || !space) return;
+    playSound("tap");
+    setPlacing({ kind: "sticker", stickerId });
+    setPlacingOrigin(origin);
+    setPickerOpen(false);
+  };
+
+  const placeItem = async (point: CanvasPoint, keepPlacing: boolean) => {
+    if (!placing || !space) return;
+    if (!keepPlacing) setPlacing(null);
+
+    const size = placingSize(placing);
+    const slot = canvasSlotFor(point, size, { w: canvasWidth, h: canvasHeight });
+
+    if (placing.kind === "sticker") {
+      const sticker = getStickerDefinition(placing.stickerId);
+      if (!sticker) return;
+      const createdId = await handlers.onCreate({
+        type: "sticker",
+        ...slot,
+        w: sticker.width,
+        h: sticker.height,
+        z: 1000,
+        rotate: sticker.rotate,
+        data: { stickerId: sticker.id },
+      });
+      if (createdId) setManagedWidgetId(String(createdId));
+      return;
+    }
+
+    const type = placing.type;
     const blueprint = getWidgetBlueprint(type);
-    if (!blueprint || !space) return;
-    const size = WIDGET_SIZES[type] ?? { w: blueprint.w, h: blueprint.h };
+    if (!blueprint) return;
     const { id: _blueprintId, ...blueprintData } = blueprint;
-    const widget: Omit<Widget, "id"> = {
+    const createdId = await handlers.onCreate({
       ...blueprintData,
-      x: Math.max(24, canvasWidth - size.w - 48),
-      y: Math.max(24, canvasHeight - size.h - 48),
+      ...slot,
       w: size.w,
       h: size.h,
       z: 1000,
       data: freshWidgetData(type, type === "linkCard" ? {} : blueprint.data),
-    };
-    const createdId = await handlers.onCreate(widget);
-    setPickerOpen(false);
-    if (type === "linkCard" && createdId) {
-      setManagedWidgetId(String(createdId));
-      setEditingWidgetId(String(createdId));
-    }
-  };
-
-  const addSticker = async (stickerId: string) => {
-    const sticker = getStickerDefinition(stickerId);
-    if (!sticker || !space) return;
-
-    const widget: Omit<Widget, "id"> = {
-      type: "sticker",
-      x: Math.max(24, canvasWidth - sticker.width - 48),
-      y: Math.max(24, canvasHeight - sticker.height - 48),
-      w: sticker.width,
-      h: sticker.height,
-      z: 1000,
-      rotate: sticker.rotate,
-      data: { stickerId },
-    };
-    const createdId = await handlers.onCreate(widget);
-    if (createdId) setManagedWidgetId(String(createdId));
+    });
+    if (!createdId) return;
+    setManagedWidgetId(String(createdId));
+    if (type === "linkCard") setEditingWidgetId(String(createdId));
   };
 
   const hasBoard = status === "ready" || status === "cached" || status === "empty";
@@ -2101,6 +2142,16 @@ export function LiveSpacePage({
           boardCount={boardRows?.widgets.length}
           lastChangeAt={lastChangeAt}
           gestures={liveGestures}
+        />
+      )}
+      {/* Mail arrival — the envelope that narrates the filing
+          (docs/mail-arrival.md). Watches this space's inbound emailEvents;
+          in the #/mail lab it runs fixtures instead. */}
+      {mode === "live" && (space?.inboxAddress || mailLab) && (
+        <MailArrival
+          spaceId={space ? String(space._id) : undefined}
+          widgets={widgets}
+          lab={mailLab}
         />
       )}
       {focusedTarget && (
@@ -2213,6 +2264,11 @@ export function LiveSpacePage({
                 recapCites={canvasRecapCites}
                 entrance={roomEntered}
                 arrivalPeerId={arrivalPeer?.userId}
+                viewportRef={viewportRef}
+                placingItem={placing}
+                placingOrigin={placingOrigin}
+                onPlaceItem={placeItem}
+                onPlaceCancel={() => setPlacing(null)}
               />
             ) : (
               <div className="space-loading-field" aria-hidden="true" />
