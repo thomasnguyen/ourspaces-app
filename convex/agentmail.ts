@@ -45,9 +45,9 @@ const parsedAttachmentValidator = v.object({
 export async function ackInbound(
   ctx: ActionCtx,
   args: { inboxId?: string; messageId?: string; label?: string; reply?: string },
-): Promise<void> {
+): Promise<boolean> {
   const { inboxId, messageId, label, reply } = args;
-  if (!inboxId || !messageId) return;
+  if (!inboxId || !messageId) return false;
   try {
     if (label) {
       await ctx.runAction(components.agentMail.lib.addLabels, {
@@ -66,10 +66,14 @@ export async function ackInbound(
         messageId,
         text: reply,
       });
+      // true only when the reply really went out — the arrival's `↩ told
+      // holly` tick is clocked off this, so it must not lie.
+      return true;
     }
   } catch {
     // ignore — the email was already filed onto the canvas
   }
+  return false;
 }
 
 /** Give a space its own email address (idempotent). */

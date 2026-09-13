@@ -150,3 +150,60 @@ Verify live on dev with one real receipt, one PDF receipt, one letter to
 `ustwo@`, one URL to `buildroom@`; confirm the label and the reply in the
 AgentMail console. Then `npm run build`, and list the new mutations in the
 README's Convex depth section only if they add a real surface.
+
+## Design decisions — the build pass (2026-09-13)
+
+Read this before touching `MailArrival`. The section above is the brief;
+this is what was decided when it was built, and why.
+
+**1. Latency is the show, and it is real.** The envelope's clock is the
+event's own `createdAt`, the hold is on `label`, the flight fires when
+`widgetId` exists in the DOM, the tick waits for `repliedAt`. The lab fakes
+the *fields on a timer*, never the component — one component, one beat.
+
+**2. The envelope lives in page space, not canvas space.** It lands at the
+mail slot — measured off the header's `✉ address` chip (`.space-mail-chip`)
+— and flies to the widget's on-screen rect. Both are `getBoundingClientRect`
+so there is no canvas-scale math and the flight is correct at any zoom. Once
+it lands, the widget (already on the canvas) carries the reason; the
+envelope is gone. The slot is where mail comes in; the widget is where it
+went; the path between them *is* the explanation.
+
+**3. Typographic, not diorama.** Kraft envelope (the letter widget's own
+material, 60% size), a cream slip with a caret and three step dots, a black
+stamp. No mini pipeline, no vendor logos on the object. Same caret, same
+`rr-*` keyframes as the link arrival; the only new CSS is layout.
+
+**4. One choreography, six copy rows.** receipt · booking · letter · links ·
+unfiled · spam differ only in the words and the ending: fly to a widget
+(receipt, booking, links, letter), stay sealed (unfiled — the envelope IS
+the letter widget, so it still flies, to itself), or slide off (spam, on
+`glide`, never overshoot on an exit).
+
+**5. Timing (1×, multiply by `--arrival-slow`).**
+
+| t | what | driven by |
+|---|---|---|
+| 0.0s | lands, squash on `snap`, `place`; slip `✉ from holly · just now` + `opening it ▍` | `createdAt` |
+| 0.7s | `reading it` / `reading the pdf` · dot 2 lime · scan line | clock |
+| 1.6s | `deciding` · dot 3 lime | clock |
+| 7s+ | `slow one — still reading` | clock |
+| label | stamp `RECEIPT` (pop, 1.45→1, −6°) + because prints; hold 900ms | `label` (+`because`) |
+| +0.9s | `filing it → expenses`, 500ms | client |
+| +1.4s | flight to the widget (900ms `snap`, shrink to ~0.4), lime wash on the widget, `place` | `widgetId` in DOM |
+| reply | `↩ told holly` tick beside the widget, fades after 4s | `repliedAt` |
+
+**6. State delta.** `emailEvents.label` · `readingAt` · `repliedAt`
+(optional, no backfill). `label` is patched in the same mutation as
+`widgetId`/`because` (the four filing mutations take it as an arg) so the
+stamp and the reason land in one reactive tick; spam / links / reading /
+replied go through `inbox.markEvent`. The AgentMail label for an unfiled
+email is now `unfiled` (was `filed`) — one word at both ends.
+
+**7. The lab is the crew space.** `#/mail` is not a page of its own: it is
+`#/space/crew` with a lab flag, mock or live, so the envelope lands on the
+real header and flies to the real tahoe tracker. The pill fires fixture
+events through the same `MailArrival`.
+
+**8. Second arrival stacks.** +22px x, +14px y per live envelope, like
+`addLetter`'s drift. Batches are an edge case; one envelope is the design.

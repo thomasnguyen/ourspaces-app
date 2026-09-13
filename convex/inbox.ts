@@ -73,6 +73,10 @@ export const processInbound = internalAction({
     let { event } = context;
     const slug = space.slug ?? "";
 
+    // The envelope on every open canvas is watching this row
+    // (docs/mail-arrival.md): "reading" starts now.
+    await ctx.runMutation(internal.inbox.markEvent, { eventId, readingAt: Date.now() });
+
     // Attachments first: a receipt PDF with an empty email body has to be
     // readable *before* anything decides where the email goes. AgentMail's
     // download_url → Firecrawl parse → text on the event.
@@ -92,29 +96,71 @@ export const processInbound = internalAction({
     let ack: InboundAck = {};
 
     if (slug === "couple") {
-      await ctx.runMutation(internal.inbox.addLetter, { eventId, unfiled: false });
+      await ctx.runMutation(internal.inbox.addLetter, { eventId, unfiled: false, label: "letter" });
       ack = { label: "letter", reply: "Sealed your letter onto the canvas. 💌" };
     } else if (slug === "buildroom") {
       const urls = extractUrls(routableText(event));
       const pile = widgets.find((widget) => widget.type === "linkPile");
       if (urls.length > 0 && pile) {
+        // Verdict + destination land before the scrapes run, so the envelope
+        // flies to the pile and each link narrates its own arrival from there.
+        await ctx.runMutation(internal.inbox.markEvent, {
+          eventId,
+          label: "links",
+          widgetId: pile._id,
+          because: `${urls.length} link${urls.length === 1 ? "" : "s"} inside`,
+        });
         await routeBuildRoom(ctx, { event, pileId: pile._id, urls });
         ack = {
           label: "links",
-          reply: `Dropped ${urls.length} link${urls.length === 1 ? "" : "s"} into the build room pile.`,
+          reply: `Dropped ${urls.length} link${urls.length === 1 ? "" : "s"} into the dev guild pile.`,
         };
+      } else {
+        await ctx.runMutation(internal.inbox.markEvent, { eventId, label: "unfiled" });
       }
     } else {
       ack = await routeSmart(ctx, { event, space, widgets });
+      if (ack.label === "spam") {
+        await ctx.runMutation(internal.inbox.markEvent, { eventId, label: "spam" });
+      }
     }
 
     // reply in-thread + label the message with what the space did with it
-    await ackInbound(ctx, {
+    const replied = await ackInbound(ctx, {
       inboxId: space.inboxId,
       messageId: event.messageId,
       label: ack.label,
       reply: ack.reply,
     });
+    if (replied) {
+      await ctx.runMutation(internal.inbox.markEvent, { eventId, repliedAt: Date.now() });
+    }
+    return null;
+  },
+});
+
+/** The arrival's state ticks that no filing mutation owns: reading started,
+ *  a verdict with no widget (spam, unfiled-with-nothing), the build room's
+ *  pile as destination, the reply going out. Patches only what it's given. */
+export const markEvent = internalMutation({
+  args: {
+    eventId: v.id("emailEvents"),
+    label: v.optional(v.string()),
+    widgetId: v.optional(v.id("widgets")),
+    because: v.optional(v.string()),
+    readingAt: v.optional(v.number()),
+    repliedAt: v.optional(v.number()),
+  },
+  returns: v.null(),
+  handler: async (ctx, { eventId, ...fields }) => {
+    const patch: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) patch[key] = value;
+    }
+    if (Object.keys(patch).length === 0) return null;
+    const event = await ctx.db.get(eventId);
+    if (!event) return null;
+    await ctx.db.patch(eventId, patch);
     return null;
   },
 });
@@ -126,9 +172,11 @@ export const addLetter = internalMutation({
     eventId: v.id("emailEvents"),
     unfiled: v.boolean(),
     because: v.optional(v.string()),
+    // the arrival's stamp word: "letter" (us two) or "unfiled" (the crew)
+    label: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, { eventId, unfiled, because }) => {
+  handler: async (ctx, { eventId, unfiled, because, label }) => {
     const event = await ctx.db.get(eventId);
     if (!event) return null;
     const widgets = await ctx.db
@@ -162,7 +210,7 @@ export const addLetter = internalMutation({
       createdAt: Date.now(),
     });
     await widgetsCounter.inc(ctx);
-    await ctx.db.patch(eventId, { widgetId, because });
+    await ctx.db.patch(eventId, { widgetId, because, label: label ?? (unfiled ? "unfiled" : "letter") });
     await touchSpace(ctx, event.spaceId);
     return null;
   },
@@ -267,7 +315,8 @@ export const applyExpense = internalMutation({
         lastEmail: { who, amount: rounded, label, because },
       },
     });
-    await ctx.db.patch(eventId, { widgetId: target._id, because });
+    // verdict + destination + reason in one tick, so the stamp has a word
+    await ctx.db.patch(eventId, { widgetId: target._id, because, label: "receipt" });
     await touchSpace(ctx, event.spaceId);
     return null;
   },
@@ -316,7 +365,7 @@ export const applyItinerary = internalMutation({
     await ctx.db.patch(target._id, {
       data: { ...data, days, lastEmail: { day, plan, because } },
     });
-    await ctx.db.patch(eventId, { widgetId: target._id, because });
+    await ctx.db.patch(eventId, { widgetId: target._id, because, label: "booking" });
     await touchSpace(ctx, event.spaceId);
     return null;
   },
