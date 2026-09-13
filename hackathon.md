@@ -12,7 +12,7 @@
 - **Auth:** Better Auth (anonymous guest sessions; passkey blocked by a peer-dep conflict)
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-13T18:50:02Z
+- **Last updated:** 2026-09-13T18:55:53Z
 
 ## Highlights
 
@@ -617,3 +617,10 @@ Fixed a React effect cleanup crash that blanked About during navigation.
 Verified on port 5174 at desktop and phone widths, including history, return
 room, disclosures, reduced motion, and a motion capture; no console errors.
 `npm run build` passes. Not deployed.
+
+### 2026-09-13 - working tree
+Moved vendor links directly below the About hero and replaced styled names
+with original Convex, OpenAI, AgentMail, and Firecrawl logo artwork. The same
+logos now identify each vendor page; source URLs stay beside the embedded
+SVGs in `About.tsx`. Verified live at desktop, 390px, and 320px, including
+logo loading and navigation. `npm run build` passes. Not deployed.

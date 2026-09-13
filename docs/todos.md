@@ -5,6 +5,14 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Vendor section placement + logos (2026-09-13):** moved the four vendor
+  links directly below the About hero, before the live totals and room story.
+  About and vendor heroes use the vendors’ original SVG wordmarks, embedded
+  in `About.tsx` with source URLs so they load without external requests.
+  Original artwork and brand colors are preserved. Verified on live port 5174
+  at 1280px, 390px, and 320px: logos load, columns fit, clicking a logo
+  opens its vendor page, and no console errors. `npm run build` passes.
+
 - **Vendor stories (2026-09-13):** the four vendor names on About now open
   `#/about/convex`, `#/about/openai`, `#/about/agentmail`, and
   `#/about/firecrawl`. Each has an interactive, explicitly illustrative

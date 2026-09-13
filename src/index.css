@@ -24462,11 +24462,10 @@
 .about-story-copy p + p { margin-top: 17px; }
 .about-signature { display: flex; gap: 20px; align-items: center; margin-top: 22px; font: 800 25px/1 var(--font-display); letter-spacing: -.02em; }
 .about-signature span { font-size: 32px; }
-.about-made { padding-block: 100px 60px; }
-.about-makers { display: flex; gap: 35px; padding-block: 14px 38px; }
-.about-makers > a { flex: 1; }
-.about-makers > a > span { font: 800 27px/1.2 var(--font-display); letter-spacing: -.03em; }
-.about-makers p { max-width: 24ch; margin-top: 11px; color: var(--about-muted); font-size: 14px; }
+.about-made { padding-block: 40px 50px; border-top: 1px solid var(--about-rule); }
+.about-makers { display: flex; gap: 35px; padding-block: 0 38px; }
+.about-makers > a { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
+.about-makers p { max-width: 24ch; flex: 1; margin-top: 12px; color: var(--about-muted); font-size: 14px; }
 .about-under-hood { border-block: 1px solid var(--about-rule); }
 .about-under-hood summary { display: flex; justify-content: space-between; align-items: center; padding-block: 19px; font-size: 14px; color: var(--about-muted); cursor: pointer; list-style: none; }
 .about-under-hood summary::-webkit-details-marker { display: none; }
@@ -24480,7 +24479,7 @@
 .about-tech dd { margin: 4px 0 0; font-size: 14px; color: var(--about-muted); }
 .about-tech > a { color: var(--color-card); font-size: 14px; }
 .about-tech > a:hover { color: var(--color-couple); }
-.about-footer { padding-bottom: 28px; }
+.about-footer { padding-block: 70px 28px; }
 .about-footer-invite { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-block: 16px 62px; }
 .about-footer .about-footer-invite h2 { font-size: clamp(2rem, 3.7vw, 3.2rem); }
 .about-footer-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; padding-top: 24px; border-top: 1px solid var(--about-rule); }
@@ -24526,9 +24525,8 @@
   .about-room-picture { flex-basis: 50px; width: 50px; height: 50px; }
   .about-story-inner { grid-template-columns: 1fr; gap: 30px; padding-block: 44px; }
   .about-story h2 { margin-top: 22px; }
-  .about-made { padding-block: 64px 40px; }
+  .about-made { padding-block: 36px 40px; }
   .about-makers { display: grid; grid-template-columns: 1fr 1fr; gap: 30px 24px; padding-bottom: 30px; }
-  .about-makers > a > span { font-size: 24px; }
   .about-tech dl { grid-template-columns: 1fr; gap: 20px; }
   .about-footer-invite { align-items: flex-start; flex-direction: column; padding-bottom: 40px; }
   .about-footer-meta { gap: 22px; }
@@ -24564,10 +24562,8 @@
 
 /* —— made with: the four integration stories under #/about/… ——————— */
 .about-maker-link { display: block; color: var(--color-card); }
-.about-maker-link > span { display: inline-block; transition: translate var(--dur-quick) var(--ease-glide); }
 .about-maker-link small { display: inline-flex; align-items: center; gap: 14px; margin-top: 18px; color: var(--about-muted); font-size: 12px; }
 .about-maker-link small > span { transition: translate var(--dur-quick) var(--ease-glide); }
-.about-maker-link:hover > span { translate: 0 -3px; }
 .about-maker-link:hover small { color: var(--color-card); }
 .about-maker-link:hover small > span { translate: 3px -3px; }
 .vendor-nav { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding-block: 14px 24px; border-bottom: 1px solid var(--about-rule); }
@@ -24757,4 +24753,27 @@
   .vendor-moving-note { width: 86px; left: 6px; padding: 10px 7px; }
   .vendor-moving-note strong { font-size: 20px; }
   .vendor-moving-note small { font-size: 9px; }
+}
+
+/* Vendor wordmarks keep the original artwork and its clear space. */
+.vendor-logo { display: flex; align-items: center; width: 210px; height: 68px; max-width: 100%; flex-shrink: 0; }
+.vendor-logo img { display: block; height: auto; max-width: none; flex-shrink: 0; }
+.vendor-logo-convex img { width: 235px; margin-left: -30px; }
+.vendor-logo-openai img { width: 225px; margin-left: -34px; }
+.vendor-logo-agentmail img { width: 180px; }
+.vendor-logo-firecrawl img { width: 166px; }
+.vendor-identity { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.vendor-identity .vendor-credit { color: var(--about-muted); font-size: 12px; font-weight: 400; }
+@media (max-width: 1100px) and (min-width: 801px), (max-width: 420px) {
+  .vendor-logo-convex img { width: 190px; margin-left: -24px; }
+  .vendor-logo-openai img { width: 178px; margin-left: -27px; }
+  .vendor-logo-agentmail img { width: 140px; }
+  .vendor-logo-firecrawl img { width: 132px; }
+}
+@media (max-width: 360px) {
+  .vendor-logo { height: 54px; }
+  .vendor-logo-convex img { width: 169px; margin-left: -22px; }
+  .vendor-logo-openai img { width: 159px; margin-left: -24px; }
+  .vendor-logo-agentmail img { width: 124px; }
+  .vendor-logo-firecrawl img { width: 118px; }
 }
