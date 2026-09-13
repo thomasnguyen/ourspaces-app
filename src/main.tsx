@@ -7,7 +7,6 @@ import App from "./App.tsx";
 import { getDataMode } from "./live/dataMode.ts";
 import { AuthIdentityBridge } from "./live/useAuthIdentity.ts";
 import { UpdateNudge } from "./components/UpdateNudge.tsx";
-import { AboutRoom } from "./components/AboutRoom.tsx";
 import "./index.css";
 
 const url = import.meta.env.VITE_CONVEX_URL as string | undefined;
@@ -42,10 +41,6 @@ createRoot(document.getElementById("root")!).render(
         <ConvexQueryCacheProvider expiration={600_000}>
           <AuthIdentityBridge />
           <App />
-          {/* #/about, mounted beside <App/> rather than inside it: the card
-              is app-level, and every one of App's route early-returns would
-              otherwise need to remember to render it. */}
-          <AboutRoom />
           {/* Live path only. UpdateNudge subscribes to the static-hosting
               component's deployment row, and that hook needs a Convex client
               in context — the mock branch below renders a bare <App/> with no
@@ -54,10 +49,7 @@ createRoot(document.getElementById("root")!).render(
         </ConvexQueryCacheProvider>
       </ConvexAuthProvider>
     ) : mode === "mock" ? (
-      <>
-        <App />
-        <AboutRoom />
-      </>
+      <App />
     ) : (
       <MissingConvexConfig />
     )}

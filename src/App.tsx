@@ -110,6 +110,9 @@ const LiveBlockPage = lazy(() =>
   import("./pages/LiveBlock").then((module) => ({ default: module.LiveBlockPage })),
 );
 const Welcome = lazy(() => import("./pages/Welcome"));
+const AboutPage = lazy(() =>
+  import("./pages/About").then((module) => ({ default: module.About })),
+);
 
 function DeferredRoute({ children }: { children: ReactNode }) {
   return (
@@ -125,7 +128,7 @@ function DeferredRoute({ children }: { children: ReactNode }) {
   );
 }
 
-type Route = "space" | "home" | "cursors" | "widgets" | "arrival" | "wall" | "live" | "join" | "test";
+type Route = "space" | "home" | "about" | "cursors" | "widgets" | "arrival" | "wall" | "live" | "join" | "test";
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
 type FrameLayout = Pick<Widget, "x" | "y" | "w" | "h">;
 type CanvasSize = { width: number; height: number };
@@ -231,6 +234,7 @@ function routeFromHash(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "test") return "test";
   if (hash === "home") return "home";
+  if (hash === "about") return "about";
   if (hash === "join" || hash.startsWith("join/")) return "join";
   if (hash === "live" || hash.startsWith("live/")) return "live";
   if (hash === "cursors" || hash.startsWith("cursors/")) return "cursors";
@@ -260,7 +264,8 @@ function mailLabRequested() {
 function spaceFromHash(): string {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "mail") return "crew";
-  // #/about is a card over the canvas, not a canvas of its own — stay put.
+  // #/about is its own page, but it keeps a back door to the room you came
+  // from, and spaceId has to still be that room when you take it.
   if (hash === "about") return lastSpaceSlug();
   if (hash.startsWith("space/")) {
     const slug = hash.slice("space/".length) || DEFAULT_SPACE_SLUG;
@@ -1844,6 +1849,10 @@ export default function App() {
 
   if (route === "wall") {
     return <DeferredRoute><WidgetWall /></DeferredRoute>;
+  }
+
+  if (route === "about") {
+    return <DeferredRoute><AboutPage /></DeferredRoute>;
   }
 
   if (route === "live" && !mockModeRequested()) {

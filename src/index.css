@@ -24175,209 +24175,43 @@
 }
 
 /* —— about (#/about) ——————————————————————————————————————————————————— */
-/* The rail's quietest chip: smaller than a space, no color of its own until
-   you touch it. It should read as chrome, not as another room. */
-.rail-about {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-pill);
-  color: rgba(255, 255, 255, 0.5);
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
-  text-decoration: none;
-  transition:
-    translate var(--dur-quick) var(--ease-glide),
-    background var(--dur-quick) ease-out,
-    border-color var(--dur-quick) ease-out,
-    color var(--dur-quick) ease-out;
-}
-
-.rail-about:hover {
-  translate: 0 -3px;
-  border-color: transparent;
-  background: var(--color-card);
-  color: var(--color-sticker);
-}
-
-.rail-about:focus-visible {
-  outline: 2px solid white;
-  outline-offset: 3px;
-}
-
-/* The card is a sheet of the same warm paper every object on the canvas is
-   made of — the room behind it keeps running, so this reads as a thing set
-   down on top, not a page you navigated to. */
-/* The one room that does not black out the canvas: the shell goes
-   transparent and the backdrop only knocks the room back, so the board is
-   still visibly running behind the claim being made about it. */
-.about-room::backdrop {
-  background: color-mix(in srgb, #0b0b0d 46%, transparent);
-}
-
-/* Every other room paints over the whole screen, so its back button can own
-   the top-left corner. This one leaves the room visible, where that corner is
-   already the rail and the nameplate — so the pill rides with the card
-   instead, centred right above it. */
-.about-room .canvas-room-back {
-  align-self: center;
-  margin-bottom: 14px;
-}
-
-.about-room .canvas-room-shell {
-  justify-content: center;
-  align-items: center;
-  overflow-y: auto;
-  background: transparent;
-}
-
-.about-sheet {
-  width: min(760px, 100%);
-  margin: 0 auto;
-  padding: 34px 38px 30px;
-  border-radius: 22px;
-  background: var(--color-card);
-  color: var(--color-ink);
+/* A page, not a card: the room is the pitch, but the room can't hold a
+   paragraph. This is the one surface in the app that is allowed to be read
+   rather than used, so it gets a measure, a scale, and vertical air. The rail
+   is deliberately absent — you are outside the rooms here. */
+.about-page {
+  min-height: 100dvh;
+  padding: 30px clamp(20px, 6vw, 72px) 90px;
+  color: var(--color-card);
   font-family: var(--font-sans);
   font-size: var(--text-body);
   line-height: var(--text-body--line-height);
-  rotate: -0.4deg;
-  box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.7);
+  animation: about-in var(--dur-stage) var(--ease-glide) both;
 }
 
-.about-head {
+@keyframes about-in {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+
+.about-bar {
   display: flex;
+  max-width: 1180px;
+  margin: 0 auto 56px;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
+  justify-content: space-between;
 }
 
-.about-mark {
-  width: 46px;
-  height: 46px;
-  object-fit: contain;
-  rotate: -4deg;
-}
-
-.about-kicker {
-  margin: 0;
-  color: var(--color-muted);
-  font-size: var(--text-caption);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.about-sheet h1 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 2.8rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.about-lede {
-  margin: 0 0 26px;
-  font-size: 1.18rem;
-  line-height: 1.45;
-  text-wrap: balance;
-}
-
-.about-sheet h2 {
-  margin: 0 0 8px;
-  color: var(--color-muted);
-  font-family: var(--font-sans);
-  font-size: var(--text-caption);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.about-try {
-  margin-bottom: 24px;
-  padding: 18px 20px 18px 22px;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--color-mat) 30%, transparent);
-}
-
-.about-try ol {
-  display: grid;
-  margin: 0;
-  padding-left: 20px;
-  gap: 9px;
-  list-style: decimal;
-}
-
-.about-try li::marker {
-  color: var(--color-muted);
-  font-family: var(--font-display);
-  font-weight: 700;
-}
-
-.about-cols {
-  display: grid;
-  gap: 22px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  margin-bottom: 24px;
-}
-
-.about-cols p {
-  margin: 0;
-  color: color-mix(in srgb, var(--color-ink) 82%, transparent);
-  font-size: var(--text-caption);
-  line-height: 1.55;
-}
-
-/* Real counts off the sharded counter, on a live subscription — the one
-   number on this card that could ever be wrong, so it is the one number that
-   is never typed in. */
-.about-totals {
-  display: flex;
-  margin: 0 0 24px;
-  padding: 14px 18px;
-  gap: 26px;
+.about-back {
+  display: inline-flex;
+  padding: 9px 18px 9px 14px;
+  gap: 8px;
+  align-items: center;
   border-radius: var(--radius-pill);
   background: var(--color-sticker);
   color: var(--color-card);
-}
-
-.about-totals div {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-}
-
-.about-totals dt {
-  order: 2;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: var(--text-caption);
-}
-
-.about-totals dd {
-  order: 1;
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.about-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.about-links a {
-  padding: 9px 16px;
-  border: 1.5px solid var(--color-ink);
-  border-radius: var(--radius-pill);
-  color: var(--color-ink);
   font-size: var(--text-caption);
   font-weight: 500;
   text-decoration: none;
@@ -24387,25 +24221,288 @@
     color var(--dur-quick) ease-out;
 }
 
+.about-back:hover {
+  translate: -3px 0;
+  background: var(--color-lime);
+  color: var(--color-sticker);
+}
+
+.about-mark {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  rotate: -4deg;
+}
+
+.about-hero {
+  max-width: 1180px;
+  margin: 0 auto 96px;
+}
+
+.about-kicker {
+  margin: 0 0 14px;
+  color: color-mix(in srgb, var(--color-card) 52%, transparent);
+  font-size: var(--text-caption);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.about-hero h1 {
+  max-width: 16ch;
+  margin: 0 0 26px;
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 7.4vw, 5.4rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 0.94;
+}
+
+.about-lede {
+  max-width: 62ch;
+  margin: 0;
+  font-size: clamp(1.06rem, 1.6vw, 1.32rem);
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--color-card) 82%, transparent);
+}
+
+/* Real rows off the sharded counter, on a live subscription — the only
+   numbers on the page, and so the only ones never typed in. */
+.about-totals {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 42px 0 0;
+  gap: 14px;
+}
+
+.about-totals div {
+  display: flex;
+  padding: 14px 22px;
+  gap: 4px;
+  flex-direction: column;
+  border-radius: 18px;
+  background: var(--color-sticker);
+}
+
+.about-totals dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-lime);
+}
+
+.about-totals dt {
+  color: color-mix(in srgb, var(--color-card) 58%, transparent);
+  font-size: var(--text-caption);
+}
+
+.about-section {
+  max-width: 1180px;
+  margin: 0 auto 96px;
+}
+
+.about-section h2 {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.about-section-lede {
+  max-width: 58ch;
+  margin: 0 0 30px;
+  color: color-mix(in srgb, var(--color-card) 70%, transparent);
+  font-size: var(--text-caption);
+  line-height: 1.6;
+}
+
+.about-things-grid {
+  display: grid;
+  margin-top: 30px;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.about-things-grid article {
+  padding: 26px 26px 30px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--color-card) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-card) 11%, transparent);
+}
+
+/* The numeral does the work a screenshot would, and doesn't go stale. */
+.about-numeral {
+  display: block;
+  margin-bottom: 16px;
+  color: var(--color-lime);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.about-things-grid h3 {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 1.32rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.about-things-grid p {
+  margin: 0;
+  color: color-mix(in srgb, var(--color-card) 72%, transparent);
+  font-size: var(--text-caption);
+  line-height: 1.6;
+}
+
+/* The widgets are the real seeded ones, so the strip scrolls rather than
+   squashing them — a widget at the wrong size stops being the thing it is. */
+.about-strip {
+  display: flex;
+  margin: 0 0 22px;
+  padding-bottom: 14px;
+  gap: 18px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  /* The last card runs off under a fade rather than stopping at a hard cut,
+     so the strip reads as "there are more of these" instead of as clipped. */
+  mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+}
+
+.about-strip-tile {
+  position: relative;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+/* A WidgetCard is a canvas object: absolutely placed, rotated, wearing its
+   drag handles. Pin it into the tile and take the chrome off — the same
+   thing the wall does at #/wall. */
+.about-strip-tile .widget-group {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  rotate: 0deg;
+}
+
+.about-strip-tile .widget-management {
+  display: none;
+}
+
+.about-inline-link {
+  color: var(--color-lime);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--color-lime) 40%, transparent);
+  transition: border-color var(--dur-quick) ease-out;
+}
+
+.about-inline-link::after {
+  content: " →";
+}
+
+.about-inline-link:hover {
+  border-bottom-color: var(--color-lime);
+}
+
+.about-work {
+  display: grid;
+  margin: 0 0 30px;
+  gap: 0;
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  column-gap: 40px;
+}
+
+.about-work div {
+  display: flex;
+  padding: 14px 0;
+  gap: 16px;
+  align-items: baseline;
+  justify-content: space-between;
+  border-top: 1px solid color-mix(in srgb, var(--color-card) 13%, transparent);
+}
+
+.about-work dt {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+.about-work dd {
+  margin: 0;
+  color: color-mix(in srgb, var(--color-card) 62%, transparent);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+  text-align: right;
+}
+
+.about-who p {
+  max-width: 62ch;
+  margin: 0;
+  color: color-mix(in srgb, var(--color-card) 82%, transparent);
+  font-size: clamp(1rem, 1.3vw, 1.14rem);
+  line-height: 1.6;
+}
+
+.about-links {
+  display: flex;
+  max-width: 1180px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.about-links a {
+  padding: 12px 22px;
+  border: 1.5px solid color-mix(in srgb, var(--color-card) 28%, transparent);
+  border-radius: var(--radius-pill);
+  color: var(--color-card);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    translate var(--dur-quick) var(--ease-glide),
+    background var(--dur-quick) ease-out,
+    border-color var(--dur-quick) ease-out,
+    color var(--dur-quick) ease-out;
+}
+
 .about-links a::after {
   content: " →";
 }
 
 .about-links a:hover {
   translate: 0 -2px;
-  background: var(--color-ink);
-  color: var(--color-card);
+  border-color: transparent;
+  background: var(--color-card);
+  color: var(--color-ink);
 }
 
 @media (max-width: 720px) {
-  .about-sheet {
-    padding: 26px 22px 24px;
-    rotate: 0deg;
+  .about-page {
+    padding-bottom: 64px;
   }
 
-  .about-totals {
-    flex-wrap: wrap;
-    gap: 8px 20px;
-    border-radius: 20px;
+  .about-hero,
+  .about-section {
+    margin-bottom: 64px;
+  }
+
+  .about-work div {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .about-work dd {
+    text-align: left;
   }
 }

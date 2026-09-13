@@ -54,17 +54,6 @@ LiveSpace.tsx own the `placing` state) ·
 `LinkQuestionStrip.tsx` (web post conversation starters in the thread dock) ·
 `CanvasRoom.tsx` (shared full-screen `<dialog>` shell: grows out of the card
 that opened it via `--room-origin-*`, shrinks back on close) ·
-`AboutRoom.tsx` (`#/about` — the "what is this / who made it" card. An
-address so it can be linked from a listing or a video description, and a
-card so the room stays running underneath: it is the only `CanvasRoom` whose
-shell is transparent and whose backdrop only half-dims, so the claim and the
-live board are in one frame. Mounted beside `<App/>` in `main.tsx`, not
-inside it, so App's route early-returns don't each have to render it;
-`spaceFromHash` maps `about` to `lastSpaceSlug()` (`src/lib/routes.ts`,
-sessionStorage) so opening it from the crew room doesn't move you to the
-build room, and closing restores that hash. The live-totals band is a
-`getLiveTotals` subscription, rendered only when `getDataMode() === "live"`
-because the mock branch has no Convex client in context) ·
 `ReadingRoom.tsx` (the pile's full view — single-link drop bar + a research bar
 [`onSearch` topic / `onCrawl` site], the arrival choreography — `ARRIVAL_STEPS` (the six real
 Firecrawl/room steps) + `arrivalStage` / `arrivalLabel` / `arrivalDetail`
@@ -97,6 +86,18 @@ the nameplate; `MailArrivalLive` subscribes to `mailArrival.recentInbound`,
 `MailArrivalStage` draws envelopes, flights and the `↩ told holly` tick)
 
 **pages/** — `LiveSpace.tsx` (live canvas) · `Block.tsx` (mock `#/home`) ·
+`About.tsx` (`#/about` — the "what is this / who made it" page, and the only
+surface in the app meant to be *read* rather than used: hero, a live
+`spaces / widgets / messages` band off `stats.getLiveTotals`, the three
+things you do here, a horizontal strip of six REAL seeded `WidgetCard`s
+[`STRIP`; a WidgetCard places itself off its canvas x/y, so each tile hands
+it a box and `.about-strip-tile .widget-group` pins it — same deal
+`#/wall` makes], the named Convex component work, and who built it. No rail:
+you are outside the rooms. `spaceFromHash` maps `about` to `lastSpaceSlug()`
+(`src/lib/routes.ts`, sessionStorage) so the back link returns you to the
+room you actually came from, not the default one. The totals render only
+when `getDataMode() === "live"` — the mock branch has no Convex client in
+context) ·
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
 `CursorLab.tsx` · `ArrivalLab.tsx` (`#/arrival` — the pile's ReadingRoom
 with a black lab pill: drop one, one fails, replay, ¼ speed, clear; no
