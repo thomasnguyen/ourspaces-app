@@ -12,12 +12,18 @@ Backward-looking history lives in `hackathon.md`.
   cake poll, the couple's letter and postcard, the build room's pile, both
   stickers), each wearing a **black sticker name tag** on its bottom-left
   corner (emoji + catalog name, counter-zoomed so it's the same size on
-  every card), dealt greedy-shortest to three masonry columns on a gently
-  tilted plane (rotateX 11° / rotateY −9°, perspective 2200 — the first
-  16°/1200 magnified the near edge and small text went soft, which read as
-  "buggy") scaled to fit the viewport width. Columns drift up/down
-  alternately at golden-ratio-spread speeds, loop seamlessly, and enter
-  middle-first with a 70ms stagger on `--ease-pop`. Roll call lifts the card
+  every card), dealt greedy-shortest to three masonry columns sized with
+  `zoom` to fit the viewport width. **Flat by default, on purpose:** Thomas
+  asked "why does it look blurred?" and 2× clips proved it — under a CSS
+  `perspective` Chrome resamples every drifting layer and small text goes
+  soft at any angle (a flat plane inside the perspective was as soft as the
+  tilted one; the same card with perspective removed was crisp). So the
+  stage has no perspective, track offsets are snapped to device pixels, and
+  the cards carry no transform/opacity/will-change of their own; `tilt` in
+  the pill opts into the 3D plane (rotateX 11° / rotateY −9°, perspective
+  2200) for a shot where depth matters more than sharpness. Columns drift
+  up/down alternately at golden-ratio-spread speeds, loop seamlessly, and
+  enter middle-first with a 70ms stagger on `--ease-pop`. Roll call lifts the card
   nearest the middle of the next column every 1.6s (translateZ +
   drop-shadow, straightens, tag swings up lime and 1.3×); hover does the
   same and holds the column. **Click = spotlight:** the widget FLIPs (WAAPI,
@@ -28,7 +34,7 @@ Backward-looking history lives in `hackathon.md`.
   there — poll vote, potluck claim, wheel spin are wired to local state and
   show on the wall copy after. Click anywhere or Esc flies it back (glide,
   380ms) to wherever its card drifted. Lab pill: replay · pause · roll call
-  · name tags · flat · **size S/M/L** (card zoom 0.56 / 0.68 / 0.82; Thomas
+  · name tags · tilt · **size S/M/L** (card zoom 0.56 / 0.68 / 0.82; Thomas
   asked for "a little smaller" after the 0.86 pass, M is the new default) ·
   ½/1/2×; pill and cursor hide after 2.2s idle. History, so nobody re-walks
   it: pass 1 was five columns at 0.66 with only a roll-call tag ("looks
@@ -39,7 +45,10 @@ Backward-looking history lives in `hackathon.md`.
   Thomas preferred pass 2, smaller. Gotchas kept: `zoom` on tiles so cards
   keep their own layout; growing widgets measured once via `scrollHeight`;
   the entrance waits two rAFs past first paint. Verified in mock mode with
-  frames (`.context/shot-wall-tags.mjs`: M, spotlight, S) and earlier a 12s
+  frames (`.context/shot-wall-tags.mjs`: M, spotlight, S;
+  `.context/shot-wall-sharp.mjs`: 2× clips of one card with `FLAT=1` /
+  `PLAIN=1` / `NOZOOM=1` overrides — the sharpness experiment;
+  `.context/shot-wall-2d.mjs`: the flat default at 2×) and earlier a 12s
   recording scrubbed at 6fps (`.context/video-wall.mjs`, Homebrew ffmpeg —
   Playwright's bundled build has no `fps` filter). Not linked from the
   canvas; the widget lab header has a "widget wall →" link.

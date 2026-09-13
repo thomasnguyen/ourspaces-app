@@ -24,13 +24,17 @@ import { createDemoWidget } from "../lib/widgetDefaults";
  *
  * Real WidgetCards from the seeded spaces (the crew's cake poll, the couple's
  * letter, the build room's pile), not screenshots, each wearing a black
- * sticker name tag. Three columns drift on a gently tilted plane in
- * alternating directions; a roll call lifts one card at a time and lights
- * its tag lime; hover does the same and holds the column. Click a card and
- * the widget flies out to a big centered spotlight you can use (vote, spin,
- * claim); click anywhere or Esc and it flies back. The lab pill (bottom-left)
- * and the cursor hide after 2s idle, so a recording is clean. `replay`
- * re-runs the entrance; `size` steps the cards S / M / L.
+ * sticker name tag. Three columns drift in alternating directions; a roll
+ * call lifts one card at a time and lights its tag lime; hover does the same
+ * and holds the column. Click a card and the widget flies out to a big
+ * centered spotlight you can use (vote, spin, claim); click anywhere or Esc
+ * and it flies back. The lab pill (bottom-left) and the cursor hide after 2s
+ * idle, so a recording is clean. `replay` re-runs the entrance; `size` steps
+ * the cards S / M / L; `tilt` puts the wall on a 3D plane.
+ *
+ * The wall is flat (2D) by default on purpose: under a CSS `perspective`
+ * Chrome resamples every drifting layer and small text goes soft, at any
+ * angle. Flat, the tracks are pixel-snapped and the cards render crisp.
  */
 
 const COLS = 3;
@@ -53,10 +57,9 @@ const PLANE_W = COLS * COL_W + (COLS - 1) * GAP;
 const POP = "cubic-bezier(0.2, 0.9, 0.3, 1.18)";
 const GLIDE = "cubic-bezier(0.16, 1, 0.3, 1)";
 
-/* A long perspective and a shallow pitch: enough tilt to read as a wall,
-   not enough to magnify the near edge into soft text. */
+/* Tilt mode: a long perspective and a shallow pitch, enough to read as a
+   wall without magnifying the near edge. Costs sharpness (see above). */
 const TILTED = { tilt: 11, turn: -9, depth: 80 };
-const FLAT = { tilt: 0, turn: 0, depth: 0 };
 /* Mirrors WidgetCard's widgetGrows: these render at content height. */
 const GROWS = new Set<WidgetType>(["dailyQ", "availability", "linkShelf", "playlist"]);
 
@@ -269,7 +272,7 @@ export function WidgetWall() {
   const [lit, setLit] = useState<Picked | null>(null);
   const [selected, setSelected] = useState<Picked | null>(null);
   const [runKey, setRunKey] = useState(0);
-  const [flat, setFlat] = useState(false);
+  const [tilted, setTilted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [rollCall, setRollCall] = useState(true);
   const [labels, setLabels] = useState(true);
@@ -305,6 +308,14 @@ export function WidgetWall() {
   );
   const feed = useMemo(() => mockBuildRoomFeed("buildroom"), []);
   const roundtableReplies = useMemo(() => mockRoundtableReplies("buildroom"), []);
+
+  /* The plane is sized with `zoom`, not `transform: scale()`: a transform
+     scale makes Chrome rasterize the drifting layers at a lower resolution
+     than the screen and the text goes soft; zoom is layout, so every card
+     is rastered at full device resolution. */
+  const planeZoom = tilted
+    ? Math.max(0.7, (viewport.w - 120) / PLANE_W)
+    : Math.min(1, (viewport.w - 64) / PLANE_W);
 
   /* A vote or a spin in the spotlight shows on the wall copy too. */
   const widgetFor = useCallback(
@@ -377,16 +388,16 @@ export function WidgetWall() {
     pausedRef.current = paused;
   }, [paused]);
 
-  /* The drift. Plane tilt follows the pointer, or sways on its own; it eases
-     back when a widget is in the spotlight. A hovered or spotlit column
-     holds; the others slow to half behind the spotlight. */
+  /* The drift. The plane follows the pointer a little, or sways on its own
+     (degrees of tilt in tilt mode, a few px flat); it eases back when a
+     widget is in the spotlight. A hovered or spotlit column holds; the
+     others slow to half behind the spotlight. Track offsets are snapped to
+     device pixels so the composited layers never resample. */
   useEffect(() => {
     let raf = 0;
     let last: number | null = null;
     let t0: number | null = null;
-    const geom = flat
-      ? { ...FLAT, scale: Math.min(1, (viewport.w - 64) / PLANE_W) }
-      : { ...TILTED, scale: Math.max(0.7, (viewport.w - 120) / PLANE_W) };
+    const dpr = window.devicePixelRatio || 1;
 
     const tick = (ts: number) => {
       if (last === null) {
@@ -400,7 +411,7 @@ export function WidgetWall() {
 
       let targetX = 0;
       let targetY = 0;
-      if (!flat && !reduced && !focused) {
+      if (!reduced && !focused) {
         if (pointerIn.current) {
           targetX = pointer.current.x * PARALLAX_DEG;
           targetY = -pointer.current.y * PARALLAX_DEG;
@@ -415,11 +426,13 @@ export function WidgetWall() {
       damped.current.depth += ((focused ? 180 : 0) - damped.current.depth) * damp;
       const plane = planeRef.current;
       if (plane) {
-        plane.style.transform =
-          `translate(-50%, -50%) scale(${geom.scale.toFixed(4)}) ` +
-          `rotateX(${(geom.tilt + damped.current.y).toFixed(3)}deg) ` +
-          `rotateY(${(geom.turn + damped.current.x).toFixed(3)}deg) ` +
-          `translateZ(${(-geom.depth - damped.current.depth).toFixed(1)}px)`;
+        plane.style.transform = tilted
+          ? `translate(-50%, -50%) ` +
+            `rotateX(${(TILTED.tilt + damped.current.y).toFixed(3)}deg) ` +
+            `rotateY(${(TILTED.turn + damped.current.x).toFixed(3)}deg) ` +
+            `translateZ(${(-TILTED.depth - damped.current.depth).toFixed(1)}px)`
+          : `translate(calc(-50% + ${Math.round(damped.current.x * 3)}px), ` +
+            `calc(-50% + ${Math.round(-damped.current.y * 3)}px))`;
       }
 
       for (let c = 0; c < periods.length; c++) {
@@ -434,14 +447,15 @@ export function WidgetWall() {
         let next = (offsets.current[c] ?? 0) + velocities.current[c] * dt;
         next = ((next % period) + period) % period;
         offsets.current[c] = next;
-        track.style.transform = `translate3d(0, ${(period / 2 - next).toFixed(2)}px, 0)`;
+        const y = Math.round((period / 2 - next) * dpr) / dpr;
+        track.style.transform = `translate3d(0, ${y}px, 0)`;
       }
       raf = requestAnimationFrame(tick);
     };
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [flat, reduced, periods, baseVelocities, runKey, viewport.w]);
+  }, [tilted, reduced, periods, baseVelocities, runKey]);
 
   /* Roll call: one card at a time, the one nearest the middle of its
      column. Sits out while the pointer or the spotlight owns attention. */
@@ -655,14 +669,18 @@ export function WidgetWall() {
     >
       <div
         ref={stageRef}
-        className={`ww-stage ${flat ? "is-flat" : ""} ${reduced ? "is-reduced" : ""} ${
+        className={`ww-stage ${tilted ? "is-tilted" : ""} ${reduced ? "is-reduced" : ""} ${
           labels ? "" : "no-labels"
         }`}
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
         onClick={onStageClick}
       >
-        <div ref={planeRef} className={`ww-plane ${entered ? "is-in" : ""}`}>
+        <div
+          ref={planeRef}
+          className={`ww-plane ${entered ? "is-in" : ""}`}
+          style={{ zoom: planeZoom }}
+        >
           {columns.map((col, c) => (
             <div
               className="ww-col"
@@ -707,7 +725,10 @@ export function WidgetWall() {
                               roundtableReplies={roundtableReplies[tile.widget.id]}
                             />
                           </div>
-                          <span className="ww-tag" style={{ zoom: 1 / tile.zoom }}>
+                          <span
+                            className="ww-tag"
+                            style={{ zoom: 1 / (tile.zoom * planeZoom) }}
+                          >
                             <i aria-hidden="true">{tile.emoji}</i>
                             {tile.label}
                           </span>
@@ -802,8 +823,8 @@ export function WidgetWall() {
         <button type="button" className={labels ? "is-on" : ""} onClick={() => setLabels((v) => !v)}>
           name tags
         </button>
-        <button type="button" className={flat ? "is-on" : ""} onClick={() => setFlat((v) => !v)}>
-          flat
+        <button type="button" className={tilted ? "is-on" : ""} onClick={() => setTilted((v) => !v)}>
+          tilt
         </button>
         <button
           type="button"

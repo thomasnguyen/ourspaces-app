@@ -705,14 +705,26 @@
   cursor: none;
 }
 
+/* Flat by default: a `perspective` here makes Chrome resample every drifting
+   layer and the cards go soft. `is-tilted` opts into the 3D plane. */
 .ww-stage {
   position: absolute;
   inset: 0;
-  perspective: 2200px;
-  perspective-origin: 50% 50%;
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
   mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
   transition: opacity var(--dur-stage) var(--ease-glide);
+}
+
+.ww-stage.is-tilted {
+  perspective: 2200px;
+  perspective-origin: 50% 50%;
+}
+
+.ww-stage.is-tilted .ww-plane,
+.ww-stage.is-tilted .ww-col,
+.ww-stage.is-tilted .ww-track,
+.ww-stage.is-tilted .ww-tile {
+  transform-style: preserve-3d;
 }
 
 /* Behind the spotlight the wall steps back and quiets down. */
@@ -729,8 +741,13 @@
   gap: var(--ww-gap);
   transform: translate(-50%, -50%);
   transform-origin: 50% 50%;
-  transform-style: preserve-3d;
-  will-change: transform;
+  transition: scale var(--dur-stage) var(--ease-glide);
+}
+
+/* Flat, the wall steps back a touch behind the spotlight instead of
+   receding in Z. */
+.widget-wall.has-spotlight .ww-stage:not(.is-tilted) .ww-plane {
+  scale: 0.965;
 }
 
 .ww-col {
@@ -740,7 +757,6 @@
   width: var(--ww-col);
   flex: 0 0 auto;
   opacity: 0;
-  transform-style: preserve-3d;
 }
 
 /* `is-in` lands two frames after first paint (see WidgetWall.tsx), so the
@@ -761,8 +777,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--ww-gap);
-  transform-style: preserve-3d;
-  will-change: transform;
 }
 
 .ww-copy {
@@ -775,7 +789,6 @@
 .ww-tile {
   position: relative;
   flex: 0 0 auto;
-  transform-style: preserve-3d;
   cursor: pointer;
 }
 
@@ -783,13 +796,15 @@
   cursor: none;
 }
 
-/* Resting cards sit a touch back; a lit one comes forward to the hand. */
+/* A lit card comes forward to the hand. Resting cards carry no transform,
+   opacity or will-change of their own: each of those makes Chrome composite
+   the card as its own layer and rasterize it soft under the 3D plane. */
 .ww-tile-inner {
   position: relative;
   width: 100%;
   height: 100%;
-  opacity: 0.88;
-  transform: translateZ(0);
+  /* Contain the WidgetCard's own z-index so the name tag stays on top. */
+  isolation: isolate;
   pointer-events: none;
   transition:
     transform var(--dur-arrive) var(--ease-glide),
@@ -801,10 +816,16 @@
   opacity: 1;
   transform: translateZ(var(--ww-lift));
   filter: drop-shadow(0 28px 22px rgba(0, 0, 0, 0.55));
+  z-index: 1;
   transition:
     transform var(--dur-arrive) var(--ease-pop),
     opacity var(--dur-quick) var(--ease-glide),
     filter var(--dur-arrive) var(--ease-glide);
+}
+
+/* Flat, "forward" is up and a little bigger. */
+.ww-stage:not(.is-tilted) .ww-tile.is-lit .ww-tile-inner {
+  transform: translateY(-10px) scale(1.04);
 }
 
 /* While its widget is in the spotlight, the slot stays, the card is gone. */
@@ -999,8 +1020,6 @@
     animation: none;
   }
 
-  .ww-plane,
-  .ww-track,
   .ww-focus-card {
     will-change: auto;
   }
