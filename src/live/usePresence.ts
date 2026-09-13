@@ -18,7 +18,10 @@ import type {
 } from "./presenceTypes";
 
 const SEND_INTERVAL_MS = 90;
-const KEEPALIVE_MS = 10_000;
+// Keepalive is the "I am still here" write for a tab nobody is touching. It
+// has to stay comfortably under PRESENCE_TTL_MS or idle peers flicker out of
+// each other's rooms; 20s leaves 10s of slack and halves the idle write rate.
+const KEEPALIVE_MS = 20_000;
 const PRESENCE_TTL_MS = 30_000;
 const GESTURE_TTL_MS = 1_500;
 
@@ -58,6 +61,19 @@ export function usePresence(
   const zonePoint = useRef({ x: 0, y: 0 });
   const zoneName = useRef<string | undefined>(undefined);
   const hasPoint = useRef(false);
+  /** Every id THIS tab has presented as. A visitor's first load writes
+   *  presence under a local `crypto.randomUUID()`, then `adoptAuthUserId`
+   *  swaps in the Convex user id once the anonymous sign-in lands (see
+   *  live/identity.ts) — and the row written under the old id sits in the
+   *  room for up to the sweep window. Filtering on the CURRENT id alone lets
+   *  that row render as a peer: a first-time visitor watches a second cursor
+   *  wearing their own name and face. It also reads as company, which would
+   *  keep the cursor stream below running in an empty room. */
+  const selfIds = useRef<Set<string>>(new Set());
+  /** Is anyone else actually in this room right now? Streaming a cursor at
+   *  SEND_INTERVAL_MS to an empty room is the single most expensive thing
+   *  this app can do, and nobody sees it. See the effect below the peers memo. */
+  const peersLive = useRef(false);
   const lastHeartbeatSent = useRef(0);
   const lastGestureSent = useRef(0);
   const heartbeatTimer = useRef<number | null>(null);
@@ -110,6 +126,13 @@ export function usePresence(
 
   const queueHeartbeat = useCallback(() => {
     if (!spaceId || document.hidden || activeSessionId.current) return;
+    // Alone in the room: no 90ms cursor stream. The keepalive below still
+    // writes, so the row stays fresh and the next arrival sees you — and the
+    // moment they do arrive, the effect under the peers memo resumes this.
+    // Deliberately NOT applied to the gesture path: a drag's updates refresh
+    // `gesture.updatedAt`, and letting that go stale makes finishGesture
+    // refuse the commit, so a solo drag would silently not move the widget.
+    if (!peersLive.current) return;
     const elapsed = performance.now() - lastHeartbeatSent.current;
     if (elapsed >= SEND_INTERVAL_MS) {
       sendHeartbeat();
@@ -409,10 +432,14 @@ export function usePresence(
 
   const peers = useMemo<LivePeer[]>(() => {
     const now = Date.now();
+    // Idempotent, so doing it here rather than in an effect is safe — and an
+    // effect would run a frame too late, which is exactly the frame the
+    // phantom self-cursor would paint in.
+    selfIds.current.add(identity.userId);
     return (rows ?? [])
       .filter(
         (row) =>
-          row.userId !== identity.userId &&
+          !selfIds.current.has(row.userId) &&
           now - row.updatedAt < PRESENCE_TTL_MS,
       )
       .map((row) => {
@@ -437,6 +464,16 @@ export function usePresence(
         };
       });
   }, [expiryTick, identity.userId, rows]);
+
+  // Company changes the write rate: alone is keepalive-only, occupied streams.
+  // The edge that matters is the transition INTO company — the newcomer's own
+  // entrance heartbeat is what we see, and this answers it immediately so they
+  // see us on their first frame instead of waiting out a keepalive.
+  useEffect(() => {
+    const wasAlone = !peersLive.current;
+    peersLive.current = peers.length > 0;
+    if (wasAlone && peersLive.current) sendHeartbeat();
+  }, [peers.length, sendHeartbeat]);
 
   return {
     peers,

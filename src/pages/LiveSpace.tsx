@@ -281,12 +281,19 @@ function useGhostLifecycle(showGhosts: boolean, status: string): GhostLifecycle 
   return lifecycle;
 }
 
+const ROOM_HEARTBEAT_MS = 30_000;
+
 /** presence component: "I have this space open" — a room-occupancy signal
  * for the space-list badge (Rail.tsx), independent of the hand-rolled
  * cursor/gesture presence system above. Its own component so mounting it
  * only once a room is entered doesn't touch hook call order elsewhere. */
 function RoomPresenceHeartbeat({ roomId, userId }: { roomId: string; userId: string }) {
-  useRoomPresence(api.roomPresence, roomId, userId);
+  // 30s, not the hook's 10s default: this heartbeat writes through the
+  // component's own sessions/workers tables and pokes its batch worker, which
+  // was the largest single source of OCC retries on the deployment. The
+  // interval is also the component's liveness window, so "N here" clears up to
+  // 30s after someone leaves — an occupancy badge can afford that.
+  useRoomPresence(api.roomPresence, roomId, userId, ROOM_HEARTBEAT_MS);
   return null;
 }
 

@@ -217,7 +217,15 @@ export default defineSchema({
     // lets the cron + the client's own tick decide what's stale, because a
     // wall-clock bound inside a query never re-evaluates (see presence.ts).
     .index("by_space", ["spaceId"]) // gesture-lock arbitration reads the whole room
-    .index("by_space_user", ["spaceId", "userId"]), // upsert one person's cursor (findPresence)
+    .index("by_space_user", ["spaceId", "userId"]) // upsert one person's cursor (findPresence)
+    // by_updated is the sweep's index, and it exists for CONTENTION, not
+    // speed: the cleanup cron used to `.collect()` the whole table every
+    // minute, which made its read set every presence row — so any heartbeat
+    // landing mid-sweep lost an OCC conflict and re-ran the whole mutation
+    // (310 retries in 72h). A range read of `updatedAt < staleBefore` only
+    // conflicts with writes into the stale range, and a live heartbeat writes
+    // `now`. Cross-space on purpose; the sweep is not per room.
+    .index("by_updated", ["updatedAt"]),
 
   // batch-worker queue: stale linkCard widgets pending a Firecrawl refresh.
   linkRefreshQueue: defineTable({

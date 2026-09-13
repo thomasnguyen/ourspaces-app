@@ -12,6 +12,11 @@ import type { LinkCardData } from "./widgetData";
  */
 const BATCH_SIZE = 5;
 const STALE_MS = 7 * 24 * 60 * 60 * 1000;
+// A link only earns a re-scrape if its room is still alive. Firecrawl credits
+// are metered, and a dead space's cards are stale forever — the sweep would
+// re-scrape them every week for nobody. A room touched in the last 30 days is
+// the cheapest available proxy for "someone will look at this".
+const ACTIVE_SPACE_MS = 30 * 24 * 60 * 60 * 1000;
 // Widgets read per sweep transaction. `widgets` is the fastest-growing table
 // in the app, so the cron below pages through it instead of collecting it.
 const SCAN_PAGE = 500;
@@ -110,22 +115,38 @@ export const refreshOne = internalAction({
  *  nothing. No `by_type` index: taxing every widget write to speed up one
  *  weekly pass is the wrong trade. */
 export const enqueueStaleLinkRefresh = internalMutation({
-  args: { cursor: v.optional(v.number()), staleBefore: v.optional(v.number()) },
+  args: {
+    cursor: v.optional(v.number()),
+    staleBefore: v.optional(v.number()),
+    activeSince: v.optional(v.number()),
+  },
   returns: v.number(),
-  handler: async (ctx, { cursor, staleBefore: carried }) => {
-    // The cutoff is computed once and carried by the continuation — a sweep
+  handler: async (ctx, { cursor, staleBefore: carried, activeSince: carriedActive }) => {
+    // Both cutoffs are computed once and carried by the continuation — a sweep
     // that spans transactions must not move its own goalposts mid-run.
-    const staleBefore = carried ?? Date.now() - STALE_MS;
+    const now = Date.now();
+    const staleBefore = carried ?? now - STALE_MS;
+    const activeSince = carriedActive ?? now - ACTIVE_SPACE_MS;
     const page = await ctx.db
       .query("widgets")
       .withIndex("by_creation_time", (q) =>
         cursor === undefined ? q : q.gt("_creationTime", cursor),
       )
       .take(SCAN_PAGE);
+    // One read per space per page, not per widget: a board's links all share a
+    // room, and this sweep pages through the widgets table widget-first.
+    const spaceIsLive = new Map<string, boolean>();
     let queued = 0;
     for (const widget of page) {
       if (widget.type !== "linkCard") continue;
       if ((widget.data as LinkCardData).savedAt >= staleBefore) continue;
+      let live = spaceIsLive.get(widget.spaceId);
+      if (live === undefined) {
+        const space = await ctx.db.get(widget.spaceId);
+        live = space !== null && space.lastActivityAt >= activeSince;
+        spaceIsLive.set(widget.spaceId, live);
+      }
+      if (!live) continue;
       await ctx.db.insert("linkRefreshQueue", {
         widgetId: widget._id,
         queuedAt: ctx.db.vars.commitTs,
@@ -143,6 +164,7 @@ export const enqueueStaleLinkRefresh = internalMutation({
       await ctx.scheduler.runAfter(0, internal.batch.enqueueStaleLinkRefresh, {
         cursor: page[page.length - 1]._creationTime,
         staleBefore,
+        activeSince,
       });
     }
     return queued; // this page only; each continuation reports its own

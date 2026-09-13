@@ -391,14 +391,33 @@ export const latest = query({
   },
 });
 
-export const listSpaceIds = internalQuery({
+export const listSpacesDueForRecap = internalQuery({
   args: {},
   returns: v.array(v.id("spaces")),
-  // One row per room, ids only: the daily recap runs per space, so the
-  // fan-out set IS the spaces table. The recap workpool (maxParallelism 3)
-  // is what bounds the LLM calls that follow.
-  handler: async (ctx): Promise<Id<"spaces">[]> =>
-    (await ctx.db.query("spaces").collect()).map((space) => space._id),
+  // The fan-out set is NOT the spaces table: it's the rooms where something
+  // actually happened since their last daily recap. Every id returned here
+  // becomes an LLM call, and re-summarising a room that nobody touched buys a
+  // recap identical to the one already on screen. `lastActivityAt` is the
+  // existing signal (activity.ts, throttled to 1/min) and the recaps index
+  // already orders by createdAt, so the gate costs two point-ish reads a room.
+  handler: async (ctx): Promise<Id<"spaces">[]> => {
+    const spaces = await ctx.db.query("spaces").collect();
+    const due: Id<"spaces">[] = [];
+    for (const space of spaces) {
+      // Newest DAILY one specifically — an `ask` thread writes a recap row
+      // too, and letting that count would silence the next morning's recap.
+      const lastDaily = await ctx.db
+        .query("recaps")
+        .withIndex("by_space_created", (q) => q.eq("spaceId", space._id))
+        .order("desc")
+        .filter((q) => q.eq(q.field("kind"), "daily"))
+        .first();
+      if (!lastDaily || space.lastActivityAt > lastDaily.createdAt) {
+        due.push(space._id);
+      }
+    }
+    return due;
+  },
 });
 
 export const save = internalMutation({
@@ -475,7 +494,7 @@ export const generateAll = internalAction({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    const spaceIds = await ctx.runQuery(internal.recap.listSpaceIds, {});
+    const spaceIds = await ctx.runQuery(internal.recap.listSpacesDueForRecap, {});
     for (const spaceId of spaceIds) {
       await recapPool.enqueueAction(ctx, internal.recap.generateOne, {
         spaceId,
