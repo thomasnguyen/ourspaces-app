@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 
 export type CanvasPoint = { x: number; y: number };
 
-function canvasPointFromClient(
+export function canvasPointFromClient(
   clientX: number,
   clientY: number,
   canvas: HTMLElement,

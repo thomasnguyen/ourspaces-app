@@ -11,6 +11,7 @@ import type {
   LivePeer,
 } from "../live/presenceTypes";
 import { FirstRunSticky, type CanvasPoint } from "./FirstRunSticky";
+import { PlacementGhost, type PlacingItem } from "./PlacementGhost";
 import { MemberFace } from "./MemberFace";
 import type { BuildRoomFeed, RoundtableReply } from "../widgets/buildroom";
 import { widgetIsInsideFrame } from "../lib/frameMembership";
@@ -78,6 +79,10 @@ export function Canvas({
   backendLiveCounts,
   firstRunActive = false,
   onFirstRunPlace,
+  placingItem,
+  placingOrigin,
+  onPlaceItem,
+  onPlaceCancel,
   viewportRef,
   entrance = true,
   widgets: widgetsProp,
@@ -140,6 +145,11 @@ export function Canvas({
   backendLiveCounts?: BackendCount[];
   firstRunActive?: boolean;
   onFirstRunPlace?: (point: CanvasPoint) => void;
+  /** Something picked off the tray, riding the cursor until it's clicked down. */
+  placingItem?: PlacingItem | null;
+  placingOrigin?: { x: number; y: number };
+  onPlaceItem?: (point: CanvasPoint, keepPlacing: boolean) => void;
+  onPlaceCancel?: () => void;
   viewportRef?: RefObject<HTMLDivElement | null>;
   visitorCount?: number;
   entrance?: boolean;
@@ -365,7 +375,7 @@ export function Canvas({
         focusedFrame ? "has-frame-focus" : ""
       } ${focusedWidgetId ? "has-widget-focus" : ""} ${
         isLeague ? "space-canvas-league" : ""
-      }`}
+      } ${placingItem ? "is-placing" : ""}`}
       style={{
         minWidth: space.canvasSize?.width,
         minHeight: space.canvasSize?.height,
@@ -398,6 +408,17 @@ export function Canvas({
           className={cursor.userId === arrivalPeerId ? "is-new-arrival" : ""}
         />
       ))}
+
+      {placingItem && viewportRef && onPlaceItem && onPlaceCancel && (
+        <PlacementGhost
+          item={placingItem}
+          origin={placingOrigin}
+          viewportRef={viewportRef}
+          canvasScale={canvasScale}
+          onPlace={onPlaceItem}
+          onCancel={onPlaceCancel}
+        />
+      )}
 
       {firstRunActive && viewportRef && onFirstRunPlace && (
         <FirstRunSticky
