@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { BuildRoomLink } from "../data/buildroom";
 import { linkQuestionThreadId, linkThreadId } from "../lib/buildRoomFeed";
 import {
@@ -45,8 +45,8 @@ export type ArrivalStage = 0 | 1 | 2 | 3;
 
 const STAGE_AT_MS = [0, 700, 1500, 7000];
 
-export function arrivalStage(link: BuildRoomLink, now: number): ArrivalStage {
-  const age = now - link.droppedAt;
+export function arrivalStage(link: BuildRoomLink, now: number, scale = 1): ArrivalStage {
+  const age = (now - link.droppedAt) / scale;
   if (age >= STAGE_AT_MS[3]) return 3;
   if (age >= STAGE_AT_MS[2]) return 2;
   if (age >= STAGE_AT_MS[1]) return 1;
@@ -104,6 +104,8 @@ export function ReadingRoom({
   onCrawl,
   onZone,
   onClose,
+  clockScale = 1,
+  extra,
 }: {
   pileId: string;
   links: BuildRoomLink[];
@@ -123,6 +125,11 @@ export function ReadingRoom({
   onCrawl?: (url: string) => void;
   onZone?: (x: number, y: number, zone?: string) => void;
   onClose: () => void;
+  /** Slow-mo for the arrival lab: stretches the stage clock (CSS side is
+      the `--arrival-slow` custom property). */
+  clockScale?: number;
+  /** Lab chrome rendered inside the room's top layer. */
+  extra?: ReactNode;
 }) {
   const ranked = useMemo(() => rankLinks(links, replyCounts), [links, replyCounts]);
   const hotIds = useMemo(
@@ -162,7 +169,7 @@ export function ReadingRoom({
     const landed: string[] = [];
     for (const link of links) {
       const before = seen.get(link.id);
-      if (before === "pending" && link.status === "ready") landed.push(link.id);
+      if (before === "pending" && link.status !== "pending") landed.push(link.id);
       seen.set(link.id, link.status);
     }
     if (landed.length === 0) return;
@@ -501,7 +508,7 @@ export function ReadingRoom({
                 <ul className="rr-rows">
                   {run.map((link, index) => {
                     const pending = link.status === "pending";
-                    const stage = pending ? arrivalStage(link, now) : null;
+                    const stage = pending ? arrivalStage(link, now, clockScale) : null;
                     return (
                     <li
                       key={link.id}
@@ -831,6 +838,7 @@ export function ReadingRoom({
           </aside>
         )}
       </div>
+      {extra}
     </CanvasRoom>
   );
 }

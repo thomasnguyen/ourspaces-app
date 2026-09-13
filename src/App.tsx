@@ -60,7 +60,7 @@ import {
   WIDGET_SIZES,
 } from "./lib/widgetDefaults";
 import { widgetSupportsThread } from "./lib/widgetThreads";
-import { cannedLinkQuestions, linkCardQuestions, questionThreadId } from "./lib/linkQuestions";
+import { linkCardQuestions, questionThreadId } from "./lib/linkQuestions";
 import { LinkQuestionStrip } from "./components/LinkQuestionStrip";
 import { LiveSpacePage } from "./pages/LiveSpace";
 import {
@@ -86,13 +86,17 @@ import {
 import { ReadingRoom, type RoomReply } from "./components/ReadingRoom";
 import { ShipRoom } from "./components/ShipRoom";
 import type { RoomOrigin } from "./components/CanvasRoom";
-import type { BuildRoomLink, LinkKind } from "./data/buildroom";
+import type { BuildRoomLink } from "./data/buildroom";
+import { pendingLinkRows, scheduleMockResolve } from "./lib/mockArrival";
 
 const CursorLab = lazy(() =>
   import("./pages/CursorLab").then((module) => ({ default: module.CursorLab })),
 );
 const WidgetLab = lazy(() =>
   import("./pages/WidgetLab").then((module) => ({ default: module.WidgetLab })),
+);
+const ArrivalLab = lazy(() =>
+  import("./pages/ArrivalLab").then((module) => ({ default: module.ArrivalLab })),
 );
 const BlockPage = lazy(() =>
   import("./pages/Block").then((module) => ({ default: module.BlockPage })),
@@ -116,7 +120,7 @@ function DeferredRoute({ children }: { children: ReactNode }) {
   );
 }
 
-type Route = "space" | "home" | "cursors" | "widgets" | "live" | "join" | "test";
+type Route = "space" | "home" | "cursors" | "widgets" | "arrival" | "live" | "join" | "test";
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
 type FrameLayout = Pick<Widget, "x" | "y" | "w" | "h">;
 type CanvasSize = { width: number; height: number };
@@ -253,6 +257,7 @@ function routeFromHash(): Route {
   if (hash === "live" || hash.startsWith("live/")) return "live";
   if (hash === "cursors" || hash.startsWith("cursors/")) return "cursors";
   if (hash === "widgets" || hash.startsWith("widgets/")) return "widgets";
+  if (hash === "arrival") return "arrival";
   return "space";
 }
 
@@ -261,31 +266,6 @@ function mockModeRequested() {
 }
 
 /** A readable title for a mock-dropped url: the last path segment, de-slugged. */
-function mockLinkTitle(url: string) {
-  const path = url.replace(/^https?:\/\/[^/]+/, "").replace(/[?#].*$/, "");
-  /* Skip the segments that are routing, not a name (youtube's /watch,
-     twitter's /status, an index page) — the domain reads better. */
-  const segment =
-    path.split("/").filter((part) => part && !/^(watch|status|index|home|p|s|v|e|a)$/i.test(part)).pop() ?? "";
-  const words = segment.replace(/\.\w+$/, "").replace(/[-_+]+/g, " ").trim();
-  return /^[\w]{6,}$/.test(words) && !/[aeiou]/i.test(words.slice(1))
-    ? url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]
-    : words || url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
-}
-
-/** The kind verdict, guessed off the host so the mock beat still snaps a
-    real-looking classification into the row. */
-function mockLinkKind(url: string): LinkKind {
-  const host = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
-  const path = url.replace(/^https?:\/\/[^/]+/, "");
-  if (/github\.com|gitlab\.com/.test(host)) return path.split("/").filter(Boolean).length >= 2 ? "repo" : "tool";
-  if (/youtu\.?be|vimeo\.com|loom\.com/.test(host)) return "video";
-  if (/news\.ycombinator|reddit\.com|lobste\.rs|x\.com|twitter\.com|bsky/.test(host)) return "discussion";
-  if (/^docs\.|\/docs?(\/|$)|readthedocs|developer\./.test(host + path)) return "docs";
-  if (/producthunt|\.app$|\.tools?$/.test(host)) return "tool";
-  return "article";
-}
-
 function demoModeRequested() {
   return new URLSearchParams(window.location.search).get("demo") === "1" ||
     new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("demo") === "1" ||
@@ -1791,6 +1771,10 @@ export default function App() {
     return <DeferredRoute><WidgetLab /></DeferredRoute>;
   }
 
+  if (route === "arrival") {
+    return <DeferredRoute><ArrivalLab /></DeferredRoute>;
+  }
+
   if (route === "live" && !mockModeRequested()) {
     return <LiveSpacePage />;
   }
@@ -2248,58 +2232,15 @@ export default function App() {
           origin={openRoom.origin}
           initialLinkId={openRoom.linkId}
           onDrop={(urls) => {
-            const now = Date.now();
-            const batchKey = `mock-drop-${now}`;
-            setMockDropped((current) => [
-              ...urls.map((url, index) => ({
-                id: `${batchKey}-${index}`,
-                url,
-                domain: url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0],
-                title: "",
-                description: "",
-                imageUrl: "",
-                kind: "article" as const,
-                whyItMatters: "",
-                questions: [],
-                status: "pending" as const,
-                batchKey,
-                droppedBy: "you",
-                droppedByName: "you",
-                droppedAt: now,
-                voters: [],
-              })),
-              ...current,
-            ]);
-            /* No Firecrawl in mock mode — fake the enrichment beat. Each
-               link resolves on its own clock (they genuinely do live: separate
-               scrapes, separate latencies), so a six-link paste deals out
-               instead of flipping as one wall. The row narrates the wait —
-               see ReadingRoom's arrivalStage, keyed off droppedAt. */
-            urls.forEach((url, index) => {
-              const id = `${batchKey}-${index}`;
-              const title = mockLinkTitle(url);
-              window.setTimeout(
-                () => {
-                  setMockDropped((current) =>
-                    current.map((link) =>
-                      link.id === id
-                        ? {
-                            ...link,
-                            status: "ready" as const,
-                            kind: mockLinkKind(url),
-                            title,
-                            description: "fresh drop — the room hasn't read this one yet.",
-                            whyItMatters:
-                              "you just dropped this. tell the room why it matters.",
-                            questions: cannedLinkQuestions(title),
-                          }
-                        : link,
-                    ),
-                  );
-                },
-                2300 + index * 520 + Math.random() * 400,
-              );
-            });
+            /* No Firecrawl in mock mode — the shared fake beat, see
+               lib/mockArrival.ts. The lab at #/arrival plays the same one. */
+            const rows = pendingLinkRows(urls, "you", "you");
+            setMockDropped((current) => [...rows, ...current]);
+            scheduleMockResolve(rows, (id, patch) =>
+              setMockDropped((current) =>
+                current.map((link) => (link.id === id ? { ...link, ...patch } : link)),
+              ),
+            );
           }}
           onVote={(linkId) => {
             const link = mockLinks.find((candidate) => candidate.id === linkId);

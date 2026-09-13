@@ -598,3 +598,80 @@
   }
 }
 
+
+/* —— Arrival lab page (#/arrival) —— */
+
+.arrival-lab {
+  position: fixed;
+  inset: 0;
+}
+
+/* Sits in the room's top layer, on the dock's midline, in the dock's
+   vocabulary: one black sticker pill of buttons. */
+.arrival-lab-bar {
+  position: fixed;
+  left: 52px;
+  bottom: 18px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 6px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  animation: arrival-lab-bar-in var(--dur-stage) var(--ease-pop) 500ms both;
+}
+
+@keyframes arrival-lab-bar-in {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}
+
+.arrival-lab-kicker {
+  margin-right: 8px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--color-lime);
+}
+
+.arrival-lab-bar i {
+  width: 1px;
+  height: 18px;
+  margin: 0 6px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.arrival-lab-bar button {
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: 7px 12px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--dur-quick) var(--ease-glide),
+    translate var(--dur-quick) var(--ease-glide);
+}
+
+.arrival-lab-bar button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  translate: 0 -1px;
+}
+
+.arrival-lab-bar button:active {
+  translate: 0 1px;
+}
+
+.arrival-lab-bar button.is-on {
+  background: var(--color-lime);
+  color: var(--color-sticker);
+}
