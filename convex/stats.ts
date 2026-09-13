@@ -5,9 +5,9 @@ import { ShardedCounter } from "@convex-dev/sharded-counter";
 import { components } from "./_generated/api";
 
 const PRESENCE_TTL_MS = 30_000;
-// Upper bound on the presence rows the live counter will scan. The cleanup
-// cron keeps this table small; take() stops a missed sweep turning the live
-// counter into a full scan.
+// Upper bound on the presence rows the live counter will scan. The read is
+// already bounded by the by_updated range (only rows fresher than the TTL),
+// so this is belt-and-braces against a stalled sweep.
 const MAX_PRESENCE_SCAN = 1000;
 
 // sharded-counter: global live totals for the landing "live backend" widget.

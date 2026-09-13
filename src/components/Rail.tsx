@@ -10,10 +10,16 @@ import type { SpaceMeta } from "../data/types";
 /** presence component: "· N here" in the tooltip, separate from the
  * hand-rolled canvas presence system — see convex/roomPresence.ts. Its own
  * component (not a hook called in a .map()) so each space's subscription
- * is an independent instance, not a variable-length hook call. */
+ * is an independent instance, not a variable-length hook call.
+ *
+ * The args here are IDENTICAL to OnlineDotLive's below, and that is the
+ * point: same query + same args is one subscription in the query cache, not
+ * two. Passing `excludeUserId` to only one of them is what used to double
+ * the rail's presence traffic. */
 function OnlineCountSuffix({ spaceId }: { spaceId: string }) {
+  const { userId } = useIdentity();
   const count =
-    useQuery(api.roomPresence.onlineCountForSpace, { spaceId }) ?? 0;
+    useQuery(api.roomPresence.onlineForSpace, { spaceId, userId })?.total ?? 0;
   if (count <= 0) return null;
   return <> · {count} here</>;
 }
@@ -33,10 +39,7 @@ function OnlineCount({ spaceId }: { spaceId: string }) {
 function OnlineDotLive({ spaceId }: { spaceId: string }) {
   const { userId } = useIdentity();
   const count =
-    useQuery(api.roomPresence.onlineCountForSpace, {
-      spaceId,
-      excludeUserId: userId,
-    }) ?? 0;
+    useQuery(api.roomPresence.onlineForSpace, { spaceId, userId })?.others ?? 0;
   if (count <= 0) return null;
   return <span className="space-link-dot" aria-hidden="true" />;
 }

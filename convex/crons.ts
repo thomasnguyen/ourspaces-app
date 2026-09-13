@@ -3,7 +3,11 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-crons.interval("clean stale presence", { minutes: 1 }, internal.presence.cleanup);
+// Every 5 minutes, not every minute: this sweep is pure housekeeping — the
+// client filters cursors at a 30s TTL and getHereNow reads the fresh range, so
+// nothing user-facing waits on it. At 1/min it was ~43k function calls a month
+// PER deployment, dev and prod, running whether or not anyone had the app open.
+crons.interval("clean stale presence", { minutes: 5 }, internal.presence.cleanup);
 
 // Friday 16:00 UTC — each space emails its week to everyone who wrote to it.
 crons.cron("weekly digest", "0 16 * * 5", internal.digest.weekly, {});

@@ -361,8 +361,10 @@ export const listHereNow = query({
   // args, so a wall-clock bound inside the handler never re-evaluates as time
   // passes — it only moves when a presence row is written, which is not what
   // "who is here right now" means. Freshness is owned by the two things that
-  // actually observe time: the 1-minute cleanup cron sweeps rows past the TTL,
-  // and the client re-filters on its own tick (src/live/usePresence.ts).
+  // actually observe time: the cleanup cron sweeps rows past the TTL, and the
+  // client re-filters on its own tick (src/live/usePresence.ts) — the client's
+  // filter is the one that decides what a person SEES, which is why the sweep
+  // can run as infrequently as it does.
   handler: async (ctx, { spaceId }) => {
     return await ctx.db
       .query("presence")

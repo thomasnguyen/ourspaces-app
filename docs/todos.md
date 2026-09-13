@@ -794,6 +794,24 @@ Backward-looking history lives in `hackathon.md`.
      exists on any live board, and `visitorCount` is an unused prop, so all
      of that bandwidth was computing numbers nothing on the live site
      renders.
+  7. **The presence sweep cron went 1 min → 5 min.** It is pure housekeeping —
+     the client filters cursors at a 30s TTL and `getHereNow` reads the fresh
+     range, so nothing user-facing waits on it — and at 1/min it was ~43k
+     function calls a month PER deployment, dev and prod, running whether or
+     not anyone had the app open.
+  8. **The rail held two occupancy subscriptions per space tile.** "N here"
+     (everyone) and the lime dot ("someone ELSE is here") called
+     `onlineCountForSpace` with different args, and different args are
+     different cache keys — so each tile ran the same `listRoom` read twice.
+     Now one `onlineForSpace` returning `{ total, others }`, called with
+     IDENTICAL args from both, which is what lets convex-helpers' query cache
+     collapse them. Measured on `#/home` (5 spaces): **15 → 10 concurrent
+     subscriptions**. Not the 2× it looks like on paper, because
+     `adoptAuthUserId` swaps the identity mid-session and `userId` is in the
+     args, so each tile briefly holds a pre-swap and a post-swap entry until
+     the cache retires the old one — steady state is 1 per tile. Removing
+     that churn (a stable id from the first paint) is the next easy win here.
+     `onlineCountForSpace` stays as a legacy wrapper until prod redeploys.
   Not done, by choice: the duplicate presence system stays. `roomPresence`
   (the component) and `presence` (hand-rolled) still both run — collapsing
   them would trade disconnect-accurate occupancy for sweep-lagged occupancy,
