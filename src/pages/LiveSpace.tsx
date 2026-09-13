@@ -58,6 +58,7 @@ import {
 } from "../lib/buildRoomFeed";
 import type { BuildRoomLink } from "../data/buildroom";
 import { cannedLinkQuestions } from "../lib/linkQuestions";
+import { guessLinkKind } from "../lib/mockArrival";
 import type { PhotoComment } from "../components/PhotoWallGallery";
 import { useIdentity } from "../live/identity";
 import { useLiveHandlers } from "../live/useLiveHandlers";
@@ -879,6 +880,7 @@ export function LiveSpacePage({
             description: scraped.description,
             imageUrl: scraped.imageUrl,
             domain: scraped.siteName || link.domain,
+            kind: guessLinkKind(scraped.url || link.url),
             whyItMatters: scraped.description,
             questions: cannedLinkQuestions(scraped.title || link.url),
             status: "ready",

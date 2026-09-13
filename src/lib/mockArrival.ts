@@ -20,9 +20,9 @@ export function mockLinkTitle(url: string) {
   return /^[\w]{6,}$/.test(words) && !/[aeiou]/i.test(words.slice(1)) ? domain : words || domain;
 }
 
-/** The kind verdict, guessed off the host so the mock beat still snaps a
-    real-looking classification into the row. */
-export function mockLinkKind(url: string): LinkKind {
+/** The kind verdict, guessed off the host. Live uses it too — the scrape
+    doesn't classify, so this is the room "deciding what it is". */
+export function guessLinkKind(url: string): LinkKind {
   const host = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
   const path = url.replace(/^https?:\/\/[^/]+/, "");
   if (/github\.com|gitlab\.com/.test(host)) {
@@ -67,7 +67,7 @@ export function mockResolvedPatch(link: BuildRoomLink): Partial<BuildRoomLink> {
   const title = mockLinkTitle(link.url);
   return {
     status: "ready",
-    kind: mockLinkKind(link.url),
+    kind: guessLinkKind(link.url),
     title,
     description: "fresh drop — you're the first here. tell the room why it matters.",
     whyItMatters: "",
