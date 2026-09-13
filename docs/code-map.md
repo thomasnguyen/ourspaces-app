@@ -83,8 +83,9 @@ from the seeded spaces [`PICKS`], each with a black sticker name tag, dealt
 greedy-shortest to three masonry columns sized with `zoom` to fit the
 viewport and drifting on a wall that is tilted in JavaScript — each frame
 every tile's centre is projected through a virtual camera into a 2D translate
-+ scale, because a CSS `perspective` makes Chrome resample the drifting layers
-and text goes soft (`tilt` in the pill toggles the flat wall); a roll call
++ scale on its own compositor layer, because a CSS `perspective` makes Chrome
+resample the drifting layers and text goes soft (`tilt` in the pill toggles
+the flat wall); a roll call
 lifts the card
 nearest the middle of a column every 1.6s; hover lifts and holds the column;
 click FLIPs the widget (WAAPI) into a centered, usable spotlight with name +
