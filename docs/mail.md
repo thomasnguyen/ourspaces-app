@@ -145,7 +145,8 @@ outbound digest cron (convex/crons.ts) → weeklyDigestWorkflow (durable,
    `src/data/recap.ts` "never writes to the canvas." Unfiled stays an envelope
    you open and file. Pitch: *the space has a brain. mail it something it
    would recognize.*
-1. **Arrival choreography** — an emailed widget should *land* (envelope drop,
+1. **Arrival choreography** — spec'd in full in `docs/mail-arrival.md` (2026-09-13).
+   An emailed widget should *land* (envelope drop,
    house motion, sound) rather than reactive-pop into place. Split screen,
    send from a phone, watch it arrive. Tier 0/1 motion per eye-candy. The
    flap sentence from (0) is what you read when it lands.
