@@ -34,6 +34,7 @@ import type * as rateLimits from "../rateLimits.js";
 import type * as recap from "../recap.js";
 import type * as roomPresence from "../roomPresence.js";
 import type * as seed from "../seed.js";
+import type * as shootReset from "../shootReset.js";
 import type * as spaces from "../spaces.js";
 import type * as staticHosting from "../staticHosting.js";
 import type * as stats from "../stats.js";
@@ -75,6 +76,7 @@ declare const fullApi: ApiFromModules<{
   recap: typeof recap;
   roomPresence: typeof roomPresence;
   seed: typeof seed;
+  shootReset: typeof shootReset;
   spaces: typeof spaces;
   staticHosting: typeof staticHosting;
   stats: typeof stats;
