@@ -168,6 +168,10 @@ character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
 
 ## public/
 
+**assets/email/signin-header.png** — generated violet masthead (OurSpaces
+wordmark + paper envelope), used by `convex/emails/signIn.ts`. The credential
+and all instructions remain HTML text; only decorative branding is raster.
+
 **photos/crew/** — seven casual camera-roll memories for the crew wall; generated
 `friday-at-mayas`, `roof-dusk`, and `paint-night` intentionally use imperfect
 iPhone framing/flash and matching cast continuity. `photos/thumbs/crew/` holds
@@ -259,7 +263,10 @@ via `components.agentMail.lib.ingestWebhook` → router; persistent-text-streami
 `auth.config.ts` (the OIDC provider Convex validates JWTs against — the
 silently-always-signed-out footgun lives here) ·
 `otp.ts` (join = an emailed six-digit code, sent via AgentMail from
-`ourspaces@agentmail.to`; never create a fourth inbox) ·
+`ourspaces@agentmail.to`; never create a fourth inbox; 20-minute expiry from
+`emails/signIn.ts`, which also renders subject, plain text and responsive
+HTML — one selectable code block under the generated envelope masthead in
+`public/assets/email/signin-header.png`, served from `CONVEX_SITE_URL`) ·
 `components/authWellKnown/` (two-route component mounted at `/.well-known`;
 publishes `openid-configuration` + `jwks.json` at the SITE ROOT, which the app
 router can't do because it sits under `httpPrefix: "/api"` — see

@@ -66,7 +66,7 @@ These are gitignored or excluded. Skip if the file is not on disk.
 | Design override layer + house motion system | `.claude/skills/eye-candy/SKILL.md` |
 | Impeccable's config + critique output | `.impeccable/` |
 | Conductor scratch (shots, eval scripts) | `.context/` |
-| Sign-in email concept images, prompts and proposed UX changes | `.context/email-concepts/README.md` |
+| Sign-in email concepts, implementation previews and generation prompts | `.context/email-concepts/README.md` |
 | Index of the remaining local files | `docs/local/doc-map.local.md` |
 
 **The GitHub repo is public.** Tracked docs describe the product and how it's

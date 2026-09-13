@@ -664,7 +664,7 @@
         <ul class="points">
           <li data-step style="--i:3"><strong>No new credential.</strong> The integration the spaces already use does one more real job.</li>
           <li data-step style="--i:4"><strong>It must not create a fourth inbox.</strong> All three slots are spoken for, so sign-in rides the account-level inbox on purpose.</li>
-          <li data-step style="--i:5"><strong>Six digits from the CSPRNG</strong>, 10-minute expiry — the library default is an hour, which is a long time for six digits to stay live.</li>
+          <li data-step style="--i:5"><strong>Six digits from the CSPRNG</strong>, 20-minute expiry — the code's lifetime and the email copy share one setting.</li>
         </ul>
         <ul class="points">
           <li data-step style="--i:6"><strong>Rate-limited on the destination address</strong>, not the caller. Anonymous sign-in is free, so an attacker controls their own id — the thing worth protecting is the <em>victim's inbox</em>.</li>

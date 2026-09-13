@@ -5,6 +5,18 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Sign-in email implementation (2026-09-13):** approved the envelope
+  direction. `convex/emails/signIn.ts` owns subject, plain text and responsive
+  HTML; `otp.ts` uses its shared **20-minute** lifetime for the real auth
+  expiry. The generated `public/assets/email/signin-header.png` combines
+  wordmark + small envelope so the brand lettering survives email clients;
+  the code and instructions stay selectable HTML, with sans-serif fallbacks.
+  Sender display name updated to **OurSpaces** through AgentMail's inbox API.
+  Browser-checked at 860, 390 and 320px, plus images hidden: no horizontal
+  overflow and the code remains visible. `npm run build` and `convex dev --once`
+  pass. Published backend + static assets to dev `dusty-condor-648`; hosted
+  header returns image/png and matches the source. No email was sent during
+  verification; the next requested code uses the new design and 20-minute expiry.
 - **Widget wall, the "thirty of these" insert (2026-09-12, four passes in
   one evening — this is where it landed):** `#/wall` (`pages/WidgetWall.tsx`,
   CSS at the end of `pages/labs.css`) puts every widget on one drifting wall
@@ -981,13 +993,14 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
-- 2026-09-13: **Sign-in email design exploration (proposal, not shipped).**
+- 2026-09-13: **Sign-in email direction.**
   Generated two local mockups: envelope header/light body (recommended) and
   violet room-key ticket. Proposed: shorter “Your sign-in code” headline,
   one selectable code block, expiry directly underneath, sans-serif type,
-  smaller decorative artwork and OurSpaces sender name. User has not selected
-  a direction; template and sender remain unchanged. Images and exact prompts:
-  `.context/email-concepts/README.md`. `npm run build` passes.
+  smaller decorative artwork and OurSpaces sender name. **Follow-up:** user
+  approved building the recommended envelope direction and changed the expiry
+  to 20 minutes. Implemented above. Images and exact prompts:
+  `.context/email-concepts/README.md`.
 - 2026-09-10: **RSVP, daily-question answers and answer reactions persist
   per-person.** All three were `useState` in `LiveSpace.tsx` and never reached
   Convex, so two people saw different answers and a reload lost yours — on a
