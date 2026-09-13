@@ -12,7 +12,7 @@
 - **Auth:** Better Auth (anonymous guest sessions; passkey blocked by a peer-dep conflict)
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-12T06:10:47Z
+- **Last updated:** 2026-09-13T17:11:56Z
 
 ## Highlights
 
@@ -582,3 +582,10 @@ header ink, pegboard holes instead of the ruled grid, zone panels one step
 lighter (12% toward card so they read on the darker green), shadows in the
 wall's own deep shade, orange kept as the accent. Verified at 1x, 2x and phone
 width; `npm run build` passes; no deployment.
+
+### 2026-09-13 - working tree
+Reviewed the sign-in email and generated two local design concepts with the
+built-in image generation tool: a small envelope header and a violet room-key
+ticket. Proposed clearer code hierarchy, shorter copy and sans-serif type;
+recorded the handoff in `docs/todos.md`. These are visual proposals only:
+no template, sender setting or backend changes. `npm run build` passes.
