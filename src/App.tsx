@@ -86,7 +86,7 @@ import {
 import { ReadingRoom, type RoomReply } from "./components/ReadingRoom";
 import { ShipRoom } from "./components/ShipRoom";
 import type { RoomOrigin } from "./components/CanvasRoom";
-import type { BuildRoomLink } from "./data/buildroom";
+import type { BuildRoomLink, LinkKind } from "./data/buildroom";
 
 const CursorLab = lazy(() =>
   import("./pages/CursorLab").then((module) => ({ default: module.CursorLab })),
@@ -263,9 +263,27 @@ function mockModeRequested() {
 /** A readable title for a mock-dropped url: the last path segment, de-slugged. */
 function mockLinkTitle(url: string) {
   const path = url.replace(/^https?:\/\/[^/]+/, "").replace(/[?#].*$/, "");
-  const segment = path.split("/").filter(Boolean).pop() ?? "";
+  /* Skip the segments that are routing, not a name (youtube's /watch,
+     twitter's /status, an index page) — the domain reads better. */
+  const segment =
+    path.split("/").filter((part) => part && !/^(watch|status|index|home|p|s|v|e|a)$/i.test(part)).pop() ?? "";
   const words = segment.replace(/\.\w+$/, "").replace(/[-_+]+/g, " ").trim();
-  return words || url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+  return /^[\w]{6,}$/.test(words) && !/[aeiou]/i.test(words.slice(1))
+    ? url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]
+    : words || url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+}
+
+/** The kind verdict, guessed off the host so the mock beat still snaps a
+    real-looking classification into the row. */
+function mockLinkKind(url: string): LinkKind {
+  const host = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+  const path = url.replace(/^https?:\/\/[^/]+/, "");
+  if (/github\.com|gitlab\.com/.test(host)) return path.split("/").filter(Boolean).length >= 2 ? "repo" : "tool";
+  if (/youtu\.?be|vimeo\.com|loom\.com/.test(host)) return "video";
+  if (/news\.ycombinator|reddit\.com|lobste\.rs|x\.com|twitter\.com|bsky/.test(host)) return "discussion";
+  if (/^docs\.|\/docs?(\/|$)|readthedocs|developer\./.test(host + path)) return "docs";
+  if (/producthunt|\.app$|\.tools?$/.test(host)) return "tool";
+  return "article";
 }
 
 function demoModeRequested() {
@@ -2252,24 +2270,36 @@ export default function App() {
               })),
               ...current,
             ]);
-            /* No Firecrawl in mock mode — fake the enrichment beat. */
-            window.setTimeout(() => {
-              setMockDropped((current) =>
-                current.map((link) =>
-                  link.batchKey === batchKey
-                    ? {
-                        ...link,
-                        status: "ready" as const,
-                        title: mockLinkTitle(link.url),
-                        description: "fresh drop — the room hasn't read this one yet.",
-                        whyItMatters:
-                          "you just dropped this. tell the room why it matters.",
-                        questions: cannedLinkQuestions(mockLinkTitle(link.url)),
-                      }
-                    : link,
-                ),
+            /* No Firecrawl in mock mode — fake the enrichment beat. Each
+               link resolves on its own clock (they genuinely do live: separate
+               scrapes, separate latencies), so a six-link paste deals out
+               instead of flipping as one wall. The row narrates the wait —
+               see ReadingRoom's arrivalStage, keyed off droppedAt. */
+            urls.forEach((url, index) => {
+              const id = `${batchKey}-${index}`;
+              const title = mockLinkTitle(url);
+              window.setTimeout(
+                () => {
+                  setMockDropped((current) =>
+                    current.map((link) =>
+                      link.id === id
+                        ? {
+                            ...link,
+                            status: "ready" as const,
+                            kind: mockLinkKind(url),
+                            title,
+                            description: "fresh drop — the room hasn't read this one yet.",
+                            whyItMatters:
+                              "you just dropped this. tell the room why it matters.",
+                            questions: cannedLinkQuestions(title),
+                          }
+                        : link,
+                    ),
+                  );
+                },
+                2300 + index * 520 + Math.random() * 400,
               );
-            }, 1600);
+            });
           }}
           onVote={(linkId) => {
             const link = mockLinks.find((candidate) => candidate.id === linkId);

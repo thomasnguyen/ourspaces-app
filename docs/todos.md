@@ -5,6 +5,27 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Link arrival narrates itself (2026-09-12):** a dropped link no longer
+  sits as a bare url under a global "enriching…" pill. The row runs the
+  story in the slot the title will fill — `fetching github.com` →
+  `reading the page` → `pulling out the title` (holds at `slow page — still
+  reading` past 7s) — with a blinking caret, three step ticks under the
+  domain (done = ink, live = lime) and a scan line sweeping the tile. On
+  resolve the fields print in one at a time: tile settles (pop), title
+  wipes in left→right, kind verdict pops (the classification made visible),
+  summary prints last, a 16% lime wash fades over the row, `place` sound.
+  The clock is the row's own `droppedAt` (`arrivalStage` in
+  `ReadingRoom.tsx`), so mock and live play the identical beat — live just
+  holds on stage 3 until Firecrawl's patch lands. Mock drops resolve on
+  per-link clocks (2.3s + 0.5s per link + jitter) so a multi-paste deals
+  out instead of flipping as a wall, and `mockLinkKind` guesses the verdict
+  off the host (github→repo, youtube→video, HN/reddit→discussion, docs.→docs).
+  Header pill now reads "reading N pages…". CSS: "BUILD ROOM — ARRIVAL
+  CHOREOGRAPHY" at the end of `index.css`. Verified in mock via
+  `.context/shot-arrival.mjs` (frame sequence in `/tmp/arrival/`); not yet
+  verified live (no credits spent). Brainstorm + the unbuilt directions
+  (research-bar narration, crawl counter hero, mail envelope) stay in
+  `docs/local/build-room-arrival.md`.
 - **Start a new space is one sheet (2026-09-12):** rail "+" opens
   `components/SpaceMaker.tsx` — pick a shape (the whole sheet wears its
   colour, the switcher is a black dock on the seam, the foot is the black
@@ -357,7 +378,8 @@ Backward-looking history lives in `hackathon.md`.
   (`flyWidgetIn`, snap + squash) after the room shrinks away. Ship posts open
   their own full-screen room with the write-up, live replies and image upload.
 - **Dropping links is real.** Paste up to 10 urls → placeholder rows appear
-  instantly with an "N enriching…" pill, then `firecrawl.scrapeLink` fills each
+  instantly, narrating their own arrival (see "Link arrival narrates itself"
+  above), then `firecrawl.scrapeLink` fills each
   one **sequentially** (they read-modify-write one document — do not parallelise
   them). Bad urls land in a `failed` state with a retry. Verified live with two
   real urls and one bogus one.
