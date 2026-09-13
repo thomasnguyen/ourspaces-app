@@ -105,7 +105,10 @@ room. It also owns `#/about/{convex,openai,agentmail,firecrawl}`: `About`
 listens for hash changes, `AboutOverview` renders the main page, `VENDORS`
 holds implementation-backed content/source paths, and `VendorPage` plus
 `VendorExample` render the deep dives. The four examples use local state;
-AgentMail reuses `LetterWidget`. Styles follow ABOUT in the MADE WITH
+AgentMail reuses `LetterWidget`. `VendorLogo` renders original SVG artwork
+from the vendors’ brand assets, embedded in `VENDOR_LOGOS` with source URLs.
+The vendor links sit directly below the About hero, before live totals.
+Styles follow ABOUT in the MADE WITH
 section of `index.css`. `App.tsx` maps the entire `about/` prefix to this
 lazy page and preserves the last room) ·
 `LiveBlock.tsx` (live home) · `Welcome.tsx` (`#/test`) · `WidgetLab.tsx` ·
