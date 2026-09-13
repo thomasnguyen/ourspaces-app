@@ -1763,6 +1763,65 @@ export default function App() {
       Boolean(spaceDraft),
   );
 
+  /* Mock-mode derived state. These are hooks, so they must run on EVERY
+     render — including the lab/home routes that return early below.
+     Leaving them under the early returns changed the hook count between
+     renders and React tore the whole tree down (blank page). */
+  const currentLocalMessages = localThreadMessages[spaceId] ?? {};
+  /* Mock mode gets the same rooms, with votes and keeps held in local state —
+     the live path persists them into the pile widget instead. */
+  const baseFeed = mockBuildRoomFeed(spaceId);
+  const mockLinks = useMemo<BuildRoomLink[]>(
+    () =>
+      [...mockDropped, ...(baseFeed?.links ?? [])].map((link) => {
+        const state = mockLinkState[link.id];
+        return withBuildRoomCover(state ? { ...link, ...state } : link);
+      }),
+    [baseFeed?.links, mockDropped, mockLinkState],
+  );
+  const mockReplyCounts = useMemo(() => {
+    const counts: Record<string, number> = { ...(baseFeed ? {} : {}) };
+    for (const [threadId, list] of Object.entries(currentLocalMessages)) {
+      counts[threadId] = (counts[threadId] ?? 0) + list.length;
+    }
+    for (const [threadId, count] of Object.entries(
+      Object.fromEntries(
+        Object.entries(getThreadsForSpace(spaceId)).map(([id, thread]) => [
+          id,
+          thread.messages.length,
+        ]),
+      ),
+    )) {
+      counts[threadId] = (counts[threadId] ?? 0) + count;
+    }
+    return linkReplyCounts(counts);
+  }, [baseFeed, currentLocalMessages, spaceId]);
+  const mockMessagesByThread = useMemo(() => {
+    const grouped: Record<string, RoomReply[]> = {};
+    for (const [threadId, thread] of Object.entries(getThreadsForSpace(spaceId))) {
+      grouped[threadId] = thread.messages.map((message) => ({
+        id: message.id,
+        from: message.from,
+        color: message.fromColor,
+        text: message.text,
+        time: message.time,
+      }));
+    }
+    for (const [threadId, list] of Object.entries(currentLocalMessages)) {
+      grouped[threadId] = [
+        ...(grouped[threadId] ?? []),
+        ...list.map((message) => ({
+          id: message.id,
+          from: message.from,
+          color: message.fromColor,
+          text: message.text,
+          time: message.time,
+        })),
+      ];
+    }
+    return grouped;
+  }, [currentLocalMessages, spaceId]);
+
   if (route === "cursors") {
     return <DeferredRoute><CursorLab /></DeferredRoute>;
   }
@@ -1876,35 +1935,6 @@ export default function App() {
   const activeThreadLabel = activeThreadWidget
     ? widgetLabel(activeThreadWidget)
     : undefined;
-  const currentLocalMessages = localThreadMessages[spaceId] ?? {};
-  /* Mock mode gets the same rooms, with votes and keeps held in local state —
-     the live path persists them into the pile widget instead. */
-  const baseFeed = mockBuildRoomFeed(spaceId);
-  const mockLinks = useMemo<BuildRoomLink[]>(
-    () =>
-      [...mockDropped, ...(baseFeed?.links ?? [])].map((link) => {
-        const state = mockLinkState[link.id];
-        return withBuildRoomCover(state ? { ...link, ...state } : link);
-      }),
-    [baseFeed?.links, mockDropped, mockLinkState],
-  );
-  const mockReplyCounts = useMemo(() => {
-    const counts: Record<string, number> = { ...(baseFeed ? {} : {}) };
-    for (const [threadId, list] of Object.entries(currentLocalMessages)) {
-      counts[threadId] = (counts[threadId] ?? 0) + list.length;
-    }
-    for (const [threadId, count] of Object.entries(
-      Object.fromEntries(
-        Object.entries(getThreadsForSpace(spaceId)).map(([id, thread]) => [
-          id,
-          thread.messages.length,
-        ]),
-      ),
-    )) {
-      counts[threadId] = (counts[threadId] ?? 0) + count;
-    }
-    return linkReplyCounts(counts);
-  }, [baseFeed, currentLocalMessages, spaceId]);
   const mockPile = visibleWidgets.find((widget) => widget.type === "linkPile");
   const buildRoomFeed = baseFeed
     ? {
@@ -1924,31 +1954,6 @@ export default function App() {
       }
     : undefined;
   const roundtableReplies = mockRoundtableReplies(spaceId);
-  const mockMessagesByThread = useMemo(() => {
-    const grouped: Record<string, RoomReply[]> = {};
-    for (const [threadId, thread] of Object.entries(getThreadsForSpace(spaceId))) {
-      grouped[threadId] = thread.messages.map((message) => ({
-        id: message.id,
-        from: message.from,
-        color: message.fromColor,
-        text: message.text,
-        time: message.time,
-      }));
-    }
-    for (const [threadId, list] of Object.entries(currentLocalMessages)) {
-      grouped[threadId] = [
-        ...(grouped[threadId] ?? []),
-        ...list.map((message) => ({
-          id: message.id,
-          from: message.from,
-          color: message.fromColor,
-          text: message.text,
-          time: message.time,
-        })),
-      ];
-    }
-    return grouped;
-  }, [currentLocalMessages, spaceId]);
   const shipRoomWidget =
     openRoom?.kind === "ship"
       ? visibleWidgets.find((widget) => widget.id === openRoom.widgetId) ?? null

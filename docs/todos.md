@@ -971,6 +971,13 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- 2026-09-13: **Sign-in email design exploration (proposal, not shipped).**
+  Generated two local mockups: envelope header/light body (recommended) and
+  violet room-key ticket. Proposed: shorter “Your sign-in code” headline,
+  one selectable code block, expiry directly underneath, sans-serif type,
+  smaller decorative artwork and OurSpaces sender name. User has not selected
+  a direction; template and sender remain unchanged. Images and exact prompts:
+  `.context/email-concepts/README.md`. `npm run build` passes.
 - 2026-09-10: **RSVP, daily-question answers and answer reactions persist
   per-person.** All three were `useState` in `LiveSpace.tsx` and never reached
   Convex, so two people saw different answers and a reload lost yours — on a
