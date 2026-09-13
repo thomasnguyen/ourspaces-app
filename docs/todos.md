@@ -12,18 +12,18 @@ Backward-looking history lives in `hackathon.md`.
   like widgets… like a widget selection screen", and click should enlarge.
   So: 32 real `WidgetCard`s from the seeded rooms (the crew's cake poll, the
   couple's letter and postcard, the build room's pile, both stickers), each
-  framed in a **uniform gallery tile** in the picker's vocabulary
-  (translucent white on near-black, hairline border, 22px radius, 420×344):
-  the widget zoomed to fit a 232px frame, straightened, and under it an
-  emoji chip + name (Bricolage 18px) + a one-line blurb (`BLURBS`, plain
-  voice: "vote on anything", "count down to the day", "color a postcard
-  together"). A sheet header top-left: **add a widget · 31 kinds · tap one
+  floating in a **uniform gallery slot** (420×312, no box — a boxed pass with
+  translucent tiles and hairline borders got "too much of the outer widget
+  border", so the widget sits straight on the wall, bottom-aligned in a
+  236px frame) with an emoji chip + name (Bricolage 19px) + a one-line blurb
+  centered under it (`BLURBS`, plain voice: "vote on anything", "count down
+  to the day", "color a postcard together"). A sheet header top-left: **add a widget · 31 kinds · tap one
   to look closer**. Three columns dealt round-robin drift up/down on a
   gently tilted plane (rotateX 11° / rotateY −9°, perspective 2200 — the
   earlier 16°/1200 magnified the near edge and small text went soft, which
   read as "buggy"), scaled to fit the viewport width so the mask only
   dissolves top and bottom. Roll call lifts the tile nearest the middle of
-  the next column every 1.7s (border brightens, name goes lime); hover does
+  the next column every 1.7s (lifts with a shadow, name goes lime); hover does
   the same and holds the column. **Click = spotlight:** the widget FLIPs
   (WAAPI, `--ease-pop`, 560ms) from its frame to the middle at up to 1.8×,
   the wall dims to 32% and recedes 180px, the columns slow to half, the

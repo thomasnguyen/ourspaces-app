@@ -772,8 +772,9 @@
   gap: var(--ww-gap);
 }
 
-/* The gallery tile. Picker vocabulary: translucent white on near-black,
-   hairline border, brighter and lifted when lit. */
+/* The gallery slot. No box — the widget floats on the wall, sits on the
+   slot's baseline, and its name hangs centered under it. Lit: it comes
+   forward with a shadow and the name goes lime. */
 .ww-tile {
   position: relative;
   display: flex;
@@ -781,17 +782,9 @@
   width: var(--ww-col);
   height: var(--ww-tile-h);
   flex: 0 0 auto;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.065);
   cursor: pointer;
   transform: translateZ(0);
-  transition:
-    transform var(--dur-arrive) var(--ease-glide),
-    border-color var(--dur-quick) var(--ease-glide),
-    background var(--dur-quick) var(--ease-glide),
-    opacity var(--dur-quick) var(--ease-glide);
+  transition: transform var(--dur-arrive) var(--ease-glide);
 }
 
 .widget-wall.is-idle .ww-tile {
@@ -799,17 +792,15 @@
 }
 
 .ww-tile.is-lit {
-  border-color: rgba(255, 255, 255, 0.34);
-  background: rgba(255, 255, 255, 0.11);
   transform: translateZ(var(--ww-lift));
-  transition:
-    transform var(--dur-arrive) var(--ease-pop),
-    border-color var(--dur-quick) var(--ease-glide),
-    background var(--dur-quick) var(--ease-glide),
-    opacity var(--dur-quick) var(--ease-glide);
+  transition: transform var(--dur-arrive) var(--ease-pop);
 }
 
-/* While its widget is in the spotlight, the frame stays, the card is gone. */
+.ww-tile.is-lit .ww-preview {
+  filter: drop-shadow(0 26px 22px rgba(0, 0, 0, 0.5));
+}
+
+/* While its widget is in the spotlight, the slot stays, the card is gone. */
 .ww-tile.is-away .ww-preview {
   opacity: 0;
   transition: opacity var(--dur-instant) linear;
@@ -817,16 +808,18 @@
 
 .ww-frame {
   display: grid;
-  place-items: center;
+  place-items: end center;
   height: var(--ww-frame-h);
-  padding: var(--ww-frame-pad);
+  padding: 0 var(--ww-frame-pad);
   pointer-events: none;
 }
 
 .ww-preview {
   position: relative;
   flex: 0 0 auto;
-  transition: opacity var(--dur-base) var(--ease-glide);
+  transition:
+    opacity var(--dur-base) var(--ease-glide),
+    filter var(--dur-arrive) var(--ease-glide);
 }
 
 /* The card is a real WidgetCard: pin it into its box, straight, no chrome. */
@@ -850,35 +843,36 @@
 }
 
 .ww-caption {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
-  column-gap: 12px;
-  row-gap: 2px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  align-content: center;
-  flex: 1 1 auto;
-  padding: 0 22px 0 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 3px;
+  padding-top: 18px;
+  text-align: center;
   pointer-events: none;
+}
+
+.ww-caption-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .ww-chip {
   display: inline-grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  grid-row: 1 / 3;
-  border-radius: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   background: var(--color-sticker);
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .ww-name {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 800;
   letter-spacing: -0.01em;
   line-height: 1.1;
@@ -894,7 +888,7 @@
   font-size: 13px;
   font-weight: 500;
   line-height: 1.25;
-  color: rgba(255, 255, 255, 0.62);
+  color: rgba(255, 255, 255, 0.58);
 }
 
 /* The sheet header, in the picker's words. */
