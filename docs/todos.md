@@ -5,6 +5,19 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **The about card + a way to the block (2026-09-13):** `#/about` is a
+  linkable address that opens a paper sheet over whatever room you are in —
+  what a space is, three things to try, who made it, what it runs on, a live
+  `spaces / widgets / messages` band off `stats.getLiveTotals`, and links to
+  the block and the repo. It is the only `CanvasRoom` that does not black out
+  the canvas (transparent shell, 46% backdrop) so the claim and the running
+  board sit in one frame. `spaceFromHash` maps `about` to `lastSpaceSlug()`,
+  so opening it from the crew room does not move you to the build room, and
+  closing restores that hash. The rail's brand mark now goes to `#/home` (the
+  block, via the existing zoom-out) instead of back to the default room, and a
+  quiet `?` chip at the rail's foot opens the card.
+  `components/AboutRoom.tsx`, mounted beside `<App/>` in `main.tsx`.
+
 - **Mail arrival — the envelope that thinks out loud (2026-09-13):** an
   inbound email lands as a kraft envelope beside the space's address chip
   (`components/MailArrival.tsx`, page-level, measured off the nameplate)
@@ -1100,6 +1113,19 @@ Backward-looking history lives in `hackathon.md`.
   the demo spaces — strangers get write access) around Sep 16.
 
 ## Decisions
+
+- 2026-09-13: **No marketing landing page — the block is the front door.**
+  Asked whether OurSpaces should have one, for legitimacy. Two reasons not
+  to: `docs/local/why-not-60.md` recorded a rich marketing page scoring 2/10
+  on the reviewer's liveness criterion ("not the OurSpaces app") against our
+  canvas's 8, and padding the landing page was separately tested and moved
+  nothing — so the root stays a live room. And the block (`#/home`) already
+  is a lobby with real rooms and real counts, it was just unreachable: the
+  rail brand pointed at `/`, which is the build room. Shipped instead: brand
+  → the block, plus the `#/about` card above. The stronger remaining
+  legitimacy lever is the URL — `necessary-cobra-892.convex.site` reads like
+  a test deploy. **Open:** whether we own a domain to point at it (custom
+  domains need Convex Pro).
 
 - 2026-09-13: **Sign-in email direction.**
   Generated two local mockups: envelope header/light body (recommended) and

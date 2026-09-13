@@ -24173,3 +24173,239 @@
     transition: opacity var(--dur-base) linear;
   }
 }
+
+/* —— about (#/about) ——————————————————————————————————————————————————— */
+/* The rail's quietest chip: smaller than a space, no color of its own until
+   you touch it. It should read as chrome, not as another room. */
+.rail-about {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-pill);
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  transition:
+    translate var(--dur-quick) var(--ease-glide),
+    background var(--dur-quick) ease-out,
+    border-color var(--dur-quick) ease-out,
+    color var(--dur-quick) ease-out;
+}
+
+.rail-about:hover {
+  translate: 0 -3px;
+  border-color: transparent;
+  background: var(--color-card);
+  color: var(--color-sticker);
+}
+
+.rail-about:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 3px;
+}
+
+/* The card is a sheet of the same warm paper every object on the canvas is
+   made of — the room behind it keeps running, so this reads as a thing set
+   down on top, not a page you navigated to. */
+/* The one room that does not black out the canvas: the shell goes
+   transparent and the backdrop only knocks the room back, so the board is
+   still visibly running behind the claim being made about it. */
+.about-room::backdrop {
+  background: color-mix(in srgb, #0b0b0d 46%, transparent);
+}
+
+/* Every other room paints over the whole screen, so its back button can own
+   the top-left corner. This one leaves the room visible, where that corner is
+   already the rail and the nameplate — so the pill rides with the card
+   instead, centred right above it. */
+.about-room .canvas-room-back {
+  align-self: center;
+  margin-bottom: 14px;
+}
+
+.about-room .canvas-room-shell {
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+  background: transparent;
+}
+
+.about-sheet {
+  width: min(760px, 100%);
+  margin: 0 auto;
+  padding: 34px 38px 30px;
+  border-radius: 22px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+  rotate: -0.4deg;
+  box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.7);
+}
+
+.about-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.about-mark {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  rotate: -4deg;
+}
+
+.about-kicker {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-caption);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.about-sheet h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.about-lede {
+  margin: 0 0 26px;
+  font-size: 1.18rem;
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+.about-sheet h2 {
+  margin: 0 0 8px;
+  color: var(--color-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.about-try {
+  margin-bottom: 24px;
+  padding: 18px 20px 18px 22px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-mat) 30%, transparent);
+}
+
+.about-try ol {
+  display: grid;
+  margin: 0;
+  padding-left: 20px;
+  gap: 9px;
+  list-style: decimal;
+}
+
+.about-try li::marker {
+  color: var(--color-muted);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.about-cols {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-bottom: 24px;
+}
+
+.about-cols p {
+  margin: 0;
+  color: color-mix(in srgb, var(--color-ink) 82%, transparent);
+  font-size: var(--text-caption);
+  line-height: 1.55;
+}
+
+/* Real counts off the sharded counter, on a live subscription — the one
+   number on this card that could ever be wrong, so it is the one number that
+   is never typed in. */
+.about-totals {
+  display: flex;
+  margin: 0 0 24px;
+  padding: 14px 18px;
+  gap: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: var(--color-card);
+}
+
+.about-totals div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.about-totals dt {
+  order: 2;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: var(--text-caption);
+}
+
+.about-totals dd {
+  order: 1;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.about-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.about-links a {
+  padding: 9px 16px;
+  border: 1.5px solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  color: var(--color-ink);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    translate var(--dur-quick) var(--ease-glide),
+    background var(--dur-quick) ease-out,
+    color var(--dur-quick) ease-out;
+}
+
+.about-links a::after {
+  content: " →";
+}
+
+.about-links a:hover {
+  translate: 0 -2px;
+  background: var(--color-ink);
+  color: var(--color-card);
+}
+
+@media (max-width: 720px) {
+  .about-sheet {
+    padding: 26px 22px 24px;
+    rotate: 0deg;
+  }
+
+  .about-totals {
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    border-radius: 20px;
+  }
+}

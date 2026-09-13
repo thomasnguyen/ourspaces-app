@@ -37,7 +37,8 @@ presence/gestures) ·
 `WidgetCard.tsx` (widget shell: drag/resize/thread chip) · `WidgetEditorPanel.tsx`
 (per-type edit forms) · `WidgetPicker.tsx` · `WidgetThreadDock.tsx` ·
 `GlobalChatPanel.tsx` · `ThreadContent.tsx` (messages + composer + promote) ·
-`Rail.tsx` (space rail; `OnlineCountSuffix` shows "· N here" per space via the
+`Rail.tsx` (space rail; the brand mark goes to `#/home` — the block — and a
+quiet `?` chip at the bottom goes to `#/about`; `OnlineCountSuffix` shows "· N here" per space via the
 presence component's `roomPresence.onlineCountForSpace`, mounted by
 `LiveSpace.tsx`'s `RoomPresenceHeartbeat` once a room is entered) ·
 `ActionDock.tsx` (bottom dock + catch-me-up panel:
@@ -53,6 +54,17 @@ LiveSpace.tsx own the `placing` state) ·
 `LinkQuestionStrip.tsx` (web post conversation starters in the thread dock) ·
 `CanvasRoom.tsx` (shared full-screen `<dialog>` shell: grows out of the card
 that opened it via `--room-origin-*`, shrinks back on close) ·
+`AboutRoom.tsx` (`#/about` — the "what is this / who made it" card. An
+address so it can be linked from a listing or a video description, and a
+card so the room stays running underneath: it is the only `CanvasRoom` whose
+shell is transparent and whose backdrop only half-dims, so the claim and the
+live board are in one frame. Mounted beside `<App/>` in `main.tsx`, not
+inside it, so App's route early-returns don't each have to render it;
+`spaceFromHash` maps `about` to `lastSpaceSlug()` (`src/lib/routes.ts`,
+sessionStorage) so opening it from the crew room doesn't move you to the
+build room, and closing restores that hash. The live-totals band is a
+`getLiveTotals` subscription, rendered only when `getDataMode() === "live"`
+because the mock branch has no Convex client in context) ·
 `ReadingRoom.tsx` (the pile's full view — single-link drop bar + a research bar
 [`onSearch` topic / `onCrawl` site], the arrival choreography — `ARRIVAL_STEPS` (the six real
 Firecrawl/room steps) + `arrivalStage` / `arrivalLabel` / `arrivalDetail`

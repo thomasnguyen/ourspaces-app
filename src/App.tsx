@@ -77,7 +77,7 @@ import {
   buildRoomOverviewScale,
   withBuildRoomCover,
 } from "./lib/buildRoomPresentation";
-import { DEFAULT_SPACE_SLUG } from "./lib/routes";
+import { DEFAULT_SPACE_SLUG, lastSpaceSlug, rememberSpaceSlug } from "./lib/routes";
 import { pileInsideFrame } from "./lib/frameMembership";
 import {
   linkReplyCounts,
@@ -260,7 +260,13 @@ function mailLabRequested() {
 function spaceFromHash(): string {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "mail") return "crew";
-  if (hash.startsWith("space/")) return hash.slice("space/".length) || DEFAULT_SPACE_SLUG;
+  // #/about is a card over the canvas, not a canvas of its own — stay put.
+  if (hash === "about") return lastSpaceSlug();
+  if (hash.startsWith("space/")) {
+    const slug = hash.slice("space/".length) || DEFAULT_SPACE_SLUG;
+    rememberSpaceSlug(slug);
+    return slug;
+  }
   if (hash === "join") return "__invalid_invite__";
   if (hash.startsWith("join/")) {
     const slug = hash.slice("join/".length);
@@ -275,7 +281,7 @@ function spaceFromHash(): string {
 
 /**
  * Look prototype — crew + league canvases, widget picker, cursor lab.
- * Hash routes: #/  ·  #/home  ·  #/space/league  ·  #/cursors  ·  #/widgets
+ * Hash routes: #/  ·  #/home  ·  #/about  ·  #/space/league  ·  #/cursors  ·  #/widgets
  */
 export default function App() {
   const [route, setRoute] = useState<Route>(routeFromHash);
