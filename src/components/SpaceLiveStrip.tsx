@@ -45,9 +45,17 @@ function gestureLine(gestures: LiveStripGesture[]) {
 }
 
 /**
- * The canvas's own status line — what is true about this room right now, in
- * words. It belongs to the board, not to the page chrome, so it renders
- * inside <main> next to the canvas rather than in the header or the rail.
+ * The canvas's own pulse line — what just happened on this board, in words.
+ * It belongs to the board, not to the page chrome, so it renders inside
+ * <main> next to the canvas rather than in the header or the rail.
+ *
+ * One fact, one home: the header owns the faces and "N here now", the title
+ * owns the room's name. This line only says what nothing else on screen
+ * says — that the board is live, who has a hand on something, how fresh the
+ * last change is, and (only when it is news) that the board is still empty.
+ * The name rides along hidden and CSS reveals it once the title has scrolled
+ * off (`.is-canvas-away`), so the strip takes over as the wayfinder exactly
+ * when the header stops being one.
  *
  * Every value here is a live Convex subscription handed down from
  * LiveSpace.tsx. A prop that has not arrived yet is left out of the sentence
@@ -55,16 +63,13 @@ function gestureLine(gestures: LiveStripGesture[]) {
  */
 export function SpaceLiveStrip({
   spaceName,
-  hereCount,
   boardCount,
   lastChangeAt,
   gestures = [],
 }: {
-  /** the room this line is about — the canvas pans away from the header */
+  /** the room this line is about — shown only once the title has scrolled away */
   spaceName?: string;
-  /** presence component room occupancy — the same number the rail shows */
-  hereCount?: number;
-  /** widget rows on this space's board */
+  /** widget rows on this space's board — only spoken while it is zero */
   boardCount?: number;
   /** newest real write we know about (widget or message) */
   lastChangeAt?: number;
@@ -82,29 +87,15 @@ export function SpaceLiveStrip({
     return () => window.clearInterval(timer);
   }, [ticking]);
 
-  const here =
-    hereCount == null
-      ? null
-      : hereCount === 0
-        ? "quiet right now"
-        : hereCount === 1
-          ? "1 here now"
-          : `${hereCount} here now`;
-
-  const board =
-    boardCount == null
-      ? null
-      : boardCount === 0
-        ? "nothing on the board yet"
-        : boardCount === 1
-          ? "1 thing on the board"
-          : `${boardCount} things on the board`;
+  /* The count is only news while it is zero — a populated board speaks for
+     itself, and "13 things" next to 13 visible things is a stat, not a pulse. */
+  const board = boardCount === 0 ? "nothing on the board yet" : null;
 
   const busy = gestures.length > 0 ? gestureLine(gestures) : null;
   const changed =
     !busy && lastChangeAt != null ? `last change ${since(lastChangeAt, now)}` : null;
 
-  if (!here && !board && !busy && !changed) return null;
+  if (!spaceName && !board && !busy && !changed) return null;
 
   return (
     <p className="space-live-strip">
@@ -116,20 +107,15 @@ export function SpaceLiveStrip({
         <span className="space-live-strip-dot" aria-hidden="true" />
         <span className="space-live-strip-live">live</span>
         {spaceName && (
-          <>
-            <span className="space-live-strip-dot-sep" aria-hidden="true">
-              ·
+          /* Collapsed at rest; CSS opens it when the title scrolls away. */
+          <span className="space-live-strip-name">
+            <span>
+              <span className="space-live-strip-dot-sep" aria-hidden="true">
+                ·
+              </span>
+              {spaceName}
             </span>
-            {spaceName}
-          </>
-        )}
-        {here && (
-          <>
-            <span className="space-live-strip-dot-sep" aria-hidden="true">
-              ·
-            </span>
-            {here}
-          </>
+          </span>
         )}
         {board && (
           <>

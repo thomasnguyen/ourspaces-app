@@ -49,12 +49,15 @@ links/reading-circle switch, reading circle whose tag
 pills set the same tag filter) · `CrawlStrip.tsx` (live Firecrawl crawl panel —
 usePaginatedQuery over `firecrawl.listCrawlPages`, pages stream in, each keepable
 to the pile) · `ShipRoom.tsx` (a ship post's full view) ·
-`SpaceLiveStrip.tsx` (the canvas's own status line — "live · N here now · N
-things on the board · sam is moving the friday poll · last change 8s ago".
-Every value is a live subscription and an absent one is left out of the
-sentence rather than filled in. Renders as a direct child of `<main>`, not in
-the header or the rail: it is board content, and it is also the only place
-that content survives a text extractor) · `UpdateNudge.tsx` +
+`SpaceLiveStrip.tsx` (the canvas's own pulse line — "live · sam is moving the
+friday poll" / "live · last change 8s ago" / "live · nothing on the board
+yet". One fact, one home: it never repeats the header's faces + "N here now"
+or the title; the room name rides along collapsed and CSS opens it on
+`.is-canvas-away` once the title has scrolled off. Sits on the action dock's
+midline so the bottom gutter reads as one row. Every value is a live
+subscription and an absent one is left out of the sentence rather than
+filled in. Renders as a direct child of `<main>`, not in the header or the
+rail: it is board content) · `UpdateNudge.tsx` +
 `update-nudge.css` (subscribes to `staticHosting.getCurrentDeployment`; a
 publish patches that row, the subscription invalidates, and every open tab is
 offered a refresh before its `React.lazy` chunks 404)

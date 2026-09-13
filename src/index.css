@@ -1523,15 +1523,20 @@
 }
 
 /* ── SPACE LIVE STRIP ─────────────────────────────────────────────────────
-   The board's own status line, sitting in the canvas's bottom gutter — left
+   The board's own pulse line, sitting in the canvas's bottom gutter — left
    of the action dock, clear of the rail, under everything that opens over
    the board. One quiet sticker pill: white for the word that matters, muted
-   for the rest, lime only on the pulse. */
+   for the rest, lime only on the pulse. It sits on the action dock's
+   midline (dock bottom 18px + half its 54px height) so the gutter reads as
+   one row, not two things hanging out separately. */
 .space-live-strip {
   position: absolute;
   z-index: 41;
-  bottom: 22px;
+  bottom: 18px;
   left: 118px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 54px;
   /* Stops short of the action dock, which is centred on 50% + 48px and about
      282px wide — so its left edge sits at 50% − 93px. */
   max-width: min(620px, calc(50% - 227px));
@@ -1540,15 +1545,62 @@
   background: var(--color-sticker);
   box-shadow: 0 5px 0 rgba(17, 17, 20, 0.22);
   color: rgba(255, 255, 255, 0.62);
-  padding: 8px 16px 9px;
+  padding: 0 16px;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -0.005em;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   animation: space-live-strip-in var(--dur-arrive) var(--ease-pop) 320ms backwards;
+}
+
+/* The pill has to look like a pill, not a 54px slab: the sticker is drawn
+   on a pseudo so the box can be dock-tall while the visible pill stays
+   text-tall. */
+.space-live-strip {
+  background: transparent;
+  box-shadow: none;
+}
+
+.space-live-strip::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 11px 0;
+  border-radius: inherit;
+  background: var(--color-sticker);
+  box-shadow: 0 5px 0 rgba(17, 17, 20, 0.22);
+}
+
+/* The room's name is collapsed at rest — the title up top already says it.
+   Once the canvas scrolls far enough that the title has sunk away
+   (.is-canvas-away), the strip opens the name up and becomes the wayfinder.
+   Width is animated the sanctioned way: a 0fr → 1fr grid track, never
+   width itself. */
+.space-live-strip-name {
+  display: inline-grid;
+  grid-template-columns: 0fr;
+  vertical-align: baseline;
+  opacity: 0;
+  transition:
+    grid-template-columns var(--dur-base) var(--ease-glide),
+    opacity var(--dur-quick) linear;
+}
+
+.space-live-strip-name > span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: white;
+  font-weight: 700;
+}
+
+.is-canvas-away .space-live-strip-name {
+  grid-template-columns: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-columns var(--dur-base) var(--ease-glide),
+    opacity var(--dur-quick) linear 60ms;
 }
 
 .space-live-strip-dot {
@@ -1617,6 +1669,10 @@
   .space-live-strip,
   .space-live-strip-busy {
     animation: none;
+  }
+
+  .space-live-strip-name {
+    transition: none;
   }
 
   .space-live-strip-dot {
@@ -22344,7 +22400,9 @@
   .paper-bg[data-space-id="buildroom"] .invite-button { min-height: 34px; padding: 6px 14px; font-size: 12px; }
   .paper-bg[data-space-id="buildroom"] .action-dock { bottom: 18px; padding: 4px; }
   .paper-bg[data-space-id="buildroom"] .action-dock > button { min-height: 36px; padding: 7px 12px; font-size: 11px; }
-  .paper-bg[data-space-id="buildroom"] .space-live-strip { left: 128px; bottom: 27px; padding: 0; background: transparent; box-shadow: none; color: var(--space-heading-color, var(--color-ink)); font-size: 10px; font-weight: 500; }
+  .paper-bg[data-space-id="buildroom"] .space-live-strip { left: 128px; bottom: 18px; min-height: 44px; padding: 0; color: var(--space-heading-color, var(--color-ink)); font-size: 10px; font-weight: 500; }
+  .paper-bg[data-space-id="buildroom"] .space-live-strip::before { content: none; }
+  .paper-bg[data-space-id="buildroom"] .space-live-strip-name > span { color: var(--space-heading-color, var(--color-ink)); }
   .paper-bg[data-space-id="buildroom"] .space-live-strip-live { color: var(--space-heading-color, var(--color-ink)); }
   .paper-bg[data-space-id="buildroom"] .space-live-strip-dot-sep { color: var(--space-heading-color, var(--color-ink)); opacity: .4; padding: 0 5px; }
 }
