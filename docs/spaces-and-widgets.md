@@ -111,9 +111,13 @@ replies, `pin to hot`, `keep takeaway`. Rows carry a kind dot (article / video
 / repo / docs / tool / discussion) and a 🔥 on the hot-ranked five. The tag is
 the *outer* cut: it narrows the pile first, so the new/hot/kept counts describe
 the tagged set, and the reading circle's own tag pills are buttons that set it
-(a rare tag picked there is carried into the row so it can be undone). Mock mode
-fakes the drop→enrich beat locally (`mockDropped` in `App.tsx`); live mode
-runs Firecrawl. On phones, `all links` / `reading circle` switch between
+(a rare tag picked there is carried into the row so it can be undone). A pending row
+narrates its arrival in the title's slot (`fetching host` → `reading the
+page` → `pulling out the title`, step ticks under the domain, a scan line on
+the tile) and prints its fields in one at a time on resolve — the clock is
+`droppedAt`, so the beat is identical in both modes. Mock mode
+fakes the drop→enrich beat locally (`mockDropped` in `App.tsx`, per-link
+clocks + a host-guessed kind); live mode runs Firecrawl. On phones, `all links` / `reading circle` switch between
 full-width panes; choosing a link opens the circle, and opening a hot link
 starts there directly. Ship rooms stack their image above the text on phones.
 List descriptions sit below the title at 16px / 1.5 and wrap

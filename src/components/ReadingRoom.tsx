@@ -32,6 +32,39 @@ const FIRST_PAGE = 15;
 /* Two drops by the same person within this window read as one run. */
 const RUN_GAP_MS = 30 * 60_000;
 const LINK_CARD_FALLBACK = "/assets/link-card-fallback.jpg";
+/* How long a freshly resolved row keeps its "printing" choreography. */
+const LANDING_MS = 1800;
+
+/* ── arrival stages ──────────────────────────────────────────────────────
+ * A pending row narrates what the room is doing with it, in the slot the
+ * title will fill — so the resolve is a swap, not a reflow. The clock is the
+ * row's own `droppedAt`, which makes the beat identical in mock and live
+ * mode: live just holds on the last stage until Firecrawl comes back.
+ */
+export type ArrivalStage = 0 | 1 | 2 | 3;
+
+const STAGE_AT_MS = [0, 700, 1500, 7000];
+
+export function arrivalStage(link: BuildRoomLink, now: number): ArrivalStage {
+  const age = now - link.droppedAt;
+  if (age >= STAGE_AT_MS[3]) return 3;
+  if (age >= STAGE_AT_MS[2]) return 2;
+  if (age >= STAGE_AT_MS[1]) return 1;
+  return 0;
+}
+
+export function arrivalLabel(link: BuildRoomLink, stage: ArrivalStage) {
+  switch (stage) {
+    case 0:
+      return `fetching ${link.domain}`;
+    case 1:
+      return "reading the page";
+    case 2:
+      return "pulling out the title";
+    default:
+      return "slow page — still reading";
+  }
+}
 
 function relDrop(at: number) {
   const minutes = Math.max(1, Math.round((Date.now() - at) / 60_000));
@@ -109,6 +142,44 @@ export function ReadingRoom({
   const [research, setResearch] = useState("");
   const closeRoomRef = useRef<(() => void) | null>(null);
 
+  /* The arrival clock only ticks while a row is mid-story. */
+  const enriching = links.filter((link) => link.status === "pending").length;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (enriching === 0) return;
+    setNow(Date.now());
+    const id = window.setInterval(() => setNow(Date.now()), 120);
+    return () => window.clearInterval(id);
+  }, [enriching]);
+
+  /* pending → ready flips get a landing window: the fields print in one at a
+     time instead of all popping on the same frame. Works on both paths —
+     mock resolves on a timer, live resolves when the Firecrawl patch lands. */
+  const statusRef = useRef<Map<string, BuildRoomLink["status"]>>(new Map());
+  const [landing, setLanding] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    const seen = statusRef.current;
+    const landed: string[] = [];
+    for (const link of links) {
+      const before = seen.get(link.id);
+      if (before === "pending" && link.status === "ready") landed.push(link.id);
+      seen.set(link.id, link.status);
+    }
+    if (landed.length === 0) return;
+    setLanding((current) => new Set([...current, ...landed]));
+    playSound("place");
+    const id = window.setTimeout(
+      () =>
+        setLanding((current) => {
+          const next = new Set(current);
+          for (const linkId of landed) next.delete(linkId);
+          return next;
+        }),
+      LANDING_MS,
+    );
+    return () => window.clearTimeout(id);
+  }, [links]);
+
   const matches = (link: BuildRoomLink, cut: Filter) => {
     switch (cut) {
       case "new":
@@ -152,8 +223,6 @@ export function ReadingRoom({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [hotIds, replyCounts, tagged],
   );
-  const enriching = links.filter((link) => link.status === "pending").length;
-
   const visible = useMemo(
     () => tagged.filter((link) => matches(link, filter)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -355,8 +424,8 @@ export function ReadingRoom({
               )}
               {enriching > 0 && (
                 <span className="rr-enriching">
-                  <i aria-hidden="true">✦</i> {enriching} link
-                  {enriching === 1 ? "" : "s"} enriching…
+                  <i aria-hidden="true">✦</i> reading {enriching} page
+                  {enriching === 1 ? "" : "s"}…
                 </span>
               )}
             </div>
@@ -430,12 +499,18 @@ export function ReadingRoom({
                 </header>
 
                 <ul className="rr-rows">
-                  {run.map((link, index) => (
+                  {run.map((link, index) => {
+                    const pending = link.status === "pending";
+                    const stage = pending ? arrivalStage(link, now) : null;
+                    return (
                     <li
                       key={link.id}
                       className={`rr-row${link.id === selectedId ? " is-selected" : ""}${
-                        link.status === "pending" ? " is-pending" : ""
-                      }${link.status === "failed" ? " is-failed" : ""}`}
+                        pending ? " is-pending" : ""
+                      }${link.status === "failed" ? " is-failed" : ""}${
+                        landing.has(link.id) ? " is-landing" : ""
+                      }`}
+                      data-stage={stage ?? undefined}
                       style={{ "--i": runOffsets[runIndex] + index } as CSSProperties}
                     >
                       <button
@@ -457,9 +532,17 @@ export function ReadingRoom({
                           ) : (
                             <i>{linkMonogram(link)}</i>
                           )}
+                          {pending && <b className="rr-row-scan" />}
                         </span>
                         <span className="rr-row-title">
-                          <strong>{link.title || link.domain}</strong>
+                          {stage !== null ? (
+                            <strong className="rr-row-stage" key={stage}>
+                              {arrivalLabel(link, stage)}
+                              <i className="rr-row-caret" />
+                            </strong>
+                          ) : (
+                            <strong>{link.title || link.domain}</strong>
+                          )}
                           <em>
                             {link.domain}
                             {link.status === "ready" && (
@@ -470,13 +553,24 @@ export function ReadingRoom({
                                 {link.kind}
                               </b>
                             )}
+                            {stage !== null && (
+                              <b className="rr-row-steps" aria-hidden="true">
+                                <i /><i /><i />
+                              </b>
+                            )}
                           </em>
                         </span>
                         <span className="rr-row-desc">
-                          {link.status === "pending"
-                            ? "reading the page…"
+                          {pending
+                            ? stage === 0
+                              ? "asking the site for the page"
+                              : stage === 1
+                                ? "turning it into text the room can use"
+                                : stage === 2
+                                  ? "title, a one-line summary, what kind of thing it is"
+                                  : "hanging on — the page is taking its time"
                             : link.status === "failed"
-                              ? "couldn't read that page"
+                              ? "couldn't read that page — kept the link"
                               : link.description}
                         </span>
                       </button>
@@ -519,7 +613,8 @@ export function ReadingRoom({
                         </span>
                       )}
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </article>
             ))}

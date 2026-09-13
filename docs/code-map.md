@@ -49,7 +49,10 @@ briefing, ↻ refresh, follow-up composer) ·
 `CanvasRoom.tsx` (shared full-screen `<dialog>` shell: grows out of the card
 that opened it via `--room-origin-*`, shrinks back on close) ·
 `ReadingRoom.tsx` (the pile's full view — single-link drop bar + a research bar
-[`onSearch` topic / `onCrawl` site], a tag row over the `all / new / hot /
+[`onSearch` topic / `onCrawl` site], the arrival choreography — `arrivalStage`
+/ `arrivalLabel` key a pending row's narration off its `droppedAt`, and a
+pending→ready flip gets an `is-landing` window so the fields print in
+staggered — a tag row over the `all / new / hot /
 discussed / kept` filters, per-person runs, wrapping link descriptions, mobile
 links/reading-circle switch, reading circle whose tag
 pills set the same tag filter) · `CrawlStrip.tsx` (live Firecrawl crawl panel —
@@ -296,9 +299,11 @@ block ~10718, zoom ~10977, cursors ~11005 → append-only "pass" sections
 `.sr-*`), the quote pushpin (~17882), the scroll-linked header fade (~17905),
 the letter envelope + mail chip, "BUILD ROOM — COMPACT OVERVIEW" (~20762),
 app-wide reading typography (~21680: prose, inputs, paper sizing and
-mobile reading/ship rooms), and "BUILD ROOM — COLOR PASS" (end of file: tonal
+mobile reading/ship rooms), "BUILD ROOM — COLOR PASS" (tonal
 panels, wall-shade shadows; the pegboard grid sits in the torch theme block
-near line 171). New CSS goes in a new banner section at the end.
+near line 171), and "BUILD ROOM — ARRIVAL CHOREOGRAPHY" (end of file: the
+pending row's stage text, caret, step ticks, tile scan line, and the
+`is-landing` print-in sequence). New CSS goes in a new banner section at the end.
 
 ## scripts/
 
