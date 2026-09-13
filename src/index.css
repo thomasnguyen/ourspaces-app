@@ -23542,69 +23542,90 @@
   filter: saturate(0.2) brightness(0.7);
 }
 
+.rr-reading h4 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.rr-reading h4 span {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* the ledger: numeral · step · elapsed, and the live step carries its
+   detail on a cream slip — the house's "reason" material */
 .rr-steps {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .rr-steps li {
   display: grid;
-  grid-template-columns: 14px 1fr;
+  grid-template-columns: 30px 1fr auto;
   column-gap: 12px;
   align-items: baseline;
-  opacity: 0.32;
+  padding: 4px 0;
+  opacity: 0.28;
   transition:
-    opacity calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide),
-    translate calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide);
+    opacity calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-glide),
+    translate calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-glide);
   animation: rr-fade-up var(--dur-base) var(--ease-glide) calc(120ms + var(--i, 0) * 45ms) backwards;
 }
 
 .rr-steps li.is-done {
-  opacity: 0.72;
+  opacity: 0.62;
 }
 
 .rr-steps li.is-live {
   opacity: 1;
+  translate: 10px 0;
 }
 
 .rr-steps li i {
-  align-self: center;
-  width: 10px;
-  height: 10px;
-  border-radius: var(--radius-pill);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.7);
-  transition: background calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide);
-}
-
-.rr-steps li.is-done i {
-  background: #fff;
-  box-shadow: none;
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.55);
+  transition: color calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide);
 }
 
 .rr-steps li.is-live i {
-  background: var(--color-lime);
-  box-shadow: none;
-  animation: rr-land-tile calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-pop) both;
+  color: var(--color-lime);
 }
 
 .rr-steps li strong {
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.12rem;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   color: #fff;
 }
 
+.rr-steps li em {
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.45);
+  min-width: 3.2ch;
+  text-align: right;
+}
+
+.rr-steps li.is-live em {
+  color: var(--color-lime);
+}
+
 .rr-steps li span {
-  grid-column: 2;
-  font-size: 0.86rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.7);
-  /* the detail line only opens on the live step */
+  grid-column: 2 / -1;
+  /* the detail slip only opens on the live step */
   display: grid;
   grid-template-rows: 0fr;
   overflow: hidden;
@@ -23615,9 +23636,34 @@
   grid-template-rows: 1fr;
 }
 
-.rr-steps li span em {
+.rr-steps li span b {
   min-height: 0;
-  font-style: normal;
+  justify-self: start;
+  margin-top: 7px;
+  padding: 6px 11px;
+  border-radius: 2px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.35;
+  rotate: -0.8deg;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  translate: -6px 0;
+  transition:
+    opacity calc(var(--dur-base) * var(--arrival-slow)) var(--ease-glide) calc(80ms * var(--arrival-slow)),
+    translate calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-glide) calc(80ms * var(--arrival-slow));
+}
+
+.rr-steps li.is-live span b {
+  opacity: 1;
+  translate: 0 0;
+}
+
+/* the cover arrives last — it's not there until the page came back */
+.rr-circle.is-pending .rr-hero-snap {
+  opacity: 0;
 }
 
 /* the landing on the circle: the card prints in over the ledger */
@@ -23627,22 +23673,23 @@
 }
 
 .rr-circle.is-landing .rr-hero-snap {
-  animation: rr-land-tile calc(420ms * var(--arrival-slow)) var(--ease-glide) both;
+  animation: rr-snap-in calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-pop)
+    calc(900ms * var(--arrival-slow)) both;
 }
 
 .rr-circle.is-landing .rr-why p {
-  animation: rr-print calc(600ms * var(--arrival-slow)) var(--ease-glide)
-    calc(240ms * var(--arrival-slow)) both;
+  animation: rr-print calc(700ms * var(--arrival-slow)) var(--ease-glide)
+    calc(300ms * var(--arrival-slow)) both;
 }
 
 .rr-circle.is-landing .rr-tags li {
   animation: rr-land-kind calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-pop)
-    calc((560ms + var(--i, 0) * 70ms) * var(--arrival-slow)) both;
+    calc((720ms + var(--i, 0) * 80ms) * var(--arrival-slow)) both;
 }
 
 .rr-circle.is-landing .rr-questions li {
   animation: rr-fade-up calc(var(--dur-arrive) * var(--arrival-slow)) var(--ease-glide)
-    calc((780ms + var(--i, 0) * 120ms) * var(--arrival-slow)) both;
+    calc((1000ms + var(--i, 0) * 140ms) * var(--arrival-slow)) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

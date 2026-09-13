@@ -54,8 +54,8 @@ export const ARRIVAL_STEPS: { label: (link: BuildRoomLink) => string; detail: st
   { label: () => "deciding what it is", detail: "article, repo, video, docs, tool or discussion" },
 ];
 
-const STEP_AT_MS = [0, 450, 950, 1450, 2000, 2600];
-const SLOW_AFTER_MS = 8000;
+export const STEP_AT_MS = [0, 800, 1700, 2700, 3800, 5000];
+const SLOW_AFTER_MS = 11000;
 
 export function arrivalStage(link: BuildRoomLink, now: number, scale = 1): number {
   const age = (now - link.droppedAt) / scale;
@@ -741,35 +741,44 @@ export function ReadingRoom({
 
               {selectedStage !== null ? (
                 <section className="rr-why rr-reading" key="why-reading">
-                  <h4>what the room is doing</h4>
+                  <h4>
+                    what the room is doing
+                    <span>
+                      {selectedStage + 1} / {ARRIVAL_STEPS.length}
+                    </span>
+                  </h4>
                   <ol className="rr-steps">
-                    {ARRIVAL_STEPS.map((step, index) => (
-                      <li
-                        key={index}
-                        className={
-                          index < selectedStage
-                            ? "is-done"
-                            : index === selectedStage
-                              ? "is-live"
-                              : ""
-                        }
-                        style={{ "--i": index } as CSSProperties}
-                      >
-                        <i aria-hidden="true" />
-                        <strong>
-                          {index === selectedStage
-                            ? arrivalLabel(selected, index, selectedSlow)
-                            : step.label(selected)}
-                        </strong>
-                        <span>
-                          <em>
-                            {index === selectedStage
-                              ? arrivalDetail(index, selectedSlow)
-                              : step.detail}
-                          </em>
-                        </span>
-                      </li>
-                    ))}
+                    {ARRIVAL_STEPS.map((step, index) => {
+                      const done = index < selectedStage;
+                      const live = index === selectedStage;
+                      /* The time column is the row's own clock: done steps
+                         show what they took, the live one ticks. */
+                      const seconds = done
+                        ? (STEP_AT_MS[index + 1] - STEP_AT_MS[index]) / 1000
+                        : live
+                          ? Math.max(
+                              0,
+                              (now - selected.droppedAt) / clockScale / 1000 -
+                                STEP_AT_MS[index] / 1000,
+                            )
+                          : null;
+                      return (
+                        <li
+                          key={index}
+                          className={done ? "is-done" : live ? "is-live" : ""}
+                          style={{ "--i": index } as CSSProperties}
+                        >
+                          <i aria-hidden="true">{String(index + 1).padStart(2, "0")}</i>
+                          <strong>
+                            {live ? arrivalLabel(selected, index, selectedSlow) : step.label(selected)}
+                          </strong>
+                          <em>{seconds !== null ? `${seconds.toFixed(1)}s` : ""}</em>
+                          <span>
+                            <b>{live ? arrivalDetail(index, selectedSlow) : step.detail}</b>
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ol>
                 </section>
               ) : (
