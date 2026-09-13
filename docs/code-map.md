@@ -80,10 +80,12 @@ with a black lab pill: drop one, one fails, replay, ¼ speed, clear; no
 Firecrawl, same fake resolve as mock mode) · `WidgetWall.tsx` (`#/wall` — the
 demo insert for "there's like thirty of these": 32 real `WidgetCard`s pulled
 from the seeded spaces [`PICKS`], each with a black sticker name tag, dealt
-greedy-shortest to three masonry columns drifting on a flat plane sized with
-`zoom` to fit the viewport (flat on purpose: a CSS `perspective` makes Chrome
-resample the drifting layers and text goes soft; `tilt` opts into the 3D
-plane); a roll call lifts the card
+greedy-shortest to three masonry columns sized with `zoom` to fit the
+viewport and drifting on a wall that is tilted in JavaScript — each frame
+every tile's centre is projected through a virtual camera into a 2D translate
++ scale, because a CSS `perspective` makes Chrome resample the drifting layers
+and text goes soft (`tilt` in the pill toggles the flat wall); a roll call
+lifts the card
 nearest the middle of a column every 1.6s; hover lifts and holds the column;
 click FLIPs the widget (WAAPI) into a centered, usable spotlight with name +
 blurb [`BLURBS`; poll vote, claim, spin wired to local state] and Esc/click

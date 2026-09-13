@@ -705,26 +705,14 @@
   cursor: none;
 }
 
-/* Flat by default: a `perspective` here makes Chrome resample every drifting
-   layer and the cards go soft. `is-tilted` opts into the 3D plane. */
+/* No `perspective` here, ever: it makes Chrome resample every drifting layer
+   and the cards go soft. Tilt mode projects each tile in JavaScript. */
 .ww-stage {
   position: absolute;
   inset: 0;
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
   mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
   transition: opacity var(--dur-stage) var(--ease-glide);
-}
-
-.ww-stage.is-tilted {
-  perspective: 2200px;
-  perspective-origin: 50% 50%;
-}
-
-.ww-stage.is-tilted .ww-plane,
-.ww-stage.is-tilted .ww-col,
-.ww-stage.is-tilted .ww-track,
-.ww-stage.is-tilted .ww-tile {
-  transform-style: preserve-3d;
 }
 
 /* Behind the spotlight the wall steps back and quiets down. */
@@ -744,9 +732,8 @@
   transition: scale var(--dur-stage) var(--ease-glide);
 }
 
-/* Flat, the wall steps back a touch behind the spotlight instead of
-   receding in Z. */
-.widget-wall.has-spotlight .ww-stage:not(.is-tilted) .ww-plane {
+/* Behind the spotlight the wall steps back a touch. */
+.widget-wall.has-spotlight .ww-plane {
   scale: 0.965;
 }
 
@@ -763,13 +750,13 @@
    entrance runs where a recording can see it: middle column first, outward. */
 .ww-plane.is-in .ww-col {
   opacity: 1;
-  animation: ww-col-in var(--dur-hero) var(--ease-pop) calc(var(--i, 0) * 70ms) both;
+  animation: ww-col-in var(--dur-hero) var(--ease-pop) calc(var(--i, 0) * 70ms) backwards;
 }
 
 @keyframes ww-col-in {
   from {
     opacity: 0;
-    transform: translate3d(0, 120px, -160px);
+    transform: translateY(120px) scale(0.94);
   }
 }
 
@@ -798,7 +785,7 @@
 
 /* A lit card comes forward to the hand. Resting cards carry no transform,
    opacity or will-change of their own: each of those makes Chrome composite
-   the card as its own layer and rasterize it soft under the 3D plane. */
+   the card as its own layer and resample it. */
 .ww-tile-inner {
   position: relative;
   width: 100%;
@@ -814,18 +801,13 @@
 
 .ww-tile.is-lit .ww-tile-inner {
   opacity: 1;
-  transform: translateZ(var(--ww-lift));
+  transform: translateY(-10px) scale(1.04);
   filter: drop-shadow(0 28px 22px rgba(0, 0, 0, 0.55));
   z-index: 1;
   transition:
     transform var(--dur-arrive) var(--ease-pop),
     opacity var(--dur-quick) var(--ease-glide),
     filter var(--dur-arrive) var(--ease-glide);
-}
-
-/* Flat, "forward" is up and a little bigger. */
-.ww-stage:not(.is-tilted) .ww-tile.is-lit .ww-tile-inner {
-  transform: translateY(-10px) scale(1.04);
 }
 
 /* While its widget is in the spotlight, the slot stays, the card is gone. */
@@ -882,7 +864,7 @@
   letter-spacing: 0.01em;
   white-space: nowrap;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-  transform: translateZ(10px) rotate(-3deg);
+  transform: rotate(-3deg);
   transform-origin: 15% 85%;
   transition:
     transform var(--dur-arrive) var(--ease-glide),
@@ -898,7 +880,7 @@
 
 .ww-tile.is-lit .ww-tag {
   color: var(--color-lime);
-  transform: translateZ(calc(var(--ww-lift) + 30px)) translate(-3px, 6px) rotate(-4deg) scale(1.3);
+  transform: translate(-3px, 6px) rotate(-4deg) scale(1.3);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.5);
   transition:
     transform var(--dur-arrive) var(--ease-pop),
@@ -909,7 +891,7 @@
 
 .ww-stage.no-labels .ww-tile:not(.is-lit) .ww-tag {
   opacity: 0;
-  transform: translateZ(10px) rotate(-3deg) scale(0.7);
+  transform: rotate(-3deg) scale(0.7);
 }
 
 /* The spotlight: the widget, big, in the middle, usable; name + blurb under

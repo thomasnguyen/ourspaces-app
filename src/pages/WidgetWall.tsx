@@ -30,11 +30,15 @@ import { createDemoWidget } from "../lib/widgetDefaults";
  * centered spotlight you can use (vote, spin, claim); click anywhere or Esc
  * and it flies back. The lab pill (bottom-left) and the cursor hide after 2s
  * idle, so a recording is clean. `replay` re-runs the entrance; `size` steps
- * the cards S / M / L; `tilt` puts the wall on a 3D plane.
+ * the cards S / M / L; `tilt` (on by default) puts the wall on a 3D plane.
  *
- * The wall is flat (2D) by default on purpose: under a CSS `perspective`
- * Chrome resamples every drifting layer and small text goes soft, at any
- * angle. Flat, the tracks are pixel-snapped and the cards render crisp.
+ * There is no CSS `perspective` anywhere: under one, Chrome resamples every
+ * drifting layer and small text goes soft, at any angle. Tilt instead does
+ * the 3D in JavaScript — every card stays a flat rectangle Chrome paints
+ * crisp, and each frame its centre is projected through a virtual camera
+ * (rotateY, rotateX, depth, perspective) into a plain 2D translate + scale.
+ * The whole wall repaints every frame (~8ms in headless software raster);
+ * fine for a recording.
  */
 
 const COLS = 3;
@@ -45,7 +49,6 @@ const SIZES = [
   { name: "M", zoom: 0.68 },
   { name: "L", zoom: 0.82 },
 ];
-const LIFT = 56;
 const BASE_SPEED = 34;
 const VARIANCE = 0.45;
 const PARALLAX_DEG = 4;
@@ -57,9 +60,11 @@ const PLANE_W = COLS * COL_W + (COLS - 1) * GAP;
 const POP = "cubic-bezier(0.2, 0.9, 0.3, 1.18)";
 const GLIDE = "cubic-bezier(0.16, 1, 0.3, 1)";
 
-/* Tilt mode: a long perspective and a shallow pitch, enough to read as a
-   wall without magnifying the near edge. Costs sharpness (see above). */
-const TILTED = { tilt: 11, turn: -9, depth: 80 };
+/* Tilt mode's camera: pitch and yaw in degrees, how far back the wall sits,
+   and the perspective distance. Long + shallow reads as a wall without
+   turning the near edge into a magnifier. */
+const TILTED = { tilt: 16, turn: -13, depth: 80, perspective: 2000 };
+const DEG = Math.PI / 180;
 /* Mirrors WidgetCard's widgetGrows: these render at content height. */
 const GROWS = new Set<WidgetType>(["dailyQ", "availability", "linkShelf", "playlist"]);
 
@@ -272,7 +277,7 @@ export function WidgetWall() {
   const [lit, setLit] = useState<Picked | null>(null);
   const [selected, setSelected] = useState<Picked | null>(null);
   const [runKey, setRunKey] = useState(0);
-  const [tilted, setTilted] = useState(false);
+  const [tilted, setTilted] = useState(true);
   const [paused, setPaused] = useState(false);
   const [rollCall, setRollCall] = useState(true);
   const [labels, setLabels] = useState(true);
@@ -392,12 +397,25 @@ export function WidgetWall() {
      (degrees of tilt in tilt mode, a few px flat); it eases back when a
      widget is in the spotlight. A hovered or spotlit column holds; the
      others slow to half behind the spotlight. Track offsets are snapped to
-     device pixels so the composited layers never resample. */
+     device pixels so nothing resamples. In tilt mode every tile also gets
+     its projected translate + scale (see the header comment). */
   useEffect(() => {
     let raf = 0;
     let last: number | null = null;
     let t0: number | null = null;
     const dpr = window.devicePixelRatio || 1;
+    const tilesByCol = trackRefs.current.map((track) =>
+      track ? Array.from(track.querySelectorAll<HTMLElement>(":scope > .ww-copy > .ww-tile")) : [],
+    );
+    /* Each tile's centre within one copy, in plane px. */
+    const centres = columns.map((col) => {
+      let top = 0;
+      return col.map((tile) => {
+        const centre = top + tile.h / 2;
+        top += tile.h + GAP;
+        return centre;
+      });
+    });
 
     const tick = (ts: number) => {
       if (last === null) {
@@ -427,13 +445,20 @@ export function WidgetWall() {
       const plane = planeRef.current;
       if (plane) {
         plane.style.transform = tilted
-          ? `translate(-50%, -50%) ` +
-            `rotateX(${(TILTED.tilt + damped.current.y).toFixed(3)}deg) ` +
-            `rotateY(${(TILTED.turn + damped.current.x).toFixed(3)}deg) ` +
-            `translateZ(${(-TILTED.depth - damped.current.depth).toFixed(1)}px)`
+          ? "translate(-50%, -50%)"
           : `translate(calc(-50% + ${Math.round(damped.current.x * 3)}px), ` +
             `calc(-50% + ${Math.round(-damped.current.y * 3)}px))`;
       }
+
+      /* The camera, for this frame. */
+      const pitch = (TILTED.tilt + damped.current.y) * DEG;
+      const yaw = (TILTED.turn + damped.current.x) * DEG;
+      const cosP = Math.cos(pitch);
+      const sinP = Math.sin(pitch);
+      const cosY = Math.cos(yaw);
+      const sinY = Math.sin(yaw);
+      const depth = TILTED.depth + damped.current.depth;
+      const P = TILTED.perspective;
 
       for (let c = 0; c < periods.length; c++) {
         const period = periods[c];
@@ -447,15 +472,45 @@ export function WidgetWall() {
         let next = (offsets.current[c] ?? 0) + velocities.current[c] * dt;
         next = ((next % period) + period) % period;
         offsets.current[c] = next;
-        const y = Math.round((period / 2 - next) * dpr) / dpr;
+        const shift = period / 2 - next;
+        const y = Math.round(shift * dpr) / dpr;
         track.style.transform = `translate3d(0, ${y}px, 0)`;
+
+        if (!tilted) continue;
+        /* Project every tile in this column: plane px → screen px around
+           the stage centre → rotateY, rotateX, push back, perspective →
+           the 2D delta from where the flat layout put it, in the tile's
+           own (zoomed) px. */
+        const col = columns[c];
+        const total = copies[c] * period - GAP;
+        const X = planeZoom * (-PLANE_W / 2 + c * (COL_W + GAP) + COL_W / 2);
+        const x1 = X * cosY;
+        const z1 = -X * sinY;
+        const tiles = tilesByCol[c];
+        for (let j = 0; j < tiles.length; j++) {
+          const i = Math.floor(j / col.length);
+          const k = j % col.length;
+          const tile = col[k];
+          const Y = planeZoom * (-total / 2 + shift + i * period + centres[c][k]);
+          const y2 = Y * cosP - z1 * sinP;
+          const z2 = Y * sinP + z1 * cosP - depth;
+          const scale = P / (P - z2);
+          const local = planeZoom * tile.zoom;
+          const dx = (x1 * scale - X) / local;
+          const dy = (y2 * scale - Y) / local;
+          tiles[j].style.transform =
+            `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${scale.toFixed(4)})`;
+        }
       }
       raf = requestAnimationFrame(tick);
     };
 
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [tilted, reduced, periods, baseVelocities, runKey]);
+    return () => {
+      cancelAnimationFrame(raf);
+      for (const tiles of tilesByCol) for (const el of tiles) el.style.transform = "";
+    };
+  }, [tilted, reduced, periods, baseVelocities, runKey, columns, copies, planeZoom]);
 
   /* Roll call: one card at a time, the one nearest the middle of its
      column. Sits out while the pointer or the spotlight owns attention. */
@@ -659,7 +714,6 @@ export function WidgetWall() {
   const stageVars = {
     "--ww-col": `${COL_W}px`,
     "--ww-gap": `${GAP}px`,
-    "--ww-lift": `${LIFT}px`,
   } as CSSProperties;
 
   return (
