@@ -169,6 +169,9 @@ export function WidgetLab() {
           <a href="#/cursors" className="widget-lab-back">
             cursor lab →
           </a>
+          <a href="#/wall" className="widget-lab-back">
+            widget wall →
+          </a>
         </div>
         <div>
           <p className="widget-lab-kicker">prototype</p>

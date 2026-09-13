@@ -5,6 +5,36 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Widget wall, the "thirty of these" insert (2026-09-12):** `#/wall`
+  (`pages/WidgetWall.tsx`, CSS at the end of `pages/labs.css`) puts every
+  widget on one drifting wall for the 0:12 line. Real `WidgetCard`s from the
+  seeded rooms — the crew's cake poll, the couple's letter and postcard, the
+  build room's pile and hot-now, both stickers — 32 of them, dealt to five
+  columns on a tilted 3D plane (rotateX 16° / rotateY −14°) that sways on
+  its own and follows the pointer. Columns drift up/down alternately at
+  golden-ratio-spread speeds (36px/s base), loop seamlessly (3 copies per
+  column, offset modulo the column's period), and enter middle-first with a
+  70ms stagger on `--ease-pop`. Every 1.5s the roll call lifts the card
+  nearest the middle of the next column (translateZ + drop-shadow, the card
+  straightens like the canvas's pick-up), eases that column to ¼ speed, and
+  pops a black sticker pill with the catalog emoji + name (`⏳ countdown`,
+  `🗣 roundtable`). Hover does the same and holds the column. Lab pill,
+  bottom-left, same black sticker as the arrival lab: replay (re-runs the
+  entrance without remounting), pause, roll call on/off, flat (straight-on
+  masonry, scaled to fit the viewport), ½× / 1× / 2×; the pill and the
+  cursor hide after 2.2s of stillness so a recording is clean, any move
+  brings them back. Reduced motion → static wall. Gotchas learned: tiles
+  use CSS `zoom` (layout-affecting, fonts included) so the cards keep their
+  own layout; growing widgets (availability, link shelf, daily q, radio)
+  render past their seeded `h` and used to overlap the next card — a
+  `useLayoutEffect` reads `.widget-group-body.scrollHeight` once (natural px
+  under zoom in Chromium) and repacks; and the entrance had to wait two
+  rAFs past first paint, or the 96-card layout ate it before the first
+  visible frame. Verified in mock mode with frames + a 12s recording
+  scrubbed at 6fps (`.context/shot-wall.mjs`, `.context/video-wall.mjs`,
+  Homebrew ffmpeg for the contact sheets — Playwright's bundled build has no
+  `fps` filter). Not linked from the canvas; the widget lab header has a
+  "widget wall →" link.
 - **Link arrival narrates itself (2026-09-12):** a dropped link no longer
   sits as a bare url under a global "enriching…" pill. The row runs the
   story in the slot the title will fill — `fetching github.com` →

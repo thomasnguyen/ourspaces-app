@@ -98,6 +98,9 @@ const WidgetLab = lazy(() =>
 const ArrivalLab = lazy(() =>
   import("./pages/ArrivalLab").then((module) => ({ default: module.ArrivalLab })),
 );
+const WidgetWall = lazy(() =>
+  import("./pages/WidgetWall").then((module) => ({ default: module.WidgetWall })),
+);
 const BlockPage = lazy(() =>
   import("./pages/Block").then((module) => ({ default: module.BlockPage })),
 );
@@ -120,7 +123,7 @@ function DeferredRoute({ children }: { children: ReactNode }) {
   );
 }
 
-type Route = "space" | "home" | "cursors" | "widgets" | "arrival" | "live" | "join" | "test";
+type Route = "space" | "home" | "cursors" | "widgets" | "arrival" | "wall" | "live" | "join" | "test";
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
 type FrameLayout = Pick<Widget, "x" | "y" | "w" | "h">;
 type CanvasSize = { width: number; height: number };
@@ -258,6 +261,7 @@ function routeFromHash(): Route {
   if (hash === "cursors" || hash.startsWith("cursors/")) return "cursors";
   if (hash === "widgets" || hash.startsWith("widgets/")) return "widgets";
   if (hash === "arrival") return "arrival";
+  if (hash === "wall") return "wall";
   return "space";
 }
 
@@ -1773,6 +1777,10 @@ export default function App() {
 
   if (route === "arrival") {
     return <DeferredRoute><ArrivalLab /></DeferredRoute>;
+  }
+
+  if (route === "wall") {
+    return <DeferredRoute><WidgetWall /></DeferredRoute>;
   }
 
   if (route === "live" && !mockModeRequested()) {
