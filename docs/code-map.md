@@ -27,10 +27,11 @@ are not.
 
 ## src/ directories
 
-**components/** — `Canvas.tsx` (canvas + `SpaceHeader` — the nameplate: one
-row in every room, name + round chevron (opens the editor) + tinted mail chip
-on the left, ONE black sticker pill on the right holding faces, "N here now",
-add and invite in the dock's vocabulary; CSS lives at the end of `index.css`
+**components/** — `Canvas.tsx` (canvas + `SpaceHeader` — the nameplate, the
+same in every room: kicker (kind · tagline), the name big, then a handles
+row of two ink-tinted chips (inbox address, pencil "edit"); on the right ONE
+black sticker pill holding faces, "N here now", add and invite in the dock's
+vocabulary; CSS lives at the end of `index.css`
 under SPACE HEADER — THE NAMEPLATE, the build room fork only sets offsets;
 presence/gestures) ·
 `WidgetCard.tsx` (widget shell: drag/resize/thread chip) · `WidgetEditorPanel.tsx`
