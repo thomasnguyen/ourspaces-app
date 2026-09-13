@@ -75,7 +75,7 @@ export function mockResolvedPatch(link: BuildRoomLink): Partial<BuildRoomLink> {
   };
 }
 
-export const MOCK_RESOLVE_BASE_MS = 3400;
+export const MOCK_RESOLVE_BASE_MS = 6300;
 export const MOCK_RESOLVE_STEP_MS = 520;
 
 /** Each link resolves on its own clock (they genuinely do live: separate
