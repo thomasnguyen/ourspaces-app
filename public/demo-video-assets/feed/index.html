@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Feed</title>
+<link rel="preload" href="assets/ad-nuvo-sneaker.jpg" as="image">
+<link rel="preload" href="assets/creator-travel.jpg" as="image">
+<link rel="preload" href="assets/ad-sleepcloud-mattress.jpg" as="image">
+<style>
+/* ───────────────────────────────────────────────────────────────
+   The feed — a generic modern feed to screen-record for 0:04.
+   ?v=photos (default) | ?v=timeline    ?rec=1 (doomscroll loop)    ?theme=dark
+   Record at 1200×1120. No network, no brand, no real people.
+   Feed column is 400px (Thomas: "make the posts smaller", twice); rail 320px; the pair is centered.
+   ─────────────────────────────────────────────────────────────── */
+:root{--feed:400px;--shell:calc(var(--feed) + 32px + 320px);--bg:#fafafa;--card:#fff;--line:#dbdbdb;--ink:#262626;--gray:#8e8e8e;--faint:#c7c7c7;--blue:#0095f6;--field:#efefef}
+html.dark{--bg:#000;--card:#000;--line:#262626;--ink:#f5f5f5;--gray:#a8a8a8;--faint:#555;--field:#262626}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font:14px/1.4 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;overflow-anchor:none}
+a{color:inherit;text-decoration:none;cursor:default}
+b{font-weight:600}
+.gray{color:var(--gray)}
+.blue{color:var(--blue)}
+.b{font-weight:600}
+.sm{font-size:12px}
+.tag{color:var(--gray);font-weight:700;font-size:14px;white-space:nowrap}
+.ico{display:inline-flex;color:var(--ink);flex:none}
+.ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.av{border-radius:50%;overflow:hidden;flex:none;display:block;background:var(--field)}
+.av svg{display:block;width:100%;height:100%}
+.s24{width:24px;height:24px}.s32{width:32px;height:32px}.s40{width:40px;height:40px}.s56{width:56px;height:56px}.s64{width:64px;height:64px}
+.btn{display:inline-block;background:var(--blue);color:#fff;font-weight:600;font-size:14px;padding:7px 16px;border-radius:8px;text-align:center;line-height:1.3}
+
+/* top bar */
+.top{position:fixed;top:0;left:0;right:0;height:60px;background:var(--card);border-bottom:1px solid var(--line);z-index:10}
+.top .in{width:var(--shell);margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between}
+.mark{width:104px;height:24px;border-radius:6px;background:var(--line)}
+.search{width:268px;height:36px;border-radius:8px;background:var(--field);display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--gray)}
+.search svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.nav{display:flex;gap:22px;align-items:center}
+
+/* shell */
+.shell{width:var(--shell);margin:0 auto;padding:84px 0 60px;display:flex;gap:32px;align-items:flex-start}
+.feed{width:var(--feed);display:flex;flex-direction:column;gap:16px}
+.rail{width:320px;position:sticky;top:84px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px}
+
+/* stories */
+.stories{display:flex;gap:14px;padding:14px 16px 12px;overflow:hidden}
+.story{width:64px;flex:none;display:flex;flex-direction:column;align-items:center;gap:6px}
+.rw{position:relative;width:64px;height:64px}
+.ring{position:absolute;inset:0;border-radius:50%;overflow:hidden}
+.ring::before{content:"";position:absolute;inset:-50%;background:conic-gradient(from 0deg,#f9ce34,#ee2a7b,#6228d7,#f9ce34);animation:spin 8s linear infinite}
+.ring.none::before{background:var(--line);animation:none}
+.ring .in{position:absolute;inset:2.5px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center}
+.plus{position:absolute;right:-1px;bottom:-1px;width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;border:2px solid var(--card);font-size:15px;line-height:15px;text-align:center;font-weight:600}
+.sn{font-size:12px;width:64px;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* photo posts */
+.ph{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px}
+.who{display:flex;align-items:center;gap:6px;flex:1;min-width:0;white-space:nowrap}
+.dot{color:var(--gray)}
+.more{margin-left:auto;color:var(--ink)}
+.img{position:relative;width:100%;background:var(--field);overflow:hidden}
+.img.sq{aspect-ratio:1}
+.img>svg{display:block;width:100%;height:100%}
+.img>img,.timg>img{display:block;width:100%;height:100%;object-fit:cover}
+.cta{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-weight:600}
+.cta .chev{font-size:20px;line-height:1;color:var(--gray)}
+.acts{display:flex;gap:14px;padding:10px 16px 6px}
+.acts .right{margin-left:auto}
+.body{padding:0 16px 14px;display:flex;flex-direction:column;gap:5px}
+.time{font-size:10px;color:var(--gray);letter-spacing:.3px;text-transform:uppercase;margin-top:2px}
+
+/* reel */
+.img.reel{aspect-ratio:4/5;background:#111}
+.img.reel>img{position:absolute;inset:0}
+.img.reel::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.08),transparent 45%,rgba(0,0,0,.42));pointer-events:none}
+.grad{position:absolute;inset:0;background:linear-gradient(115deg,#ff5e9c,#7d4dff,#2fd0ff,#ffb84d,#ff5e9c);background-size:400% 400%;animation:drift 6s linear infinite alternate}
+@keyframes drift{from{background-position:0% 50%}to{background-position:100% 50%}}
+.sil{position:absolute;inset:0;width:100%;height:100%}
+.chip{position:absolute;top:14px;left:14px;background:rgba(255,255,255,.94);color:#262626;font-weight:700;font-size:13px;padding:5px 10px;border-radius:6px}
+.play{position:absolute;left:50%;top:50%;width:72px;height:72px;margin:-36px 0 0 -36px;border-radius:50%;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}
+.play svg{width:32px;height:32px;margin-left:4px;fill:#fff}
+.reelico{position:absolute;top:14px;right:14px;color:#fff}
+.views{position:absolute;left:14px;bottom:14px;color:#fff;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.45);display:flex;gap:6px;align-items:center}
+.views svg{width:14px;height:14px;fill:#fff}
+
+/* suggested / people-you-may-know module */
+.mod{padding:12px 16px 16px}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.row{display:flex;gap:10px}
+.pc{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:14px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.pc .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.pc .btn{width:100%;margin-top:4px;padding:6px 0}
+.pc .sm{line-height:1.3}
+.pc:nth-child(4){display:none}  /* 3 cards at 400px; the 4th is cramped */
+
+/* rail */
+.me{display:flex;align-items:center;gap:12px;padding:8px 0 18px}
+.n{flex:1;min-width:0;line-height:1.3}
+.n span{display:block;font-size:12px;color:var(--gray)}
+.me .blue{font-size:12px;font-weight:600}
+.rh{display:flex;justify-content:space-between;align-items:center;padding:0 0 10px}
+.rh .b{font-size:12px}
+.sug{list-style:none}
+.sug li{display:flex;align-items:center;gap:12px;padding:8px 0}
+.sug .blue{font-size:12px;font-weight:600}
+.rad{margin:14px 0 18px;overflow:hidden}
+.rl{display:flex;align-items:center;gap:10px;padding:10px 12px;white-space:nowrap}
+.rad .cta{padding:10px 12px;border-bottom:0}
+.rad .lct{border-top:1px solid var(--line)}
+.foot{font-size:11px;color:var(--faint);line-height:1.8;margin-top:6px}
+
+/* timeline posts */
+.tpost{display:flex;gap:12px;padding:14px 16px}
+.tb{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.th{display:flex;align-items:center;gap:6px;white-space:nowrap;min-width:0}
+.th .more{margin-left:auto}
+.tt{font-size:15px;line-height:1.45;white-space:pre-line}
+.lc{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.lci{aspect-ratio:1.91;background:var(--field)}
+.lci svg{display:block;width:100%;height:100%}
+.lct{padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.timg{border-radius:12px;overflow:hidden;aspect-ratio:1.25;border:1px solid var(--line);background:var(--field)}
+.timg svg{display:block;width:100%;height:100%}
+.tr{display:flex;align-items:center;color:var(--gray);font-size:13px;margin-top:2px}
+.rx{display:flex;align-items:center;gap:6px;flex:1}
+.rx .ico,.tr .ico{color:var(--gray)}
+.rx svg,.tr>.ico svg{width:19px;height:19px;stroke-width:1.7}
+
+/* recording mode: no scrollbars */
+html.rec,html.rec body{scrollbar-width:none}
+html.rec ::-webkit-scrollbar{display:none;width:0;height:0}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <div class="mark"></div>
+  <div class="search" id="search"></div>
+  <nav class="nav" id="nav"></nav>
+</div></header>
+<main class="shell">
+  <section class="feed" id="feed"></section>
+  <aside class="rail" id="rail"></aside>
+</main>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const V = q.get("v") === "timeline" ? "timeline" : "photos";
+  const REC = q.get("rec") === "1";
+  const root = document.documentElement;
+  if (REC) root.classList.add("rec");
+  if (q.get("theme") === "dark") root.classList.add("dark");
+  root.classList.add(V);
+
+  const $ = id => document.getElementById(id);
+  const fmt = n => typeof n === "number" ? n.toLocaleString("en-US") : n;
+  let _u = 0; const uid = () => "g" + (++_u);
+  const grad = (id, a, b, down) => `<linearGradient id="${id}" x1="0" y1="0" x2="${down ? 0 : 1}" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
+  const S = (inner, defs = "", vb = "0 0 100 100") => `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${defs ? `<defs>${defs}</defs>` : ""}${inner}</svg>`;
+
+  /* ── icons (line, 24×24) ── */
+  const I = {
+    home: `<svg viewBox="0 0 24 24"><path d="M3 11.2 12 4l9 7.2V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/></svg>`,
+    heart: `<svg viewBox="0 0 24 24"><path d="M12 20.6s-7.6-4.7-9.4-9.4C1.3 7.6 3.6 4 7.2 4c2 0 3.5 1.1 4.8 2.8C13.3 5.1 14.8 4 16.8 4c3.6 0 5.9 3.6 4.6 7.2-1.8 4.7-9.4 9.4-9.4 9.4z"/></svg>`,
+    plus: `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4.5"/><path d="M12 8v8M8 12h8"/></svg>`,
+    send: `<svg viewBox="0 0 24 24"><path d="M21 3 3 10.4l8.2 2.4 2.4 8.2zM11.2 12.8 21 3"/></svg>`,
+    comment: `<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-7.7 13.7L3 21l4.4-1.3A9 9 0 1 0 12 3z"/></svg>`,
+    bookmark: `<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-5-6 5z"/></svg>`,
+    repost: `<svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4M21 6H8a4 4 0 0 0-4 4v1M7 22l-4-4 4-4M3 18h13a4 4 0 0 0 4-4v-1"/></svg>`,
+    chart: `<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>`,
+    share: `<svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L7 8m5-5 5 5M4 14v6h16v-6"/></svg>`,
+    search: `<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>`,
+    play: `<svg viewBox="0 0 24 24"><path d="M7 4l14 8-14 8z"/></svg>`,
+    reel: `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4.5"/><path d="M3 8.5h18M8.5 3l3 5.5M13.5 3l3 5.5M10 12.5l5 2.8-5 2.8z"/></svg>`,
+    more: `<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>`,
+  };
+
+  /* ── avatars: cool gradient + generic person glyph; brands = flat monogram; maya = warm face ── */
+  const COOL = [["#cbd5e1","#8fa2ba"],["#dcdfe4","#a3abb6"],["#cfdad2","#93a89a"],["#d9d3e3","#a79dbd"],["#d3dce7","#9bafc7"],["#e0dcd6","#b1a99f"],["#cfd7df","#8c9aab"],["#d4d4d4","#9a9a9a"],["#d6dee0","#8fa6aa"]];
+  const BRAND = { "nuvo.official": ["n","#dcff5f","#1a1a1a"], sleepcloud: ["s","#dfe8ff","#3d5aa6"], coinly: ["c","#6f4bff","#fff"], byteplan: ["b","#1f1f1f","#fff"], "nuvo": ["n","#dcff5f","#1a1a1a"] };
+  const person = (c1, c2) => { const id = uid(); return S(`<rect width="40" height="40" fill="url(#${id})"/><circle cx="20" cy="15.5" r="6.5" fill="#fff" opacity=".92"/><path d="M7 38.5c0-7.6 5.8-12.2 13-12.2s13 4.6 13 12.2z" fill="#fff" opacity=".92"/>`, grad(id, c1, c2), "0 0 40 40"); };
+  const mono = (l, bg, fg) => S(`<rect width="40" height="40" fill="${bg}"/><text x="20" y="26.5" text-anchor="middle" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="19" font-weight="700" fill="${fg}">${l}</text>`, "", "0 0 40 40");
+  const warmFace = () => S(`<rect width="40" height="40" fill="#ffd9a8"/><path d="M6 40c0-8 6-13 14-13s14 5 14 13z" fill="#e8553f"/><circle cx="20" cy="18" r="9" fill="#f0b48a"/><path d="M11 17.5c0-7 4-11.5 9-11.5s9 4.5 9 11.5c-2-3.5-4.5-4.5-9-4.5s-7 1-9 4.5z" fill="#3a2418"/><circle cx="16.8" cy="18.2" r="1.05" fill="#2b1a12"/><circle cx="23.2" cy="18.2" r="1.05" fill="#2b1a12"/><path d="M17 22c1.5 1.6 4.5 1.6 6 0" stroke="#2b1a12" stroke-width="1" fill="none" stroke-linecap="round"/><circle cx="14.5" cy="21" r="1.6" fill="#f08a7a" opacity=".55"/><circle cx="25.5" cy="21" r="1.6" fill="#f08a7a" opacity=".55"/>`, "", "0 0 40 40");
+  const hash = s => { let h = 7; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
+  const avatarFor = name => name === "maya" ? warmFace() : name === "you" ? person("#d2d2d2", "#a9a9a9") : BRAND[name] ? mono(...BRAND[name]) : person(...COOL[hash(name) % COOL.length]);
+  const av = (name, s) => `<span class="av s${s}">${avatarFor(name)}</span>`;
+
+  /* ── pictures: generated local media for photos; inline SVG art for timeline links; invented brands ── */
+  const sneaker = () => { const g = uid(); return S(`<rect width="100" height="100" fill="url(#${g})"/><ellipse cx="50" cy="77.5" rx="41" ry="3.4" fill="#000" opacity=".12"/><path d="M8 65h84a4.5 4.5 0 0 1 0 9H8a4.5 4.5 0 0 1 0-9z" fill="#fff"/><path d="M8 65C8 58 13 53 24 50C36 47 44 44 52 36C57 30 64 26 72 27C82 28 88 36 89 46L91 65Z" fill="#161616"/><path d="M8 65C8 58 13 53 24 50C29 57 36 62 46 65Z" fill="#2a2a2a"/><path d="M53 40l9 4M50 45l9 4M47 50l9 4M44 55l9 4" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><path d="M60 31c5-2 9-1 13 2" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".85"/><rect x="82" y="37" width="4" height="14" rx="1.2" fill="#fff" opacity=".9"/><path d="M14 65h76" stroke="#3a3a3a" stroke-width="1.2" opacity=".5"/>`, grad(g, "#e6ff66", "#9ed300")); };
+  const landscape = () => { const g = uid(); return S(`<rect width="100" height="100" fill="url(#${g})"/><circle cx="72" cy="38" r="8" fill="#fff5dc" opacity=".92"/><path d="M0 62 18 42l14 14 14-20 14 18 14-10 26 18v38H0z" fill="#8199b9"/><path d="M0 74 14 60l14 10 16-18 14 16 20-10 22 18v24H0z" fill="#4e6485"/><path d="M0 100V84c20-6 40-4 60 0s30 2 40 0v16z" fill="#2c3d55"/><g stroke="#1b2536" stroke-width="1.4" stroke-linecap="round" fill="none"><circle cx="50" cy="72.5" r="1.7" fill="#1b2536"/><path d="M50 74.5v6.5M50 81l-2.6 5.2M50 81l2.6 5.2M50 76.5l-4.5-3.2M50 76.5l4.5-3.2"/></g>`, `<linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b8fd9"/><stop offset=".6" stop-color="#cfe0f3"/><stop offset="1" stop-color="#f3d9c2"/></linearGradient>`); };
+  const mattress = () => { const g = uid(); return S(`<rect width="100" height="100" fill="url(#${g})"/><ellipse cx="50" cy="79" rx="42" ry="4" fill="#000" opacity=".07"/><rect x="12" y="62" width="76" height="12" rx="2" fill="#cfd6e3"/><rect x="10" y="44" width="80" height="20" rx="4" fill="#fff" stroke="#e3e7ef"/><path d="M10 54h80" stroke="#e9edf3"/><g fill="#e3e7ef"><circle cx="20" cy="49" r=".9"/><circle cx="32" cy="49" r=".9"/><circle cx="44" cy="49" r=".9"/><circle cx="56" cy="49" r=".9"/><circle cx="68" cy="49" r=".9"/><circle cx="80" cy="49" r=".9"/><circle cx="26" cy="59" r=".9"/><circle cx="38" cy="59" r=".9"/><circle cx="50" cy="59" r=".9"/><circle cx="62" cy="59" r=".9"/><circle cx="74" cy="59" r=".9"/></g><rect x="16" y="35" width="30" height="10.5" rx="4" fill="#fff" stroke="#e3e7ef"/><rect x="54" y="35" width="30" height="10.5" rx="4" fill="#fff" stroke="#e3e7ef"/><path d="M70 24c0-3 2.5-5 5.5-5 1-2.5 3.5-4 6.5-4 4 0 7 3 7 6.5 2.5.5 4 2.5 4 4.5 0 2.5-2 4.5-4.5 4.5H74c-2.5 0-4-2-4-4.5z" fill="#fff" opacity=".85"/>`, grad(g, "#ffe3ef", "#dbe8ff")); };
+  const coin = () => { const g = uid(), gold = uid(); return S(`<rect width="100" height="100" fill="url(#${g})"/><circle cx="50" cy="52" r="27" fill="#4a2c9c" opacity=".45"/><circle cx="50" cy="48" r="27" fill="url(#${gold})"/><circle cx="50" cy="48" r="20.5" fill="none" stroke="#c98f12" stroke-width="1.6"/><path d="M50 34l12 7v14l-12 7-12-7V41z" fill="none" stroke="#c98f12" stroke-width="2.2" stroke-linejoin="round"/><circle cx="50" cy="48" r="3.5" fill="#c98f12"/>`, grad(g, "#5b3df5", "#b47cff") + `<linearGradient id="${gold}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#e0a51c"/></linearGradient>`); };
+  const cake = () => S(`<rect width="100" height="100" fill="#f6e7d3"/><rect y="70" width="100" height="30" fill="#d9b48a"/><ellipse cx="50" cy="74" rx="34" ry="6" fill="#fff"/><ellipse cx="50" cy="74" rx="34" ry="6" fill="none" stroke="#e5d9c8"/><rect x="24" y="52" width="52" height="20" rx="2" fill="#f2c9a2"/><path d="M24 52h52v4c-6 4-10-2-14 3-4 3-8-3-12 2-4 3-8-2-12 2-4 2-8-3-14 1z" fill="#ff8fb1"/><rect x="32" y="38" width="36" height="16" rx="2" fill="#f2c9a2"/><path d="M32 38h36v4c-5 3-8-2-12 2-4 3-8-3-12 2-4 2-8-2-12 1z" fill="#ff8fb1"/><rect x="42" y="28" width="2.4" height="10" fill="#6fc3f7"/><rect x="49" y="26" width="2.4" height="12" fill="#ffd166"/><rect x="56" y="28" width="2.4" height="10" fill="#c8a0ff"/><ellipse cx="43.2" cy="26" rx="1.6" ry="2.6" fill="#ffb347"/><ellipse cx="50.2" cy="24" rx="1.6" ry="2.6" fill="#ffb347"/><ellipse cx="57.2" cy="26" rx="1.6" ry="2.6" fill="#ffb347"/><g fill="#fff"><circle cx="30" cy="62" r=".9"/><circle cx="40" cy="66" r=".9"/><circle cx="52" cy="63" r=".9"/><circle cx="64" cy="67" r=".9"/><circle cx="70" cy="61" r=".9"/><circle cx="38" cy="47" r=".9"/><circle cx="56" cy="49" r=".9"/></g>`);
+  const silhouette = () => `<svg class="sil" viewBox="0 0 80 100" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg"><g fill="#0d0d0d" opacity=".82"><circle cx="40" cy="22" r="8"/><path d="M29 40c0-6 5-9 11-9s11 3 11 9v24h-5v36h-6V70h-2v30h-6V64h-3z"/><path d="M29 41l-11 15 4 3 9-11z"/><path d="M51 41l13-13 3 3-12 14z"/></g></svg>`;
+  const grayCard = kind => {
+    const art = {
+      phone: `<rect x="80" y="14" width="31" height="72" rx="6" fill="#fff" stroke="#bdbdbd" stroke-width="2"/><rect x="84" y="22" width="23" height="52" fill="#d4d4d4"/><circle cx="95.5" cy="80" r="2" fill="#bdbdbd"/>`,
+      mattress: `<rect x="46" y="58" width="100" height="10" rx="2" fill="#cfcfcf"/><rect x="44" y="40" width="104" height="18" rx="4" fill="#fff" stroke="#c9c9c9"/><rect x="52" y="32" width="38" height="9" rx="3" fill="#fff" stroke="#c9c9c9"/><rect x="102" y="32" width="38" height="9" rx="3" fill="#fff" stroke="#c9c9c9"/>`,
+      coin: `<circle cx="95.5" cy="50" r="26" fill="#d6d6d6" stroke="#bdbdbd" stroke-width="2"/><circle cx="95.5" cy="50" r="18" fill="none" stroke="#bdbdbd" stroke-width="2"/>`,
+      landscape: `<path d="M20 78 60 36l26 26 26-32 38 40 21-18 20 26v22H0z" fill="#c9c9c9"/><circle cx="150" cy="26" r="9" fill="#d9d9d9"/>`,
+      sneaker: `<path d="M50 66h92a3 3 0 0 1 0 6H50a3 3 0 0 1 0-6z" fill="#fff"/><path d="M50 66c-2-8 6-10 16-14 10-4 16-12 22-18 6-6 14-4 18 4 4 8 12 14 22 18 4 2 4 6 0 10z" fill="#9a9a9a"/>`,
+      chart: `<path d="M40 70l30-18 26 8 28-24 28 8" fill="none" stroke="#bdbdbd" stroke-width="3" stroke-linecap="round"/>`,
+    }[kind] || "";
+    return S(`<rect width="191" height="100" fill="#e6e6e6"/>${art}`, "", "0 0 191 100");
+  };
+
+  const FEED_IMAGES = {
+    sneaker: "assets/ad-nuvo-sneaker.jpg",
+    mattress: "assets/ad-sleepcloud-mattress.jpg",
+    coin: "assets/ad-coinly-card.jpg",
+    travel: "assets/creator-travel.jpg",
+    cake: "assets/friend-cake.jpg",
+    fitness: "assets/reel-fitness.jpg",
+    dog: "assets/reel-dog.jpg",
+  };
+  const feedImage = (name, position = "50% 50%") => `<img src="${FEED_IMAGES[name]}" style="object-position:${position}" draggable="false">`;
+
+  /* ── shared shell ── */
+  $("search").innerHTML = `${I.search}<span>Search</span>`;
+  $("nav").innerHTML = `<span class="ico">${I.home}</span><span class="ico">${I.heart}</span><span class="ico">${I.plus}</span><span class="ico">${I.send}</span>${av("you", 24)}`;
+
+  /* ── photos feed ── */
+  const header = (name, sub, follow, time) => `<header class="ph">${av(name, 32)}<div class="who"><b>${name}</b>${sub ? `<span class="dot">·</span><b class="tag">${sub}</b>` : ""}${follow ? `<span class="dot">·</span><a class="blue b">Follow</a>` : ""}${time ? `<span class="dot">·</span><span class="gray">${time}</span>` : ""}</div><span class="ico more">${I.more}</span></header>`;
+  const acts = () => `<div class="acts"><span class="ico">${I.heart}</span><span class="ico">${I.comment}</span><span class="ico">${I.send}</span><span class="ico right">${I.bookmark}</span></div>`;
+  const photoPost = o => {
+    const sub = o.t === "sponsored" ? "Sponsored" : o.t === "suggested" ? "Suggested for you" : "";
+    return `<article class="card post">${header(o.name, sub, o.t === "suggested", o.t === "friend" ? o.short : "")}
+      <div class="img sq">${o.img()}</div>
+      ${o.cta ? `<a class="cta"><span>${o.cta}</span><span class="chev">›</span></a>` : ""}
+      ${acts()}
+      <div class="body">
+        <div><b${o.tick ? ` data-tick="${o.likes}"` : ""}>${fmt(o.likes)}</b> likes</div>
+        <p><b>${o.name}</b> ${o.caption}</p>
+        ${o.comments ? `<div class="gray">View all ${fmt(o.comments)} comments</div>` : ""}
+        <div class="time">${o.time}</div>
+      </div></article>`;
+  };
+  const reelPost = o => `<article class="card post">${header(o.name, "Suggested for you", true)}
+      <div class="img reel">${feedImage(o.image)}<span class="chip">Suggested</span><span class="play">${I.play}</span><span class="ico reelico">${I.reel}</span><span class="views">${I.play}${o.views}</span></div>
+      ${acts()}
+      <div class="body"><div><b>${o.views}</b> views</div><p><b>${o.name}</b> ${o.caption}</p><div class="gray">View all ${fmt(o.comments)} comments</div><div class="time">${o.time}</div></div></article>`;
+  const stories = names => `<div class="card stories">${names.map((n, i) => `<div class="story"><div class="rw"><div class="ring${i === 0 ? " none" : ""}"><div class="in">${av(i === 0 ? "you" : n, 56)}</div></div>${i === 0 ? `<span class="plus">+</span>` : ""}</div><span class="sn">${n}</span></div>`).join("")}</div>`;
+  const module = (title, names, btn, sub) => `<div class="card mod"><div class="mh"><b class="tag">${title}</b><a class="b sm">See all</a></div><div class="row">${names.map(n => `<div class="pc">${av(n, 64)}<b class="nm">${n}</b><span class="gray sm">${sub}</span><a class="btn">${btn}</a></div>`).join("")}</div></div>`;
+
+  const P = {
+    nuvo: { t: "sponsored", name: "nuvo.official", img: () => feedImage("sneaker"), cta: "Shop now", likes: 12438, caption: "Step into summer. New drop 🔥 #ad", time: "1 day ago", comments: 214, tick: true },
+    kai: { t: "suggested", name: "kai.travels", img: () => feedImage("travel"), likes: 88201, caption: "link in bio for the full itinerary!!! ✈️", time: "3 hours ago", comments: 1042 },
+    sleep: { t: "sponsored", name: "sleepcloud", img: () => feedImage("mattress"), cta: "Learn more", likes: 3902, caption: "Sleep like you mean it. 100-night trial.", time: "2 days ago", comments: 38, tick: true },
+    coin: { t: "sponsored", name: "coinly", img: () => feedImage("coin"), cta: "Sign up", likes: 6710, caption: "Your money, on autopilot. Get $10 to start.", time: "1 day ago", comments: 91, tick: true },
+    friend: { t: "friend", name: "maya", short: "4d", img: () => feedImage("cake"), likes: 3, caption: "made it!!", time: "4 days ago" },
+  };
+  const photosFeed = () => {
+    const out = [stories(["Your story", "kai.travels", "fitwithmarco", "nuvo.official", "dailydoseofdogs", "sleepcloud", "wanderlust_jen", "coinly", "homehacks"])];
+    // pass 1 — the shot lives here
+    out.push(photoPost(P.nuvo));
+    out.push(photoPost(P.kai));
+    out.push(photoPost(P.sleep));
+    out.push(module("Suggested for you", ["wanderlust_jen", "dailydoseofdogs", "marco.lifts", "homehacks"], "Follow", "Followed by 0 people you know"));
+    out.push(reelPost({ name: "fitwithmarco", image: "fitness", views: "1.2M", caption: "day 47. no excuses. 💪", time: "5 hours ago", comments: 3310 }));
+    out.push(photoPost(P.coin));
+    // far down: the one friend
+    out.push(photoPost(P.friend));
+    // pass 2+ — names shuffled so the loop never runs out
+    const alts = [
+      [P.coin, { ...P.kai, name: "wanderlust_jen", likes: 41770, caption: "you NEED to see this place before it gets crowded 🌄", time: "7 hours ago", comments: 612 }, P.nuvo, ["marco.lifts", "kai.travels", "homehacks", "sleepcloud"], { name: "dailydoseofdogs", image: "dog", views: "4.8M", caption: "he waited all day for this 🐶", time: "9 hours ago", comments: 12040 }, P.sleep],
+      [P.sleep, { ...P.kai, name: "homehacks", likes: 19334, caption: "the $4 trick every landlord hates 🧵 (save this)", time: "11 hours ago", comments: 288 }, P.coin, ["coinly", "wanderlust_jen", "fitwithmarco", "dailydoseofdogs"], { name: "marco.lifts", image: "fitness", views: "2.3M", caption: "form check. no excuses.", time: "1 day ago", comments: 4410 }, P.nuvo],
+    ];
+    for (const [a, b, c, mod, reel, d] of alts) {
+      out.push(photoPost(a), photoPost(b), photoPost(c), module("Suggested for you", mod, "Follow", "Followed by 0 people you know"), reelPost(reel), photoPost(d));
+    }
+    return out.join("");
+  };
+  const photosRail = () => `<div class="me">${av("you", 56)}<div class="n"><b>you</b><span>you</span></div><a class="blue">Switch</a></div>
+    <div class="rh"><b class="tag">Suggested for you</b><a class="b">See All</a></div>
+    <ul class="sug">${["marco.lifts", "wanderlust_jen", "dailydoseofdogs", "homehacks", "fitwithmarco"].map(n => `<li>${av(n, 32)}<div class="n"><b>${n}</b><span>Followed by 0 people you know</span></div><a class="blue">Follow</a></li>`).join("")}</ul>
+    <div class="card rad"><div class="rl">${av("nuvo.official", 32)}<div class="who"><b>nuvo.official</b><span class="dot">·</span><b class="tag">Sponsored</b></div></div><div class="img sq">${feedImage("sneaker")}</div><a class="cta"><span>Shop now</span><span class="chev">›</span></a></div>
+    <div class="foot">About · Help · Press · API · Jobs · Privacy · Terms<br>© 2026</div>`;
+
+  /* ── timeline feed ── */
+  const react = (icon, n, tick) => `<span class="rx"><span class="ico">${icon}</span>${n != null ? `<span${tick ? ` data-tick="${n}"` : ""}>${fmt(n)}</span>` : ""}</span>`;
+  const tpost = o => `<article class="card tpost">${av(o.name, 40)}<div class="tb">
+      <div class="th"><b>${o.name}</b><span class="gray">@${o.handle || o.name}</span>${o.time ? `<span class="gray">· ${o.time}</span>` : ""}${o.promoted ? `<b class="tag">· Promoted</b>` : ""}<span class="ico more">${I.more}</span></div>
+      <p class="tt">${o.text}</p>
+      ${o.link ? `<div class="lc"><div class="lci">${grayCard(o.link.img)}</div><div class="lct"><span class="gray sm">${o.link.dom}</span><b>${o.link.title}</b></div></div>` : ""}
+      ${o.img ? `<div class="timg">${o.img()}</div>` : ""}
+      ${o.thread ? `<a class="blue">Show this thread</a>` : ""}
+      <div class="tr">${react(I.comment, o.c)}${react(I.repost, o.r)}${react(I.heart, o.l, o.promoted)}${react(I.chart, o.v)}<span class="ico">${I.share}</span></div>
+    </div></article>`;
+  const T = {
+    plan: { promoted: true, name: "byteplan", text: "Unlimited talk, text and data. $25/mo. No contract. Switch in 5 minutes.", link: { img: "phone", dom: "byteplan.com", title: "Switch to byteplan — unlimited for $25/mo" }, c: 112, r: 38, l: 1904, v: "4.1M" },
+    thread: { name: "growthdaily", time: "2h", text: "I studied 100 people who wake up at 4am. Here's what they all have in common.\n\n1/17 🧵", thread: true, c: 844, r: "12K", l: "61K", v: "9.2M" },
+    sleep: { promoted: true, name: "sleepcloud", text: "Sleep like you mean it. 100-night trial, free returns.", link: { img: "mattress", dom: "sleepcloud.com", title: "The last mattress you'll ever buy." }, c: 64, r: 21, l: 2210, v: "2.7M" },
+    take: { name: "theo_takes", handle: "theotakes", time: "6h", text: "Hot take: nobody reads the thread. They read the first line and the ratio.", c: "3.1K", r: "43K", l: "210K", v: "31M" },
+    coin: { promoted: true, name: "coinly", text: "Your money, on autopilot. Round-ups, investing, cashback. Get $10 to start.", link: { img: "coin", dom: "coinly.app", title: "coinly — get $10 when you sign up" }, c: 41, r: 19, l: 1312, v: "1.9M" },
+    jen: { name: "wanderlust_jen", time: "9h", text: "Everyone asks how I travel full-time. Link below for the full breakdown ✈️", link: { img: "landscape", dom: "jen.travel", title: "How I travel full-time (free guide)" }, c: 203, r: 410, l: "5.6K", v: "1.1M" },
+    nuvo: { promoted: true, name: "nuvo", handle: "nuvo.official", text: "Step into summer. New drop 🔥", link: { img: "sneaker", dom: "nuvo.shop", title: "nuvo — the summer drop is live" }, c: 88, r: 24, l: 2650, v: "3.4M" },
+    hacks: { name: "homehacks", time: "11h", text: "The $4 trick every landlord hates. Save this one.", link: { img: "chart", dom: "homehacks.co", title: "17 apartment hacks (free checklist)" }, c: 120, r: 380, l: "4.2K", v: "900K" },
+    friend: { name: "maya", time: "4d", text: "made it!!", img: () => feedImage("cake"), c: 1, r: 0, l: 2, v: 31 },
+  };
+  const timelineFeed = () => {
+    const out = [];
+    const pymk = names => module("People you may know", names, "Add", "0 mutual friends");
+    out.push(tpost(T.plan), tpost(T.thread), pymk(["wanderlust_jen", "marco.lifts", "homehacks", "dailydoseofdogs"]), tpost(T.sleep), tpost(T.take), tpost(T.coin), tpost(T.jen), tpost(T.nuvo), tpost(T.hacks));
+    out.push(tpost(T.friend));
+    const alts = [
+      [T.coin, { ...T.thread, name: "marco.lifts", text: "I tracked every meal for 365 days. The results shocked me.\n\n1/22 🧵" }, ["theo_takes", "growthdaily", "kai.travels", "sleepcloud"], T.plan, { ...T.take, name: "homehacks", text: "Unpopular opinion: your rent is a subscription and you never read the terms." }, T.nuvo],
+      [T.sleep, { ...T.jen, name: "kai.travels", text: "9 countries, 1 backpack, 0 regrets. The full itinerary 👇" }, ["byteplan", "wanderlust_jen", "marco.lifts", "homehacks"], T.coin, { ...T.take, name: "growthdaily", text: "Most people quit at 90%. Be the 1%." }, T.plan],
+    ];
+    for (const [a, b, mod, c, d, e] of alts) out.push(tpost(a), tpost(b), pymk(mod), tpost(c), tpost(d), tpost(e));
+    return out.join("");
+  };
+  const timelineRail = () => `<div class="me">${av("you", 56)}<div class="n"><b>you</b><span>@you</span></div><a class="blue">Switch</a></div>
+    <div class="rh"><b class="tag">People you may know</b><a class="b">See all</a></div>
+    <ul class="sug">${["theo_takes", "growthdaily", "wanderlust_jen", "marco.lifts", "homehacks"].map(n => `<li>${av(n, 32)}<div class="n"><b>${n}</b><span>0 mutual friends</span></div><a class="blue">Add</a></li>`).join("")}</ul>
+    <div class="card rad"><div class="rl">${av("byteplan", 32)}<div class="who"><b>byteplan</b><span class="dot">·</span><b class="tag">Promoted</b></div></div><div class="lci">${grayCard("phone")}</div><div class="lct"><span class="gray sm">byteplan.com</span><b>Unlimited for $25/mo. No contract.</b></div></div>
+    <div class="foot">About · Help · Press · API · Jobs · Privacy · Terms<br>© 2026</div>`;
+
+  /* ── mount ── */
+  if (V === "timeline") { $("feed").innerHTML = timelineFeed(); $("rail").innerHTML = timelineRail(); }
+  else { $("feed").innerHTML = photosFeed(); $("rail").innerHTML = photosRail(); }
+
+  /* ── motion ── */
+  // Sponsored / Promoted counts tick up by 1–3 every ~700ms
+  const ticks = [...document.querySelectorAll("[data-tick]")];
+  setInterval(() => { for (const el of ticks) { const n = +el.dataset.tick + 1 + Math.floor(Math.random() * 3); el.dataset.tick = n; el.textContent = fmt(n); } }, 700);
+
+  // ?rec=1 — doomscroll: 0→1800px over 5.5s, linear (a thumb, not an ease), hard reset, loop. Starts 300ms after load.
+  if (REC) {
+    const D = 5500, MAX = 1800;
+    const run = () => {
+      const t0 = performance.now();
+      const step = now => {
+        const p = Math.min(1, (now - t0) / D);
+        window.scrollTo(0, Math.round(MAX * p));
+        if (p < 1) requestAnimationFrame(step); else { window.scrollTo(0, 0); requestAnimationFrame(run); }
+      };
+      requestAnimationFrame(step);
+    };
+    setTimeout(run, 300);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>the crew</title>
+<style>
+/* ───────────────────────────────────────────────────────────────
+   The group chat — a generic desktop chat to screen-record for 0:05.
+   ?rec=1   flick through the backlog fast, typing bubble, last message lands, hold, loop
+   ?blur=1  blur names + avatars (the "real screen record" look)
+   ?title=  override the group name (default "the crew")
+   Record at 1200×1120. No network, no brand, no real people.
+   ─────────────────────────────────────────────────────────────── */
+:root{--side:340px;--bg:#e9edf1;--white:#fff;--line:#e3e6ea;--ink:#111b21;--gray:#667781;--faint:#8696a0;--me:#2f7cf6;--me-ink:#fff;--badge:#25a95b;--field:#f0f2f5}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font:14.5px/1.35 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+b{font-weight:600}
+.ico{display:inline-flex;color:var(--faint);flex:none}
+.ico svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.av{border-radius:50%;overflow:hidden;flex:none;display:block;background:#cfd6dc}
+.av svg{display:block;width:100%;height:100%}
+.s28{width:28px;height:28px}.s36{width:36px;height:36px}.s40{width:40px;height:40px}.s48{width:48px;height:48px}
+
+.app{display:flex;width:1200px;height:1120px;background:var(--white)}
+
+/* sidebar */
+.side{width:var(--side);flex:none;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--white)}
+.sh{height:64px;flex:none;display:flex;align-items:center;gap:14px;padding:0 16px;background:var(--field)}
+.sh .ico{margin-left:auto}.sh .ico+.ico{margin-left:0}
+.search{margin:8px 12px;height:36px;border-radius:8px;background:var(--field);display:flex;align-items:center;gap:10px;padding:0 12px;color:var(--faint);font-size:14px}
+.search svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.chats{flex:1;overflow:hidden}
+.chat{display:flex;align-items:center;gap:14px;padding:11px 14px;height:74px;border-bottom:1px solid #f1f3f5}
+.chat.on{background:var(--field)}
+.chat .c{flex:1;min-width:0}
+.chat .r1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.chat .r1 .nm{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat .r1 .t{font-size:12px;color:var(--faint);flex:none}
+.chat .r1 .t.on{color:var(--badge)}
+.chat .r2{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:2px}
+.chat .r2 .p{font-size:13.5px;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat .r2 .p b{font-weight:400}
+.chat.on .r2 .p,.chat.un .r2 .p{color:var(--ink)}
+.badge{flex:none;min-width:20px;height:20px;border-radius:10px;background:var(--badge);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 6px}
+
+/* pane */
+.pane{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--bg)}
+.ph{height:64px;flex:none;display:flex;align-items:center;gap:14px;padding:0 18px;background:var(--field);border-bottom:1px solid var(--line)}
+.ph .c{flex:1;min-width:0}
+.ph .title{font-size:16px;font-weight:600}
+.ph .mem{font-size:13px;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph .ico{margin-left:14px}
+.msgs{flex:1;overflow-y:auto;padding:14px 64px 12px 24px;display:flex;flex-direction:column;gap:3px;overflow-anchor:none}
+.day{align-self:center;background:var(--white);color:var(--gray);font-size:12px;font-weight:600;letter-spacing:.3px;padding:5px 12px;border-radius:8px;margin:12px 0 10px;box-shadow:0 1px 0 rgba(0,0,0,.05)}
+.unread{align-self:stretch;text-align:center;background:var(--white);color:var(--gray);font-size:12px;font-weight:600;letter-spacing:.3px;padding:6px;border-radius:8px;margin:10px 0}
+.m{display:flex;align-items:flex-end;gap:8px;max-width:64%}
+.m.run{margin-top:0}.m.first{margin-top:10px}
+.m .av{align-self:flex-end}
+.m .sp{width:28px;flex:none}
+.bub{position:relative;background:var(--white);border-radius:10px;padding:6px 10px 7px;box-shadow:0 1px 0 rgba(0,0,0,.06);min-width:60px}
+.m.first .bub{border-top-left-radius:2px}
+.bub .name{font-size:13px;font-weight:600;display:block;margin-bottom:1px}
+.bub .txt{display:inline;white-space:pre-wrap;word-wrap:break-word}
+.bub .time{display:inline-block;font-size:11px;color:var(--faint);margin-left:10px;transform:translateY(3px);white-space:nowrap}
+.bub .photo{display:block;width:240px;height:176px;border-radius:8px;overflow:hidden;margin:2px 0 4px}
+.bub .photo svg{display:block;width:100%;height:100%}
+.m.me{align-self:flex-end;flex-direction:row-reverse}
+.m.me .bub{background:var(--me);color:var(--me-ink)}
+.m.me.first .bub{border-top-left-radius:10px;border-top-right-radius:2px}
+.m.me .time{color:rgba(255,255,255,.75)}
+.reacts{display:flex;gap:4px;margin-top:-4px;margin-left:36px;margin-bottom:4px}
+.m.me+.reacts{align-self:flex-end;margin-left:0;margin-right:0}
+.react{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:1px 7px;font-size:12px;color:var(--gray);box-shadow:0 1px 0 rgba(0,0,0,.04)}
+.react span{font-size:13px}
+.typing .bub{padding:10px 12px;display:flex;gap:4px;align-items:center}
+.typing .bub .name{margin:0 6px 0 0}
+.dot{width:7px;height:7px;border-radius:50%;background:#b0bac2;animation:bounce 1s infinite}
+.dot:nth-child(3){animation-delay:.15s}.dot:nth-child(4){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+.pop{animation:pop .22s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+.composer{height:62px;flex:none;display:flex;align-items:center;gap:14px;padding:0 18px;background:var(--field);border-top:1px solid var(--line)}
+.composer .in{flex:1;height:40px;border-radius:8px;background:var(--white);display:flex;align-items:center;padding:0 14px;color:var(--faint);font-size:15px}
+
+/* blur names + avatars (the "real screen record" look) */
+html.blur .name,html.blur .av,html.blur .nm,html.blur .mem,html.blur .typing .name{filter:blur(4.5px)}
+/* recording mode: no scrollbars */
+html.rec .msgs{scrollbar-width:none}
+html.rec .msgs::-webkit-scrollbar{display:none;width:0;height:0}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="sh" id="sh"></div>
+    <div class="search" id="search"></div>
+    <div class="chats" id="chats"></div>
+  </aside>
+  <main class="pane">
+    <header class="ph" id="ph"></header>
+    <div class="msgs" id="msgs"></div>
+    <footer class="composer" id="composer"></footer>
+  </main>
+</div>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const REC = q.get("rec") === "1";
+  const root = document.documentElement;
+  if (REC) root.classList.add("rec");
+  if (q.get("blur") === "1") root.classList.add("blur");
+  const TITLE = q.get("title") || "the crew";
+  const $ = id => document.getElementById(id);
+
+  /* ── icons ── */
+  const I = {
+    search: `<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>`,
+    more: `<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/></svg>`,
+    compose: `<svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`,
+    video: `<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>`,
+    phone: `<svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>`,
+    smile: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c1 1.2 2.2 1.8 3.5 1.8s2.5-.6 3.5-1.8M9 10h.01M15 10h.01"/></svg>`,
+    plus: `<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>`,
+    mic: `<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`,
+    group: `<svg viewBox="0 0 40 40"><rect width="40" height="40" fill="#dfe5ea"/><circle cx="15" cy="15" r="5" fill="#fff"/><circle cx="26" cy="16" r="4.2" fill="#fff" opacity=".85"/><path d="M5 33c0-6 4.5-9.5 10-9.5s10 3.5 10 9.5z" fill="#fff"/><path d="M22 33c.5-4 3-7 7-7 3.5 0 6 2.5 6 7z" fill="#fff" opacity=".85"/></svg>`,
+    person: `<svg viewBox="0 0 40 40"><rect width="40" height="40" fill="#dfe5ea"/><circle cx="20" cy="15.5" r="6.5" fill="#fff"/><path d="M7 38.5c0-7.6 5.8-12.2 13-12.2s13 4.6 13 12.2z" fill="#fff"/></svg>`,
+  };
+
+  /* ── people: the crew, same names + colors as the space it cuts to ── */
+  const P = {
+    Maya: "#7c5cff", Jules: "#e63da8", Sam: "#3d6eff", Rio: "#ff7a3d", Kenji: "#13b8a6", Ash: "#7aa300",
+    Mom: "#b56576", Priya: "#8a5cf6", Noor: "#0f9d8a", Theo: "#d97706", Gigi: "#db2777",
+  };
+  const mono = (name, c) => `<svg viewBox="0 0 40 40"><rect width="40" height="40" fill="${c}"/><text x="20" y="26.5" text-anchor="middle" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="18" font-weight="700" fill="#fff">${name[0]}</text></svg>`;
+  const av = (name, s) => `<span class="av s${s}">${name === "you" ? I.person : name === "group" ? I.group : mono(name, P[name] || "#8696a0")}</span>`;
+
+  /* ── cake photos (inline SVG, 240×176) ── */
+  const plate = `<ellipse cx="120" cy="140" rx="86" ry="14" fill="#fff"/><ellipse cx="120" cy="140" rx="86" ry="14" fill="none" stroke="#e6e0d8"/>`;
+  const photo = {
+    choc: `<svg viewBox="0 0 240 176" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="176" fill="#f1e9df"/><rect y="118" width="240" height="58" fill="#d8c3a5"/>${plate}<rect x="56" y="88" width="128" height="46" rx="4" fill="#4a2c1a"/><rect x="56" y="88" width="128" height="8" fill="#6b3f24"/><rect x="70" y="52" width="100" height="38" rx="4" fill="#4a2c1a"/><rect x="70" y="52" width="100" height="8" fill="#6b3f24"/><path d="M70 60c8 0 8 14 16 14s8-14 16-14 8 12 16 12 8-12 16-12 8 10 16 10 8-10 20-10" fill="none" stroke="#2c1608" stroke-width="5" stroke-linecap="round"/><path d="M56 96c8 0 8 16 16 16s8-16 16-16 8 14 16 14 8-14 16-14 8 12 16 12 8-12 16-12 8 10 16 10" fill="none" stroke="#2c1608" stroke-width="5" stroke-linecap="round"/><g fill="#2c1608"><path d="M96 52l10-14 6 14z"/><path d="M128 52l-6-16 14 8z"/><path d="M112 50l4-10 6 10z" fill="#3a2010"/></g><circle cx="150" cy="44" r="6" fill="#c0392b"/></svg>`,
+    matcha: `<svg viewBox="0 0 240 176" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="176" fill="#f4f1ea"/><rect y="118" width="240" height="58" fill="#cfc4b0"/>${plate}<rect x="54" y="84" width="132" height="50" rx="4" fill="#a9c98d"/><rect x="54" y="106" width="132" height="8" fill="#fff8ea"/><rect x="66" y="48" width="108" height="38" rx="4" fill="#a9c98d"/><rect x="66" y="66" width="108" height="6" fill="#fff8ea"/><path d="M60 88c10-10 20 0 30-8s20 2 30-6 20 4 30-4 20 2 30-4" fill="none" stroke="#fff8ea" stroke-width="8" stroke-linecap="round"/><path d="M72 52c8-8 16 0 24-6s16 2 24-4 16 2 24-4" fill="none" stroke="#fff8ea" stroke-width="7" stroke-linecap="round"/><g fill="#fff8ea"><circle cx="86" cy="40" r="7"/><circle cx="120" cy="36" r="8"/><circle cx="154" cy="40" r="7"/></g><g fill="#6f9a52" opacity=".8"><circle cx="90" cy="60" r="1.4"/><circle cx="104" cy="56" r="1.4"/><circle cx="130" cy="58" r="1.4"/><circle cx="150" cy="55" r="1.4"/><circle cx="76" cy="96" r="1.4"/><circle cx="110" cy="94" r="1.4"/><circle cx="166" cy="98" r="1.4"/></g><path d="M118 30c0-8 6-12 12-12-1 7-5 11-12 12z" fill="#6f9a52"/></svg>`,
+    straw: `<svg viewBox="0 0 240 176" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="176" fill="#f6ece8"/><rect y="118" width="240" height="58" fill="#d9bdb0"/>${plate}<rect x="56" y="86" width="128" height="48" rx="4" fill="#f7b6c8"/><rect x="56" y="108" width="128" height="7" fill="#fff"/><rect x="68" y="52" width="104" height="36" rx="4" fill="#f7b6c8"/><rect x="68" y="70" width="104" height="6" fill="#fff"/><path d="M60 90c10-8 20 0 30-6s20 2 30-4 20 4 30-2 20 0 28-4" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/><path d="M74 56c8-6 16 0 24-4s16 2 24-2 16 2 22-4" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/><g><ellipse cx="88" cy="42" rx="7" ry="9" fill="#e0304a"/><ellipse cx="120" cy="38" rx="8" ry="10" fill="#e0304a"/><ellipse cx="152" cy="42" rx="7" ry="9" fill="#e0304a"/><path d="M82 34l6-6 6 6M114 29l6-6 6 6M146 34l6-6 6 6" stroke="#4e9a3a" stroke-width="3" fill="none" stroke-linecap="round"/><g fill="#ffd9de"><circle cx="86" cy="40" r=".9"/><circle cx="90" cy="45" r=".9"/><circle cx="118" cy="36" r=".9"/><circle cx="122" cy="42" r=".9"/><circle cx="150" cy="40" r=".9"/><circle cx="154" cy="45" r=".9"/></g></g></svg>`,
+  };
+
+  /* ── the thread: yesterday's cake argument, today's re-asking ── */
+  const T = [
+    { day: "Yesterday" },
+    ["Maya", "ok cake for saturday 🎂 matcha or chocolate?", "9:12 AM"],
+    ["Sam", "choc", "9:12 AM"],
+    ["Jules", "matcha", "9:13 AM"],
+    ["Rio", "choc", "9:13 AM"],
+    ["Kenji", "matcha obviously", "9:14 AM"],
+    ["you", "either is fine w me", "9:15 AM"],
+    ["Ash", "is there a third option", "9:15 AM"],
+    ["Maya", "no", "9:15 AM"],
+    ["Sam", "this one", "9:17 AM", { photo: "choc", react: [["❤️", 2]] }],
+    ["Jules", "no. THIS one", "9:18 AM", { photo: "matcha", react: [["😂", 3], ["🍵", 1]] }],
+    ["Rio", "lmaooo", "9:18 AM"],
+    ["Maya", "ok so 2 choc 2 matcha", "9:20 AM"],
+    { unread: 44 },
+    ["Rio", "3 choc. kenji doesn't count", "9:20 AM"],
+    ["Kenji", "excuse me??", "9:21 AM"],
+    ["Sam", "💀", "9:21 AM"],
+    ["Jules", "wait what about carrot", "9:24 AM"],
+    ["Ash", "carrot is not a cake", "9:24 AM"],
+    ["Jules", "it literally is", "9:24 AM"],
+    ["Kenji", "it's a vegetable with frosting", "9:25 AM", { react: [["😂", 4]] }],
+    ["you", "do we have plates", "9:31 AM"],
+    ["Rio", "who has plates", "9:31 AM"],
+    ["Sam", "i have like 4", "9:32 AM"],
+    ["Maya", "7pm at mine btw", "9:33 AM", { react: [["👍", 3]] }],
+    ["Kenji", "👍", "9:33 AM"],
+    ["Maya", "who's bringing what", "9:34 AM"],
+    ["Jules", "drinks", "9:34 AM"],
+    ["Ash", "chips", "9:35 AM"],
+    ["Rio", "plates i guess??", "9:35 AM"],
+    ["Sam", "ok hear me out", "9:41 AM", { photo: "straw", react: [["💀", 4]] }],
+    ["Maya", "SAM", "9:41 AM"],
+    ["Jules", "no", "9:41 AM"],
+    ["Kenji", "the vote is 4-3 matcha now, i counted", "9:46 AM"],
+    ["Rio", "since when", "9:46 AM"],
+    ["Jules", "since ash switched", "9:47 AM"],
+    ["Ash", "i didn't switch", "9:47 AM"],
+    ["Ash", "i said chips", "9:47 AM"],
+    ["Sam", "can we do half half", "9:52 AM"],
+    ["Maya", "they don't do half half", "9:52 AM"],
+    ["Rio", "the place on 5th does", "9:53 AM"],
+    ["Jules", "which place", "9:53 AM"],
+    ["Rio", "green door one", "9:53 AM"],
+    ["Kenji", "that's a bakery??", "9:54 AM"],
+    ["Sam", "wait where is it saturday", "10:20 AM"],
+    ["Maya", "^^ scroll up lol", "10:21 AM", { react: [["😂", 4]] }],
+    ["Sam", "😭", "10:21 AM"],
+    { day: "Today" },
+    ["Maya", "FINAL ANSWER. matcha. ordering at 3", "8:02 AM", { react: [["🎉", 5]] }],
+    ["Sam", "choc", "8:02 AM"],
+    ["Sam", "kidding", "8:03 AM"],
+    ["Sam", "not kidding", "8:03 AM"],
+    ["Jules", "🙄", "8:03 AM"],
+    ["you", "matcha is great!!", "8:05 AM"],
+    ["Rio", "is it sat or sun", "8:11 AM"],
+    ["Maya", "saturday!!!!", "8:11 AM"],
+    ["Kenji", "🫡", "8:12 AM"],
+    ["Ash", "what should i bring again", "8:19 AM"],
+    ["Jules", "chips ash", "8:19 AM"],
+    ["Ash", "right", "8:20 AM"],
+  ];
+  const LAST = ["Rio", "wait what time again??", "8:24 AM"]; // arrives live in rec mode
+
+  /* ── sidebar ── */
+  const CHATS = [
+    { n: TITLE, g: true, p: "Ash: right", t: "8:20 AM", un: 44, on: true },
+    { n: "Mom", p: "call me when you can", t: "8:14 AM" },
+    { n: "Jules", p: "omw", t: "7:58 AM" },
+    { n: "work 🙃", g: true, p: "Priya: can someone take the 3pm", t: "7:30 AM", un: 4 },
+    { n: "roommates", g: true, p: "You: I'll get milk", t: "Yesterday" },
+    { n: "Sam", p: "📷 Photo", t: "Yesterday" },
+    { n: "book club 📚", g: true, p: "Noor: chapter 9 was a lot", t: "Yesterday", un: 2 },
+    { n: "Kenji", p: "lol", t: "Yesterday" },
+    { n: "Rio", p: "sent you the link", t: "Sunday" },
+    { n: "Maya", p: "🎂", t: "Sunday" },
+    { n: "Ash", p: "thanks!!", t: "Saturday" },
+    { n: "Theo", p: "You: next week?", t: "Friday" },
+  ];
+  $("sh").innerHTML = `${av("you", 40)}<span class="ico">${I.compose}</span><span class="ico">${I.more}</span>`;
+  $("search").innerHTML = `${I.search}<span>Search or start a new chat</span>`;
+  $("chats").innerHTML = CHATS.map((c, i) => `<div class="chat${c.on ? " on" : ""}${c.un ? " un" : ""}" ${i === 0 ? 'id="crew"' : ""}>${av(c.g ? "group" : c.n.split(" ")[0], 48)}<div class="c"><div class="r1"><b class="nm">${c.n}</b><span class="t${c.un ? " on" : ""}">${c.t}</span></div><div class="r2"><span class="p">${c.p}</span>${c.un ? `<span class="badge">${c.un}</span>` : ""}</div></div></div>`).join("");
+
+  /* ── header + composer ── */
+  $("ph").innerHTML = `${av("group", 40)}<div class="c"><div class="title nm">${TITLE}</div><div class="mem">Maya, Jules, Sam, Rio, Kenji, Ash, You</div></div><span class="ico">${I.video}</span><span class="ico">${I.phone}</span><span class="ico">${I.search}</span><span class="ico">${I.more}</span>`;
+  $("composer").innerHTML = `<span class="ico">${I.smile}</span><span class="ico">${I.plus}</span><div class="in">Type a message</div><span class="ico">${I.mic}</span>`;
+
+  /* ── messages ── */
+  const msgs = $("msgs");
+  const el = html => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; };
+  const bubble = (who, text, time, o = {}, first = true) => {
+    const me = who === "you";
+    const name = !me && first ? `<span class="name" style="color:${P[who]}">${who}</span>` : "";
+    const pic = o.photo ? `<span class="photo">${photo[o.photo]}</span>` : "";
+    const lead = first && !me ? av(who, 28) : `<span class="sp"></span>`;
+    return `<div class="m${me ? " me" : ""}${first ? " first" : " run"}">${me ? "" : lead}<div class="bub">${name}${pic}<span class="txt">${text}</span><span class="time">${time}</span></div></div>` +
+      (o.react ? `<div class="reacts${me ? " me" : ""}">${o.react.map(([e, n]) => `<span class="react"><span>${e}</span> ${n}</span>`).join("")}</div>` : "");
+  };
+  let prev = null, html = "";
+  for (const item of T) {
+    if (!Array.isArray(item)) { html += item.day ? `<div class="day">${item.day.toUpperCase()}</div>` : `<div class="unread">${item.unread} UNREAD MESSAGES</div>`; prev = null; continue; }
+    const [who, text, time, o] = item;
+    html += bubble(who, text, time, o, who !== prev);
+    prev = o && o.react ? null : who;
+  }
+  msgs.innerHTML = html;
+  const typing = el(`<div class="m typing first">${av(LAST[0], 28)}<div class="bub"><span class="name" style="color:${P[LAST[0]]}">${LAST[0]}</span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>`);
+  const last = el(bubble(...LAST));
+  const bottom = () => { msgs.scrollTop = msgs.scrollHeight; };
+  const crew = $("crew");
+  const preview = (p, t) => { crew.querySelector(".p").textContent = p; crew.querySelector(".t").textContent = t; };
+
+  if (!REC) { msgs.append(last); preview(`${LAST[0]}: ${LAST[1]}`, LAST[2]); bottom(); return; }
+
+  /* ── rec loop: 300ms hold → flick 0→bottom over 4s (linear, a thumb) → typing 900ms → last message lands → hold 2.5s → reset ── */
+  const D = 4000;
+  const run = () => {
+    last.remove(); typing.remove(); last.classList.remove("pop");
+    preview(`Ash: right`, "8:20 AM");
+    msgs.scrollTop = 0;
+    const max = msgs.scrollHeight - msgs.clientHeight;
+    const t0 = performance.now();
+    const step = now => {
+      const p = Math.min(1, (now - t0) / D);
+      msgs.scrollTop = Math.round(max * p);
+      if (p < 1) requestAnimationFrame(step);
+      else {
+        msgs.append(typing); bottom();
+        setTimeout(() => {
+          typing.remove(); last.classList.add("pop"); msgs.append(last); bottom();
+          preview(`${LAST[0]}: ${LAST[1]}`, LAST[2]);
+          setTimeout(run, 2500);
+        }, 900);
+      }
+    };
+    requestAnimationFrame(step);
+  };
+  setTimeout(run, 300);
+})();
+</script>
+</body>
+</html>

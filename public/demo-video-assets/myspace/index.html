@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>~*hOlLy*~ | myspace</title>
+<script>
+/* ──────────────────────────────────────────────────────────────────────
+   PERSONALIZATION — fill from Holly. Nothing in here touches the layout.
+   Local generated snapshots live in `assets/`; `photo` selects one while
+   the SVG webcam drawings remain as offline fallbacks.
+   ────────────────────────────────────────────────────────────────────── */
+const PROFILE = {
+  sex: "Female",
+  screenName: "~*hOlLy*~",            // ASK: what she'd actually have used
+  photo: "assets/holly-2006.jpg",
+  firstName: "holly",                 // used in "holly's Interests" etc.
+  handle: "hollyxo",
+  age: 17,                            // ASK: her 2006 self
+  hometown: "Sacramento, California", // ASK: [town], [state]
+  mood: "bored",
+  status: "so much homework tonight.",
+  marquee: "&hearts; welcome to my page &hearts; thanks for stopping by &hearts; pc4pc &hearts; comment me &hearts; leave some love &hearts; ~*hOlLy*~ &hearts; ur too cute &hearts; add me &hearts; ",
+  lastLogin: "3/14/2006",
+  friendCount: 143,
+  commentCount: 91,
+  song: { title: "Such Great Heights", artist: "The Postal Service", length: 266 }, // ASK: her song
+  interests: {
+    General: "music. making mix cds. my friends. taking pictures of everything. staying up way too late. driving around with nowhere to go.",
+    Music: "Death Cab for Cutie, The Postal Service, Brand New, Paramore, Jimmy Eat World, Taking Back Sunday, Rilo Kiley",   // ASK: her three
+    Movies: "Garden State, Napoleon Dynamite, Mean Girls, Eternal Sunshine of the Spotless Mind",  // ASK
+    Television: "The O.C., Lost, Laguna Beach, Gilmore Girls",   // ASK
+    Books: "Harry Potter (all of them), The Perks of Being a Wallflower",   // ASK
+    Heroes: "my mom.",
+  },
+  details: [
+    ["Status", "Single"],
+    ["Here for", "Friends"],
+    ["Hometown", "Sacramento"],
+    ["Body type", "5' 4\" / Slim / Slender"],
+    ["Zodiac Sign", "Pisces"],
+    ["Smoke / Drink", "No / No"],
+    ["Education", "In high school"],
+  ],
+  schools: "Kennedy High School<br>Sacramento, CALIFORNIA<br>Student status: Currently Attending<br>2004 to 2007",
+  networking: "Music &middot; Fan",
+  blog: ["so bored.", "new song on my page!!", "ugh. monday."],
+  aboutMe: [
+    "i'm holly. 17. i like music more than is probably healthy and i will make you a mix cd if you ask nice.",
+    "i stayed up until 2am making this page look exactly how i wanted it and i regret nothing.",
+    "i take pictures of everything. i laugh too loud. i always comment back.",
+    "if you're reading this leave me something on my wall. &hearts;",
+  ],
+  whoToMeet: "whoever invented the burrito.",
+  quiz: {
+    question: "Which member of the crew are you?",
+    result: "THE LOYAL FRIEND",
+    blurb: "you remember everyone's birthday and you always comment back.",
+  },
+  // Top 8. `kind: "tom"` = the white-shirt silhouette, `kind: "group"` = blurry group shot.
+  top8: [
+    { name: "Tom",    kind: "tom" },
+    { name: "Thomas", color: "#ffb02e" },
+    { name: "Maya",   color: "#7c5cff" },
+    { name: "Jules",  color: "#e63da8", photo: "assets/jules-2006.jpg", tilt: -3 },
+    { name: "Sam",    color: "#3d6eff" },
+    { name: "Kenji",  color: "#13b8a6", tilt: 2 },
+    { name: "Rio",    color: "#ff7a3d", kind: "group" },
+    { name: "Ash",    color: "#c6f750", tilt: -2, ink: "#1a2a00" },
+  ],
+  comments: [
+    { by: "Jules",  date: "3/12/2006 11:48 PM", text: "thanks for the add!! &hearts;" },
+    { by: "Sam",    date: "3/12/2006 9:15 PM",  text: "PC4PC?" },
+    { by: "Kenji",  date: "3/11/2006 6:02 PM",  text: "ur page is sooo cute" },
+    { by: "Ash",    date: "3/10/2006 12:01 AM", text: "happy birthday hollyyyyy", glitter: true },
+    { by: "Rio",    date: "3/9/2006 4:40 PM",   text: "comment back" },
+    { by: "Thomas", date: "3/8/2006 10:23 PM",  text: "who did ur layout. also ur song has been stuck in my head all week, thanks a lot." },
+    { by: "Maya",   date: "3/7/2006 8:56 PM",   text: "HOLLYYYY. ok so i just got home and i HAD to come leave you a comment because tonight was seriously the best. i can't believe we drove all the way out there just for a milkshake and it was closed and we ended up sitting in the parking lot for two hours listening to the same cd on repeat. that's what i love about you honestly, everything is an adventure even when nothing happens. also your new layout is SO cute, the pink is perfect, don't let sam tell you it's too much because it's not. i'm so glad you put me in your top 8 again (i noticed you moved me above kenji, don't think i didn't see that lol). ok i have a bio test tomorrow that i have not studied for AT ALL so i should probably go but i'll see you at lunch. same spot. bring the cd. i love you more than the burrito guy, whoever he is. comment me back!!! &hearts;&hearts;&hearts; - maya" },
+    { by: "Jules",  date: "3/5/2006 3:33 PM",   text: "ily" },
+  ],
+};
+
+/* Thomas's 2006 page — the montage cut. Fill from Thomas (slots marked ASK). */
+const PROFILE_THOMAS = {
+  sex: "Male",
+  picStyle: "boy",                    // webcam placeholder variant
+  screenName: "xX_thomas_Xx",          // ASK
+  photo: "assets/thomas-2006.jpg",
+  firstName: "thomas",
+  handle: "thomasxcore",
+  age: 17,                            // ASK
+  hometown: "Sacramento, California", // ASK
+  mood: "chill",
+  status: "band practice @ 7. bring picks.",
+  marquee: "&#9733; thanks for the add &#9733; pc4pc &#9733; new song up &#9733; show friday, come &#9733; xX_thomas_Xx &#9733; ",
+  lastLogin: "3/14/2006",
+  friendCount: 211,
+  commentCount: 138,
+  song: { title: "The Quiet Things That No One Ever Knows", artist: "Brand New", length: 242 }, // ASK
+  interests: {
+    General: "guitar. skating (badly). driving people around. late night taco bell. making mix cds for people who didn't ask.",
+    Music: "Brand New, Taking Back Sunday, Thursday, Saves the Day, Blink-182, Coheed and Cambria",   // ASK
+    Movies: "Fight Club, Donnie Darko, Napoleon Dynamite, Garden State (holly made me)",   // ASK
+    Television: "Adult Swim, The Office, Viva La Bam",   // ASK
+    Books: "The Catcher in the Rye (for school), Fight Club",   // ASK
+    Heroes: "my dad. and tony hawk.",
+  },
+  details: [
+    ["Status", "Single"],
+    ["Here for", "Friends, Networking"],
+    ["Hometown", "Sacramento"],
+    ["Body type", "5' 10\" / Slim / Slender"],
+    ["Zodiac Sign", "Scorpio"],
+    ["Smoke / Drink", "No / No"],
+    ["Education", "In high school"],
+  ],
+  schools: "Kennedy High School<br>Sacramento, CALIFORNIA<br>Student status: Currently Attending<br>2004 to 2007",
+  networking: "Music &middot; Guitar &middot; Band",
+  blog: ["show was sick.", "new song on my page", "physics is a lie"],
+  aboutMe: [
+    "thomas. 17. i play guitar badly and skate worse. i have a car, which is the only reason half of you are my friends.",
+    "i stay up too late. i comment back. i will burn you a cd if you ask.",
+    "our band doesn't have a name yet. suggestions in the comments.",
+    "if you're reading this you're already in my top 8 or you're about to ask why you're not.",
+  ],
+  whoToMeet: "whoever keeps taking my hoodies. (sam. it's sam.)",
+  quiz: {
+    question: "Which member of the crew are you?",
+    result: "THE DRIVER",
+    blurb: "you have the car. everyone loves you at 11pm.",
+  },
+  top8: [
+    { name: "Tom",    kind: "tom" },
+    { name: "Holly",  color: "#e9369d", tilt: -3 },
+    { name: "Sam",    color: "#3d6eff" },
+    { name: "Kenji",  color: "#13b8a6", tilt: 2 },
+    { name: "Rio",    color: "#ff7a3d", kind: "group" },
+    { name: "Maya",   color: "#7c5cff" },
+    { name: "Jules",  color: "#e63da8", photo: "assets/jules-2006.jpg" },
+    { name: "Ash",    color: "#c6f750", tilt: -2, ink: "#1a2a00" },
+  ],
+  comments: [
+    { by: "Holly",  date: "3/13/2006 12:12 AM", text: "ur song is so sad lol. also thanks for the ride &hearts;" },
+    { by: "Sam",    date: "3/12/2006 9:40 PM",  text: "practice got moved to 8. tell kenji. also i don't have ur hoodie" },
+    { by: "Kenji",  date: "3/12/2006 6:02 PM",  text: "PC4PC" },
+    { by: "Jules",  date: "3/11/2006 12:01 AM", text: "happy birthday thomas!!", glitter: true },
+    { by: "Rio",    date: "3/10/2006 4:40 PM",  text: "dude who did ur layout" },
+    { by: "Maya",   date: "3/9/2006 8:56 PM",   text: "holly says hi. she's sitting next to me. she says stop reading this. she's blushing." },
+    { by: "Ash",    date: "3/8/2006 3:33 PM",   text: "comment back" },
+    { by: "Holly",  date: "3/6/2006 11:58 PM",  text: "you should put me higher in ur top 8 ;)" },
+  ],
+};
+
+/* Maya's page — the third montage cut. Fictional crew member, no ASK slots. */
+const PROFILE_MAYA = {
+  sex: "Female",
+  picStyle: "sunny",
+  screenName: "m a y a",
+  photo: "assets/maya-2006.jpg",
+  firstName: "maya",
+  handle: "mayatalks",
+  age: 17,
+  hometown: "Sacramento, California",
+  mood: "excited",
+  status: "bio test = death. the shins are coming to sac!!!",
+  marquee: "",
+  lastLogin: "3/14/2006",
+  friendCount: 187,
+  commentCount: 264,
+  song: { title: "Float On", artist: "Modest Mouse", length: 208 },
+  interests: {
+    General: "talking. polaroids. thrift stores. driving around with holly. making everyone listen to the shins.",
+    Music: "Modest Mouse, The Shins, Rilo Kiley, Bright Eyes, Tegan and Sara, Death Cab",
+    Movies: "Garden State (obviously), Am&eacute;lie, Almost Famous, Eternal Sunshine",
+    Television: "Gilmore Girls, Arrested Development, Project Runway",
+    Books: "The Bell Jar, Everything Is Illuminated, anything by Sylvia Plath",
+    Heroes: "my grandma. and lorelai gilmore.",
+  },
+  details: [
+    ["Status", "Single"],
+    ["Here for", "Friends"],
+    ["Hometown", "Sacramento"],
+    ["Body type", "5' 6\" / Average"],
+    ["Zodiac Sign", "Gemini"],
+    ["Smoke / Drink", "No / No"],
+    ["Education", "In high school"],
+  ],
+  schools: "Kennedy High School<br>Sacramento, CALIFORNIA<br>2004 to 2007",
+  networking: "Photography",
+  blog: ["polaroid dump", "bio test = death", "the shins are coming to sac!!!"],
+  aboutMe: [
+    "maya. 17. i talk too much and i'm not sorry about it.",
+    "holly is my best friend and she's aware. we have a spot. you can't come.",
+    "i take polaroids of everything and i will put you on my wall whether you like it or not.",
+    "i changed this layout four times this week. this one's staying. probably.",
+  ],
+  whoToMeet: "the shins. and whoever invented the burrito (holly's joke, i'm stealing it).",
+  quiz: {
+    question: "Which Gilmore Girl are you?",
+    result: "LORELAI",
+    blurb: "you have never once stopped talking. coffee is a personality.",
+  },
+  top8: [
+    { name: "Tom",    kind: "tom" },
+    { name: "Holly",  color: "#e9369d", tilt: -3 },
+    { name: "Thomas", color: "#ffb02e" },
+    { name: "Jules",  color: "#e63da8", photo: "assets/jules-2006.jpg", tilt: 2 },
+    { name: "Sam",    color: "#3d6eff" },
+    { name: "Kenji",  color: "#13b8a6", tilt: -2 },
+    { name: "Rio",    color: "#ff7a3d", kind: "group" },
+    { name: "Ash",    color: "#c6f750", ink: "#1a2a00" },
+    { name: "Noor",   color: "#f4a261", tilt: 2 },
+    { name: "Theo",   color: "#3f70ff" },
+    { name: "Gigi",   color: "#b5179e", tilt: -3 },
+    { name: "Marco",  color: "#2a9d8f" },
+    { name: "Ren",    color: "#ef476f", tilt: 2 },
+    { name: "Sky",    color: "#7c5cff" },
+    { name: "Alex",   color: "#ff7c42", tilt: -2 },
+    { name: "Jordan", color: "#06d6a0", ink: "#003d2b" },
+  ],
+  comments: [
+    { by: "Holly",  date: "3/13/2006 11:02 PM", text: "MAYAAA. same spot tomorrow. bring the cd. i love you more than the burrito guy &hearts;" },
+    { by: "Jules",  date: "3/13/2006 4:18 PM",  text: "where did u get ur header!! it's so cute" },
+    { by: "Thomas", date: "3/12/2006 10:40 PM", text: "tell holly i said hi. (don't actually.)" },
+    { by: "Ash",    date: "3/12/2006 12:01 AM", text: "happy birthday maya!!!", glitter: true },
+    { by: "Kenji",  date: "3/11/2006 6:30 PM",  text: "PC4PC?" },
+    { by: "Sam",    date: "3/10/2006 9:12 PM",  text: "u talk too much. (comment back)" },
+    { by: "Rio",    date: "3/9/2006 2:05 PM",   text: "polaroid dump when" },
+    { by: "Holly",  date: "3/8/2006 11:47 PM",  text: "ok i saw ur top 16 and i'm #1 and i'm not going to be normal about it" },
+  ],
+};
+const FRIEND_PHOTOS = {
+  Tom: "assets/tom-2006.jpg",
+  Holly: "assets/holly-2006.jpg",
+  Thomas: "assets/thomas-2006.jpg",
+  Maya: "assets/maya-2006.jpg",
+  Jules: "assets/jules-2006.jpg",
+  Sam: "assets/sam-2006.jpg",
+  Kenji: "assets/kenji-2006.jpg",
+  Rio: "assets/rio-2006.jpg",
+  Ash: "assets/ash-2006.jpg",
+  Noor: "assets/noor-2006.jpg",
+  Theo: "assets/theo-2006.jpg",
+  Gigi: "assets/gigi-2006.jpg",
+  Marco: "assets/marco-2006.jpg",
+  Ren: "assets/ren-2006.jpg",
+  Sky: "assets/sky-2006.jpg",
+  Alex: "assets/alex-2006.jpg",
+  Jordan: "assets/jordan-2006.jpg",
+};
+const PROFILES = { holly: PROFILE, thomas: PROFILE_THOMAS, maya: PROFILE_MAYA };
+</script>
+<style>
+/* ───────────────────────────── base / classic ───────────────────────────── */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font: 11px Verdana, Arial, Tahoma, sans-serif;
+  color: #000;
+  background: #fff;
+  min-width: 800px;
+}
+a { color: #003399; text-decoration: none; }
+a:hover { text-decoration: underline; }
+table { border-collapse: collapse; }
+td { font: 11px Verdana, Arial, Tahoma, sans-serif; vertical-align: top; }
+b, strong { font-weight: bold; }
+
+/* header + nav */
+.hdr { width: 800px; margin: 0 auto; padding: 8px 0 6px; display: flex; align-items: center; justify-content: space-between; }
+.wordmark { font: bold 27px Arial, Helvetica, sans-serif; letter-spacing: -1.5px; color: #003399; display: flex; align-items: baseline; gap: 8px; }
+.wordmark small { font: italic 11px Verdana, sans-serif; color: #444; letter-spacing: 0; }
+.hdr-right { font: 10px Verdana, sans-serif; color: #333; text-align: right; }
+.hdr-right .links { margin-bottom: 4px; }
+.hdr-right .links a { margin: 0 3px; }
+.hdr-right input[type=text] { width: 120px; font: 10px Verdana; border: 1px solid #7f9db9; padding: 1px 2px; }
+.hdr-right button { font: 10px Verdana; padding: 0 5px; }
+.hdr-right label { margin-right: 4px; }
+.nav { background: #6699cc; border-top: 1px solid #336699; border-bottom: 1px solid #336699; }
+.nav .in { width: 800px; margin: 0 auto; padding: 5px 0; color: #fff; font: bold 10px Verdana, sans-serif; text-align: center; white-space: nowrap; }
+.nav a { color: #fff; }
+.nav i { font-style: normal; color: #cfe0f3; margin: 0 4px; }
+
+
+/* columns */
+.page { width: 800px; margin: 14px auto 0; }
+.cols { width: 800px; table-layout: fixed; }
+.cols > tbody > tr > td.left { width: 300px; padding-right: 10px; }
+.cols > tbody > tr > td.right { width: 490px; }
+
+/* left column */
+.nametext { font: bold 22px Arial, Helvetica, sans-serif; color: #000; display: inline-block; line-height: 1.2; }
+.mood { margin-top: 3px; }
+.mood .face { display: inline-block; width: 12px; height: 12px; vertical-align: -2px; margin-right: 2px; }
+.status { color: #444; font-style: italic; margin-top: 1px; }
+.pic { width: 178px; padding: 3px; margin: 10px 0 8px 4px; border: 1px solid #aaa; background: #fff; box-shadow: 1px 1px 3px rgba(0,0,0,.25); transform: rotate(2deg); }
+.pic-in { position: relative; width: 170px; height: 170px; overflow: hidden; background: #222; }
+.pic-in svg { width: 100%; height: 100%; display: block; }
+.pic-in img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.gray { color: #555; font-size: 10px; line-height: 1.55; }
+.online { display: inline-block; background: #fffbe0; border: 1px solid #ff6600; color: #ff6600; font: bold 9px Verdana; padding: 1px 4px; margin-top: 3px; letter-spacing: .3px; animation: blink 1s steps(2, jump-none) infinite; }
+.online::before { content: ""; display: inline-block; width: 6px; height: 6px; background: #33cc33; border-radius: 50%; margin-right: 4px; vertical-align: 0; }
+.viewmy { margin: 8px 0; }
+.url { margin: 8px 0; font-size: 10px; }
+.url b { color: #000; }
+
+.skin { width: 100%; margin-bottom: 10px; }
+.skin.bordered { border: 1px solid #6699cc; }
+.hdr-cell { background: #6699cc; color: #fff; font: bold 11px Verdana, sans-serif; padding: 3px 6px; }
+.hdr-cell .r { float: right; font-weight: normal; font-size: 10px; }
+.hdr-cell .r a { color: #fff; }
+.lbl { background: #b1d0f0; color: #336699; font: bold 10px Verdana, sans-serif; width: 92px; padding: 5px 6px; }
+.val { background: #d5e0ee; padding: 5px 6px; line-height: 1.45; }
+.contact td { padding: 4px 6px; white-space: nowrap; width: 50%; }
+.contact td svg { width: 12px; height: 12px; vertical-align: -2px; margin-right: 4px; fill: none; stroke: #336699; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.contact td a { font-size: 10px; }
+
+/* right column */
+.extnet { border: 2px solid #ff6600; padding: 10px 8px; text-align: center; font: bold 15px Arial, Helvetica, sans-serif; color: #000; margin-bottom: 10px; }
+.extnet-banner { display: none; margin-bottom: 10px; }
+.extnet-banner svg { width: 100%; height: auto; display: block; }
+.orange { color: #ff6600; font: bold 15px Arial, Helvetica, sans-serif; margin: 6px 0 4px; }
+.blog li { margin: 2px 0; }
+.blog ul { margin: 2px 0 2px 16px; padding: 0; }
+.blurb p { margin: 0 0 6px; line-height: 1.5; }
+.block { margin-bottom: 10px; }
+
+/* the song player (Flash-ish) */
+.player { margin: 4px 0 10px; border: 2px solid #5a7fb0; background: #2b3b52; color: #fff; width: 100%; font-family: Arial, sans-serif; }
+.player .p-head { background: linear-gradient(#6b93c9, #3e639a); padding: 4px 8px; font: bold 12px Arial; border-bottom: 1px solid #1f2e45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player .p-head .note { color: #ffcc33; margin-right: 4px; }
+.player .p-body { display: flex; align-items: center; gap: 10px; padding: 6px 8px; }
+.player .p-btns { display: flex; gap: 3px; }
+.player .p-btns span { display: inline-block; width: 24px; height: 20px; line-height: 20px; text-align: center; background: linear-gradient(#eef, #aab); color: #223; font: bold 10px Arial; border: 1px solid #667; }
+.player .p-btns span.on { background: linear-gradient(#ffd, #fc3); }
+.player .p-eq { display: flex; align-items: flex-end; gap: 2px; height: 22px; padding: 0 4px; }
+.player .p-eq i { display: block; width: 6px; height: 40%; background: #66ccff; transition: height .18s steps(3, jump-none); }
+.player .p-track { flex: 1; height: 8px; background: #111a28; border: 1px solid #7a9bd0; position: relative; }
+.player .p-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 25%; background: linear-gradient(#9cf, #39c); }
+.player .p-time { font: 10px Verdana; color: #cfe0ff; white-space: nowrap; min-width: 66px; text-align: right; }
+.player .p-foot { background: #1f2e45; padding: 3px 8px; font: 10px Verdana; border-top: 1px solid #5a7fb0; }
+.player .p-foot a { color: #9cf; }
+.player .p-foot .brand { float: right; color: #ffcc33; font-weight: bold; }
+
+/* quiz result */
+.quiz { border: 2px solid #6699cc; background: #fff; margin: 8px 0 8px; width: 300px; text-align: center; font-family: Verdana, sans-serif; }
+.quiz .q-top { background: #6699cc; color: #fff; font: bold 10px Verdana; padding: 3px; }
+.quiz .q-res { font: bold 18px "Arial Rounded MT Bold", "Arial Black", Arial, sans-serif; color: #003399; padding: 8px 6px 2px; }
+.quiz .q-res .heart { color: #ff6600; }
+.quiz .q-blurb { font: 10px Verdana; color: #333; padding: 0 10px 6px; }
+.quiz .q-foot { font: 9px Verdana; color: #666; border-top: 1px dashed #99b; padding: 3px; }
+
+/* top 8 */
+.friendcount { margin: 6px 0 4px; font-weight: bold; }
+.top8 { width: 100%; margin: 4px 0 6px; }
+.top8 td { text-align: center; width: 25%; padding: 5px 2px 8px; }
+.top8 .av { width: 96px; height: 96px; margin: 0 auto 3px; padding: 2px; background: #fff; border: 1px solid #999; }
+.top8 .av svg { width: 100%; height: 100%; display: block; }
+.top8 a.nm { font-weight: bold; }
+.viewall { text-align: center; margin: 4px 0 8px; }
+
+/* comments */
+.cmt-count { margin: 6px 0; }
+.comments { width: 100%; }
+.comments td.who { background: #b1d0f0; width: 110px; padding: 6px; text-align: center; }
+.comments td.who a { font-weight: bold; display: block; margin-bottom: 4px; }
+.comments td.who .av { width: 80px; height: 80px; margin: 0 auto; padding: 2px; background: #fff; border: 1px solid #999; }
+.comments td.who .av svg { width: 100%; height: 100%; display: block; }
+.comments td.txt { background: #d5e0ee; padding: 6px 8px; line-height: 1.5; }
+.comments td.txt .date { color: #555; font-size: 10px; margin-bottom: 4px; }
+.comments tr.sp td { height: 6px; background: transparent; padding: 0; }
+
+.footer { text-align: center; color: #555; font-size: 10px; margin: 22px 0 30px; }
+.footer a { margin: 0 4px; }
+.credit { display: none; text-align: center; font: 9px Verdana; color: #ff9ad5; margin: -20px 0 24px; }
+.credit a { color: #ff66c4; }
+
+.av { position: relative; overflow: hidden; }
+.av-in { width: 100%; height: 100%; }
+.av-in img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+/* glitter-only pieces, hidden in classic */
+.only-dark { display: none; }
+
+/* the avatar treatment: 2006 low-res */
+.av svg { filter: contrast(1.05) saturate(.92); }
+
+/* ───────────────────────────── motion (both skins) ───────────────────────────── */
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .18; } }
+
+/* ───────────────────────────── glitter skin (default): pink, light, loved ───────────────────────────── */
+body.v-glitter { color: #222; background-color: #ffeef7; /* tile set from JS */ }
+.v-glitter a { color: #e0148a; }
+.v-glitter .status { color: #7a4a66; }
+.v-glitter .gray { color: #8a5a78; }
+.v-glitter .pic { border-color: #ff7ccb; background: #fff; box-shadow: 2px 2px 6px rgba(224,20,138,.22); }
+.v-glitter .online { background: #fff; border-color: #ff3ea5; color: #e0148a; box-shadow: 0 0 5px rgba(255,62,165,.6); }
+.v-glitter .online::before { background: #6fd15a; }
+.v-glitter .skin { background: #fff; border: 1px solid #ff9ad5; }
+.v-glitter .skin.bordered { border-color: #ff9ad5; }
+.v-glitter .hdr-cell { background: #ff1493; color: #fff; }
+.v-glitter .lbl { background: #ffd6ec; color: #b3006a; }
+.v-glitter .val { background: #fff6fb; color: #222; }
+.v-glitter .orange { color: #e0148a; }
+.v-glitter .block { background: #fff; border: 1px solid #ff9ad5; padding: 6px 8px; margin-bottom: 10px; }
+.v-glitter .quiz { border-color: #ff3ea5; background: #fff; }
+.v-glitter .quiz .q-top { background: #ff1493; }
+.v-glitter .quiz .q-res { color: #e0148a; text-shadow: 0 0 6px rgba(255,20,147,.35); }
+.v-glitter .quiz .q-res .heart { color: #ff5fbf; }
+.v-glitter .quiz .q-blurb { color: #555; }
+.v-glitter .quiz .q-foot { color: #b3006a; border-top-color: #ff9ad5; }
+.v-glitter .top8 .av, .v-glitter .comments td.who .av { background: #fff; border-color: #ff7ccb; box-shadow: 1px 1px 4px rgba(224,20,138,.25); }
+.v-glitter .comments td.who { background: #ffd6ec; }
+.v-glitter .comments td.txt { background: #fff6fb; }
+.v-glitter .comments td.txt .date { color: #8a5a78; }
+.v-glitter .footer { color: #8a5a78; }
+.v-glitter .credit { color: #c04a90; }
+.v-glitter .credit a { color: #e0148a; }
+
+/* ───────────────────────────── dark glitter skin (?v=dark — the first pass) ───────────────────────────── */
+body.v-dark {
+  color: #fff;
+  background-color: #070209;
+  /* tile is set from JS (inline svg data uri) */
+}
+.v-dark a { color: #ff7ccb; }
+.v-glitter .nametext, .v-dark .nametext, .v-scene .nametext {
+  font: bold 27px "Arial Rounded MT Bold", "Arial Black", Arial, sans-serif;
+  letter-spacing: .5px;
+}
+.v-glitter .glitter-text, .v-dark .glitter-text, .v-scene .glitter-text {
+  background-image: linear-gradient(115deg, #ff1493 0%, #ffffff 14%, #ff8ad0 26%, #ff1493 40%, #ffffff 54%, #ff8ad0 66%, #ff1493 80%, #ffffff 92%, #ff1493 100%);
+  background-size: 240% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 3px rgba(255,20,147,.9)) drop-shadow(0 0 10px rgba(255,20,147,.55));
+  animation: shimmer 3s linear infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: 0% 0; filter: drop-shadow(0 0 3px rgba(255,20,147,.9)) drop-shadow(0 0 10px rgba(255,20,147,.55)) hue-rotate(0deg); }
+  50%  { filter: drop-shadow(0 0 4px rgba(255,20,147,1)) drop-shadow(0 0 14px rgba(255,80,190,.7)) hue-rotate(-14deg); }
+  100% { background-position: 240% 0; filter: drop-shadow(0 0 3px rgba(255,20,147,.9)) drop-shadow(0 0 10px rgba(255,20,147,.55)) hue-rotate(0deg); }
+}
+.v-dark .status { color: #f6c9e6; }
+.v-dark .gray { color: #f1bfdc; }
+.v-dark .mood { color: #fff; }
+.v-dark .pic { border-color: #ff3ea5; background: #1a0512; box-shadow: 0 0 10px rgba(255,62,165,.55); }
+.v-dark .online { background: #2a0a1e; border-color: #ff3ea5; color: #ffb3dd; box-shadow: 0 0 6px #ff3ea5, inset 0 0 4px rgba(255,62,165,.6); }
+.v-dark .online::before { background: #c6f750; box-shadow: 0 0 4px #c6f750; }
+.v-dark .url b { color: #fff; }
+
+.v-dark .skin { background: rgba(0,0,0,.65); border: 1px solid #ff3ea5; }
+.v-dark .skin.bordered { border-color: #ff3ea5; }
+.v-dark .hdr-cell { background: #ff1493; color: #fff; }
+.v-dark .lbl { background: rgba(255,20,147,.45); color: #fff; }
+.v-dark .val { background: rgba(0,0,0,.35); color: #fbe4f2; }
+.v-glitter .contact td svg, .v-dark .contact td svg, .v-scene .contact td svg { stroke: #ff7ccb; }
+.v-glitter .extnet, .v-dark .extnet, .v-scene .extnet { display: none; }
+.v-glitter .extnet-banner, .v-dark .extnet-banner, .v-scene .extnet-banner { display: block; }
+.v-dark .orange { color: #ff5fbf; }
+.v-dark .blurb, .v-dark .blog, .v-dark .friendcount, .v-dark .cmt-count, .v-dark .viewall { color: #fff; }
+.v-dark .block { background: rgba(0,0,0,.65); border: 1px solid #ff3ea5; padding: 6px 8px; margin-bottom: 10px; }
+.v-glitter .block .hdr-cell, .v-dark .block .hdr-cell, .v-scene .block .hdr-cell { margin: -6px -8px 6px; }
+
+.v-glitter .player, .v-dark .player, .v-scene .player { border-color: #ff3ea5; background: #1c0414; box-shadow: 0 0 8px rgba(255,62,165,.45); }
+.v-glitter .player .p-head, .v-dark .player .p-head, .v-scene .player .p-head { background: linear-gradient(#ff6ec4, #e0148a); border-bottom-color: #7a0a4a; }
+.v-glitter .player .p-head .note, .v-dark .player .p-head .note, .v-scene .player .p-head .note { color: #fff; }
+.v-glitter .player .p-btns span, .v-dark .player .p-btns span, .v-scene .player .p-btns span { background: linear-gradient(#ffe3f3, #ff9ad5); color: #5a0038; border-color: #c02a86; }
+.v-glitter .player .p-btns span.on, .v-dark .player .p-btns span.on, .v-scene .player .p-btns span.on { background: linear-gradient(#fff, #ffb6e2); }
+.v-glitter .player .p-eq i, .v-dark .player .p-eq i, .v-scene .player .p-eq i { background: #ff5fbf; box-shadow: 0 0 4px #ff3ea5; }
+.v-glitter .player .p-track, .v-dark .player .p-track, .v-scene .player .p-track { background: #30001f; border-color: #ff7ccb; }
+.v-glitter .player .p-fill, .v-dark .player .p-fill, .v-scene .player .p-fill { background: linear-gradient(#ffb6e2, #ff1493); }
+.v-glitter .player .p-time, .v-dark .player .p-time, .v-scene .player .p-time { color: #ffc7e8; }
+.v-glitter .player .p-foot, .v-dark .player .p-foot, .v-scene .player .p-foot { background: #2a0820; border-top-color: #ff3ea5; }
+.v-glitter .player .p-foot a, .v-dark .player .p-foot a, .v-scene .player .p-foot a { color: #ff9ad5; }
+.v-glitter .player .p-foot .brand, .v-dark .player .p-foot .brand, .v-scene .player .p-foot .brand { color: #fff; }
+
+.v-dark .quiz { border-color: #ff3ea5; background: rgba(0,0,0,.7); }
+.v-dark .quiz .q-top { background: #ff1493; }
+.v-dark .quiz .q-res { color: #fff; text-shadow: 0 0 6px #ff1493, 0 0 14px #ff1493; }
+.v-dark .quiz .q-res .heart { color: #ff5fbf; }
+.v-dark .quiz .q-blurb { color: #ffd6ec; }
+.v-dark .quiz .q-foot { color: #ff9ad5; border-top-color: #ff3ea5; }
+
+.v-dark .top8 .av, .v-dark .comments td.who .av { background: #fff; border-color: #ff3ea5; box-shadow: 0 0 6px rgba(255,62,165,.6); }
+.v-dark .comments td.who { background: rgba(255,20,147,.35); }
+.v-dark .comments td.txt { background: rgba(0,0,0,.5); color: #fbe4f2; }
+.v-dark .comments td.txt .date { color: #f1bfdc; }
+.v-glitter .comments td.txt .glitter-text, .v-dark .comments td.txt .glitter-text, .v-scene .comments td.txt .glitter-text { font: bold 20px "Arial Rounded MT Bold", "Arial Black", Arial, sans-serif; display: inline-block; }
+
+.v-dark .footer { color: #f1bfdc; }
+.v-glitter .credit, .v-dark .credit, .v-scene .credit { display: block; }
+.v-dark .only-dark { display: block; }
+
+/* light-skin overrides that must outrank the shared glitter rules above */
+.v-glitter .glitter-text {
+  background-image: linear-gradient(115deg, #b3006a 0%, #ff1493 12%, #ffffff 19%, #ff1493 25%, #c8006e 40%, #ff1493 52%, #ffffff 59%, #ff1493 65%, #b3006a 80%, #ff1493 92%, #b3006a 100%);
+  filter: drop-shadow(0 1px 0 rgba(120,0,70,.55)) drop-shadow(0 0 6px rgba(255,20,147,.35));
+  animation: shimmer-light 3s linear infinite;
+}
+@keyframes shimmer-light {
+  0%   { background-position: 0% 0; filter: drop-shadow(0 1px 0 rgba(120,0,70,.55)) drop-shadow(0 0 6px rgba(255,20,147,.35)); }
+  50%  { filter: drop-shadow(0 1px 0 rgba(120,0,70,.6)) drop-shadow(0 0 9px rgba(255,20,147,.5)); }
+  100% { background-position: 240% 0; filter: drop-shadow(0 1px 0 rgba(120,0,70,.55)) drop-shadow(0 0 6px rgba(255,20,147,.35)); }
+}
+.v-glitter .contact td svg { stroke: #e0148a; }
+.v-glitter .player { box-shadow: 1px 1px 5px rgba(224,20,138,.3); }
+
+/* ───────────────────────────── scene skin (?v=scene): navy + lime, the boy's page ───────────────────────────── */
+body.v-scene { color: #eaf2ff; background-color: #070b24; /* tile set from JS */ }
+.v-scene a { color: #c6f750; }
+.v-scene .nametext { font: 900 27px "Arial Black", Impact, Arial, sans-serif; letter-spacing: -.5px; }
+.v-scene .glitter-text {
+  background-image: linear-gradient(115deg, #7fb000 0%, #c6f750 12%, #ffffff 19%, #c6f750 25%, #5f8a00 40%, #c6f750 52%, #ffffff 59%, #c6f750 65%, #7fb000 80%, #c6f750 92%, #7fb000 100%);
+  filter: drop-shadow(0 0 3px rgba(198,247,80,.9)) drop-shadow(0 0 10px rgba(198,247,80,.45));
+  animation: shimmer-scene 3s linear infinite;
+}
+@keyframes shimmer-scene {
+  0%   { background-position: 0% 0; filter: drop-shadow(0 0 3px rgba(198,247,80,.9)) drop-shadow(0 0 10px rgba(198,247,80,.45)); }
+  50%  { filter: drop-shadow(0 0 4px rgba(198,247,80,1)) drop-shadow(0 0 14px rgba(198,247,80,.6)); }
+  100% { background-position: 240% 0; filter: drop-shadow(0 0 3px rgba(198,247,80,.9)) drop-shadow(0 0 10px rgba(198,247,80,.45)); }
+}
+.v-scene .status { color: #bcd0ff; }
+.v-scene .gray { color: #aabbe0; }
+.v-scene .mood { color: #fff; }
+.v-scene .pic { border-color: #c6f750; background: #0a1030; box-shadow: 0 0 10px rgba(198,247,80,.45); transform: rotate(-2deg); }
+.v-scene .online { background: #0a1030; border-color: #c6f750; color: #e4ff8a; box-shadow: 0 0 6px #c6f750, inset 0 0 4px rgba(198,247,80,.5); }
+.v-scene .online::before { background: #c6f750; box-shadow: 0 0 4px #c6f750; }
+.v-scene .url b { color: #fff; }
+.v-scene .skin { background: rgba(5,8,28,.78); border: 1px solid #c6f750; }
+.v-scene .skin.bordered { border-color: #c6f750; }
+.v-scene .hdr-cell { background: #c6f750; color: #0a1030; }
+.v-scene .hdr-cell .r a { color: #0a1030; }
+.v-scene .lbl { background: rgba(198,247,80,.22); color: #e4ff8a; }
+.v-scene .val { background: rgba(0,0,0,.35); color: #eaf2ff; }
+.v-scene .contact td svg { stroke: #c6f750; }
+.v-scene .orange { color: #c6f750; }
+.v-scene .block { background: rgba(5,8,28,.78); border: 1px solid #c6f750; padding: 6px 8px; margin-bottom: 10px; }
+.v-scene .blog, .v-scene .blurb, .v-scene .friendcount, .v-scene .cmt-count, .v-scene .viewall { color: #eaf2ff; }
+.v-scene .player { border-color: #c6f750; background: #0a1030; box-shadow: 0 0 8px rgba(198,247,80,.35); }
+.v-scene .player .p-head { background: linear-gradient(#e4ff8a, #a8d92a); color: #0a1030; border-bottom-color: #4d6a00; }
+.v-scene .player .p-head .note { color: #0a1030; }
+.v-scene .player .p-btns span { background: linear-gradient(#f4ffd0, #c6f750); color: #0a1030; border-color: #7fb000; }
+.v-scene .player .p-btns span.on { background: linear-gradient(#fff, #e4ff8a); }
+.v-scene .player .p-eq i { background: #c6f750; box-shadow: 0 0 4px #c6f750; }
+.v-scene .player .p-track { background: #05081c; border-color: #c6f750; }
+.v-scene .player .p-fill { background: linear-gradient(#e4ff8a, #7fb000); }
+.v-scene .player .p-time { color: #e4ff8a; }
+.v-scene .player .p-foot { background: #05081c; border-top-color: #c6f750; }
+.v-scene .player .p-foot a { color: #c6f750; }
+.v-scene .player .p-foot .brand { color: #fff; }
+.v-scene .quiz { border-color: #c6f750; background: rgba(5,8,28,.85); }
+.v-scene .quiz .q-top { background: #c6f750; color: #0a1030; }
+.v-scene .quiz .q-res { color: #fff; text-shadow: 0 0 6px #c6f750, 0 0 14px rgba(198,247,80,.7); font-family: "Arial Black", Impact, Arial, sans-serif; }
+.v-scene .quiz .q-res .heart { color: #c6f750; }
+.v-scene .quiz .q-blurb { color: #d6e4ff; }
+.v-scene .quiz .q-foot { color: #c6f750; border-top-color: #c6f750; }
+.v-scene .top8 .av, .v-scene .comments td.who .av { background: #fff; border-color: #c6f750; box-shadow: 0 0 6px rgba(198,247,80,.5); }
+.v-scene .comments td.who { background: rgba(198,247,80,.18); }
+.v-scene .comments td.txt { background: rgba(0,0,0,.45); color: #eaf2ff; }
+.v-scene .comments td.txt .date { color: #aabbe0; }
+.v-scene .comments td.txt .glitter-text { font-family: "Arial Black", Impact, Arial, sans-serif; }
+.v-scene .footer { color: #aabbe0; }
+.v-scene .credit { display: block; color: #c6f750; }
+.v-scene .credit a { color: #e4ff8a; }
+.v-scene .marquee { display: block; border-color: #c6f750; background: rgba(5,8,28,.78); }
+.v-scene .marquee span { color: #e4ff8a; }
+.v-scene .divider { display: none; }
+
+/* ───────────────────────────── banner skin (?v=banner): a pasted "div layout" — cream polka dots, header band, Georgia ───────────────────────────── */
+body.v-banner { color: #4a3728; background-color: #f4ead8; font-family: "Trebuchet MS", Tahoma, Verdana, sans-serif; /* tile set from JS */ }
+.v-banner td { font-family: "Trebuchet MS", Tahoma, Verdana, sans-serif; }
+.v-banner .hdr, .v-banner .nav { display: none; }
+.v-banner a { color: #1f8a7d; }
+.v-banner .page { margin-top: 22px; }
+.bn-band { position: relative; height: 224px; border: 4px solid #4a3728; background: #2a9d8f; overflow: hidden; box-shadow: 5px 5px 0 #4a3728; }
+.bn-band::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, rgba(255,255,255,.11) 0 14px, transparent 14px 28px); }
+.bn-band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 48px; background: #4a3728; }
+.bn-name { position: absolute; left: 26px; bottom: 60px; font: italic 76px Georgia, "Times New Roman", serif; color: #fdf6e6; letter-spacing: -2px; text-shadow: 4px 4px 0 #4a3728; line-height: 1; white-space: nowrap; }
+.bn-sub { position: absolute; left: 32px; bottom: 17px; color: #f4ead8; font: 12px "Trebuchet MS", sans-serif; z-index: 1; }
+.bn-sub .bn-mood { font-weight: bold; color: #ffd166; }
+.bn-counter { position: absolute; right: 16px; bottom: 17px; color: #d8c8ae; font: 10px "Courier New", monospace; letter-spacing: 1px; z-index: 1; }
+.bn-band .pic { position: absolute; right: 30px; top: 12px; margin: 0; width: 142px; padding: 6px 6px 24px; border: none; background: #fff; box-shadow: 0 5px 12px rgba(0,0,0,.35); transform: rotate(-4deg); z-index: 1; }
+.bn-band .pic-in { width: 130px; height: 130px; }
+.bn-two { display: flex; gap: 26px; margin-top: 20px; }
+.bn-l { width: 494px; }
+.bn-r { width: 280px; }
+.bn-info { margin-bottom: 14px; }
+.v-banner .skin, .v-banner .block { background: none; border: none; padding: 0; margin-bottom: 18px; }
+.v-banner .block .hdr-cell { margin: 0 0 8px; }
+.v-banner .hdr-cell { background: none; color: #1f8a7d; font: italic 21px Georgia, "Times New Roman", serif; padding: 0 0 3px; border-bottom: 1px dotted #4a3728; }
+.v-banner .hdr-cell .r { font: 10px "Trebuchet MS", sans-serif; color: #7a6555; padding-top: 9px; }
+.v-banner .bn-l .skin { width: 100%; }
+.v-banner .hdr-cell .r a { color: #1f8a7d; }
+.v-banner .lbl { background: none; color: #1f8a7d; font: bold 10px "Trebuchet MS", sans-serif; width: 80px; padding: 5px 4px 5px 0; text-transform: lowercase; letter-spacing: .5px; }
+.v-banner .val { background: none; padding: 5px 0; border-bottom: 1px dotted #d8c8ae; font-size: 11px; }
+.v-banner .extnet { border: none; background: #4a3728; color: #fdf6e6; font: italic 19px Georgia, serif; padding: 12px 14px; text-align: left; box-shadow: 4px 4px 0 #2a9d8f; margin-bottom: 18px; }
+.v-banner .orange { color: #4a3728; font: bold 12px "Trebuchet MS", sans-serif; text-transform: uppercase; letter-spacing: 1.5px; margin: 10px 0 4px; }
+.v-banner .blurb p { font-size: 12px; line-height: 1.65; }
+.v-banner .blog li { font-size: 12px; margin: 4px 0; }
+.v-banner .gray { color: #7a6555; }
+.v-banner .online { background: #fdf6e6; border-color: #2a9d8f; color: #1f8a7d; }
+.v-banner .online::before { background: #2a9d8f; }
+.v-banner .contact, .v-banner .contact tbody, .v-banner .contact tr { display: block; border: none; }
+.v-banner .contact tr:first-child { display: none; }
+.v-banner .contact td { display: inline-block; width: auto; padding: 1px 10px 1px 0; }
+.v-banner .contact td svg { stroke: #1f8a7d; }
+.v-banner .url { font-size: 10px; margin-top: 6px; }
+.v-banner .player { border: 2px solid #4a3728; background: #4a3728; box-shadow: 4px 4px 0 #2a9d8f; margin: 6px 0 12px; }
+.v-banner .player .p-head { background: #2a9d8f; color: #fdf6e6; border-bottom-color: #1f6f66; }
+.v-banner .player .p-head .note { color: #ffd166; }
+.v-banner .player .p-btns span { background: #fdf6e6; color: #4a3728; border-color: #2a9d8f; }
+.v-banner .player .p-btns span.on { background: #ffd166; }
+.v-banner .player .p-eq i { background: #ffd166; }
+.v-banner .player .p-track { background: #2b1f16; border-color: #2a9d8f; }
+.v-banner .player .p-fill { background: #ffd166; }
+.v-banner .player .p-time { color: #f4ead8; }
+.v-banner .player .p-foot { background: #3a2a1e; border-top-color: #2a9d8f; }
+.v-banner .player .p-foot a { color: #ffd166; }
+.v-banner .player .p-foot .brand { color: #fdf6e6; }
+.v-banner .quiz { border: 2px solid #4a3728; background: #fdf6e6; box-shadow: 4px 4px 0 #2a9d8f; margin: 10px 0 12px; }
+.v-banner .quiz .q-top { background: #4a3728; color: #fdf6e6; }
+.v-banner .quiz .q-res { color: #1f8a7d; font: italic 22px Georgia, serif; }
+.v-banner .quiz .q-res .heart { color: #e07a5f; }
+.v-banner .quiz .q-blurb { color: #4a3728; }
+.v-banner .quiz .q-foot { color: #7a6555; border-top-color: #d8c8ae; }
+.v-banner .friendcount { font: italic 13px Georgia, serif; color: #4a3728; }
+.v-banner .top8 td { width: 12.5%; padding: 4px 1px 8px; }
+.v-banner .top8 .av { width: 80px; height: 80px; padding: 3px 3px 10px; background: #fff; border: 1px solid #d8c8ae; box-shadow: 2px 2px 0 #4a3728; }
+.v-banner .top8 a.nm { font: bold 10px "Trebuchet MS", sans-serif; color: #4a3728; }
+.v-banner .viewall a { font: italic 12px Georgia, serif; }
+.v-banner .cmt-count { font-size: 11px; }
+.v-banner .comments td.who { background: none; width: 84px; padding: 8px 4px; }
+.v-banner .comments td.who a { font: bold 10px "Trebuchet MS", sans-serif; color: #1f8a7d; }
+.v-banner .comments td.who .av { width: 56px; height: 56px; padding: 2px; border: 1px solid #d8c8ae; box-shadow: 2px 2px 0 #4a3728; }
+.v-banner .comments td.txt { background: #fdf6e6; border: 1px solid #e6d8c0; font-size: 12px; line-height: 1.65; }
+.v-banner .comments td.txt .date { color: #7a6555; }
+.v-banner .comments td.txt .glitter-text { font: italic 22px Georgia, serif; color: #e07a5f; }
+.v-banner .footer { color: #7a6555; }
+.v-banner .credit { display: block; color: #7a6555; }
+.v-banner .credit a { color: #1f8a7d; }
+
+/* marquee */
+.marquee { overflow: hidden; white-space: nowrap; border: 1px solid #ff3ea5; background: rgba(0,0,0,.65); padding: 4px 0; margin-bottom: 10px; }
+.marquee span { display: inline-block; animation: marquee 40s linear infinite; font: bold 11px Verdana, sans-serif; color: #ffb3dd; letter-spacing: .5px; padding-right: 24px; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+/* animated dot dividers */
+.divider { height: 6px; margin: 4px 0 10px;
+  background-image: radial-gradient(circle, #fff 1.6px, transparent 2.2px), radial-gradient(circle, #ff3ea5 1.6px, transparent 2.2px);
+  background-size: 12px 6px, 12px 6px; background-position: 0 0, 6px 0; background-repeat: repeat-x;
+  animation: dots .6s steps(1, end) infinite; }
+@keyframes dots { 0% { background-position: 0 0, 6px 0; } 50% { background-position: 6px 0, 0 0; } 100% { background-position: 0 0, 6px 0; } }
+
+/* falling sparkles */
+#sparkles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; display: none; }
+.v-glitter #sparkles, .v-dark #sparkles, .v-scene #sparkles { display: block; }
+.sp { position: absolute; top: -6vh; will-change: transform; animation: fall linear infinite; }
+.sp b { display: block; font-style: normal; font-weight: normal; animation: sway ease-in-out infinite alternate, twinkle ease-in-out infinite alternate; line-height: 1; }
+@keyframes fall { to { transform: translateY(112vh); } }
+@keyframes sway { from { transform: translateX(-9px) rotate(-12deg); } to { transform: translateX(9px) rotate(14deg); } }
+@keyframes twinkle { from { opacity: .35; } to { opacity: 1; } }
+
+/* recording mode */
+html.rec, html.rec body { scrollbar-width: none; }
+html.rec ::-webkit-scrollbar { display: none; width: 0; height: 0; }
+</style>
+</head>
+<body>
+<div id="sparkles"></div>
+
+<div class="hdr">
+  <div class="wordmark">myspace<small>a place for friends</small></div>
+  <div class="hdr-right">
+    <div class="links"><a href="#">Help</a> | <a href="#">SignUp</a> | <a href="#">LogOut</a></div>
+    <div>
+      <label><input type="radio" name="s" checked> People</label><label><input type="radio" name="s"> Web</label>
+      <input type="text" value=""> <button>Search</button>
+    </div>
+  </div>
+</div>
+<div class="nav"><div class="in">
+  <a href="#">Home</a><i>|</i><a href="#">Browse</a><i>|</i><a href="#">Search</a><i>|</i><a href="#">Invite</a><i>|</i><a href="#">Film</a><i>|</i><a href="#">Mail</a><i>|</i><a href="#">Blog</a><i>|</i><a href="#">Favorites</a><i>|</i><a href="#">Forum</a><i>|</i><a href="#">Groups</a><i>|</i><a href="#">Events</a><i>|</i><a href="#">Videos</a><i>|</i><a href="#">Music</a><i>|</i><a href="#">Comedy</a><i>|</i><a href="#">Classifieds</a>
+</div></div>
+
+<div class="page">
+<table class="cols"><tr>
+
+<!-- ───────────────────────── LEFT ───────────────────────── -->
+<td class="left">
+  <div><span class="nametext glitter-text" id="screenName"></span></div>
+  <div class="mood"><span class="face" id="moodFace"></span>Mood: <span id="mood"></span></div>
+  <div class="status">"<span id="status"></span>"</div>
+
+  <div class="pic"><div class="pic-in" id="profilePic"></div></div>
+
+  <div class="gray">
+    <span id="sex"></span><br>
+    <span id="age"></span> years old<br>
+    <span id="hometown"></span><br>
+    United States<br>
+    <span class="online">ONLINE NOW!</span><br>
+    Last Login: <span id="lastLogin"></span>
+  </div>
+
+  <div class="viewmy">View My: <a href="#">Pics</a> | <a href="#">Videos</a></div>
+
+  <div class="divider only-dark"></div>
+
+  <table class="skin bordered contact">
+    <tr><td class="hdr-cell" colspan="2">Contacting <span class="fn"></span></td></tr>
+    <tr>
+      <td><svg viewBox="0 0 16 16"><rect x="1.5" y="3.5" width="13" height="9"/><path d="M1.5 4l6.5 5 6.5-5"/></svg><a href="#">Send Message</a></td>
+      <td><svg viewBox="0 0 16 16"><path d="M2 12c0-5 4-7 8-7V2l4 5-4 5V9c-4 0-6 1-8 3z"/></svg><a href="#">Forward to Friend</a></td>
+    </tr>
+    <tr>
+      <td><svg viewBox="0 0 16 16"><circle cx="6" cy="5" r="2.5"/><path d="M1.5 13c0-3 2-4.5 4.5-4.5S10.5 10 10.5 13M12.5 6v5M10 8.5h5"/></svg><a href="#">Add to Friends</a></td>
+      <td><svg viewBox="0 0 16 16"><path d="M8 1.5l2 4.3 4.6.5-3.4 3.2.9 4.6L8 11.8l-4.1 2.3.9-4.6L1.4 6.3 6 5.8z"/></svg><a href="#">Add to Favorites</a></td>
+    </tr>
+    <tr>
+      <td><svg viewBox="0 0 16 16"><path d="M2 3h12v8H7l-3.5 3v-3H2z"/></svg><a href="#">Instant Message</a></td>
+      <td><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M3.8 3.8l8.4 8.4"/></svg><a href="#">Block User</a></td>
+    </tr>
+    <tr>
+      <td><svg viewBox="0 0 16 16"><circle cx="5.5" cy="5.5" r="2.3"/><circle cx="11" cy="6" r="2"/><path d="M1.5 13c0-3 1.8-4.5 4-4.5s4 1.5 4 4.5M9 12.5c.3-2 1.2-3.2 2.5-3.2s2.8 1.2 3 3.2"/></svg><a href="#">Add to Group</a></td>
+      <td><svg viewBox="0 0 16 16"><path d="M2 13h12M3.5 12V8M7 12V4M10.5 12V6.5M14 12V2.5"/></svg><a href="#">Rank User</a></td>
+    </tr>
+  </table>
+
+  <div class="url"><b>MySpace URL:</b><br><a href="#">http://www.myspace.com/<span id="handle"></span></a></div>
+
+  <div class="divider only-dark"></div>
+
+  <table class="skin" id="interests"></table>
+
+  <div class="divider only-dark"></div>
+
+  <table class="skin" id="details"></table>
+
+  <table class="skin">
+    <tr><td class="hdr-cell" colspan="2"><span class="fn"></span>'s Schools</td></tr>
+    <tr><td class="val" colspan="2" id="schools"></td></tr>
+  </table>
+
+  <table class="skin">
+    <tr><td class="hdr-cell" colspan="2"><span class="fn"></span>'s Networking</td></tr>
+    <tr><td class="val" colspan="2" id="networking"></td></tr>
+  </table>
+</td>
+
+<!-- ───────────────────────── RIGHT ───────────────────────── -->
+<td class="right">
+  <div class="marquee only-dark"><span id="marquee"></span></div>
+
+  <div class="extnet"><span class="fn"></span> is in your extended network</div>
+  <div class="extnet-banner" id="extnetBanner"></div>
+
+  <div class="block">
+    <div class="hdr-cell"><span class="fn"></span>'s Latest Blog Entry <span class="r">[<a href="#">Subscribe to this Blog</a>]</span></div>
+    <div class="blog"><ul id="blog"></ul></div>
+  </div>
+
+  <div class="divider only-dark"></div>
+
+  <div class="block blurb">
+    <div class="hdr-cell"><span class="fn"></span>'s Blurbs</div>
+    <div class="orange">About me:</div>
+
+    <div class="player">
+      <div class="p-head"><span class="note">&#9835;</span> now playing: <b id="songTitle"></b> &mdash; <span id="songArtist"></span></div>
+      <div class="p-body">
+        <div class="p-btns"><span class="on">&#9654;</span><span>&#10074;&#10074;</span><span>&#9632;</span></div>
+        <div class="p-eq" id="eq"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="p-track"><div class="p-fill" id="fill"></div></div>
+        <div class="p-time" id="time">0:00 / 0:00</div>
+      </div>
+      <div class="p-foot"><a href="#">Add this song to my profile</a> &middot; <a href="#">Music Videos</a><span class="brand">music</span></div>
+    </div>
+
+    <div id="aboutMe"></div>
+
+    <div class="quiz">
+      <div class="q-top" id="quizQ"></div>
+      <div class="q-res"><span class="heart">&hearts;</span> You are: <span id="quizR"></span> <span class="heart">&hearts;</span></div>
+      <div class="q-blurb" id="quizB"></div>
+      <div class="q-foot">take this quiz! &middot; more quizzes &middot; make your own</div>
+    </div>
+
+    <div class="orange">Who I'd like to meet:</div>
+    <p id="whoToMeet"></p>
+  </div>
+
+  <div class="divider only-dark"></div>
+
+  <div class="block">
+    <div class="hdr-cell"><span class="fn"></span>'s Friend Space</div>
+    <div class="friendcount"><span class="fn"></span> has <a href="#" id="friendCount"></a> friends.</div>
+    <table class="top8" id="top8"></table>
+    <div class="viewall"><a href="#">View All of <span class="fn"></span>'s Friends</a></div>
+  </div>
+
+  <div class="divider only-dark"></div>
+
+  <div class="block">
+    <div class="hdr-cell"><span class="fn"></span>'s Friends Comments</div>
+    <div class="cmt-count">Displaying <b>8</b> of <b id="commentCount"></b> comments (<a href="#">View All</a> | <a href="#">Add Comment</a>)</div>
+    <table class="comments" id="comments"></table>
+  </div>
+</td>
+</tr></table>
+
+<div class="footer">
+  &copy;2006 &middot; <a href="#">About</a> | <a href="#">FAQ</a> | <a href="#">Terms</a> | <a href="#">Privacy</a> | <a href="#">Safety Tips</a> | <a href="#">Contact</a>
+</div>
+<div class="credit">Layout by <a href="#">hot-lyts.com</a> &middot; <a href="#">edit your own</a></div>
+</div>
+
+<script>
+(function () {
+  const q = new URLSearchParams(location.search);
+  const v = (q.get("v") || "glitter").toLowerCase();
+  const skin = v === "classic" ? "classic" : v === "dark" ? "dark" : v === "scene" ? "scene" : v === "banner" ? "banner" : "glitter";
+  const rec = q.get("rec") === "1";
+  const who = (q.get("who") || (skin === "scene" ? "thomas" : skin === "banner" ? "maya" : "holly")).toLowerCase();
+  const P = PROFILES[who] || PROFILE;
+  document.title = P.screenName + " | myspace";
+  document.body.classList.add("v-" + skin);
+  if (rec) document.documentElement.classList.add("rec");
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s);
+
+  /* ── SVG helpers ── */
+  const star4 = (x, y, r, fill, op = 1) =>
+    `<path d="M${x} ${y - r} L${x + r * .28} ${y - r * .28} L${x + r} ${y} L${x + r * .28} ${y + r * .28} L${x} ${y + r} L${x - r * .28} ${y + r * .28} L${x - r} ${y} L${x - r * .28} ${y - r * .28} Z" fill="${fill}" opacity="${op}"/>`;
+
+  // glitter background tile: black with tiny pink/white sparkles
+  function tile(mode) {
+    const light = mode === "glitter";
+    const pts = [[9, 12, 3.2, "#ff3ea5", .9], [38, 30, 2.2, "#fff", .8], [70, 10, 2.6, "#ff8ad0", .85], [88, 52, 3.4, "#ff3ea5", .9],
+      [24, 60, 2, "#fff", .6], [55, 74, 3, "#ff3ea5", .8], [80, 86, 1.8, "#fff", .7], [12, 90, 2.4, "#ff8ad0", .75], [48, 48, 1.6, "#fff", .5], [66, 40, 1.5, "#ff8ad0", .6],
+      [118, 22, 2.8, "#ff3ea5", .85], [140, 70, 2, "#fff", .65], [104, 110, 3.3, "#ff3ea5", .9], [150, 128, 2.4, "#ff8ad0", .8], [34, 128, 2.8, "#ff3ea5", .85],
+      [72, 146, 1.9, "#fff", .6], [126, 150, 2.6, "#ff8ad0", .8], [8, 150, 1.6, "#fff", .5], [96, 60, 1.4, "#fff", .5], [152, 8, 1.8, "#ff8ad0", .7]];
+    const dots = [[30, 8], [92, 26], [4, 44], [60, 58], [40, 92], [76, 68], [20, 34], [96, 78], [130, 44], [112, 96], [146, 100], [58, 116], [86, 130], [22, 112], [138, 156], [110, 140]]
+      .map(([x, y]) => `<circle cx="${x}" cy="${y}" r=".8" fill="#fff" opacity=".45"/>`).join("");
+    if (mode === "banner") {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72"><rect width="72" height="72" fill="#f4ead8"/><circle cx="18" cy="18" r="6.5" fill="#2a9d8f" opacity=".26"/><circle cx="54" cy="54" r="6.5" fill="#2a9d8f" opacity=".26"/><circle cx="54" cy="18" r="2" fill="#4a3728" opacity=".16"/><circle cx="18" cy="54" r="2" fill="#4a3728" opacity=".16"/></svg>`;
+    }
+    if (mode === "scene") {
+      const lime = pts.map(([x, y, r, c, o]) => [x, y, r * .9, c === "#fff" ? "#ffffff" : "#c6f750", c === "#fff" ? o * .7 : o * .75]);
+      const checks = [[0, 0], [80, 80]].map(([x, y]) => `<rect x="${x}" y="${y}" width="80" height="80" fill="#0a1030"/>`).join("");
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" fill="#070b24"/>${checks}${lime.map(p => star4(...p)).join("")}${dots}</svg>`;
+    }
+    if (light) {
+      const soft = pts.map(([x, y, r, c, o]) => [x, y, r, c === "#fff" ? "#ffffff" : "#ff8ad0", c === "#fff" ? .95 : o * .55]);
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" fill="#ffeef7"/>${soft.map(p => star4(...p)).join("")}</svg>`;
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" fill="#070209"/>${pts.map(p => star4(...p)).join("")}${dots}</svg>`;
+  }
+  if (skin !== "classic") document.body.style.backgroundImage = `url("data:image/svg+xml;utf8,${encodeURIComponent(tile(skin))}")`;
+
+  // 2006 avatar: flat colour, bold initial, a cheap flash highlight
+  function monogram(name, color, ink = "#fff") {
+    const id = "g" + name.replace(/\W/g, "");
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs><radialGradient id="${id}" cx="22%" cy="18%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></radialGradient></defs>
+      <rect width="100" height="100" fill="${color}"/>
+      <rect width="100" height="100" fill="url(#${id})"/>
+      <text x="50" y="68" font-family="Arial Black, Arial, sans-serif" font-size="56" font-weight="900" text-anchor="middle" fill="${ink}" opacity=".95">${name[0].toUpperCase()}</text>
+    </svg>`;
+  }
+  // Tom: white-shirt silhouette, whiteboard behind. no real photo.
+  function tomAvatar() {
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" fill="#dfe7ee"/>
+      <rect x="0" y="0" width="100" height="62" fill="#f4f7f9"/>
+      <path d="M8 18h30M8 26h44M8 34h22M60 14h30M60 22h20" stroke="#8fa3b5" stroke-width="2" fill="none" opacity=".7"/>
+      <path d="M14 46c6-8 18-6 20 2" stroke="#3a6fb0" stroke-width="1.6" fill="none" opacity=".6"/>
+      <rect x="0" y="62" width="100" height="38" fill="#b8c6d2"/>
+      <path d="M18 100c0-18 10-28 32-28s32 10 32 28z" fill="#fdfdfd"/>
+      <path d="M18 100c0-18 10-28 32-28s32 10 32 28z" fill="none" stroke="#cfd6dc"/>
+      <path d="M46 70c2 3 6 3 8 0" stroke="#d0d5d9" stroke-width="1.5" fill="none"/>
+      <ellipse cx="52" cy="50" rx="15" ry="18" fill="#c9a88a"/>
+      <path d="M37 46c1-14 30-16 30-2c-3-6-9-9-15-9s-13 4-15 11z" fill="#4a3a30"/>
+      <ellipse cx="52" cy="72" rx="11" ry="4" fill="#c9a88a"/>
+    </svg>`;
+  }
+  // a blurry flash-lit group shot at a party
+  function groupAvatar() {
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs><filter id="blur"><feGaussianBlur stdDeviation="2.4"/></filter>
+      <radialGradient id="flash" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset=".5" stop-color="#fff" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></radialGradient></defs>
+      <rect width="100" height="100" fill="#3b1a2e"/>
+      <g filter="url(#blur)">
+        <circle cx="26" cy="42" r="12" fill="#e8b48f"/><rect x="12" y="54" width="28" height="46" fill="#ff7a3d"/>
+        <circle cx="52" cy="38" r="13" fill="#d9a07c"/><rect x="38" y="51" width="30" height="49" fill="#c6f750"/>
+        <circle cx="78" cy="45" r="11" fill="#f0c4a0"/><rect x="64" y="56" width="28" height="44" fill="#3d6eff"/>
+        <path d="M20 40c3-8 10-8 12 0M46 36c3-9 12-9 14 0" stroke="#2a1a14" stroke-width="5" fill="none"/>
+      </g>
+      <rect width="100" height="100" fill="url(#flash)"/>
+      <text x="96" y="97" font-family="Arial" font-size="7" fill="#ffd" text-anchor="end" opacity=".8">03.04.06</text>
+    </svg>`;
+  }
+  // the webcam-looking profile pic placeholder: dim room, blown-out lamp, side bangs, noise
+  function webcamPic() {
+    return `<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="lamp" cx="82%" cy="12%" r="55%"><stop offset="0" stop-color="#fff6d6"/><stop offset=".25" stop-color="#e9c27a" stop-opacity=".9"/><stop offset=".7" stop-color="#5a3f2a" stop-opacity=".2"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+        <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d4a3d"/><stop offset="1" stop-color="#1a1310"/></linearGradient>
+        <radialGradient id="skin" cx="45%" cy="35%" r="70%"><stop offset="0" stop-color="#e9c2a4"/><stop offset="1" stop-color="#8d6650"/></radialGradient>
+        <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".3"/></feComponentTransfer></filter>
+        <filter id="soft"><feGaussianBlur stdDeviation="1.4"/></filter>
+        <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+      </defs>
+      <rect width="170" height="170" fill="url(#wall)"/>
+      <rect x="104" y="18" width="52" height="70" fill="#3a2c24" opacity=".7"/>
+      <rect x="10" y="34" width="46" height="60" fill="#241a15" opacity=".8"/>
+      <rect x="14" y="38" width="38" height="12" fill="#6e5a4c" opacity=".5"/>
+      ${P.picStyle === "boy" ? `
+      <rect x="100" y="14" width="44" height="58" fill="#1a1a1a" opacity=".85"/><rect x="104" y="18" width="36" height="26" fill="#c62828" opacity=".7"/><rect x="106" y="50" width="32" height="6" fill="#eee" opacity=".5"/>
+      <rect x="16" y="22" width="40" height="52" fill="#111" opacity=".8"/><rect x="20" y="26" width="32" height="40" fill="#3949ab" opacity=".5"/>
+      <g filter="url(#soft)">
+        <path d="M-10 172c8-40 36-62 96-62s88 22 96 62z" fill="#101014"/>
+        <path d="M64 118c8 12 36 12 44 0l-6 30h-32z" fill="#1c1c22"/>
+        <path d="M78 118v34M94 118v34" stroke="#ddd" stroke-width="2" opacity=".7"/>
+        <ellipse cx="86" cy="82" rx="30" ry="36" fill="url(#skin)"/>
+        <path d="M54 86c-8-40 14-60 40-58 24 2 40 20 36 50-2-10-8-16-16-18-6 8-16 12-30 10-10 12-22 8-30 16z" fill="#141010"/>
+        <path d="M58 60c10-6 34-10 60-2 8 10 4 30-2 36-2-14-14-22-30-16-14 4-22 2-28-18z" fill="#141010"/>
+        <path d="M48 96c-4 10-4 26 2 34M122 92c4 10 3 24-2 32" stroke="#141010" stroke-width="10" stroke-linecap="round"/>
+        <path d="M98 96c3-2 7-2 10 0" stroke="#5a3d30" stroke-width="2.4" fill="none" opacity=".55"/>
+        <path d="M80 110c4 2 10 2 14 0" stroke="#8a4f45" stroke-width="2" fill="none" opacity=".5"/>
+      </g>` : `
+      <g filter="url(#soft)">
+        <path d="M-10 172c10-44 40-66 95-66s85 22 95 66z" fill="#2c1b3d"/>
+        <path d="M60 128c10-14 40-14 50 0" fill="#3a2650"/>
+        <ellipse cx="86" cy="80" rx="31" ry="38" fill="url(#skin)"/>
+        <path d="M53 92c-6-38 12-62 36-62s44 20 40 54c-6-12-16-14-32-6l-4 2c-4-10-10-14-20-10-8 3-14 12-20 22z" fill="#1c1210"/>
+        <path d="M70 26c14-8 40-6 52 12l-10 20c-4-14-16-20-30-16z" fill="#2a1a14"/>
+        <path d="M50 96c-4 10-4 26 2 40M120 94c4 10 3 26-2 40" stroke="#1c1210" stroke-width="12" stroke-linecap="round"/>
+        <path d="M74 92c3-2 7-2 10 0M96 92c3-2 7-2 10 0" stroke="#5a3d30" stroke-width="2.4" fill="none" opacity=".55"/>
+        <path d="M78 108c5 4 11 4 16 0" stroke="#8a4f45" stroke-width="2" fill="none" opacity=".55"/>
+        <ellipse cx="86" cy="86" rx="22" ry="12" fill="#fff" opacity=".07"/>
+      </g>`}
+      <ellipse cx="150" cy="18" rx="30" ry="24" fill="#fff2c4" opacity=".8" filter="url(#glow)"/>
+      <rect width="170" height="170" fill="url(#lamp)"/>
+      <rect width="170" height="170" fill="#6fa36a" opacity=".12"/>
+      <rect width="170" height="170" filter="url(#noise)"/>
+      <rect width="170" height="170" fill="none" stroke="#000" stroke-width="6" opacity=".35"/>
+      <text x="6" y="164" font-family="Verdana" font-size="7" fill="#fff" opacity=".5">webcam ${P.picStyle === "boy" ? "03/11/06" : "03/13/06"}</text>
+    </svg>`;
+  }
+  // a sunny polaroid: big curly hair, sunglasses, striped shirt, grass
+  function sunnyPic() {
+    return `<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fbde8"/><stop offset=".75" stop-color="#dcedf8"/></linearGradient>
+        <filter id="soft2"><feGaussianBlur stdDeviation=".9"/></filter>
+        <filter id="noise2"><feTurbulence type="fractalNoise" baseFrequency="1" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".16"/></feComponentTransfer></filter>
+      </defs>
+      <rect width="170" height="170" fill="url(#sky)"/>
+      <ellipse cx="34" cy="38" rx="26" ry="9" fill="#fff" opacity=".85"/><ellipse cx="52" cy="34" rx="16" ry="8" fill="#fff" opacity=".85"/>
+      <rect y="128" width="170" height="42" fill="#7fb069"/><rect y="128" width="170" height="6" fill="#9ccc7a" opacity=".8"/>
+      <g filter="url(#soft2)">
+        <path d="M14 172c6-32 32-48 72-48s66 16 72 48z" fill="#e07a5f"/>
+        <path d="M30 150h112M38 162h96" stroke="#fdf6e6" stroke-width="6" opacity=".85"/>
+        <g fill="#2b1b12"><circle cx="54" cy="72" r="19"/><circle cx="118" cy="72" r="19"/><circle cx="66" cy="50" r="19"/><circle cx="106" cy="50" r="19"/><circle cx="86" cy="42" r="20"/><circle cx="48" cy="98" r="15"/><circle cx="124" cy="98" r="15"/><circle cx="60" cy="118" r="12"/><circle cx="112" cy="118" r="12"/></g>
+        <ellipse cx="86" cy="90" rx="29" ry="34" fill="#c98a5f"/>
+        <g fill="#2b1b12"><circle cx="58" cy="60" r="12"/><circle cx="114" cy="60" r="12"/></g>
+        <rect x="60" y="80" width="22" height="14" rx="6" fill="#111"/><rect x="90" y="80" width="22" height="14" rx="6" fill="#111"/><path d="M82 86h8" stroke="#111" stroke-width="3"/>
+        <path d="M66 82c4-3 8-3 12 0M96 82c4-3 8-3 12 0" stroke="#fff" stroke-width="1.5" fill="none" opacity=".35"/>
+        <path d="M74 110c6 6 18 6 24 0" stroke="#7a3b2e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </g>
+      <rect width="170" height="170" fill="#fff" opacity=".1"/>
+      <rect width="170" height="170" filter="url(#noise2)"/>
+      <text x="6" y="164" font-family="Verdana" font-size="7" fill="#fff" opacity=".7">polaroid 06</text>
+    </svg>`;
+  }
+  // custom "extended network" banner (glitter)
+  function extnetBanner(name) {
+    const T = skin === "scene" ? { a: "#e4ff8a", b: "#c6f750", c: "#6f9a10", stroke: "#0a1030", dash: "#eaffb0", star: "#fff", ink: "#0a1030" } : { a: "#ff6ec4", b: "#ff1493", c: "#b3006a", stroke: "#8a0050", dash: "#ffb6e2", star: "#fff", ink: "#fff" };
+    let stars = "";
+    const pos = [[16, 16, 7], [40, 56, 5], [468, 20, 8], [446, 58, 5], [250, 8, 4], [120, 66, 4], [380, 64, 4], [200, 68, 3.5], [330, 10, 4.5]];
+    for (const [x, y, r] of pos) stars += star4(x, y, r, T.star, .9);
+    return `<svg viewBox="0 0 490 76" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="bn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${T.a}"/><stop offset=".5" stop-color="${T.b}"/><stop offset="1" stop-color="${T.c}"/></linearGradient></defs>
+      <rect x="1" y="1" width="488" height="74" fill="url(#bn)" stroke="#fff" stroke-width="2"/>
+      <rect x="6" y="6" width="478" height="64" fill="none" stroke="${T.dash}" stroke-width="1" stroke-dasharray="3 3"/>
+      ${stars}
+      <text x="245" y="47" text-anchor="middle" font-family="Arial Rounded MT Bold, Arial Black, Arial, sans-serif" font-size="24" font-weight="bold" fill="${T.ink}" stroke="${T.stroke}" stroke-width="${skin === "scene" ? 2 : 4}" paint-order="stroke" letter-spacing=".5">&#9829; ${name} is in your extended network &#9829;</text>
+    </svg>`;
+  }
+  const moodFace = () => `<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#ffd94d" stroke="#b8860b"/><circle cx="5.5" cy="6.5" r="1" fill="#333"/><circle cx="10.5" cy="6.5" r="1" fill="#333"/><path d="M5 11h6" stroke="#333" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+
+  function avatar(f) {
+    const photo = f.photo || FRIEND_PHOTOS[f.name];
+    if (photo) return `<img src="${photo}">`;
+    if (f.kind === "tom") return tomAvatar();
+    if (f.kind === "group") return groupAvatar();
+    return monogram(f.name, f.color, f.ink);
+  }
+  const byName = Object.fromEntries(P.top8.map(f => [f.name, f]));
+
+  /* ── fill ── */
+  document.querySelectorAll(".fn").forEach(el => el.textContent = P.firstName);
+  $("screenName").textContent = P.screenName;
+  $("sex").textContent = P.sex;
+  $("marquee").innerHTML = P.marquee + P.marquee;
+  $("mood").textContent = P.mood;
+  $("moodFace").innerHTML = moodFace();
+  $("status").textContent = P.status;
+  $("age").textContent = P.age;
+  $("hometown").textContent = P.hometown;
+  $("lastLogin").textContent = P.lastLogin;
+  $("handle").textContent = P.handle;
+  $("profilePic").innerHTML = (P.picStyle === "sunny" ? sunnyPic() : webcamPic()) + (P.photo ? `<img src="${P.photo}">` : "");
+  $("interests").innerHTML = `<tr><td class="hdr-cell" colspan="2">${P.firstName}'s Interests</td></tr>` +
+    Object.entries(P.interests).map(([k, v]) => `<tr><td class="lbl">${k}</td><td class="val">${v}</td></tr>`).join("");
+  $("details").innerHTML = `<tr><td class="hdr-cell" colspan="2">${P.firstName}'s Details</td></tr>` +
+    P.details.map(([k, v]) => `<tr><td class="lbl">${k}:</td><td class="val">${v}</td></tr>`).join("");
+  $("schools").innerHTML = P.schools;
+  $("networking").innerHTML = P.networking;
+  $("extnetBanner").innerHTML = extnetBanner(P.firstName);
+  $("blog").innerHTML = P.blog.map(t => `<li><a href="#">${t}</a> <span class="gray">(<a href="#">view more</a>)</span></li>`).join("");
+  $("songTitle").textContent = P.song.title;
+  $("songArtist").textContent = P.song.artist;
+  $("aboutMe").innerHTML = P.aboutMe.map(l => `<p>${l}</p>`).join("");
+  $("quizQ").textContent = P.quiz.question;
+  $("quizR").textContent = P.quiz.result;
+  $("quizB").textContent = P.quiz.blurb;
+  $("whoToMeet").innerHTML = P.whoToMeet;
+  $("friendCount").textContent = P.friendCount;
+  $("commentCount").textContent = P.commentCount;
+
+  // Top 8: 4 × 2
+  let rows = "";
+  const perRow = P.top8.length > 8 ? 8 : 4;
+  for (let r = 0; r < Math.ceil(P.top8.length / perRow); r++) {
+    rows += "<tr>" + P.top8.slice(r * perRow, r * perRow + perRow).map(f =>
+      `<td><div class="av" style="transform:rotate(${f.tilt || 0}deg)"><div class="av-in">${avatar(f)}</div></div><a class="nm" href="#">${f.name}</a></td>`).join("") + "</tr>";
+  }
+  $("top8").innerHTML = rows;
+
+  // comments
+  $("comments").innerHTML = P.comments.map(c => {
+    const f = byName[c.by] || { name: c.by, color: "#999" };
+    const av = avatar(f);
+    const body = c.glitter ? `<span class="glitter-text">${c.text}</span>` : c.text;
+    return `<tr><td class="who"><a href="#">${c.by}</a><div class="av"><div class="av-in">${av}</div></div></td><td class="txt"><div class="date">${c.date}</div>${body}</td></tr><tr class="sp"><td colspan="2"></td></tr>`;
+  }).join("");
+
+  /* ── banner layout: hide the stock chrome, header band, one wide column ── */
+  if (skin === "banner") {
+    const q1 = sel => document.querySelector(sel);
+    const mk = (cls, html) => { const d = document.createElement("div"); d.className = cls; if (html) d.innerHTML = html; return d; };
+    const page = q1(".page"), right = q1("td.right");
+    const blocks = [...right.querySelectorAll(":scope > .block")]; // blog, blurbs, friends, comments
+    const band = mk("bn-band", `<div class="bn-name">${P.screenName}</div><div class="bn-sub"><span class="bn-mood">mood: ${P.mood}</span> &middot; "${P.status}"</div><div class="bn-counter">you are visitor 004,213</div>`);
+    band.appendChild(q1(".pic"));
+    const info = mk("bn-info"); info.append(q1(".gray"), q1(".viewmy"), q1(".contact"), q1(".url"));
+    const colL = mk("bn-l"); colL.append(q1(".extnet"), blocks[1], blocks[0], $("schools").closest("table"), $("networking").closest("table"));
+    const colR = mk("bn-r"); colR.append(info, $("details"), $("interests"));
+    const two = mk("bn-two"); two.append(colL, colR);
+    const full = mk("bn-full"); full.append(blocks[2], blocks[3]);
+    const wrap = mk("bn-wrap"); wrap.append(band, two, full);
+    page.insertBefore(wrap, q1(".cols")); q1(".cols").remove();
+  }
+
+  /* ── motion ── */
+  // equalizer: 5 bars, random heights, 200ms steps
+  const bars = $("eq").querySelectorAll("i");
+  setInterval(() => bars.forEach(b => b.style.height = (20 + Math.random() * 80) + "%"), 200);
+  // player clock
+  let t = 71;
+  const fmt = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  const tick = () => { t = (t + 1) % P.song.length; $("time").textContent = fmt(t) + " / " + fmt(P.song.length); $("fill").style.width = (t / P.song.length * 100) + "%"; };
+  tick(); setInterval(tick, 1000);
+
+  // falling sparkles: 26 on dark, 12 softer ones on light, 16 on scene, none on classic/banner
+  if (skin === "glitter" || skin === "dark" || skin === "scene") {
+    const layer = $("sparkles");
+    const light = skin === "glitter", scene = skin === "scene";
+    const glyphs = scene ? ["★", "✖", "✦", "x", "★", "✧"] : ["★", "✦", "♥", "✧", "★", "✦"];
+    const colors = scene ? ["#c6f750", "#ffffff", "#e4ff8a"] : light ? ["#ff8ad0", "#ff3ea5", "#ffb6e2"] : ["#ff8ad0", "#ffffff", "#ff3ea5", "#ffc4e6"];
+    let html = "";
+    for (let i = 0; i < (light ? 12 : scene ? 16 : 26); i++) {
+      const dur = 12 + Math.random() * 8, delay = -Math.random() * dur, sway = 2.4 + Math.random() * 2.2, tw = 1 + Math.random() * 1.6;
+      const size = 8 + Math.random() * 9, op = light ? .25 + Math.random() * .3 : .3 + Math.random() * .4;
+      const g = glyphs[i % glyphs.length], c = colors[i % colors.length];
+      html += `<span class="sp" style="left:${(Math.random() * 100).toFixed(1)}%;animation-duration:${dur.toFixed(1)}s;animation-delay:${delay.toFixed(1)}s;opacity:${op.toFixed(2)};font-size:${size.toFixed(0)}px;color:${c}"><b style="animation-duration:${sway.toFixed(1)}s,${tw.toFixed(1)}s">${g}</b></span>`;
+    }
+    layer.innerHTML = html;
+  }
+
+  // ?rec=1 — auto-scroll 0→700 over 6s ease-in-out, hold 1.5s, reset, loop every 8s
+  if (rec) {
+    const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    const scrollTo = (from, to, ms, done) => {
+      const t0 = performance.now();
+      const step = now => { const p = Math.min(1, (now - t0) / ms); window.scrollTo(0, from + (to - from) * ease(p)); p < 1 ? requestAnimationFrame(step) : done(); };
+      requestAnimationFrame(step);
+    };
+    const loop = () => scrollTo(0, 700, 6000, () => setTimeout(() => { window.scrollTo(0, 0); setTimeout(loop, 500); }, 1500));
+    setTimeout(loop, 500);
+  }
+})();
+</script>
+</body>
+</html>
