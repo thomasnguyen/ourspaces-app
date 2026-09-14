@@ -66,10 +66,16 @@
   .pages { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
   .pages .k { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
   .pages .pg { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; padding: 5px 10px; border: 2px solid var(--ink); border-radius: 999px; background: var(--ink); color: var(--card); text-decoration: none; }
-  .pages .pg.md { background: var(--card); color: var(--ink); }
+  /* Three kinds of chip, three looks, so there is never a question which one is
+     the shot: the take is pink and a size up, alternates are outlined, the
+     brief is quiet. The top-of-page row keeps the plain filled .pg. */
+  .pages .pg.primary { background: var(--pink); border-color: var(--pink); color: var(--card); font-size: 12.5px; padding: 7px 14px; }
+  .pages .pg.alt { background: var(--card); color: var(--ink); }
+  .pages .pg.md { background: var(--card); color: var(--muted); border-color: var(--muted); }
   .top-pages { margin-top: 14px; }
   .top-pages .pg { font-size: 12px; padding: 7px 12px; }
   .pages .pg:hover { background: var(--pink); border-color: var(--pink); color: var(--card); }
+  .pages .pg.primary:hover { background: var(--ink); border-color: var(--ink); }
 
   /* ── the frame sketch ───────────────────────────────── */
   .frame { position: relative; aspect-ratio: 16 / 9; border: 3px solid var(--ink); border-radius: 10px; overflow: hidden; background: #ccc; box-shadow: 4px 4px 0 var(--ink); font-family: var(--mono); }
@@ -284,7 +290,7 @@ const beats = [
   { act: 0, t: '0:00', dur: '4s', shot: 'Split screen · camera A + screen capture',
     pages: [['the 2006 page', 'demo-video-assets/myspace/index.html?v=glitter&rec=1'], ['classic skin', 'demo-video-assets/myspace/index.html?v=classic&rec=1'], ['brief', 'myspace-prototype.md']],
     frame: { type: 'split', top: { kind: 'myspace', label: '2005 MySpace' }, bottom: { label: 'Holly', holly: true } },
-    see: ['Split screen, side by side. Left: a 2005 MySpace profile — custom background, glitter text, the song player, comments. Screen-record <code>demo-video-assets/myspace/index.html?v=glitter&amp;rec=1</code> at 1200×1120; it scrolls itself.', 'Right: Holly at a warm home-office desk, looking at it with you. Name tag on first appearance: Holly.'],
+    see: ['Split screen, side by side. Left: a 2005 MySpace profile — custom background, glitter text, the song player, comments. Open it with the pink button below, size the window to 1200×1120, and screen-record — the page scrolls itself.', 'Right: Holly at a warm home-office desk, looking at it with you. Name tag on first appearance: Holly.'],
     cue: 'Voice on camera if she likes; VO works if she’s looking at the screen.',
     lines: [{ who: 'holly', t: '0:00', say: 'Remember MySpace? We used to spend all night making our pages.' }] },
   { act: 0, t: '0:04', dur: '1.5s', shot: 'Split screen',
@@ -429,7 +435,12 @@ beats.forEach((b) => {
   left.appendChild(el('p','frame-cap', b.shot));
   if (b.pages) {
     const p = el('div','pages');
-    p.innerHTML = '<span class="k">record this</span>' + b.pages.map(([label, href]) => `<a class="pg${href.endsWith('.md') ? ' md' : ''}" href="${href}" target="_blank">${href.endsWith('.md') ? '' : '▶ '}${label}</a>`).join('');
+    p.innerHTML = '<span class="k">record this</span>' + b.pages.map(([label, href], i) => {
+      const brief = href.endsWith('.md');
+      const cls = brief ? 'pg md' : i === 0 ? 'pg primary' : 'pg alt';
+      const text = brief ? 'read the brief' : (i === 0 ? '▶ ' : 'or ') + label;
+      return `<a class="${cls}" href="${href}" target="_blank">${text}</a>`;
+    }).join('');
     left.appendChild(p);
   }
   const see = el('div','see');
