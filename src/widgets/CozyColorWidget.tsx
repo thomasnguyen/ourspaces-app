@@ -1,14 +1,21 @@
 import {
+  memo,
   useEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
+  type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
 import { MemberFace } from "../components/MemberFace";
 import type { Widget } from "../data/types";
 import { playSound } from "../lib/sounds";
+import {
+  CURSOR_MOTION,
+  usePeerMotion,
+  type PeerMotion,
+} from "../live/peerMotion";
 import {
   COZY_BOARDS,
   strokePrefix,
@@ -48,10 +55,46 @@ export type CozyColorPeer = {
   color: string;
   emoji?: string;
   avatarUrl?: string;
+  /** 0..1 across the board, not pixels — the postcard resizes with the window */
   x: number;
   y: number;
   zone?: string;
+  /** server clock on the sample; peerMotion reads velocity off it */
+  updatedAt?: number;
 };
+
+/**
+ * Another hand on the same postcard. Same deal as the canvas cursors: the
+ * position comes from the motion engine on rAF, so this is memo'd on identity
+ * and a peer moving re-renders nothing. It used to transition `left`/`top`,
+ * which both lagged the samples and made the browser lay out every frame.
+ */
+const CozyPeerCursor = memo(function CozyPeerCursor({
+  motion,
+  motionKey,
+  name,
+  color,
+}: {
+  motion: PeerMotion;
+  motionKey: string;
+  name: string;
+  color: string;
+}) {
+  const node = useRef<HTMLDivElement | null>(null);
+  useEffect(() => motion.attach(motionKey, node.current), [motion, motionKey]);
+  return (
+    <div
+      ref={node}
+      className="cozy-cursor"
+      style={{ "--peer-color": color } as CSSProperties}
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22">
+        <path d="M3 2 L10.6 20.2 L13.1 12.6 L20.8 10.3 Z" />
+      </svg>
+      <span>{name}</span>
+    </div>
+  );
+});
 
 /** legacy wire field — convex validates tone against these six literals */
 const WIRE_TONES: CozyColorTone[] = ["berry", "orange", "blue", "violet", "teal", "lime"];
@@ -165,7 +208,7 @@ export function CozyColorWidget({
   identity,
   onStroke,
   onClear,
-  peers,
+  peersRef,
   onCursor,
 }: {
   widget: Widget;
@@ -174,7 +217,10 @@ export function CozyColorWidget({
   identity?: CozyColorIdentity;
   onStroke?: (stroke: Omit<CozyColorStroke, "id" | "createdAt">) => Promise<unknown> | void;
   onClear?: (regionPrefix?: string) => Promise<unknown> | void;
-  peers?: CozyColorPeer[];
+  /* A ref rather than an array: this widget is built inside Canvas's
+     widgetCards memo, which must not re-run when a peer moves. The room reads
+     it on its own rAF below and only re-renders when the roster changes. */
+  peersRef?: RefObject<CozyColorPeer[]>;
   onCursor?: (x: number, y: number, zone?: string) => void;
 }) {
   const [roomOpen, setRoomOpen] = useState(false);
@@ -237,13 +283,7 @@ export function CozyColorWidget({
   }, [identity, shownStrokes]);
 
   const zoneKey = `cozy:${board.id}`;
-  const roomPeers = useMemo(
-    () =>
-      (peers ?? []).filter(
-        (peer) => peer.zone === zoneKey && peer.userId !== identity?.userId,
-      ),
-    [identity?.userId, peers, zoneKey],
-  );
+  const [roomPeers, setRoomPeers] = useState<CozyColorPeer[]>([]);
 
   // tell the space where we are: cursors only meet on the same postcard
   useEffect(() => {
@@ -251,6 +291,69 @@ export function CozyColorWidget({
     onCursor?.(0.5, 0.6, zoneKey);
     return () => onCursor?.(0, 0, undefined);
   }, [onCursor, roomOpen, zoneKey]);
+
+  /* Peers report 0..1 across the postcard; the motion engine works in pixels,
+     so it needs the board's real size. A resize rebases the tracks rather
+     than sliding every cursor across the board — see peerMotion's `sample`. */
+  const motion = usePeerMotion();
+  const boardRef = useRef<HTMLElement | null>(null);
+  const [boardSize, setBoardSize] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = boardRef.current;
+    if (!roomOpen || !el) return;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      setBoardSize((current) =>
+        current.w === rect.width && current.h === rect.height
+          ? current
+          : { w: rect.width, h: rect.height },
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [roomOpen, board.id]);
+
+  /* The pump. Positions go straight to the motion engine every frame;
+     React only hears about it when somebody arrives or leaves the postcard.
+     Reading a ref on rAF rather than taking peers as a prop is what keeps
+     this room out of the canvas's render path entirely. */
+  const selfId = identity?.userId;
+  useEffect(() => {
+    if (!roomOpen || !peersRef || boardSize.w <= 0) return;
+    let frame = 0;
+    let roster = "";
+    const pump = () => {
+      frame = window.requestAnimationFrame(pump);
+      const here = (peersRef.current ?? []).filter(
+        (peer) => peer.zone === zoneKey && peer.userId !== selfId,
+      );
+      for (const peer of here) {
+        motion.sample(
+          `cozy:${board.id}:${peer.userId ?? peer.name}`,
+          peer.x * boardSize.w,
+          peer.y * boardSize.h,
+          CURSOR_MOTION,
+          peer.updatedAt,
+        );
+      }
+      const next = here
+        .map((peer) => `${peer.userId ?? peer.name}:${peer.name}:${peer.color}`)
+        .join("|");
+      if (next !== roster) {
+        roster = next;
+        setRoomPeers(here);
+      }
+    };
+    pump();
+    return () => window.cancelAnimationFrame(frame);
+  }, [board.id, boardSize.h, boardSize.w, motion, peersRef, roomOpen, selfId, zoneKey]);
+
+  const roomCursors = roomPeers.map((peer) => ({
+    peer,
+    key: `cozy:${board.id}:${peer.userId ?? peer.name}`,
+  }));
 
   useEffect(() => {
     if (!roomOpen) return;
@@ -413,6 +516,7 @@ export function CozyColorWidget({
 
       <main className="cozy-color-room-main">
         <section
+          ref={boardRef}
           className={`cozy-color-room-board${complete ? " is-complete" : ""}`}
           aria-label={`${progress}% colored`}
           style={{
@@ -457,21 +561,14 @@ export function CozyColorWidget({
             ))}
           </nav>
           <div className="cozy-cursor-layer" aria-hidden="true">
-            {roomPeers.map((peer) => (
-              <div
+            {roomCursors.map(({ peer, key }) => (
+              <CozyPeerCursor
                 key={peer.userId ?? peer.name}
-                className="cozy-cursor"
-                style={{
-                  left: `${peer.x * 100}%`,
-                  top: `${peer.y * 100}%`,
-                  "--peer-color": peer.color,
-                } as CSSProperties}
-              >
-                <svg viewBox="0 0 24 24" width="22" height="22">
-                  <path d="M3 2 L10.6 20.2 L13.1 12.6 L20.8 10.3 Z" />
-                </svg>
-                <span>{peer.name}</span>
-              </div>
+                motion={motion}
+                motionKey={key}
+                name={peer.name}
+                color={peer.color}
+              />
             ))}
           </div>
           <div className="cozy-color-progress"><i style={{ width: `${progress}%` }} /><span>{progress}% cozy</span></div>

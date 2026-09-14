@@ -148,7 +148,11 @@ itinerary, quote, weather, sports, letter — kraft envelope that unfolds; butto
 inside so WidgetCard's drag capture doesn't eat the click…) · `CozyColorWidget.tsx` (full-screen
 paint-by-number game on an inline SVG board: 50 closed vector regions fill via
 CSS `--paint-*` vars, numbers live in the SVG, tapping a dim number switches
-color; two live palette presets; mock-local or Convex-backed region fills) ·
+color; two live palette presets; mock-local or Convex-backed region fills.
+Peer cursors take `peersRef`, NOT a peers array: this widget is built inside
+Canvas's `widgetCards` memo, so an array prop there would re-render every card
+on the board 20x a second. An rAF pump reads the ref, feeds positions to
+peerMotion, and only touches React state when the roster changes) ·
 `cozyColorArt.ts` (AUTO-GENERATED region/decor path data — regenerate with
 `node scripts/generate-cozy-art.mjs`, don't hand-edit) ·
 `cozyColorBoards.ts` (postcard gallery adapter: unifies the generated scene +
@@ -164,9 +168,12 @@ heartbeat to 0..1 zone coords for the coloring room, canvas pointermove
 switches it back) ·
 `peerMotion.ts` (**the smoothness layer** — interpolates and leads a peer's
 samples on rAF and writes the transform straight to the DOM, so remote
-cursors and remote drags never become React state. Owns the transform of
-anything it drives; do not also set one in CSS or JSX. Tuning constants are
-measured, not guessed — see `.context/live-perf/`) ·
+cursors and remote drags never become React state. Drives all three peer
+surfaces: canvas cursors, a widget somebody else is dragging, and the
+coloring-room cursors. Owns the transform of anything it drives; do not also
+set one in CSS or JSX. The returned handle is memoised because every consumer
+holds it in effect deps. Tuning constants are measured, not guessed — see
+`.context/live-perf/`) ·
 `dataMode.ts` (live/mock detection) · `identity.ts` (local identity + colors) ·
 `presenceTypes.ts` · `snapshot.ts` (localStorage snapshot) · `adapt.ts`
 (Convex↔UI key escaping)
@@ -174,7 +181,8 @@ measured, not guessed — see `.context/live-perf/`) ·
 **cursors/** — `registry.ts` + `styles.tsx` (8+ cursor styles) · `LiveCursor.tsx`
 (pass `motionRef` and peerMotion drives it instead of x/y) ·
 `components/PeerCursor.tsx` (one peer on the canvas, memo'd on identity alone
-so movement re-renders nothing)
+so movement re-renders nothing; `CozyPeerCursor` inside `CozyColorWidget.tsx`
+is the same idea for the coloring room)
 
 **Join / make a space** — `components/SpaceMaker.tsx` (rail "+": shape →
 name → keep it; guests do email + code inline and the sixth digit makes and
