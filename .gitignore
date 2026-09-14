@@ -59,14 +59,17 @@ docs/vibeapps-listing.md
 # TypeScript incremental build cache — a build artifact, not source.
 *.tsbuildinfo
 
-# Local-only video planning doc, staged into public/ so it ships with the
-# static site for Holly to read. The source lives in gitignored docs/local/.
-public/storyboard.html
-public/demo-video-assets/
+# The storyboard deck and its stills are BUILT from gitignored docs/local/ by
+# scripts/sync-storyboard.sh, but the built output is tracked on purpose — it is
+# the one video doc we publish. Re-run `npm run sync:storyboard` after editing
+# the source; commit the result.
+#   public/storyboard.html
+#   public/demo-video-assets/
 
-# The three demo-video briefs, copied into public/ by scripts/sync-storyboard.sh
-# so the storyboard's "brief" links resolve on the published copy. Same rule as
-# the storyboard itself: staged into public/ to ship, never into the repo.
+# The three demo-video briefs, copied into public/ by the same script so the
+# storyboard's "brief" links resolve on the live site. These stay out of the
+# repo — they are working notes, not a deck. The repo copy's brief links are
+# dead by design; the live copy's work.
 public/myspace-prototype.md
 public/feed-prototype.md
 public/chat-prototype.md

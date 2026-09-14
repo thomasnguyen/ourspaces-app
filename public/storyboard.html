@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OurSpaces · the video, on paper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --card: #fffaf7; --ink: #111114; --muted: #5f5055; --mat: #ddc8ac; --lime: #c9ff3d;
+    --fire: #ff7c42; --mail: #7853ff; --teal: #13b8a6; --pink: #e9369d; --sun: #ffb02e;
+    --display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--mat); color: var(--ink); font-family: var(--sans); font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+  .page { max-width: 1240px; margin: 0 auto; padding: 40px 28px 120px; }
+
+  /* ── header ─────────────────────────────────────────── */
+  .top { background: var(--card); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 12px 12px 0 var(--ink); padding: 40px 48px; margin-bottom: 36px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; display: flex; gap: 10px; align-items: center; }
+  .eyebrow .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent, var(--ink)); border: 2px solid var(--ink); }
+  h1 { font-family: var(--display); font-weight: 800; font-size: clamp(38px, 6vw, 68px); line-height: .98; letter-spacing: -.025em; margin: 0 0 16px; }
+  .hl { background: var(--lime); box-shadow: 0 0 0 4px var(--lime); border-radius: 2px; }
+  .sub { font-size: 20px; line-height: 1.4; color: var(--muted); max-width: 60ch; margin: 0 0 22px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; padding: 7px 12px; border: 2px solid var(--ink); border-radius: 999px; background: var(--card); }
+  .chip.ink { background: var(--ink); color: var(--card); }
+  .chip.pink { background: var(--pink); color: var(--card); }
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 24px; margin-top: 26px; padding-top: 22px; border-top: 3px solid var(--ink); font-size: 14px; line-height: 1.4; }
+  .legend b { font-family: var(--display); font-size: 15px; }
+
+  /* ── acts ───────────────────────────────────────────── */
+  .act { margin: 48px 0 18px; display: flex; align-items: baseline; gap: 16px; }
+  .act h2 { font-family: var(--display); font-weight: 800; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.02em; margin: 0; line-height: 1; }
+  .act .num { display: inline-block; background: var(--accent, var(--ink)); color: var(--card); border: 3px solid var(--ink); border-radius: 12px; padding: 2px 14px; margin-right: 12px; transform: rotate(-2deg); }
+  .act .range { font-family: var(--mono); font-size: 13px; letter-spacing: .1em; color: var(--muted); }
+  .act .job { font-size: 15px; color: var(--muted); margin-left: auto; max-width: 40ch; text-align: right; }
+
+  /* ── beats ──────────────────────────────────────────── */
+  .beat { display: grid; grid-template-columns: 330px 1fr 1.15fr; gap: 26px; background: var(--card); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 7px 7px 0 var(--ink); padding: 22px 26px 22px 22px; margin-bottom: 18px; align-items: start; }
+  .beat .tc { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; color: var(--muted); margin: 0 0 8px; display: flex; justify-content: space-between; }
+  .beat .tc b { color: var(--ink); font-weight: 500; }
+  .see { font-size: 15px; line-height: 1.45; }
+  .see .k { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .see p { margin: 0 0 8px; }
+  .see .cue { color: var(--muted); font-size: 13.5px; }
+  .say { border-left: 6px solid var(--accent, var(--ink)); padding-left: 18px; display: grid; gap: 12px; }
+  .say .k { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: -2px; }
+  .line { display: grid; grid-template-columns: 40px 74px 1fr; gap: 10px; align-items: baseline; }
+  .line .t { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .line .who { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; padding: 3px 0; border: 2px solid var(--ink); border-radius: 999px; text-align: center; line-height: 1.2; }
+  .line .who.holly { background: var(--pink); color: var(--card); }
+  .line .who.thomas { background: var(--ink); color: var(--card); }
+  .line .words { font-family: var(--display); font-weight: 600; font-size: 19px; line-height: 1.32; letter-spacing: -.01em; }
+  .line.silent .words { font-family: var(--sans); font-weight: 400; font-size: 14px; color: var(--muted); font-style: italic; }
+
+  /* ── record-me pages: link chips under a frame that has a built page ── */
+  .frame-link { display: block; color: inherit; text-decoration: none; }
+  .frame-link .frame { cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
+  .frame-link:hover .frame { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+  .pages { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+  .pages .k { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+  .pages .pg { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; padding: 5px 10px; border: 2px solid var(--ink); border-radius: 999px; background: var(--ink); color: var(--card); text-decoration: none; }
+  .pages .pg.md { background: var(--card); color: var(--ink); }
+  .top-pages { margin-top: 14px; }
+  .top-pages .pg { font-size: 12px; padding: 7px 12px; }
+  .pages .pg:hover { background: var(--pink); border-color: var(--pink); color: var(--card); }
+
+  /* ── the frame sketch ───────────────────────────────── */
+  .frame { position: relative; aspect-ratio: 16 / 9; border: 3px solid var(--ink); border-radius: 10px; overflow: hidden; background: #ccc; box-shadow: 4px 4px 0 var(--ink); font-family: var(--mono); }
+  .frame .split { position: absolute; inset: 0; display: grid; grid-template-columns: 3fr 2fr; }
+  .frame .split > .region + .region { border-left: 3px solid var(--ink); }
+  .frame .halves { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
+  .region { position: relative; overflow: hidden; }
+  .region .lbl { position: absolute; left: 8px; top: 7px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; background: rgba(17,17,20,.82); color: var(--card); z-index: 3; white-space: nowrap; }
+  .region.cam { background: radial-gradient(120% 90% at 85% 20%, #7a5137 0%, #3a281f 55%, #20150f 100%); }
+  .region.cam.photo-dual { display: grid; grid-template-columns: 1fr 1fr; }
+  .cam-photo, .screen-photo { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .region.cam.photo-dual .cam-photo + .cam-photo { border-left: 3px solid var(--ink); }
+  .region.scr .screen-photo { position: absolute; inset: 0; z-index: 1; }
+  .region.cam .couch { position: absolute; left: 10%; right: 34%; bottom: 10%; height: 34%; background: #6c4a3a; border-radius: 10px 10px 4px 4px; border: 2px solid #2a1a12; }
+  .region.cam .person { position: absolute; width: 26px; height: 26px; border-radius: 50%; background: #e8c4a8; border: 2px solid #2a1a12; }
+  .region.cam .person::after { content: ""; position: absolute; left: -9px; top: 26px; width: 42px; height: 30px; background: #1d1d22; border-radius: 12px 12px 4px 4px; }
+  .region.cam .phone { position: absolute; width: 12px; height: 20px; background: #f4f4f8; border: 2px solid #2a1a12; border-radius: 3px; }
+  .region.cam .laptop { position: absolute; width: 58px; height: 36px; background: #1d1d22; border: 2px solid #0a0a0c; border-radius: 4px; }
+  .region.cam .laptop i { position: absolute; inset: 3px; background: var(--mail); border-radius: 2px; display: block; }
+  .region.cam .lamp { position: absolute; right: 12%; top: 14%; width: 22px; height: 22px; border-radius: 50%; background: #ffd9a0; box-shadow: 0 0 30px 14px rgba(255,200,120,.35); }
+  .region.scr { background: var(--bg, #eee); }
+  .region.scr .w { position: absolute; background: rgba(255,250,247,.92); border: 2px solid rgba(17,17,20,.85); border-radius: 5px; font-size: 9.5px; letter-spacing: .04em; padding: 3px 5px; color: var(--ink); line-height: 1.2; white-space: nowrap; }
+  .region.scr .cursor { position: absolute; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; background: var(--lime); box-shadow: 0 0 0 2px rgba(0,0,0,.3); }
+  /* myspace */
+  .region.scr.myspace { background: linear-gradient(160deg, #1d2149 0%, #3b2a6e 60%, #14183a 100%); }
+  .region.scr.myspace .bar { position: absolute; left: 10%; right: 10%; height: 8%; background: linear-gradient(90deg, #ff6bd6, #ffd36b, #6bf0ff); border-radius: 3px; }
+  .region.scr.myspace .row { position: absolute; left: 10%; height: 5%; background: rgba(255,255,255,.35); border-radius: 2px; }
+  .region.scr.myspace .star { position: absolute; color: #fff; font-size: 11px; opacity: .8; }
+  /* feed */
+  .region.scr.feed { background: #f3f1ee; }
+  .region.scr.feed .post { position: absolute; left: 30%; right: 30%; background: #fff; border: 2px solid #cfcac3; border-radius: 6px; }
+  .region.scr.feed .ad { position: absolute; font-size: 9px; letter-spacing: .1em; padding: 2px 5px; background: #ffe45c; border: 1.5px solid #8a7a00; border-radius: 3px; }
+  /* chat */
+  .region.scr.chat { background: #eceef2; }
+  .region.scr.chat .b { position: absolute; font-size: 9.5px; padding: 3px 7px; border-radius: 9px; background: #fff; border: 1.5px solid #c8ccd6; white-space: nowrap; }
+  .region.scr.chat .b.me { background: #1e8cff; color: #fff; border-color: #0d6bd0; }
+  /* dashboard */
+  .region.scr.dash { background: #fff; }
+  .region.scr.dash .nav { position: absolute; left: 0; top: 0; bottom: 0; width: 22%; background: #f1f0f4; border-right: 2px solid #ddd; }
+  .region.scr.dash .r { position: absolute; left: 28%; right: 8%; height: 5%; background: #e8e6ee; border-radius: 2px; }
+  /* url card */
+  .region.scr.url { background: var(--ink); display: grid; place-items: center; }
+  .region.scr.url .u { font-size: 12px; color: var(--lime); letter-spacing: .04em; }
+  /* overlays */
+  .ov-phone { position: absolute; right: 6%; bottom: 6%; width: 22%; aspect-ratio: 9 / 18; background: #fff; border: 3px solid var(--ink); border-radius: 9px; z-index: 5; box-shadow: 3px 3px 0 var(--ink); padding: 6px 5px; font-size: 8.5px; line-height: 1.3; color: var(--ink); overflow: hidden; }
+  .ov-phone b { display: block; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+  .ov-desktop { position: absolute; right: 5%; bottom: 6%; width: 42%; aspect-ratio: 16 / 9; background: #fff; border: 3px solid var(--ink); border-radius: 6px; z-index: 5; box-shadow: 3px 3px 0 var(--ink); padding: 5px 7px; font-size: 8.5px; line-height: 1.3; color: var(--ink); overflow: hidden; }
+  .ov-desktop::after { content: ""; position: absolute; left: 42%; bottom: -10px; width: 16%; height: 8px; background: var(--ink); clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 100%); }
+  .ov-desktop b { display: block; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+  .ov-lower { position: absolute; left: 6%; bottom: 8%; z-index: 6; font-family: var(--display); font-weight: 800; font-size: 13px; padding: 4px 10px; background: var(--ink); color: var(--card); border-radius: 6px; letter-spacing: -.01em; }
+  .ov-pills { position: absolute; left: 0; right: 0; bottom: 7%; display: flex; justify-content: center; gap: 5px; z-index: 6; flex-wrap: wrap; padding: 0 6%; }
+  .ov-pills span { font-size: 8.5px; letter-spacing: .08em; padding: 3px 7px; border-radius: 999px; border: 2px solid var(--ink); background: #fff; }
+  .ov-pills span.a { background: var(--fire); } .ov-pills span.b { background: var(--mail); color: #fff; } .ov-pills span.c { background: var(--lime); }
+  .ov-stamp { position: absolute; right: 8%; top: 12%; z-index: 6; font-family: var(--display); font-weight: 800; font-size: 15px; letter-spacing: .06em; color: #c1121f; border: 3px solid #c1121f; border-radius: 6px; padding: 2px 8px; transform: rotate(-12deg); background: rgba(255,250,247,.85); }
+  .ov-env { position: absolute; left: 14%; top: 30%; width: 26%; aspect-ratio: 3 / 2; background: #cdb08a; border: 2px solid #5a4630; border-radius: 3px; z-index: 5; }
+  .ov-env::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 50%; background: #bfa07a; clip-path: polygon(0 0, 100% 0, 50% 100%); border-bottom: 2px solid #5a4630; }
+  .ov-note { position: absolute; width: 22%; aspect-ratio: 1; background: #fffdf5; border: 2px solid var(--ink); z-index: 5; transform: rotate(-8deg); font-size: 8px; padding: 4px; line-height: 1.2; box-shadow: 2px 2px 0 var(--ink); }
+  .ov-note.fly { animation: none; }
+  .ov-arrow { position: absolute; z-index: 5; font-size: 18px; color: var(--ink); }
+  .ov-caption { position: absolute; left: 50%; transform: translateX(-50%); bottom: 22%; z-index: 6; font-family: var(--sans); font-weight: 600; font-size: 10px; padding: 3px 8px; background: #fff; border: 2px solid var(--ink); border-radius: 6px; white-space: nowrap; }
+
+  .frame-cap { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--muted); margin-top: 10px; line-height: 1.4; }
+
+  .end { background: var(--card); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 12px 12px 0 var(--ink); padding: 36px 44px; margin-top: 40px; }
+  .end h2 { font-family: var(--display); font-weight: 800; font-size: 34px; margin: 0 0 8px; letter-spacing: -.02em; }
+  .end p { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.45; max-width: 70ch; }
+  .end .file { display: inline-flex; margin-top: 16px; font-family: var(--mono); font-size: 12px; background: var(--ink); color: var(--card); padding: 7px 13px; border-radius: 999px; }
+
+  @media (max-width: 980px) { .beat { grid-template-columns: 1fr; } .act .job { margin-left: 0; text-align: left; } }
+  @media print {
+    html, body { background: #fff; }
+    .page { padding: 0; max-width: none; }
+    .top, .beat, .end { box-shadow: none; break-inside: avoid; }
+    .beat { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="top" style="--accent: var(--lime)">
+    <p class="eyebrow"><span class="dot"></span> OurSpaces · demo video · storyboard · v5.3</p>
+    <h1>The video,<br />on <span class="hl">paper.</span></h1>
+    <p class="sub">Every beat: what's on screen, what the shot is, and what gets said. Read it top to bottom and you've watched the video.</p>
+    <div class="chips">
+      <span class="chip ink">2:55 · 5s under the cap</span>
+      <span class="chip">3 acts · 24 beats</span>
+      <span class="chip">~400 words · ~155 Holly's</span>
+      <span class="chip pink">one back-and-forth, at the receipt</span>
+      <span class="chip">shot mute · voiced later</span>
+    </div>
+    <div class="pages top-pages"><span class="k">record these · 1200×1120 · they scroll themselves</span>
+      <a class="pg" href="demo-video-assets/myspace/index.html?v=glitter&rec=1" target="_blank">▶ 0:00 the 2006 page</a>
+      <a class="pg" href="demo-video-assets/feed/index.html?v=photos&rec=1" target="_blank">▶ 0:04 the feed</a>
+      <a class="pg" href="demo-video-assets/chat/index.html?rec=1" target="_blank">▶ 0:05 the group chat</a>
+    </div>
+    <div class="legend">
+      <div><b>Frame sketch</b><br />Left of each row. Warm = camera. Colored = a screen recording. An inset in the corner = the action detail. Splits are side by side, screen left, camera right, because the video is 16:9.</div>
+      <div><b>Holly</b> is the pink pill. The opener, the receipt, the letter, the last word. Never speaks on cue except the opener and “Bring cake.”</div>
+      <div><b>Thomas</b> is the black pill. The how. Says the three sponsor names once, to Holly, not to the lens.</div>
+      <div><b>Cues</b> in grey are for the shoot and the edit. Lower-thirds, pills and stamps are drawn where they land.</div>
+    </div>
+  </header>
+
+  <div id="board"></div>
+
+  <footer class="end">
+    <h2>Same cake, start to finish.</h2>
+    <p>Argued about in the chat at 0:06. Voted on at 0:23. Paid for at 0:30. Filed at 0:41. Split four ways at 0:58. Ordered again at 2:50. Recount “twenty-six days” and “seventeen components” on shoot day; let the “fourteen dollars” line follow whatever catch-me-up actually says.</p>
+    <span class="file">docs/local/demo-video-script.md · the shooting script this page is drawn from</span>
+  </footer>
+</div>
+
+<script>
+// ── frame builders ──────────────────────────────────────────────────────
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+
+function screen(spec) {
+  const r = el('div', 'region scr ' + (spec.kind || ''));
+  if (spec.bg) r.style.setProperty('--bg', spec.bg);
+  const asset = ({
+    myspace: 'myspace-glitter.jpg',
+    feed: 'feed-photos.jpg',
+    chat: 'chat-crew.jpg',
+    pile: 'build-room-pile.jpg',
+    arrival: 'link-card-arrival.jpg',
+    crawl: 'crawl-strip.jpg',
+    takeaway: 'keep-takeaway.jpg',
+    circle: 'reading-circle.jpg',
+  })[spec.kind];
+  if (asset) {
+    const img = el('img', 'screen-photo');
+    img.src = 'demo-video-assets/' + asset;
+    img.alt = '';
+    r.appendChild(img);
+    if (spec.label) r.appendChild(el('span', 'lbl', spec.label));
+    return r;
+  }
+  if (spec.label) r.appendChild(el('span', 'lbl', spec.label));
+  if (spec.kind === 'myspace') {
+    const bar = el('div', 'bar'); bar.style.top = '18%'; r.appendChild(bar);
+    [[32,55],[40,40],[48,62],[56,35],[64,50],[72,58]].forEach(([t,w]) => { const q = el('div','row'); q.style.top = t+'%'; q.style.width = w+'%'; r.appendChild(q); });
+    [[78,12],[86,30],[70,74],[88,84],[30,86],[60,92]].forEach(([l,t]) => { const s = el('span','star','✦'); s.style.left = l+'%'; s.style.top = t+'%'; r.appendChild(s); });
+    const w = el('div','w','♫ now playing'); w.style.left='40%'; w.style.top='26%'; r.appendChild(w);
+  }
+  if (spec.kind === 'feed') {
+    [[20,22],[48,22],[76,20]].forEach(([t,h]) => { const p = el('div','post'); p.style.top=t+'%'; p.style.height=h+'%'; r.appendChild(p); });
+    [[32,25],[32,81]].forEach(([l,t]) => { const a = el('span','ad','AD'); a.style.left=l+'%'; a.style.top=t+'%'; r.appendChild(a); });
+    const s = el('span','ad','a stranger'); s.style.left='32%'; s.style.top='53%'; s.style.background='#ddd'; s.style.borderColor='#999'; r.appendChild(s);
+  }
+  if (spec.kind === 'chat') {
+    [['cake?',12,'l'],['matcha',26,'r'],['choc',40,'l'],['who has plates',54,'r'],['wait what time again??',70,'l'],['^^ scroll up lol',84,'r']].forEach(([t,top,side]) => {
+      const b = el('div','b'+(side==='r'?' me':''), t); b.style.top=top+'%'; if (side==='r') b.style.right='6%'; else b.style.left='6%'; r.appendChild(b);
+    });
+  }
+  if (spec.kind === 'dash') {
+    r.appendChild(el('div','nav'));
+    [14,24,34,44,54,64,74].forEach(t => { const q = el('div','r'); q.style.top=t+'%'; r.appendChild(q); });
+    const w = el('div','w','components · 17'); w.style.left='58%'; w.style.top='8%'; r.appendChild(w);
+  }
+  if (spec.kind === 'url') r.appendChild(el('div','u', spec.text || 'dusty-condor-648.convex.site'));
+  (spec.widgets || []).forEach(([txt,l,t]) => { const w = el('div','w',txt); w.style.left=l+'%'; w.style.top=t+'%'; r.appendChild(w); });
+  (spec.cursors || []).forEach(([l,t]) => { const c = el('div','cursor'); c.style.left=l+'%'; c.style.top=t+'%'; r.appendChild(c); });
+  return r;
+}
+
+function camera(spec) {
+  const r = el('div', 'region cam');
+  const addPhoto = (asset) => {
+    const img = el('img', 'cam-photo');
+    img.src = 'demo-video-assets/' + asset;
+    img.alt = '';
+    r.appendChild(img);
+  };
+  if ((spec.holly && spec.thomas) || spec.close === 'both') {
+    r.classList.add('photo-dual');
+    addPhoto('holly-desk.jpg');
+    addPhoto('thomas-desk.jpg');
+  } else {
+    addPhoto((spec.thomas || spec.close) ? 'thomas-desk.jpg' : 'holly-desk.jpg');
+  }
+  if (spec.label) r.appendChild(el('span','lbl',spec.label));
+  return r;
+}
+
+function frame(f) {
+  const fr = el('div','frame');
+  if (f.type === 'split') { const s = el('div','split'); s.appendChild(screen(f.top)); s.appendChild(camera(f.bottom)); fr.appendChild(s); }
+  else if (f.type === 'screen') { const s = screen(f.screen); s.style.position='absolute'; s.style.inset='0'; fr.appendChild(s); }
+  else if (f.type === 'camera') { const c = camera(f.camera); c.style.position='absolute'; c.style.inset='0'; fr.appendChild(c); }
+  else if (f.type === 'halves') { const h = el('div','halves'); h.appendChild(screen(f.left)); h.appendChild(screen(f.right)); fr.appendChild(h); }
+  if (f.phone) { const p = el('div','ov-phone'); p.innerHTML = '<b>Holly’s phone</b>' + f.phone; fr.appendChild(p); }
+  if (f.desktop) { const d = el('div','ov-desktop'); d.innerHTML = '<b>desk monitor</b>' + f.desktop; fr.appendChild(d); }
+  if (f.lower) fr.appendChild(el('div','ov-lower', f.lower));
+  if (f.pills) { const w = el('div','ov-pills'); f.pills.forEach((t) => { const s = el('span', ({ OPENAI: 'a', AGENTMAIL: 'b', CONVEX: 'c' })[t] || '', t); w.appendChild(s); }); fr.appendChild(w); }
+  if (f.stamp) fr.appendChild(el('div','ov-stamp', f.stamp));
+  if (f.envelope) fr.appendChild(el('div','ov-env'));
+  if (f.note) { const n = el('div','ov-note', f.note.text); n.style.left = f.note.l+'%'; n.style.top = f.note.t+'%'; fr.appendChild(n); if (f.note.arrow) { const a = el('div','ov-arrow','↗'); a.style.left=(f.note.l-9)+'%'; a.style.top=(f.note.t+8)+'%'; fr.appendChild(a); } }
+  if (f.caption) fr.appendChild(el('div','ov-caption', f.caption));
+  return fr;
+}
+
+// ── the beats ───────────────────────────────────────────────────────────
+const crewWidgets = [['⏳ 12 days',8,14],['cake? ▮▮▮▯',52,10],['potluck',14,52],['🎡',66,46],['photos',40,70]];
+const acts = [
+  { n: '1', title: 'The crew', range: '0:00–1:09', accent: 'var(--mail)', job: 'Hook, problem, reveal, proof, the trick. One cake.' },
+  { n: '2', title: 'The rooms', range: '1:13–2:03', accent: 'var(--fire)', job: 'Every group got one. Firecrawl, OpenAI and AgentMail again.' },
+  { n: '3', title: 'Under the hood', range: '2:03–2:55', accent: 'var(--teal)', job: 'What did I miss, Convex named with specifics, the URL, then the two of you.' },
+];
+const beats = [
+  // ── act one
+  { act: 0, t: '0:00', dur: '4s', shot: 'Split screen · camera A + screen capture',
+    pages: [['the 2006 page', 'demo-video-assets/myspace/index.html?v=glitter&rec=1'], ['classic skin', 'demo-video-assets/myspace/index.html?v=classic&rec=1'], ['brief', 'myspace-prototype.md']],
+    frame: { type: 'split', top: { kind: 'myspace', label: '2005 MySpace' }, bottom: { label: 'Holly', holly: true } },
+    see: ['Split screen, side by side. Left: a 2005 MySpace profile — custom background, glitter text, the song player, comments. Screen-record <code>demo-video-assets/myspace/index.html?v=glitter&amp;rec=1</code> at 1200×1120; it scrolls itself.', 'Right: Holly at a warm home-office desk, looking at it with you. Name tag on first appearance: Holly.'],
+    cue: 'Voice on camera if she likes; VO works if she’s looking at the screen.',
+    lines: [{ who: 'holly', t: '0:00', say: 'Remember MySpace? We used to spend all night making our pages.' }] },
+  { act: 0, t: '0:04', dur: '1.5s', shot: 'Split screen',
+    pages: [['the feed', 'demo-video-assets/feed/index.html?v=photos&rec=1'], ['timeline fallback', 'demo-video-assets/feed/index.html?v=timeline&rec=1'], ['brief', 'feed-prototype.md']],
+    frame: { type: 'split', top: { kind: 'feed', label: 'a feed · 1.5s' }, bottom: { label: 'Holly', holly: true } },
+    see: ['The screen swaps to a feed. An ad, a stranger, an ad. No logos needed, just the shape of it.'],
+    cue: 'This is the whole “social media” beat. Two nouns, a second and a half, never compared to the product.',
+    lines: [{ who: 'holly', t: '0:04', say: 'Now it’s ads and strangers.' }] },
+  { act: 0, t: '0:05', dur: '5s', shot: 'Split screen · desktop group chat',
+    pages: [['the group chat', 'demo-video-assets/chat/index.html?rec=1'], ['names blurred', 'demo-video-assets/chat/index.html?rec=1&blur=1'], ['brief', 'chat-prototype.md']],
+    frame: { type: 'split', top: { kind: 'chat', label: 'the real group chat' }, bottom: { label: 'Holly', holly: true } },
+    see: ['The screen swaps to your real group chat, scrolling fast. It’s visibly about the cake. The last message on screen is someone asking what time again.', 'Names blurred.'],
+    cue: 'Holds to ~0:10.5 so “wait what time again??” gets read. Brisk delivery — it’s a list of grievances.',
+    lines: [{ who: 'holly', t: '0:06', say: 'And your friends are a wall of group chat. Good luck keeping up.' }] },
+  { act: 0, t: '0:10', dur: '1.5s', shot: 'Split screen → the app',
+    frame: { type: 'split', top: { kind: 'space', bg: 'var(--mail)', label: 'the crew · alive', widgets: [['⏳ 12 days',8,26],['cake? ▮▮▮▯',46,44],['potluck',12,66]], cursors: [[80,30]] }, bottom: { label: 'Holly', holly: true } }, 
+    see: ['The screen swaps to the crew space, already alive: a second cursor mid-drag, the countdown ticking.', 'The lower-third pops on the name. Music starts. Full screen from 0:11.'],
+    cue: 'Line one said “MySpace.” This line answers it. The name is said once, clearly.',
+    lines: [{ who: 'holly', t: '0:10', say: 'So we made OurSpaces.' }] },
+  { act: 0, t: '0:11', dur: '8s', shot: 'Full-screen laptop recording',
+    frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--mail)', label: 'the crew · picker drops', widgets: [['cake? matcha / choc',46,12],['⏳ countdown',8,20],['potluck · 1 slot left',10,58],['🎡 wheel',62,52],['🎨 coloring',40,76]], cursors: [[30,44]] } },
+    see: ['Five drops from the picker, one placement sound each. The cake poll first, matcha or chocolate. Then countdown, potluck sheet, wheel, coloring page.'],
+    cue: 'Still Holly. Her voice runs unbroken from 0:00 to 0:25; the first voice switch is on the cut to the wide shot.',
+    lines: [{ who: 'holly', t: '0:11', say: 'One page your whole group can mess with, for planning stuff or just goofing off. The cake poll went up first, obviously.' }] },
+  { act: 0, t: '0:19', dur: '6s', shot: 'Laptop · the widget wall (#/wall)',
+    frame: { type: 'screen', screen: { kind: 'space', bg: '#1a1620', label: 'the widget wall · 32 cards', widgets: [['poll',6,18],['countdown',26,14],['potluck',48,20],['wheel',70,16],['letter',86,24],['photos',10,44],['itinerary',30,48],['expenses',52,44],['radio',74,50],['jokes',8,72],['postcard',30,74],['pile',52,70],['score',76,76]] } },
+    see: ['Cut to the widget wall: every widget on one drifting wall with a black name tag each. Slow auto drift, mouse parked, captured at 2x. The cut lands on “thirty-something.”'],
+    cue: 'Six seconds. It has to register as a lot, not be read. If the capture allows, the drift passes “color together” as she names it; catch-me-up is the dock, not a card. Both examples pay off later (1:05, 2:03). Also the thumbnail.',
+    lines: [{ who: 'holly', t: '0:19', say: 'Thirty-something kinds. Long distance? A picture you color in together. Gone all week? It catches you up.' }] },
+  { act: 0, t: '0:25', dur: '5s', shot: 'Wide, mute · two desk screens',
+    frame: { type: 'camera', camera: { label: 'wide · Holly + Thomas at desks', holly: true, thomas: true }, desktop: 'cake?<br>● matcha ✓<br>○ choc', stamp: 'ALL SET', pills: ['CONVEX'] },
+    see: ['Wide desk shot: Holly and Thomas each at their computer. Name tag: Thomas. Cut to Holly’s desktop: she picks matcha. Cut to his screen: the bar moves.', 'She grabs the last potluck slot. The ALL SET stamp slams.'],
+    cue: 'Shot mute. Nobody speaks on cue. The stamp is the sound. Convex is named here, where its work is the picture: her desktop moves his.',
+    lines: [{ who: 'thomas', t: '0:26', say: 'Everyone sees it. That’s the Convex part.' }] },
+  { act: 0, t: '0:30', dur: '9s', shot: 'Desktop · the bakery email → forward',
+    frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--mail)', label: 'her monitor · the sticker', widgets: [['✉ crew@agentmail.to',6,14]] }, desktop: '<b>Mail</b>from: the bakery<br>your order · $84<br>Fwd → to: the crew<br><u>Send</u>' },
+    see: ['On Holly’s desktop: the bakery’s confirmation email, “your order · $84”. She taps Forward. To: autocompletes to “the crew”, the same address as the sticker on her monitor. No body. Send.'],
+    cue: 'The setup: the receipt is already an email, and the chat is where receipts go to die. Her block, recorded alone; the desktop actions filmed separately.',
+    lines: [{ who: 'holly', t: '0:30', say: 'I paid for the cake. Drop the receipt in the chat and nobody pays you back.' }, { who: 'holly', t: '0:35', say: 'But the space has its own email. So I forward it.' }, { who: 'holly', t: '0:38', say: 'That’s it.' }] },
+  { act: 0, t: '0:39', dur: '4s', shot: 'Laptop recording · the row',
+    frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--mail)', label: 'the cake card', widgets: [['cake · $84',8,12],['holly · paid $84',8,28],['maya · owes $21',8,44],['jules, sam, kenji · owes $21',8,60],['because: a receipt for the cake',8,76]] } },
+    see: ['Two seconds of nothing on Thomas’s screen. Then a cake card lands: holly · paid $84, and a row per person fills in under it, owes $21 each. The because-slip unfolds on the flap.'],
+    cue: 'Nothing is said until the row is on screen. The re-hook is her surprise.',
+    lines: [{ who: 'holly', t: '0:41', say: 'Wait. How did it know that was a receipt?' }] },
+  { act: 0, t: '0:43', dur: '13s', shot: 'Split · the slip left, Thomas at his desk right',
+    frame: { type: 'split', top: { kind: 'space', bg: 'var(--mail)', label: 'the slip, close', widgets: [['because: a receipt for the cake',6,30],['holly · paid $84',6,58]] }, bottom: { label: 'Thomas · desk', close: true }, pills: ['AGENTMAIL','OPENAI'] },
+    see: ['Left: the because-slip, close. Right: Thomas at his desk, the address sticker on his monitor. On “the sticker”, cut in on the display. On “OpenAI reads”, cut in on the slip as it plays: reading it → RECEIPT → filing it → expenses.', 'Pills pop as the names land: AGENTMAIL at 0:44, OPENAI at 0:50.'],
+    cue: 'The only back-and-forth in the video. He says it to her, not to the lens, and the answer starts with the answer. Nobody recites a pipeline. Both voices still recorded separately.',
+    lines: [{ who: 'thomas', t: '0:43', say: 'It read it. AgentMail is email for apps, so every space gets its own address. That’s what’s on the sticker.' }, { who: 'thomas', t: '0:49', say: 'Send it anything. OpenAI reads whatever lands there and works out what it is, then the space files it.' }] },
+  { act: 0, t: '0:56', dur: '6s', shot: 'Desktop close-up',
+    frame: { type: 'camera', camera: { label: 'Holly · reads the reply', holly: true }, desktop: '<b>reply · same thread</b>Logged $84 from Holly for the cake. Split four ways, $21 each.' },
+    see: ['Holly, unimpressed by the how; the four owes rows on the monitor behind her. Then the space’s reply lands in the same email thread, from the crew’s address, with the split. She reads it at her desk.'],
+    cue: 'Her question is the one she actually has. The reply is real and answers it with a number and her name. She ends on his line from 0:26.',
+    lines: [{ who: 'holly', t: '0:56', say: 'Okay. But who’s paying me back?' }, { who: 'holly', t: '0:58', say: 'It wrote back. Twenty-one dollars each. And everyone sees it.' }] },
+  { act: 0, t: '1:02', dur: '3s', shot: 'Laptop · canvas zoom-out',
+    frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--mail)', label: 'the whole crew space', widgets: [['birthday',8,12],['photos',30,14],['jokes',54,12],['✉ letter',76,14],['poll',10,40],['potluck',34,42],['expenses',58,40],['countdown',80,44],['daily q',12,70],['wall',40,72],['radio',66,72]] } },
+    see: ['Pull back over the whole crew space, three seconds: the birthday frame, the photo wall, the jokes, the letter.'],
+    cue: 'The accumulation shot. Everything lives here.',
+    lines: [{ who: 'thomas', t: '1:02', say: 'Every group we’re in got one.' }] },
+  { act: 0, t: '1:05', dur: '8s', shot: 'Laptop · us two + desktop insert',
+    frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--pink)', label: 'us two', widgets: [['🕐 6:40 pm',8,12],['🕒 9:40 am',30,12],['postcard · half colored',12,42],['playlist',62,14]] }, desktop: '<b>postcard</b>tap a region → fills on both' },
+    see: ['Hard cut to the magenta of us two: two clocks, the postcard half colored. Holly fills a patch from her desktop; Thomas’s screen fills with it. Then his patches land on hers while she watches. Eight seconds. Music.'],
+    cue: 'Minute one ends on the coloring, the thing the wall line promised at 0:19, with her line. Then the tease, over the last patches, into the cut.',
+    lines: [{ who: 'holly', t: '1:05', say: 'This one’s ours. Same picture, two screens, and I get to watch him color.' }, { who: 'thomas', t: '1:10', say: 'And the one for my dev group is kind of nuts.' }] },
+
+  // ── act two
+  { act: 1, t: '1:13', dur: '4s', shot: 'Laptop · the build room',
+    frame: { type: 'screen', screen: { kind: 'pile', label: 'the build room · the pile' } },
+    see: ['Hard cut: the build room, orange. Forty-seven link covers fanned in a pile.'],
+    cue: 'The volume story: links live in a pile, not all over the space.',
+    lines: [{ who: 'thomas', t: '1:13', say: 'Forty-seven links this month. They live in a pile so they don’t take over the space.' }] },
+  { act: 1, t: '1:17', dur: '6s', shot: 'Laptop · reading room',
+    frame: { type: 'screen', screen: { kind: 'arrival', label: 'paste a link' } },
+    see: ['Paste a link. A grey placeholder, then the card fills in: title, blurb, cover image.'],
+    cue: 'Firecrawl’s first job. Pick a link with a cover image.',
+    lines: [{ who: 'thomas', t: '1:17', say: 'Paste a link. Firecrawl reads the page and makes the card.' }] },
+  { act: 1, t: '1:23', dur: '10s', shot: 'Laptop · crawl strip + second desktop',
+    frame: { type: 'screen', screen: { kind: 'crawl', label: 'crawl a site · pages arriving' }, desktop: '<b>same space</b>new pages<br>arriving…' },
+    see: ['Type a site, hit crawl. Pages appear in the strip as Firecrawl finds them, the counter climbing. Cut to Holly’s desktop: the same pages arriving.'],
+    cue: 'A crawl with two people watching it. Pick a small site — it costs credits.',
+    lines: [{ who: 'thomas', t: '1:24', say: 'Or give it a whole site. Pages show up as Firecrawl finds them, on every screen in the room.' }] },
+  { act: 1, t: '1:33', dur: '6s', shot: 'Laptop · keep takeaway',
+    frame: { type: 'screen', screen: { kind: 'takeaway', label: 'keep takeaway' } },
+    see: ['Open the reading room, hit keep takeaway. The note flies out of the room and lands on the space with a squash.'],
+    cue: 'The physical moment in act two. Let the animation finish before the cut.',
+    lines: [{ who: 'thomas', t: '1:34', say: 'And the one line worth keeping goes up on the space.' }] },
+  { act: 1, t: '1:39', dur: '6s', shot: 'Laptop · reading circle',
+    frame: { type: 'screen', screen: { kind: 'circle', label: 'reading circle' } },
+    see: ['The reading circle under an article: two questions, a reply thread.'],
+    cue: 'OpenAI’s second job, and it’s a decider, not a chatbot.',
+    lines: [{ who: 'thomas', t: '1:39', say: 'OpenAI reads each article and leaves two questions, so the link actually gets talked about.' }] },
+  { act: 1, t: '1:45', dur: '10s', shot: 'Split · us two left, Holly right',
+    frame: { type: 'split', top: { kind: 'space', bg: 'var(--pink)', label: 'us two · a letter lands' }, bottom: { label: 'Holly', holly: true }, envelope: true },
+    see: ['Split again, side by side: us two on the left, Holly at her desk on the right. A kraft envelope lands on the space with a thud. She taps it; it unfolds into a note. Cut in to the note.'],
+    cue: 'Thomas emailed ustwo@… from the laptop, off-screen, a minute earlier. Her block; one line.',
+    lines: [{ who: 'holly', t: '1:48', say: 'He emailed me a letter. From across the room. It’s different, apparently.' }] },
+  { act: 1, t: '1:55', dur: '8s', shot: 'Laptop · two rooms, 4s each',
+    frame: { type: 'halves', left: { kind: 'space', bg: 'var(--sun)', label: 'the house', widgets: [['🎡 chores',14,30],['rent split',14,60]] }, right: { kind: 'space', bg: 'var(--teal)', label: 'game day', widgets: [['⚽ 2 – 1  LIVE',12,30],['trash talk',12,60]] } },
+    see: ['The house, yellow: the chore wheel spins and lands. Game day, teal: a live score, the trash-talk wall. Four seconds each.'],
+    cue: 'Set dressing. Don’t click in.',
+    lines: [{ who: 'thomas', t: '1:55', say: 'Roommates get a chore wheel and a rent split. The rec league gets a live score and somewhere to talk trash.' }] },
+
+  // ── act three
+  { act: 2, t: '2:03', dur: '12s', shot: 'Laptop · crew + desktop insert',
+    frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--mail)', label: 'the crew · catch me up', widgets: [['cake: matcha, 5–1',8,16],['potluck: all set',8,32],['you owe Sam $14',8,48],['▍streaming…',8,64]] }, desktop: '<b>catch me up</b>▶ click' },
+    see: ['Back to the crew, on her screen. She hits catch me up; lines stream in: the cake result, the potluck, who owes who.'],
+    cue: 'Live model call on camera. Record several takes; her second line follows whatever the recap actually says.',
+    lines: [{ who: 'holly', t: '2:03', say: 'Okay, but what did I miss this week? … I owe Sam fourteen dollars?' }, { who: 'thomas', t: '2:11', say: 'It reads the whole space and tells you. Even that.' }] },
+  { act: 2, t: '2:15', dur: '16s', shot: 'Laptop · the Convex dashboard',
+    frame: { type: 'screen', screen: { kind: 'dash', label: 'Convex dashboard' }, pills: ['PRESENCE','WORKFLOW','CRONS','FILE STORAGE','STATIC HOSTING'] },
+    see: ['The Convex dashboard: the components list, the tables, the crons. Fast. Pills pop as he names them.'],
+    cue: 'The transcript beat for the Convex judges and the AI judge. Plain, fast, spoken once.',
+    lines: [{ who: 'thomas', t: '2:15', say: 'This is the nerd part. It’s all Convex. Every patch she colors in is a write, and it’s on his screen while she’s still going. Seventeen components, every one doing a job: presence for the cursors, a workflow for the Friday email, a cron that sweeps the room, file storage for the photos.' }] },
+  { act: 2, t: '2:34', dur: '18s', shot: 'Split camera · both at desks',
+    frame: { type: 'camera', camera: { label: 'Holly + Thomas · desks', close: 'both' }, lower: 'dusty-condor-648.convex.site · built by Thomas · designed by Holly' },
+    see: ['Split camera on both of you at your desks. Lower-third: the live URL, built by Thomas, designed by Holly.'],
+    cue: 'The introduction lives here, where the cut to your faces motivates the names. Her one on-camera cue after the opener; the last word is hers.',
+    lines: [{ who: 'thomas', t: '2:34', say: 'I’m Thomas. That’s Holly, my wife. She designed it, I built it, in twenty-six days, and I never typed a line of code. I typed a lot of English. It’s live, no signup. Open it and put something on the space.' }, { who: 'holly', t: '2:50', say: 'Bring cake.' }] },
+  { act: 2, t: '2:52', dur: '3s', shot: 'URL card · hold',
+    frame: { type: 'screen', screen: { kind: 'url', text: 'dusty-condor-648.convex.site' } },
+    see: ['Hold on the URL. Music out.'],
+    cue: 'End at 2:48.',
+    lines: [{ who: 'silent', t: '2:55', say: 'no line — end' }] },
+];
+
+// ── render ──────────────────────────────────────────────────────────────
+const board = document.getElementById('board');
+let lastAct = -1;
+beats.forEach((b) => {
+  if (b.act !== lastAct) {
+    lastAct = b.act; const a = acts[b.act];
+    const h = el('div','act'); h.style.setProperty('--accent', a.accent);
+    h.innerHTML = `<h2><span class="num">${a.n}</span>${a.title}</h2><span class="range">${a.range}</span><span class="job">${a.job}</span>`;
+    board.appendChild(h);
+  }
+  const a = acts[b.act];
+  const row = el('article','beat'); row.style.setProperty('--accent', a.accent);
+  const left = el('div');
+  left.innerHTML = `<p class="tc"><b>${b.t}</b><span>${b.dur}</span></p>`;
+  if (b.pages) { const a = el('a','frame-link'); a.href = b.pages[0][1]; a.target = '_blank'; a.title = 'open ' + b.pages[0][0] + ' (1200×1120, scrolls itself)'; a.appendChild(frame(b.frame)); left.appendChild(a); }
+  else left.appendChild(frame(b.frame));
+  left.appendChild(el('p','frame-cap', b.shot));
+  if (b.pages) {
+    const p = el('div','pages');
+    p.innerHTML = '<span class="k">record this</span>' + b.pages.map(([label, href]) => `<a class="pg${href.endsWith('.md') ? ' md' : ''}" href="${href}" target="_blank">${href.endsWith('.md') ? '' : '▶ '}${label}</a>`).join('');
+    left.appendChild(p);
+  }
+  const see = el('div','see');
+  see.innerHTML = `<span class="k">What you see</span>` + b.see.map(p => `<p>${p}</p>`).join('') + (b.cue ? `<p class="cue">${b.cue}</p>` : '');
+  const say = el('div','say');
+  say.innerHTML = `<span class="k">What gets said</span>` + b.lines.map(l => l.who === 'silent'
+    ? `<div class="line silent"><span class="t">${l.t}</span><span></span><span class="words">${l.say}</span></div>`
+    : `<div class="line"><span class="t">${l.t}</span><span class="who ${l.who}">${l.who === 'holly' ? 'Holly' : 'Thomas'}</span><span class="words">${l.say}</span></div>`).join('');
+  row.append(left, see, say);
+  board.appendChild(row);
+});
+</script>
+</body>
+</html>
