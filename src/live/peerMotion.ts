@@ -51,10 +51,11 @@ const STILL = 0.002;
 const SETTLED_PX = 0.05;
 const REAP_AFTER_MS = 15_000;
 /** Letting go hands the card back to its committed left/top, and the ghost is
- *  typically ~25px off at that instant. Easing that last bit reads as the card
- *  settling; clearing the transform outright reads as a pop. */
-const RELEASE_MS = 140;
-const RELEASE_EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
+ *  behind by however far the peer moved in the last ~150ms. Easing that last
+ *  bit reads as the card settling; dropping the transform reads as a pop. */
+const RELEASE_TAU = 45;
+/** Give up and snap if the committed position never stops moving. */
+const RELEASE_LIMIT_MS = 600;
 
 type Track = {
   el: HTMLElement | null;
@@ -83,6 +84,8 @@ type Track = {
   /** false until the first real sample — the first paint must not slide in
    *  from wherever the track happened to be created */
   seeded: boolean;
+  /** when the peer let go; the track is gliding home rather than tracking */
+  settling: number | null;
   touched: number;
 };
 
@@ -132,6 +135,34 @@ export function usePeerMotion(): PeerMotion {
         continue;
       }
       if (!track.el) continue;
+
+      if (track.settling !== null) {
+        /* Gliding home. The target is re-read every frame on purpose: the
+           committed left/top and the cleared gesture arrive on two different
+           queries, and they do not reliably land in the same React commit.
+           Reading once at release time meant measuring against a stale origin
+           and popping the card up to ~200px when a peer let go mid-move. */
+        const box = window.getComputedStyle(track.el);
+        const homeX = parseFloat(box.left) || 0;
+        const homeY = parseFloat(box.top) || 0;
+        const k = snap ? 1 : 1 - Math.exp(-dt / RELEASE_TAU);
+        track.rx += (homeX - track.rx) * k;
+        track.ry += (homeY - track.ry) * k;
+        const dx = track.rx - homeX;
+        const dy = track.ry - homeY;
+        if (
+          Math.hypot(dx, dy) < 0.5 ||
+          now - track.settling > RELEASE_LIMIT_MS
+        ) {
+          track.el.style.transform = "";
+          track.el = null;
+          track.settling = null;
+        } else {
+          track.el.style.transform = `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(2)}px, 0)`;
+          alive = true;
+        }
+        continue;
+      }
 
       const age = now - track.tRecv;
       let aimX = track.tx;
@@ -212,6 +243,7 @@ export function usePeerMotion(): PeerMotion {
           rx: x,
           ry: y,
           seeded: true,
+          settling: null,
           touched: now,
         };
         tracks.current.set(key, track);
@@ -285,13 +317,14 @@ export function usePeerMotion(): PeerMotion {
           rx: 0,
           ry: 0,
           seeded: false,
+          settling: null,
           touched: performance.now(),
         };
         tracks.current.set(key, track);
       }
       const bound = track;
+      bound.settling = null; // picked back up mid-glide
       bound.el = el;
-      if (el) el.style.transition = "";
       if (el && bound.seeded) {
         // land on the current target this frame rather than sliding in from
         // whatever the last gesture left behind
@@ -304,37 +337,32 @@ export function usePeerMotion(): PeerMotion {
       start();
       return () => {
         if (bound.el !== el) return;
-        bound.el = null;
-        if (!el) return;
-        /* By now React has already moved the card onto its committed left/top,
-           so the old transform means something different than it did a frame
-           ago. Re-express it against the NEW origin — that keeps the card
-           exactly where the eye last saw it — and ease that remainder to zero.
-           Dropping the transform outright pops it the last ~25px instead. */
-        const box = window.getComputedStyle(el);
-        const dx = bound.rx - (parseFloat(box.left) || 0);
-        const dy = bound.ry - (parseFloat(box.top) || 0);
-        if (
-          !release ||
-          prefersReducedMotion() ||
-          !Number.isFinite(dx) ||
-          !Number.isFinite(dy) ||
-          Math.hypot(dx, dy) < 0.5
-        ) {
-          el.style.transform = "";
+        if (!el) {
+          bound.el = null;
           return;
         }
-        el.style.transition = "none";
-        el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
-        void el.offsetWidth; // commit that as the start of the ease
-        el.style.transition = `transform ${RELEASE_MS}ms ${RELEASE_EASE}`;
-        el.style.transform = "translate3d(0px, 0px, 0)";
-        window.setTimeout(() => {
-          // only if nobody has picked the card back up in the meantime
-          if (bound.el !== null) return;
-          el.style.transition = "";
+        if (!release || prefersReducedMotion()) {
           el.style.transform = "";
-        }, RELEASE_MS);
+          bound.el = null;
+          return;
+        }
+        /* Re-express the transform against the committed left/top NOW, in
+           this same cleanup. React has already moved the card there, and
+           waiting for the next animation frame to fix the transform leaves
+           one frame showing the new left/top with the old offset still on
+           it — a ~180px flash. The settle branch in `tick` then eases
+           whatever remains, and re-reads its target each frame in case the
+           committed position lands a commit later than the cleared gesture. */
+        const box = window.getComputedStyle(el);
+        const homeX = parseFloat(box.left) || 0;
+        const homeY = parseFloat(box.top) || 0;
+        if (Number.isFinite(homeX) && Number.isFinite(homeY)) {
+          el.style.transform = `translate3d(${(bound.rx - homeX).toFixed(2)}px, ${(
+            bound.ry - homeY
+          ).toFixed(2)}px, 0)`;
+        }
+        bound.settling = performance.now();
+        start();
       };
     },
     [start],

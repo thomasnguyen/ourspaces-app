@@ -305,6 +305,10 @@ path) ·
 `messages.ts` (per-widget threads, real cursor pagination, `search` full-text
 query, `messagesCounter`) · `votes.ts` (`pollTallies` aggregate + `vote`) ·
 `presence.ts` (hand-rolled canvas cursors + gesture-lock arbitration, TTLs —
+also exports a `disconnect` adapter that belongs to `roomPresence`: the
+presence hook's goodbye beacon posts to the hardcoded path
+`presence:disconnect`, so it has to live there or a closed tab never clears
+from "N here now" — read the comment before renaming it. —
 the 50ms hot path; `finishGesture` commits the widget layout server-side.
 `updateGesture` reads and writes ONE row on purpose: arbitration lives at
 `claimGesture` / `finishGesture`, because a per-frame room scan put every

@@ -2,6 +2,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -373,7 +374,13 @@ function WidgetCardComponent({
      it paint. The cleanup clears the inline transform, so the card settles
      back onto its committed left/top the moment they let go. */
   const heldBySession = remoteGesture?.sessionId;
-  useEffect(() => {
+  /* useLayoutEffect, not useEffect. When a peer lets go, React moves the card
+     onto its committed left/top and clears the gesture in the same commit —
+     and the engine has to re-express its transform against that new origin
+     before the browser paints. A passive effect runs AFTER paint, so the
+     frame showing the new left/top with the old offset still on it reaches
+     the screen: a ~180px flash at the end of every remote drag. */
+  useLayoutEffect(() => {
     if (!motion || !heldBySession) return;
     return motion.attach(`widget:${widget.id}`, groupRef.current, true);
   }, [heldBySession, motion, widget.id]);
