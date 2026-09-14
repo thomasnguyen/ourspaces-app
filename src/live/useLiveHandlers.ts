@@ -72,6 +72,53 @@ function patchWidgetBox(
   }
 }
 
+/** Same walk as patchWidgetBox, for the half of a widget that is not its box. */
+function patchWidgetData(
+  store: OptimisticLocalStore,
+  spaceId: Id<"spaces">,
+  widgetId: Id<"widgets">,
+  next: (data: Doc<"widgets">["data"]) => Doc<"widgets">["data"],
+) {
+  for (const { args, value } of store.getAllQueries(api.spaces.getSpaceWithWidgets)) {
+    if (!value || value.space === null || value.space._id !== spaceId) continue;
+    store.setQuery(api.spaces.getSpaceWithWidgets, args, {
+      ...value,
+      widgets: value.widgets.map((widget) =>
+        widget._id === widgetId ? { ...widget, data: next(widget.data) } : widget,
+      ),
+    });
+  }
+}
+
+type ClaimableItem = {
+  name: string;
+  claimed?: boolean;
+  by?: string;
+  byUserId?: string;
+};
+
+/** Mirrors the toggle in convex/widgets.ts `claimItem`. Keep them in step. */
+function toggleClaimed(
+  data: Doc<"widgets">["data"],
+  itemName: string,
+  claimantName: string,
+  claimantUserId: string,
+): Doc<"widgets">["data"] {
+  const potluck = data as { items?: ClaimableItem[] };
+  const items = Array.isArray(potluck?.items) ? potluck.items : [];
+  return {
+    ...data,
+    items: items.map((item) => {
+      if (item.name !== itemName) return item;
+      if (item.claimed && item.byUserId === claimantUserId) {
+        const { byUserId: _u, by: _b, claimed: _c, ...rest } = item;
+        return { ...rest, claimed: false };
+      }
+      return { ...item, claimed: true, by: claimantName, byUserId: claimantUserId };
+    }),
+  } as Doc<"widgets">["data"];
+}
+
 export function useLiveHandlers(
   spaceId: string | undefined,
   identity: LiveIdentity,
@@ -101,14 +148,67 @@ export function useLiveHandlers(
     ),
     [resizeWidget],
   );
-  const vote = useMutation(api.votes.vote);
+  /* Everything below paints on the next frame instead of waiting out a round
+     trip. These are all unconditional server patches — the same test the
+     comment above applies to move/resize: the client already knows the answer,
+     and Convex rolls the guess back for free if the write ever fails. Measured
+     at 175ms before, ~0 after (.context/live-perf/self-latency.mjs). */
+  const voteMutation = useMutation(api.votes.vote);
+  const vote = useMemo(
+    () => voteMutation.withOptimisticUpdate(
+      (store, { widgetId, spaceId, userId, optionId }) => {
+        const args = { widgetId, spaceId };
+        const rows = store.getQuery(api.votes.getResults, args);
+        if (!rows) return;
+        const mine = rows.find((row) => row.userId === userId);
+        store.setQuery(
+          api.votes.getResults,
+          args,
+          mine
+            ? rows.map((row) => (row.userId === userId ? { ...row, optionId } : row))
+            : [
+                ...rows,
+                {
+                  // stand-in until the server answers; useLivePoll reads only
+                  // `optionId` off your own row, never its id or name
+                  _id: crypto.randomUUID() as Id<"votes">,
+                  _creationTime: Date.now(),
+                  widgetId,
+                  userId,
+                  optionId,
+                  voterName: "You",
+                },
+              ],
+        );
+      },
+    ),
+    [voteMutation],
+  );
   const send = useMutation(api.messages.sendMessage);
   const promote = useMutation(api.messages.promoteMessage);
-  const claim = useMutation(api.widgets.claimItem);
+  const claimMutation = useMutation(api.widgets.claimItem);
+  const claim = useMemo(
+    () => claimMutation.withOptimisticUpdate(
+      (store, { spaceId, widgetId, itemName, claimantName, claimantUserId }) =>
+        patchWidgetData(store, spaceId, widgetId, (data) =>
+          toggleClaimed(data, itemName, claimantName, claimantUserId),
+        ),
+    ),
+    [claimMutation],
+  );
   const spinWheel = useMutation(api.widgets.spinWheel);
   const create = useMutation(api.widgets.createWidget);
   const remove = useMutation(api.widgets.deleteWidget);
-  const updateData = useMutation(api.widgets.updateWidgetData);
+  /* One optimistic update covers a lot of the room: rsvp, the daily question
+     and its reactions, the playlist dial and opening a letter all route their
+     complete new `data` through here. */
+  const updateDataMutation = useMutation(api.widgets.updateWidgetData);
+  const updateData = useMemo(
+    () => updateDataMutation.withOptimisticUpdate((store, { spaceId, id, data }) =>
+      patchWidgetData(store, spaceId, id, () => data),
+    ),
+    [updateDataMutation],
+  );
   const scrapeLink = useAction(api.firecrawl.scrapeLink);
   const searchTopic = useAction(api.firecrawl.searchTopic);
   const crawlSite = useAction(api.firecrawl.crawlSite);

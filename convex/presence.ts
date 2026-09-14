@@ -3,6 +3,7 @@ import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { touchSpace } from "./activity";
+import { presence as roomPresence } from "./roomPresence";
 import schema from "./schema";
 
 // The client hides a cursor after 30s (src/live/usePresence.ts); the sweep
@@ -369,6 +370,30 @@ export const listHereNow = query({
       .query("presence")
       .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
       .collect();
+  },
+});
+
+/**
+ * Not part of the cursor system — an adapter, and it has to live at exactly
+ * this path.
+ *
+ * @convex-dev/presence's React hook says goodbye on `beforeunload` with a
+ * `navigator.sendBeacon`, because by then the websocket is already going away.
+ * That beacon posts to a HARDCODED function path: `presence:disconnect`. Our
+ * room-occupancy API lives in `roomPresence.ts` (deliberately — see the note
+ * at the top of that file), so the beacon was hitting a function that did not
+ * exist and failing silently. The result: closing a tab never told the server
+ * anything, and "N here now" stayed wrong until the 30s liveness window
+ * expired. Measured at ~17s stale before this existed, ~1s after.
+ *
+ * If you rename this, rename it back.
+ */
+export const disconnect = mutation({
+  args: { sessionToken: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { sessionToken }) => {
+    await roomPresence.disconnect(ctx, sessionToken);
+    return null;
   },
 });
 

@@ -5,6 +5,33 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Room liveness: your own clicks, and who's here (2026-09-14):** two gaps
+  left after the cursor work, both now closed.
+  **Your own actions no longer wait for the server.** Claiming a potluck item
+  took **175ms** to paint — the whole round trip, for something the client
+  already knew. `claimItem`, `votes.vote` and `updateWidgetData` now carry
+  `withOptimisticUpdate`, so it paints on the next frame: **13ms**. That one
+  `updateWidgetData` update covers rsvp, the daily question and its reactions,
+  the playlist dial and opening a letter, since they all route their complete
+  new `data` through it.
+  **"N here now" now clears when someone leaves.** It took ~17s (worst case
+  30s). @convex-dev/presence's hook says goodbye on `beforeunload` with a
+  `sendBeacon` to a HARDCODED path — `presence:disconnect` — and our
+  room-occupancy API lives in `roomPresence.ts`, so the beacon was hitting a
+  function that did not exist and failing silently. `convex/presence.ts` now
+  exports a `disconnect` adapter at exactly that path: **466ms**. A crash or
+  force-quit still waits out the 30s window; that is the backstop, not the
+  normal path.
+  Also fixed: the end of a remote drag flashed the card ~200px for one frame.
+  WidgetCard's motion attach is a **`useLayoutEffect`** now — a passive effect
+  runs after paint, so the frame with the new `left/top` and the old transform
+  was reaching the screen. 205px → 3px.
+  **At the floor:** peer-visible latency stays ~150ms. That is Convex's
+  write + reactive-push path (network RTT is only ~17ms of it) and is not
+  something the app can shorten.
+  Probes: `.context/live-perf/self-latency.mjs`, `poll-self-latency.mjs`,
+  `here-now.mjs` (local-only).
+
 - **The coloring room is smooth too (2026-09-14):** its peer cursors now run
   through the same `peerMotion` engine as the canvas — 262ms lag and 9.7%
   stalled frames → **150ms and 0%**. They used to transition `left`/`top`,
