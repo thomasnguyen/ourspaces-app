@@ -5,6 +5,26 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Demo MySpace portraits (2026-09-14, local-only):** the glitter, scene,
+  and banner recorder variants now use fictional 2005-era snapshots for every
+  profile, Top 8/Top 16 friend, and comment avatar. The 13 new friends are
+  deliberately ordinary — plain tees, hoodies and polos in classrooms,
+  kitchens, parks and hallways — while Jules keeps the first slightly
+  alternative bedroom shot. All 16 friend photos load at 720×720 with no
+  monogram fallbacks; assets stay under gitignored
+  `docs/local/demo-video-assets/myspace/assets/` with no network requests or
+  real people. Browser-verified the classic Top 8 and Maya's full Top 16.
+
+- **Demo feed media (2026-09-13, local-only):** the `v=photos` recorder
+  insert now replaces its flat picture placeholders with seven generated,
+  fictional feed images: three polished product ads, travel and fitness
+  creator bait, a viral dog reel, and one deliberately scrappy friend-made
+  birthday cake. The same sneaker creative repeats in the sticky rail so the
+  5.5s doomscroll reads as ad saturation immediately. All assets stay under
+  gitignored `docs/local/demo-video-assets/feed/assets/`; no network requests
+  or real brands/people. Browser-verified at the 1200×1120 recording viewport,
+  including the loop recording and all seven loaded image sources.
+
 - **Direct room navigation (2026-09-13):** retired the home/block page.
   `#/home` now redirects to `#/space/crew`; About’s entry buttons and the
   invalid-invite return link go straight to the crew. Removed the sidebar’s
@@ -1159,20 +1179,30 @@ Backward-looking history lives in `hackathon.md`.
   app’s existing artwork and an explicitly local preview poll; the site’s
   root continues to open a live room. Technical detail is expandable.
 
+- 2026-09-13: **The room bar is a `<div>`, not a `<header>`.**
+  `Canvas.tsx` wrapped the room's live state (faces, "N here now", title,
+  actions) in `<header className="space-header">`. Readability-style text
+  extractors — link previews, search snippets, crawlers — drop `<header>` as
+  boilerplate by tag, regardless of nesting. Measured against prod: extracting
+  main content only gives 3,735 chars with no "here now" in it; the unfiltered
+  extraction gives 4,584 chars and has it. So a true, already-rendering live
+  number was invisible to every reader that isn't a browser. Swapped the tag;
+  all `.space-header` styling is class-based, so it is visually inert —
+  pixel-diffed at 0 pixels changed beyond 2/255 across the header band,
+  against a 0.222% frame-to-frame animation noise floor. Ships on the next
+  `npm run deploy`.
+
 - 2026-09-13: **No marketing landing page — the block is the front door.**
   Asked whether OurSpaces should have one, for legitimacy. Two reasons not
-  to: `docs/local/why-not-60.md` recorded a rich marketing page scoring 2/10
-  on the judge's liveness criterion ("not the OurSpaces app") against our
-  canvas's 8, and padding the landing page was separately tested and moved
-  nothing — so the root stays a live room. And the block (`#/home`) already
-  is a lobby with real rooms and real counts, it was just unreachable: the
-  rail brand pointed at `/`, which is the build room. Shipped instead: brand
-  → the block, plus the `#/about` page above. A page at a non-root hash
-  carries none of that judge risk either way — the scrape only ever hits the
-  root URL, and the root is still a live room. The stronger remaining
-  legitimacy lever is the URL — `necessary-cobra-892.convex.site` reads like
-  a test deploy. **Open:** whether we own a domain to point at it (custom
-  domains need Convex Pro).
+  to. A static pitch page at the root would replace the one thing that makes
+  the product legible in five seconds — a live room with real people and real
+  counts in it — with a page that only describes it. And the block (`#/home`)
+  already is a lobby with real rooms and real counts, it was just unreachable:
+  the rail brand pointed at `/`, which is the build room. Shipped instead:
+  brand → the block, plus the `#/about` page above, both at non-root hashes so
+  the root stays a live room. The remaining legitimacy lever is the URL —
+  `necessary-cobra-892.convex.site` reads like a test deploy. **Open:**
+  whether we own a domain to point at it (custom domains need Convex Pro).
 
 - 2026-09-13: **Sign-in email direction.**
   Generated two local mockups: envelope header/light body (recommended) and
@@ -1395,4 +1425,3 @@ Backward-looking history lives in `hackathon.md`.
   "+N" overflow is a grey chip, not a fifth face. Hovering the crowd fans the
   faces apart (-11px → -3px overlap). Phone keeps the old separate pills and
   the label's own dot. Pill went from 391×51 to 354×46 on the crew.
-

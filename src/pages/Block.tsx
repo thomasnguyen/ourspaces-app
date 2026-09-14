@@ -89,10 +89,10 @@ function boardFact(spaceId: string, liveWidgets?: Record<string, Widget[] | unde
 
   const widgets = liveWidgets?.[spaceId] ?? space.widgets;
   if (spaceId === "crew") {
-    return `the crew · maya's bday in ${daysUntil(widgets.find((widget) => widget.type === "countdown"))} days`;
+    return `the group chat · maya's bday in ${daysUntil(widgets.find((widget) => widget.type === "countdown"))} days`;
   }
   if (spaceId === "league") return "game day · 49ers 24 · q4";
-  if (spaceId === "couple") return "us two · playlist live";
+  if (spaceId === "couple") return "long distance · playlist live";
   if (spaceId === "house") return "the house · chore wheel live";
   return space.name;
 }

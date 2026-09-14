@@ -93,6 +93,8 @@ export const getDemoSpace = query({
       .withIndex("by_slug", (q) => q.eq("slug", "crew"))
       .unique();
     if (bySlug) return bySlug;
+    /* Pre-slug rows only. This is the HISTORICAL name, not the current display
+       name (that room is "the group chat" now) — don't "fix" it to match. */
     return await ctx.db
       .query("spaces")
       .withIndex("by_name", (q) => q.eq("name", "the crew"))

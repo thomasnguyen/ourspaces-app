@@ -53,7 +53,7 @@ export function WelcomePill() {
 
   return (
     <div className={`welcome-pill${leaving ? " is-leaving" : ""}`} role="status">
-      <span>this is the crew's space — everything on it is live.</span>
+      <span>this is the group chat's space — everything on it is live.</span>
       <span>try the cake poll.</span>
       <button type="button" aria-label="Dismiss welcome note">
         ×

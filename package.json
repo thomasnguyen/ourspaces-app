@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "deploy": "npx @convex-dev/static-hosting deploy",
+    "sync:storyboard": "./scripts/sync-storyboard.sh",
     "sync:skills": "./scripts/sync-codex-skills.sh"
   },
   "dependencies": {

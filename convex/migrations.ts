@@ -4,6 +4,7 @@ import schema from "./schema";
 import type { LetterData } from "./widgetData";
 import { pollTallies } from "./votes";
 import { memberCounts } from "./spaces";
+import { SPACES_BY_ID } from "../src/data/spaces";
 
 /**
  * migrations component: stateful, resumable backfills over `widgets`, run
@@ -41,6 +42,29 @@ export const backfillMemberCounts = migrations.define({
   table: "members",
   migrateOne: async (ctx, member) => {
     await memberCounts.insertIfDoesNotExist(ctx, member);
+  },
+});
+
+// Display names live in the mock catalog (src/data/spaces.ts) and reach the
+// database only through seeding — but `seedMissing` skips spaces that already
+// exist, so renaming a showcase room there never lands on rows that are
+// already live. This walks the seeded rooms and patches `name` to match the
+// catalog. Slugs are never touched: they are the ids the whole app routes on,
+// and a rename is meant to be display-only.
+//
+// Written for the 2026-09-13 rename (the crew → the group chat, us two →
+// long distance, the build room → the dev guild), but it is a sync, not a
+// one-shot: re-run it after any future rename. Idempotent.
+export const syncSpaceNames = migrations.define({
+  table: "spaces",
+  migrateOne: async (_ctx, space) => {
+    // An unset ownerId is what marks a seeded/showcase row (see schema.ts).
+    // Never rename a space a person made, even if they picked a slug the
+    // catalog also uses.
+    if (space.ownerId !== undefined) return;
+    const meta = SPACES_BY_ID[space.slug ?? ""];
+    if (!meta || space.name === meta.name) return;
+    return { name: meta.name };
   },
 });
 

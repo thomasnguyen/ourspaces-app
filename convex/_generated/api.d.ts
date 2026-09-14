@@ -27,6 +27,7 @@ import type * as migrations from "../migrations.js";
 import type * as otp from "../otp.js";
 import type * as paint from "../paint.js";
 import type * as photos from "../photos.js";
+import type * as playLab from "../playLab.js";
 import type * as presence from "../presence.js";
 import type * as questions from "../questions.js";
 import type * as rag from "../rag.js";
@@ -69,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   otp: typeof otp;
   paint: typeof paint;
   photos: typeof photos;
+  playLab: typeof playLab;
   presence: typeof presence;
   questions: typeof questions;
   rag: typeof rag;
