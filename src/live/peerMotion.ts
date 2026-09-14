@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 
 /* Smooth remote motion.
  *
@@ -97,9 +97,15 @@ export type PeerMotion = {
     at?: number,
     origin?: { x: number; y: number },
   ) => void;
-  /** Hand the engine the node to drive. Returns the detach, which also wipes
-   *  the inline transform so the element goes back to its CSS position. */
-  attach: (key: string, el: HTMLElement | null) => () => void;
+  /** Hand the engine the node to drive. Returns the detach, which wipes the
+   *  inline transform so the element goes back to its CSS position.
+   *  `release` eases that last step — right for a card being handed back to
+   *  its committed spot, wrong for a cursor, which just stops existing. */
+  attach: (
+    key: string,
+    el: HTMLElement | null,
+    release?: boolean,
+  ) => () => void;
 };
 
 function prefersReducedMotion() {
@@ -236,6 +242,16 @@ export function usePeerMotion(): PeerMotion {
           track.ty = y;
           track.tAt = stamp;
           track.tRecv = now;
+        } else if (x !== track.tx || y !== track.ty) {
+          /* Same snapshot, different coordinates — the mapping moved under us,
+             not the peer. The coloring room reports 0..1 and multiplies by a
+             board that resizes with the window. Shift the whole track so the
+             cursor keeps its place on the new geometry instead of sliding
+             across it, and leave the velocity history alone. */
+          track.rx += x - track.tx;
+          track.ry += y - track.ty;
+          track.tx = x;
+          track.ty = y;
         }
       }
       if (origin) {
@@ -248,7 +264,7 @@ export function usePeerMotion(): PeerMotion {
   );
 
   const attach = useCallback<PeerMotion["attach"]>(
-    (key, el) => {
+    (key, el, release = false) => {
       let track = tracks.current.get(key);
       if (!track) {
         // the node beat the first snapshot here; park it until a sample lands
@@ -299,6 +315,7 @@ export function usePeerMotion(): PeerMotion {
         const dx = bound.rx - (parseFloat(box.left) || 0);
         const dy = bound.ry - (parseFloat(box.top) || 0);
         if (
+          !release ||
           prefersReducedMotion() ||
           !Number.isFinite(dx) ||
           !Number.isFinite(dy) ||
@@ -323,5 +340,9 @@ export function usePeerMotion(): PeerMotion {
     [start],
   );
 
-  return { sample, attach };
+  /* Memoised, and it matters: every consumer holds this in an effect's deps.
+     A fresh object each render would detach and re-attach every node on every
+     render — and in the coloring room, whose pump calls setState, that is an
+     infinite loop that starves the animation frame. */
+  return useMemo(() => ({ sample, attach }), [attach, sample]);
 }

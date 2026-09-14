@@ -18765,11 +18765,14 @@
   pointer-events: none;
 }
 
+/* Driven by src/live/peerMotion.ts: an interpolated transform on rAF. This
+   used to transition left/top, which lagged the samples by a whole 110ms AND
+   made the browser lay the board out again on every frame of it. */
 .cozy-cursor {
   position: absolute;
-  transition:
-    left 110ms linear,
-    top 110ms linear;
+  left: 0;
+  top: 0;
+  will-change: transform;
 }
 
 .cozy-cursor svg {
@@ -18795,11 +18798,6 @@
   white-space: nowrap;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cozy-cursor {
-    transition: none;
-  }
-}
 
 /* ================================================================
    CREW POLL — TORN BALLOT SHEET

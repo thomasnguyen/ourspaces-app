@@ -17,6 +17,7 @@ import type {
   LiveGesture,
 } from "../live/presenceTypes";
 import type { PeerMotion } from "../live/peerMotion";
+import type { RefObject } from "react";
 import { getThread } from "../data/chat";
 import { MemberFace } from "./MemberFace";
 import { WIDGET_CATALOG } from "../data/templates";
@@ -66,6 +67,7 @@ import {
 import {
   CozyColorWidget,
   type CozyColorIdentity,
+  type CozyColorPeer,
   type CozyColorStroke,
 } from "../widgets/CozyColorWidget";
 
@@ -266,7 +268,7 @@ function WidgetCardComponent({
   roundtableReplies,
   paintStrokes,
   paintIdentity,
-  paintPeers,
+  paintPeersRef,
   onPaintCursor,
   onPaintStroke,
   onPaintClear,
@@ -332,16 +334,11 @@ function WidgetCardComponent({
     stroke: Omit<CozyColorStroke, "id" | "createdAt">,
   ) => Promise<unknown> | void;
   onPaintClear?: (widgetId: string, regionPrefix?: string) => Promise<unknown> | void;
-  paintPeers?: {
-    userId?: string;
-    name: string;
-    color: string;
-    emoji?: string;
-    avatarUrl?: string;
-    x: number;
-    y: number;
-    zone?: string;
-  }[];
+  /* A ref, not an array, on purpose. This component is built inside a
+     useMemo that must NOT re-run when somebody waves their cursor — and an
+     array prop in there would either go stale (it did) or re-render every
+     card 20x a second. The coloring room reads the ref on its own rAF. */
+  paintPeersRef?: RefObject<CozyColorPeer[]>;
   onPaintCursor?: (x: number, y: number, zone?: string) => void;
 }) {
   const dragState = useRef<{
@@ -378,7 +375,7 @@ function WidgetCardComponent({
   const heldBySession = remoteGesture?.sessionId;
   useEffect(() => {
     if (!motion || !heldBySession) return;
-    return motion.attach(`widget:${widget.id}`, groupRef.current);
+    return motion.attach(`widget:${widget.id}`, groupRef.current, true);
   }, [heldBySession, motion, widget.id]);
 
   const syncInert = useCallback((node: HTMLDivElement | null) => {
@@ -793,7 +790,7 @@ function WidgetCardComponent({
           identity={paintIdentity}
           onStroke={onPaintStroke ? (stroke) => onPaintStroke(widget.id, stroke) : undefined}
           onClear={onPaintClear ? (regionPrefix?: string) => onPaintClear(widget.id, regionPrefix) : undefined}
-          peers={paintPeers}
+          peersRef={paintPeersRef}
           onCursor={onPaintCursor}
         />
       );

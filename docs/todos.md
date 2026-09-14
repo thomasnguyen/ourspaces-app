@@ -5,6 +5,21 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **The coloring room is smooth too (2026-09-14):** its peer cursors now run
+  through the same `peerMotion` engine as the canvas — 262ms lag and 9.7%
+  stalled frames → **150ms and 0%**. They used to transition `left`/`top`,
+  which both lagged the samples by a fixed 110ms and made the browser lay the
+  board out again every frame; they now get an interpolated `transform` on
+  rAF. Two things fixed along the way:
+  `usePeerMotion` now returns a **memoised** handle — it was a fresh object
+  every render, so every consumer holding it in effect deps was detaching and
+  re-attaching constantly, and in the coloring room (whose pump calls
+  `setState`) that was an infinite render loop that froze the cursor outright.
+  And `CozyColorWidget` takes `peersRef` instead of a peers array, so the
+  room no longer rides on Canvas's `widgetCards` memo re-running.
+  Receiver frame budget measured clean throughout: 0–2% of frames over 20ms.
+  Probe: `.context/live-perf/cozy-cursor.mjs` (local-only).
+
 - **Live cursors + remote drags are smooth (2026-09-14):** a peer's cursor
   used to arrive as a jump every ~90ms and then sit still, ~240ms behind the
   hand that moved it. Three changes, all measured against prod, not guessed:

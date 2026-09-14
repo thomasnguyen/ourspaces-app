@@ -282,6 +282,13 @@ export function Canvas({
     );
   }
 
+  /* The coloring room is rendered inside the widgetCards memo, which
+     deliberately does not re-run on cursor movement. It reads this ref on its
+     own rAF instead — before, it got whatever `cursors` happened to be when
+     the memo last ran, which is to say a frozen one. */
+  const cursorsRef = useRef<CanvasCursor[]>(cursors);
+  cursorsRef.current = cursors;
+
   const entering = useSpaceEntrance(entrance);
   const enterDelays = useMemo(() => wavefrontDelays(widgets), [widgets]);
 
@@ -355,7 +362,7 @@ export function Canvas({
         paintIdentity={paintIdentity}
         onPaintStroke={onPaintStroke}
         onPaintClear={onPaintClear}
-        paintPeers={cursors}
+        paintPeersRef={cursorsRef}
         onPaintCursor={onPaintCursor}
         onRsvp={onRsvp}
         onDailyAnswer={onDailyAnswer}
@@ -408,6 +415,7 @@ export function Canvas({
       promoted,
       readThreadIds,
       recapCites,
+      cursorsRef,
       motion,
       remoteGestures,
       rsvpSelections,
