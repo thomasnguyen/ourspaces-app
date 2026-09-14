@@ -73,3 +73,7 @@ docs/vibeapps-listing.md
 public/myspace-prototype.md
 public/feed-prototype.md
 public/chat-prototype.md
+
+# The CapCut subtitle tracks, generated next to the deck by the same script.
+# They stay on the live site for Holly to grab, but out of the repo.
+public/demo-video-assets/*.srt
