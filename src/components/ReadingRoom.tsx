@@ -368,7 +368,7 @@ export function ReadingRoom({
     <CanvasRoom
       className={`reading-room${mobileReading ? " is-mobile-reading" : ""}`}
       origin={origin}
-      label="back to the build room"
+      label="back to the dev guild"
       closeRef={closeRoomRef}
       onClose={onClose}
     >

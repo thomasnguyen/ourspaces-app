@@ -66,7 +66,7 @@ export function ShipRoom({
     <CanvasRoom
       className="ship-room"
       origin={origin}
-      label="back to the build room"
+      label="back to the dev guild"
       onClose={onClose}
     >
       <div className="ship-room-body">

@@ -8,7 +8,7 @@ remembers for everyone — live.
 Built for the [Convex All Gas Hackathon](https://www.convex.dev/hackathons/all-gas)
 by Thomas Nguyen (build) and Holly (design).
 
-**Live:** [necessary-cobra-892.convex.site](https://necessary-cobra-892.convex.site) · **Build log:** `hackathon.md`
+**Build log:** `hackathon.md`
 
 ## Stack
 
@@ -18,7 +18,7 @@ a config-time choice, not a runtime failover) · AgentMail · Firecrawl
 
 ## Convex depth
 
-- **Components (18 used in code):** `static-hosting` (serves this site, and
+- **Components (17 used in code):** `static-hosting` (serves this site, and
   `getCurrentDeployment` is subscribed to so an open tab is offered a refresh
   the moment a new build lands — `convex/staticHosting.ts`), `firecrawl` (single-URL scrape + web
   search + durable site crawl), `agentMail` (our own first-party component in
@@ -37,16 +37,18 @@ a config-time choice, not a runtime failover) · AgentMail · Firecrawl
   grounding `recap.ask`), `persistent-text-streaming` (HTTP token
   streaming for ask answers), `presence` (space-list "N here" — separate
   from the hand-rolled canvas cursor/gesture system)
-- **Plus `better-auth`** — silent anonymous guest sessions, so every visitor
-  has a real Convex identity without ever seeing a login form
-  (`convex/auth.ts`). The canvas is never behind a wall.
-- **A note on the count:** 18 components are referenced in code. One more is
-  installed without a bare `components.aggregate` call site, by design: we
-  mount `aggregate` as the two *named* instances above, so the call sites are
-  `components.pollTallies` / `components.memberCounts`.
+- **Plus Convex Auth (`@convex-dev/auth`)** — silent anonymous guest sessions,
+  so every visitor has a real Convex identity without ever seeing a login form,
+  and an optional join with a six-digit code emailed through AgentMail
+  (`convex/auth.ts`, `convex/otp.ts`). The canvas is never behind a wall.
+- **A note on the count:** a scan for `components.<name>` finds 17, because
+  `aggregate` is mounted as the two *named* instances above — the call sites
+  are `components.pollTallies` and `components.memberCounts`, never a bare
+  `components.aggregate`.
 - **Schema & data:** tables + indexes for spaces, members, widgets, messages
   (+ full-text search index), votes, collaborative paint marks, recaps,
-  presence, email events; `returns:` validators on every function
+  presence, email events; `returns:` validators on all 130 functions that can
+  carry one (the 5 HTTP actions return a `Response`)
 - **Realtime:** every in-space surface is a Convex subscription — no refetch,
   no invalidate-on-write, no hand-rolled sync between clients. Each one is a
   `useQuery` / `usePaginatedQuery` against an indexed query:
@@ -111,7 +113,7 @@ a config-time choice, not a runtime failover) · AgentMail · Firecrawl
 - **Functions:** queries, mutations, internal mutations, actions, HTTP actions
   (svix-verified inbound-mail webhook, token-streaming ask endpoint), paginated
   message history
-- **Scheduling:** crons (stale-presence sweep every minute, daily recap via
+- **Scheduling:** crons (stale-presence sweep every 5 minutes, daily recap via
   workpool, Friday weekly digest via a durable workflow, Friday stale-link
   refresh) + scheduled functions
 - **File storage:** photo-wall uploads become prints with notes on the back

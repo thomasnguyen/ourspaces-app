@@ -9,6 +9,13 @@ import {
 import { useAction, useMutation } from "convex/react";
 import { useQuery, usePaginatedQuery } from "convex-helpers/react/cache";
 import { api } from "../../convex/_generated/api";
+import { Suspense, lazy } from "react";
+const PlayLab = lazy(() =>
+  import("../components/PlayLab").then((module) => ({ default: module.PlayLab })),
+);
+/** The take room is a copy of the crew; theme, faces and canvas size are keyed
+    by fixture id, so it borrows the crew's fixture (docs/local/play-lab.md). */
+const PLAY_LAB_SOURCE = "crew";
 import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock } from "../components/ActionDock";
 import { Canvas, SpaceHeader } from "../components/Canvas";
@@ -28,6 +35,7 @@ import { MailArrival } from "../components/MailArrival";
 import { WidgetEditorPanel } from "../components/WidgetEditorPanel";
 import { WidgetPicker } from "../components/WidgetPicker";
 import { placingSize, type PlacingItem } from "../components/PlacementGhost";
+import { playPresetFor } from "../lib/playPresets";
 import type { CanvasPoint } from "../components/FirstRunSticky";
 import { canvasSlotFor } from "../lib/canvasPlacement";
 import { SpaceMaker } from "../components/SpaceMaker";
@@ -307,12 +315,15 @@ export function LiveSpacePage({
   onSelectSpace,
   isInviteEntry = false,
   mailLab = false,
+  playLab = false,
 }: {
   slug?: string;
   onSelectSpace?: (id: string) => void;
   isInviteEntry?: boolean;
   /** #/mail — the mail arrival lab over this (the crew) space */
   mailLab?: boolean;
+  /** #/play — the director pill that runs the demo's opening take (docs/local/play-lab.md) */
+  playLab?: boolean;
 }) {
   const { space, snapshot, widgets, status, mode } = useLiveSpace(slug);
   const showLoading = useShowAfter(status === "loading");
@@ -421,7 +432,7 @@ export function LiveSpacePage({
   // nameplate fields, so renaming a space in the DB actually shows up instead
   // of being masked by a stale fixture.
   const mockSpace = useMemo(() => {
-    const fixture = SPACES_BY_ID[slug];
+    const fixture = SPACES_BY_ID[playLab ? PLAY_LAB_SOURCE : slug];
     if (!fixture) return space ? spaceFromLive(space) : getSpace(slug);
     if (!space) return fixture;
     return {
@@ -430,7 +441,7 @@ export function LiveSpacePage({
       tagline: space.tagline ?? fixture.tagline,
       icon: space.icon ?? fixture.icon,
     };
-  }, [slug, space]);
+  }, [playLab, slug, space]);
   const isInvalidInvite = isInviteEntry && !SPACES_BY_ID[slug] && status === "missing";
   // A slug the backend has no space for. Authoritative in live mode: a slug
   // can exist in the mock fixtures (#/space/trip does) and still be missing on
@@ -2028,7 +2039,11 @@ export function LiveSpacePage({
     if (!placing || !space) return;
     if (!keepPlacing) setPlacing(null);
 
-    const size = placingSize(placing);
+    /* On #/play a picker drop arrives already filled in like the crew's
+       (src/lib/playPresets.ts), size and tilt included, so a blank room can be
+       rebuilt by hand and look like the room everyone has seen. */
+    const preset = playLab && placing.kind === "widget" ? playPresetFor(placing.type) : null;
+    const size = preset ? { w: preset.w, h: preset.h } : placingSize(placing);
     const slot = canvasSlotFor(point, size, { w: canvasWidth, h: canvasHeight });
 
     if (placing.kind === "sticker") {
@@ -2057,7 +2072,8 @@ export function LiveSpacePage({
       w: size.w,
       h: size.h,
       z: 1000,
-      data: freshWidgetData(type, type === "linkCard" ? {} : blueprint.data),
+      ...(preset?.rotate !== undefined ? { rotate: preset.rotate } : {}),
+      data: preset ? preset.data : freshWidgetData(type, type === "linkCard" ? {} : blueprint.data),
     });
     if (!createdId) return;
     setManagedWidgetId(String(createdId));
@@ -2153,6 +2169,18 @@ export function LiveSpacePage({
           widgets={widgets}
           lab={mailLab}
         />
+      )}
+      {/* Play lab — the blank take room for the demo video's opening
+          (docs/local/play-lab.md): the pill makes/wipes the room and runs the
+          ghost cursors; the pre-filled drops are wired in placeItem above. */}
+      {mode === "live" && playLab && (
+        <Suspense fallback={null}>
+          <PlayLab
+            spaceId={space ? String(space._id) : null}
+            widgets={widgets}
+            canvas={{ w: canvasWidth, h: canvasHeight }}
+          />
+        </Suspense>
       )}
       {focusedTarget && (
         <nav className="canvas-focus-hud" aria-label="Focused canvas item">

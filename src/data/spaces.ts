@@ -1103,19 +1103,6 @@ export const BUILD_ROOM_WIDGETS: Widget[] = ([
 
 export const SPACES: SpaceMeta[] = [
   {
-    id: "buildroom",
-    name: "the build room",
-    color: "#ff7c42",
-    icon: "</>",
-    canvasSize: { width: 1640, height: 1080 },
-    activity: true,
-    kind: "ongoing",
-    tagline: "drop it, argue it, keep it",
-    preview: "47 links · 3 hot",
-    showcase: "dev guild · links, ships, roundtables",
-    inboxAddress: "buildroom@agentmail.to",
-  },
-  {
     id: "crew",
     name: "the crew",
     color: "#e9369d",
@@ -1137,8 +1124,21 @@ export const SPACES: SpaceMeta[] = [
     kind: "ongoing",
     tagline: "an ocean apart",
     preview: "47 days to SFO",
-    showcase: "long distance · clocks, countdowns, color together",
+    showcase: "two time zones · clocks, countdowns, color together",
     inboxAddress: "ustwo@agentmail.to",
+  },
+  {
+    id: "buildroom",
+    name: "the build room",
+    color: "#ff7c42",
+    icon: "</>",
+    canvasSize: { width: 1640, height: 1080 },
+    activity: true,
+    kind: "ongoing",
+    tagline: "drop it, argue it, keep it",
+    preview: "47 links · 3 hot",
+    showcase: "link pile · ships, roundtables, hot takes",
+    inboxAddress: "buildroom@agentmail.to",
   },
   {
     id: "house",
@@ -1166,29 +1166,33 @@ export const SPACES: SpaceMeta[] = [
   },
 ];
 
+/** Looked up by id, not by position — the rail's order is a design choice
+ * and moving a tile around used to silently hand a space someone else's meta. */
+const meta = (id: string) => SPACES.find((s) => s.id === id)!;
+
 export const SPACES_BY_ID: Record<string, Space> = {
   buildroom: {
-    ...SPACES[0],
+    ...meta("buildroom"),
     members: BUILD_ROOM_MEMBERS,
     widgets: BUILD_ROOM_WIDGETS,
   },
   crew: {
-    ...SPACES[1],
+    ...meta("crew"),
     members: CREW_MEMBERS,
     widgets: CREW_WIDGETS,
   },
   couple: {
-    ...SPACES[2],
+    ...meta("couple"),
     members: COUPLE_MEMBERS,
     widgets: COUPLE_WIDGETS,
   },
   house: {
-    ...SPACES[3],
+    ...meta("house"),
     members: HOUSE_MEMBERS,
     widgets: HOUSE_WIDGETS,
   },
   league: {
-    ...SPACES[4],
+    ...meta("league"),
     members: CREW_MEMBERS,
     widgets: LEAGUE_WIDGETS,
   },

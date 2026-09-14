@@ -1027,3 +1027,25 @@
     will-change: auto;
   }
 }
+
+/* ── play lab (src/components/PlayLab.tsx) — reuses the arrival bar ─────── */
+.arrival-lab-bar.play-lab-bar {
+  /* above the live strip (index.css: bottom 18px, left 118px, 54px tall),
+     the way the mail lab bar sits above it on the right */
+  left: 118px;
+  bottom: 92px;
+  z-index: 60;
+}
+
+.play-lab-bar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  translate: 0;
+}
+
+.play-lab-status {
+  padding-right: 8px;
+  font-size: 12px;
+  opacity: 0.72;
+  white-space: nowrap;
+}

@@ -638,7 +638,12 @@ export function SpaceHeader({
 
   return (
     <>
-      <header className={`space-header ${entering ? "is-entering" : ""}`}>
+      {/* A <div>, not a <header>: this bar is the room's live state — who is
+          here now, what the room is called — not site chrome. Text extractors
+          (link previews, search snippets, crawlers) drop <header> as
+          boilerplate, which silently hid "N here now" from every reader that
+          isn't a browser. Styling is class-based, so the tag is free to change. */}
+      <div className={`space-header ${entering ? "is-entering" : ""}`}>
         <div className="space-title-block">
           <div className="space-meta">
             <span className="space-kind">{kind}</span>
@@ -773,7 +778,7 @@ export function SpaceHeader({
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
       {inviteOpen && (
         <div className="invite-popover-layer">

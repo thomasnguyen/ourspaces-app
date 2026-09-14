@@ -3,10 +3,32 @@
 The demo rooms, what's on each canvas today, and what each still needs.
 Source of truth for seed content is `src/data/spaces.ts` (+ `chat.ts`
 for threads); widget components live in `src/widgets/core.tsx` and
-`extras.tsx`. The crew is the reference — it's the most complete space, and
+`extras.tsx`. The group chat is the reference — it's the most complete space, and
 its anatomy is the pattern the others should follow.
 
-## The anatomy of a lived-in space (learned from the crew)
+## Names vs slugs (renamed 2026-09-13)
+
+Three rooms were renamed for legibility — a stranger should know what a room
+is from the rail tooltip alone. **Only the display `name` in
+`src/data/spaces.ts` changed. Slugs did not**, so every route, id, filename,
+CSS hook and older doc still says the old word and is still correct.
+
+| Slug (unchanged) | Name now | Was |
+|---|---|---|
+| `buildroom` | the dev guild | the build room |
+| `crew` | the group chat | the crew |
+| `couple` | long distance | us two |
+
+`house` (the house) and `league` (game day) were already legible and kept
+their names. Rail order is `crew · couple · buildroom · house · league` —
+the dev guild sits **third**, though `DEFAULT_SPACE_SLUG` is still
+`buildroom`, so `#/` still opens it. Live rows keep the old name until
+`seed:backfillSpaceNames` runs (non-destructive, patches `name` only).
+
+Older prose in `hackathon.md` and the spec docs still uses the previous
+names on purpose — that log is history, and the slugs decode it.
+
+## The anatomy of a lived-in space (learned from the group chat)
 
 Every space is the same five layers wearing a different skin. This is the
 "one canvas, three skins" structure from the PRD — build to these layers and
@@ -52,9 +74,9 @@ Left on the widget layer: no editor forms yet for the four build-room types
 
 ---
 
-## 0. the build room — dev guild (`#/`, bottle-green `torch` theme)
+## 0. the dev guild — slug `buildroom` (`#/`, bottle-green `torch` theme)
 
-**Status: built.** Seven members, 1640×1080. The default demo space; the crew
+**Status: built.** Seven members, 1640×1080. The default demo space; the group chat
 stays one click away in the rail.
 
 Desktop opens on a centered overview of all five zones, with a wider pile and
@@ -148,13 +170,13 @@ Data note: link content is fixtures (`src/data/buildroom.ts`); votes, pins,
 keeps and runtime drops persist into the pile widget's own `data`, so there is
 **no new Convex table**. Replies ride `messages` under `<pileId>::link:<linkId>`.
 
-## 1. the crew — friend group (`#7c5cff` violet)
+## 1. the group chat — slug `crew`, friend group (`#7c5cff` violet)
 
 **Status: done, plus one allowed add.** Six members, and still the most
 complete space — the anatomy above was learned here. Don't clutter it.
 The one add (brain play, 2026-08-31): make the existing mail brain *visible*,
 and a meal-train frame so care lives here instead of a new space. (It handed
-`#/` to the build room; `DEFAULT_SPACE_SLUG` in `src/lib/routes.ts` is the one
+`#/` to the dev guild; `DEFAULT_SPACE_SLUG` in `src/lib/routes.ts` is the one
 place that decides.)
 
 | Layer | Widgets on canvas |
@@ -188,7 +210,7 @@ Demo role: two-window liveness (votes, potluck claims, cursors), the promote
 climax, then the inbound brain beat (phone send → flap sentence → board
 moves on the second tab).
 
-## 2. us two — long-distance couple (`#e63da8` magenta, "an ocean apart")
+## 2. long distance — slug `couple` (`#e63da8` magenta, "an ocean apart")
 
 **Status: has its demo beat.** Two members (ren + sky), smaller canvas
 (1120×760).
@@ -213,7 +235,7 @@ Needs, in priority order:
    cannot see.
 
 Skin note: same widgets, softer register — fewer, larger objects, more
-whitespace than the crew's clutter. Two people, not six.
+whitespace than the group chat's clutter. Two people, not six.
 
 ## Background spaces (Home-grid set dressing only)
 

@@ -3,16 +3,16 @@
 - **Project:** OurSpaces
 - **Event:** Convex All Gas Hackathon
 - **What it does:** Group plans die in the group chat. OurSpaces gives a friend group a persistent shared canvas — countdowns, polls, potluck sheets, photo piles — that every member sees update live, cursor to cursor.
-- **Live app:** https://dusty-condor-648.convex.site
+- **Live app:** https://necessary-cobra-892.convex.site
 - **Repo:** https://github.com/thomasnguyen/ourspaces-app
 - **Frontend:** Convex static hosting
-- **Convex deployment:** https://dusty-condor-648.convex.cloud
+- **Convex deployment:** https://necessary-cobra-892.convex.cloud
 - **Components:** static-hosting, firecrawl, agentMail, migrations, aggregate, sharded-counter, rate-limiter, action-retrier, action-cache, workpool, workflow, batch-worker, agent, rag, persistent-text-streaming, presence
-- **Convex features:** schema (typed discriminated union on `widgets.data`), tables, indexes, full-text search index, queries, mutations, actions, HTTP actions (svix-verified inbound mail, token-streaming ask endpoint), realtime queries, real cursor pagination, a subscribed deploy-version row (static-hosting) that offers every open tab a refresh, crons (presence sweep, daily recap via workpool, Friday weekly digest via a durable workflow, Friday stale-link refresh), scheduled functions, internal mutations, file storage, presence (canvas cursors/gestures, hand-rolled; room occupancy, component), agent threads, semantic retrieval (the `rag` component owns the vector index; no hand-rolled `.vectorIndex()` in our schema), `returns:` validators on all 115 functions
-- **Auth:** Better Auth (anonymous guest sessions; passkey blocked by a peer-dep conflict)
+- **Convex features:** schema (`widgets.data` is a union of 32 typed per-widget validators, plus one open `v.record` arm still carried for pre-union prod rows — see `convex/widgetData.ts`), tables, indexes, full-text search index, queries, mutations, actions, HTTP actions (svix-verified inbound mail, token-streaming ask endpoint), realtime queries, real cursor pagination, a subscribed deploy-version row (static-hosting) that offers every open tab a refresh, crons (presence sweep, daily recap via workpool, Friday weekly digest via a durable workflow, Friday stale-link refresh), scheduled functions, internal mutations, file storage, presence (canvas cursors/gestures, hand-rolled; room occupancy, component), agent threads, semantic retrieval (the `rag` component owns the vector index; no hand-rolled `.vectorIndex()` in our schema), `returns:` validators on all 130 functions that can carry one (the 5 HTTP actions return a `Response`)
+- **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-13T19:39:59Z
+- **Last updated:** 2026-09-14T16:09:12Z
 
 ## Highlights
 
@@ -57,7 +57,7 @@
 
 ## Try it in 60 seconds
 
-1. Open the [live app](https://dusty-condor-648.convex.site) and claim a
+1. Open the [live app](https://necessary-cobra-892.convex.site) and claim a
    name at the identity gate — no signup.
 2. You land in **the crew**: drag the birthday countdown, vote in the cake
    poll, claim a potluck slot. Open the same space in a second tab and watch
@@ -638,3 +638,11 @@ Changed the default room to the crew. The bare URL, `#/`, and legacy home
 address now open `#/space/crew`; the build room keeps its explicit URL.
 Welcome entry and cold About return follow the same default. Verified all
 four addresses in the local live browser; no console errors. Build passes.
+
+### 2026-09-14 - working tree
+Finished the local 2006 social-profile capture with realistic fictional photos
+for every profile, Top 8/Top 16 friend, and comment avatar. Generated 13 new
+ordinary high-school snapshots with period camera flaws, reused the three owner
+photos, and compressed the set to matching 720px JPEGs. Browser-verified the
+classic Top 8 and full 16-person banner grid: every image loads, no monograms
+remain, and there are no console or network errors. No app or backend changes.

@@ -251,11 +251,21 @@ function mailLabRequested() {
   return hash === "mail" || hash.startsWith("mail/");
 }
 
+/** `#/play` — the play lab (docs/local/play-lab.md): a disposable copy of
+    the crew (slug "play") with a director pill that runs the demo video's
+    opening take. Unlisted. Only ever this slug, so the pill can never drop
+    onto a real room. */
+function playLabRequested() {
+  const hash = window.location.hash.replace(/^#\/?/, "").split("?")[0];
+  return hash === "play";
+}
+
 function spaceFromHash(): string {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "home") return "crew";
   if (hash === "mail") return "crew";
   if (hash.startsWith("mail/")) return hash.slice("mail/".length) || "crew";
+  if (hash.split("?")[0] === "play") return "play";
   // #/about is its own page, but it keeps a back door to the room you came
   // from, and spaceId has to still be that room when you take it.
   if (hash === "about" || hash.startsWith("about/")) return lastSpaceSlug();
@@ -1765,7 +1775,7 @@ export default function App() {
   }
 
   if (route === "space" && !mockModeRequested()) {
-    return <LiveSpacePage slug={spaceId} mailLab={mailLabRequested()} onSelectSpace={(id) => { window.location.hash = normalSpaceHash(id); }} />;
+    return <LiveSpacePage slug={spaceId} mailLab={mailLabRequested()} playLab={playLabRequested()} onSelectSpace={(id) => { window.location.hash = normalSpaceHash(id); }} />;
   }
 
   const baseSpace = getSpace(spaceId);
