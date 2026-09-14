@@ -25,10 +25,25 @@ for name in "${USED[@]}"; do
     "$ASSETS/$name.png" --out "$OUT/$name.jpg" >/dev/null
 done
 
-# The record-me pages the storyboard links to (one HTML each, inline SVG, no
-# assets) plus their briefs, so the links work on the public copy too.
+# The record-me pages the storyboard links to, plus their briefs, so the links
+# work on the public copy too. Chat is one HTML with inline SVG, but myspace and
+# feed each grew an assets/ folder of generated stills — copy the page without
+# them and every portrait renders as a broken icon.
 for page in myspace feed chat; do
   mkdir -p "$OUT/$page" && cp "$ASSETS/$page/index.html" "$OUT/$page/index.html"
+done
+
+# The myspace portraits are already 720px square and 60-160K — straight through,
+# so they are not re-compressed a second time.
+mkdir -p "$OUT/myspace/assets"
+cp "$ASSETS"/myspace/assets/*.jpg "$OUT/myspace/assets/"
+
+# The feed stills are 1280px against a 400px column (see feed-prototype.md);
+# 800 still covers retina and takes the set from 2.8M to a fraction of it.
+mkdir -p "$OUT/feed/assets"
+for f in "$ASSETS"/feed/assets/*.jpg; do
+  sips -s format jpeg -s formatOptions 80 -Z 800 "$f" \
+    --out "$OUT/feed/assets/$(basename "$f")" >/dev/null
 done
 cp docs/local/myspace-prototype.md docs/local/feed-prototype.md docs/local/chat-prototype.md public/
 
