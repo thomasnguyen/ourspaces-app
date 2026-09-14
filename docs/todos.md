@@ -5,6 +5,29 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Live cursors + remote drags are smooth (2026-09-14):** a peer's cursor
+  used to arrive as a jump every ~90ms and then sit still, ~240ms behind the
+  hand that moved it. Three changes, all measured against prod, not guessed:
+  (1) `src/live/peerMotion.ts` — a new rAF layer that interpolates between
+  presence samples and *leads* the newest one by its own age, so a moving peer
+  is drawn about where they are now. Positions go straight to the DOM, so a
+  peer waving their cursor re-renders nothing; `Canvas`'s gesture signature
+  deliberately excludes x/y for the same reason. Prediction is cut the instant
+  a peer decelerates or reverses, and unwinds when samples dry up — without
+  that, a hard stop threw the cursor ~100px past and crawled it back.
+  (2) `SEND_INTERVAL_MS` 90ms → 50ms. Write-to-peer latency is ~135ms p50 and
+  **flat** from 11Hz to 25Hz — fire-and-forget mutations pipeline rather than
+  queue — so the old throttle bought nothing and cost up to 90ms.
+  (3) `presence.updateGesture` no longer scans the room every frame; that
+  `collect()` put every peer's cursor in the dragger's read set, so they took
+  an OCC retry off each friend's heartbeat. Arbitration stays at
+  `claimGesture` / `finishGesture`.
+  Result: 240ms → ~150ms perceived lag, 7.6% → 0% stalled frames, drag RTT p90
+  flat at ~134ms with two friends also moving (was 223ms with one). Probes and
+  baselines: `.context/live-perf/` (local-only).
+  **Still on the old path:** the coloring-room zone cursors inside
+  `CozyColorWidget` — they render from React state, not peerMotion.
+
 - **Demo MySpace portraits (2026-09-14, local-only):** the glitter, scene,
   and banner recorder variants now use fictional 2005-era snapshots for every
   profile, Top 8/Top 16 friend, and comment avatar. The 13 new friends are

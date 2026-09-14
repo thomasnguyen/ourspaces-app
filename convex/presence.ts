@@ -222,18 +222,17 @@ export const updateGesture = mutation({
   handler: async (ctx, args) => {
     const existing = await findPresence(ctx, args.spaceId, args.userId);
     const now = Date.now();
+    // Reads one row and writes one row — the same one — which is the whole
+    // point. This used to re-check `hasFreshCompetingGesture` on every frame
+    // of a drag, and that collect() put every cursor in the room into this
+    // mutation's read set 20x a second, so the person dragging took an OCC
+    // conflict off each of their friends' heartbeats and re-ran. Arbitration
+    // belongs at the two edges that persist something: claim and finish.
     if (
       !existing?.gesture ||
       existing.gesture.sessionId !== args.sessionId ||
       existing.gesture.widgetId !== args.widgetId ||
-      now - existing.gesture.updatedAt >= GESTURE_TTL_MS ||
-      (await hasFreshCompetingGesture(
-        ctx,
-        args.spaceId,
-        args.userId,
-        args.widgetId,
-        now,
-      ))
+      now - existing.gesture.updatedAt >= GESTURE_TTL_MS
     ) {
       if (
         existing?.gesture?.sessionId === args.sessionId &&

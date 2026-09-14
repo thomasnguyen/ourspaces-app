@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { LiveCursor } from "../cursors";
+import { PeerCursor } from "./PeerCursor";
+import {
+  CURSOR_MOTION,
+  WIDGET_MOTION,
+  usePeerMotion,
+} from "../live/peerMotion";
 import { DECISION_WIDGET, getSpace, SPACE_CURSORS } from "../data/spaces";
 import type { BackendCount } from "../lib/backendCounts";
 import type { SpaceMember, SpaceMeta, Widget } from "../data/types";
@@ -34,6 +39,8 @@ type CanvasCursor = {
   x: number;
   y: number;
   zone?: string;
+  /** server clock on the sample — peerMotion reads velocity off it */
+  updatedAt?: number;
   gesture?: LiveGesture;
 };
 
@@ -206,13 +213,19 @@ export function Canvas({
   );
   const cursors: CanvasCursor[] =
     cursorsProp ?? SPACE_CURSORS[spaceId] ?? [];
+  const motion = usePeerMotion();
+  /* No x/y/updatedAt in here on purpose. Those move 20x a second, and if they
+     were part of what React compares, every widget on the board would
+     re-render on every frame of somebody else's drag. The moving parts go to
+     the motion engine below instead; React only hears a gesture start, change
+     shape, or stop. */
   const gestureSignature = cursors
     .map((cursor) => {
       const gesture = cursor.gesture;
       return gesture
         ? `${cursor.userId ?? cursor.name}:${gesture.sessionId}:${gesture.kind}:${
-            gesture.x
-          }:${gesture.y}:${gesture.w}:${gesture.h}:${gesture.z}:${gesture.updatedAt}`
+            gesture.w
+          }:${gesture.h}:${gesture.z}`
         : "";
     })
     .join("|");
@@ -239,6 +252,35 @@ export function Canvas({
     }
     return next;
   }, [gestureSignature]);
+
+  /* Sampling in render rather than an effect is on purpose: an effect lands a
+     frame later, and that frame is the one where the cursor would still be
+     painted at the previous position. `sample` only touches refs, so it is
+     safe to call here. */
+  for (const cursor of cursors) {
+    const key = cursor.userId ?? cursor.name;
+    if (!cursor.zone) {
+      motion.sample(
+        `cursor:${spaceId}:${key}`,
+        cursor.x,
+        cursor.y,
+        CURSOR_MOTION,
+        cursor.updatedAt,
+      );
+    }
+    const gesture = cursor.gesture;
+    if (!gesture) continue;
+    const held = widgets.find((widget) => widget.id === gesture.widgetId);
+    if (!held) continue;
+    motion.sample(
+      `widget:${gesture.widgetId}`,
+      gesture.x,
+      gesture.y,
+      WIDGET_MOTION,
+      gesture.updatedAt,
+      { x: held.x, y: held.y },
+    );
+  }
 
   const entering = useSpaceEntrance(entrance);
   const enterDelays = useMemo(() => wavefrontDelays(widgets), [widgets]);
@@ -297,6 +339,7 @@ export function Canvas({
         onLayoutCommit={onLayoutCommit}
         remoteGesture={remoteGestures.get(widget.id)?.gesture}
         remoteLocked={remoteGestures.has(widget.id)}
+        motion={motion}
         onDelete={onWidgetDelete}
         onEdit={onWidgetEdit}
         onFrameFocus={onFrameFocus}
@@ -365,6 +408,7 @@ export function Canvas({
       promoted,
       readThreadIds,
       recapCites,
+      motion,
       remoteGestures,
       rsvpSelections,
       selectedWidgetId,
@@ -393,8 +437,10 @@ export function Canvas({
       {widgetCards}
 
       {cursors.filter((cursor) => !cursor.zone).map((cursor) => (
-        <LiveCursor
+        <PeerCursor
           key={`${spaceId}-${cursor.userId ?? cursor.name}`}
+          motion={motion}
+          motionKey={`cursor:${spaceId}:${cursor.userId ?? cursor.name}`}
           name={cursor.name}
           color={cursor.color}
           emoji={cursor.emoji}
@@ -407,8 +453,6 @@ export function Canvas({
               : cursor.name
           }
           active={Boolean(cursor.gesture)}
-          x={cursor.x}
-          y={cursor.y}
           className={cursor.userId === arrivalPeerId ? "is-new-arrival" : ""}
         />
       ))}

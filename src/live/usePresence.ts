@@ -17,7 +17,13 @@ import type {
   LocalGesture,
 } from "./presenceTypes";
 
-const SEND_INTERVAL_MS = 90;
+/* 20Hz. Measured against prod: the time for a presence write to reach the
+ * other tab is ~135ms p50 / ~147ms p90, and it stays there whether we write 11
+ * or 25 times a second — fire-and-forget mutations pipeline, they do not queue
+ * up behind each other. So the old 90ms throttle was buying nothing and
+ * costing up to 90ms of lag plus half the samples the interpolator in
+ * src/live/peerMotion.ts has to work from. */
+const SEND_INTERVAL_MS = 50;
 // Keepalive is the "I am still here" write for a tab nobody is touching. It
 // has to stay comfortably under PRESENCE_TTL_MS or idle peers flicker out of
 // each other's rooms; 20s leaves 10s of slack and halves the idle write rate.
