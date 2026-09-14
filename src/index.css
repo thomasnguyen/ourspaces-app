@@ -1149,11 +1149,12 @@
   rotate: 0deg;
 }
 
+/* transform is left out on purpose: peerMotion drives it on rAF. Width and
+   height still ease, since a remote resize arrives at the snapshot rate. */
 .widget-group.is-remote-gesturing {
   transition:
     opacity 220ms ease-out,
     rotate 260ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 90ms linear,
     width 90ms linear,
     height 90ms linear;
 }
@@ -4095,6 +4096,13 @@
   pointer-events: none;
   transition: transform 90ms linear;
   will-change: transform;
+}
+
+/* A live peer's cursor is interpolated frame by frame in src/live/peerMotion.ts.
+   A CSS transition on top of that would just chase the rAF writes one frame
+   behind — and it can only ever ADD lag, which is the thing we are removing. */
+.live-cursor-positioner.is-motion-driven {
+  transition: none;
 }
 
 .live-cursor-positioner.is-active {

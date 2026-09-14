@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, Ref } from "react";
 import {
   CURSOR_STYLES,
   DEFAULT_CURSOR_STYLE_ID,
@@ -15,6 +15,9 @@ export type LiveCursorProps = CursorProps & {
   x?: number;
   y?: number;
   active?: boolean;
+  /** Hand the positioner to src/live/peerMotion.ts and it owns the transform:
+   *  no x/y, no CSS transition, a new interpolated position every frame. */
+  motionRef?: Ref<HTMLDivElement>;
 };
 
 /**
@@ -28,6 +31,7 @@ export function LiveCursor({
   x,
   y,
   active = false,
+  motionRef,
   ...props
 }: LiveCursorProps) {
   const entry = getCursorStyle(styleId) ?? CURSOR_STYLES[0];
@@ -35,18 +39,21 @@ export function LiveCursor({
 
   return (
     <div
+      ref={motionRef}
       className={`live-cursor-positioner pointer-events-none ${
         active ? "is-active" : ""
-      } ${className}`}
+      } ${motionRef ? "is-motion-driven" : ""} ${className}`}
       style={
-        x == null || y == null
-          ? style
-          : {
-              ...style,
-              left: 0,
-              top: 0,
-              transform: `translate3d(${x}px, ${y}px, 0)`,
-            }
+        motionRef
+          ? { ...style, left: 0, top: 0 }
+          : x == null || y == null
+            ? style
+            : {
+                ...style,
+                left: 0,
+                top: 0,
+                transform: `translate3d(${x}px, ${y}px, 0)`,
+              }
       }
     >
       <div

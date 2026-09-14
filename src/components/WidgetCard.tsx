@@ -16,6 +16,7 @@ import type {
   CanvasLayout,
   LiveGesture,
 } from "../live/presenceTypes";
+import type { PeerMotion } from "../live/peerMotion";
 import { getThread } from "../data/chat";
 import { MemberFace } from "./MemberFace";
 import { WIDGET_CATALOG } from "../data/templates";
@@ -109,8 +110,6 @@ function groupStyle(
   enterDelay: number,
   remoteGesture?: LiveGesture,
 ): CSSProperties {
-  const remoteX = remoteGesture?.x ?? widget.x;
-  const remoteY = remoteGesture?.y ?? widget.y;
   return {
     "--enter-delay": `${Math.round(enterDelay)}ms`,
     "--tilt": widgetTilt(widget),
@@ -124,9 +123,10 @@ function groupStyle(
       ? (remoteGesture?.h ?? widget.h)
       : undefined,
     zIndex: remoteGesture?.z ?? widget.z,
-    transform: remoteGesture
-      ? `translate3d(${remoteX - widget.x}px, ${remoteY - widget.y}px, 0)`
-      : undefined,
+    /* No transform for a remote gesture. While somebody else is holding this
+       card, peerMotion owns the transform and writes an interpolated one
+       every frame — the same imperative trick `applyPreview` already uses for
+       a drag of our own. Handing React the job too would mean two writers. */
   } as CSSProperties;
 }
 
@@ -245,6 +245,7 @@ function WidgetCardComponent({
   onLayoutCommit,
   remoteGesture,
   remoteLocked = false,
+  motion,
   onDelete,
   onEdit,
   onFrameFocus,
@@ -302,6 +303,7 @@ function WidgetCardComponent({
   onLayoutCommit?: (widget: Widget, layout: CanvasLayout) => void;
   remoteGesture?: LiveGesture;
   remoteLocked?: boolean;
+  motion?: PeerMotion;
   onDelete?: (widgetId: string, label: string) => void;
   onEdit?: (widgetId: string) => void;
   onFrameFocus?: (widget: Widget) => void;
@@ -370,6 +372,15 @@ function WidgetCardComponent({
   const pendingPreview = useRef<GesturePreview | null>(null);
   const previewCleanupFrame = useRef(0);
   const [dragging, setDragging] = useState(false);
+  /* While a peer holds this card, hand the node to the motion engine and let
+     it paint. The cleanup clears the inline transform, so the card settles
+     back onto its committed left/top the moment they let go. */
+  const heldBySession = remoteGesture?.sessionId;
+  useEffect(() => {
+    if (!motion || !heldBySession) return;
+    return motion.attach(`widget:${widget.id}`, groupRef.current);
+  }, [heldBySession, motion, widget.id]);
+
   const syncInert = useCallback((node: HTMLDivElement | null) => {
     groupRef.current = node;
     if (!node) return;

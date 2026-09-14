@@ -158,14 +158,23 @@ except the legacy unprefixed scene) · `boards/starry.ts` + `boards/wave.ts`
 
 **live/** — `useSpaceData.ts` / `useLiveSpace.ts` / `useLiveHandlers.ts`
 (gesture claim/accept/reject) / `useLivePoll.ts` / `usePresence.ts`
-(canvas cursors + gestures; `reportZone(x, y, "cozy:<boardId>")` switches the
+(canvas cursors + gestures at 20Hz — `SEND_INTERVAL_MS` = 50ms;
+`reportZone(x, y, "cozy:<boardId>")` switches the
 heartbeat to 0..1 zone coords for the coloring room, canvas pointermove
 switches it back) ·
+`peerMotion.ts` (**the smoothness layer** — interpolates and leads a peer's
+samples on rAF and writes the transform straight to the DOM, so remote
+cursors and remote drags never become React state. Owns the transform of
+anything it drives; do not also set one in CSS or JSX. Tuning constants are
+measured, not guessed — see `.context/live-perf/`) ·
 `dataMode.ts` (live/mock detection) · `identity.ts` (local identity + colors) ·
 `presenceTypes.ts` · `snapshot.ts` (localStorage snapshot) · `adapt.ts`
 (Convex↔UI key escaping)
 
 **cursors/** — `registry.ts` + `styles.tsx` (8+ cursor styles) · `LiveCursor.tsx`
+(pass `motionRef` and peerMotion drives it instead of x/y) ·
+`components/PeerCursor.tsx` (one peer on the canvas, memo'd on identity alone
+so movement re-renders nothing)
 
 **Join / make a space** — `components/SpaceMaker.tsx` (rail "+": shape →
 name → keep it; guests do email + code inline and the sixth digit makes and
@@ -288,7 +297,11 @@ path) ·
 `messages.ts` (per-widget threads, real cursor pagination, `search` full-text
 query, `messagesCounter`) · `votes.ts` (`pollTallies` aggregate + `vote`) ·
 `presence.ts` (hand-rolled canvas cursors + gesture-lock arbitration, TTLs —
-the ~90ms hot path; `finishGesture` commits the widget layout server-side.
+the 50ms hot path; `finishGesture` commits the widget layout server-side.
+`updateGesture` reads and writes ONE row on purpose: arbitration lives at
+`claimGesture` / `finishGesture`, because a per-frame room scan put every
+peer's cursor in the dragger's read set and cost them an OCC retry per
+friend.
 **Do not** try to replace this with `@convex-dev/presence` — see
 `roomPresence.ts`) · `roomPresence.ts` (`@convex-dev/presence`: "who has this
 space open" room-occupancy signal for the space-rail tooltip, deliberately
