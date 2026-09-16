@@ -5,6 +5,43 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **The space narrates itself while it works (2026-09-15):** new `work` table
+  + `convex/work.ts`. Every slow thing the brain does used to be invisible —
+  the board showed nothing for 3–8 seconds and then the finished thing
+  appeared, so the one moment the space was visibly thinking was the one
+  moment it was silent. Now each action writes a line at each real boundary
+  it crosses and the canvas's live strip reads it out: `live · fetching
+  anthropic.com` → `live · read "Building effective agents"`. Wired into the
+  mail brain (`inbox.processInbound`: open → read attachments → decide →
+  file, using the router's own `because` sentence for the filed line → reply),
+  the emailed-link fan-out (`inboxRouting.routeBuildRoom`, one fetch/done per
+  link, same runId as the email so it reads as one arrival), and
+  `firecrawl.scrapeLink` / `searchTopic` / `crawlSite` (which take an
+  optional narration-only `spaceId`).
+  **Decision: nothing is ever on a timer.** A step with no real boundary
+  gets no line — a shorter honest sequence beats a longer invented one. That
+  is also the bar the strip's credibility rests on.
+  `useSpaceWork` expires every line (done lingers 9s, running capped at 45s
+  so a dead action can't pin "fetching x" forever), and `work` outranks a
+  gesture on the strip because a person dragging a poll is already visible
+  and this is not. Verified live against prod in a **read-only browser**
+  (only `Action:auth:signIn` was dropped — the page wrote nothing; the work
+  rows came from a CLI-triggered `scrapeLink`, which is server-side):
+  idle → `fetching convex.dev` (sweeping) → `read "All gas no breakages"`
+  (lime) → back to idle at +10s. Build passes.
+  **Backend IS deployed** (`npx convex deploy`, additive — new table, new
+  functions, optional args); the frontend is NOT, so the public site's
+  current bundle never calls `work.recent` and nothing changed for visitors.
+  Ship the frontend with `npm run deploy` when the rest of the session's UI
+  work goes out.
+
+- **Next up — retire the reading room's fake clock.** `ARRIVAL_STEPS` +
+  `STEP_AT_MS = [0, 800, 1700, 2700, 3800, 5000]` in `ReadingRoom.tsx`
+  narrates a dropped link's six "steps" off `link.droppedAt` — a timer, not
+  the pipeline. It is the last simulated narration in the app now that `work`
+  exists. Swap it to the real rows (keyed by runId), keep the copy, and let a
+  link with no matching run fall back to the clock so old rows still read.
+
 - **Entry gate — the door opens (2026-09-15):** the claim gate is a doorway,
   not a form. Every entry names the room at the top (roster faces + the live
   "N here right now" from the presence component, or "nobody in yet · you're
@@ -47,6 +84,17 @@ Backward-looking history lives in `hackathon.md`.
   Browser-verified at 1280px, 390px, and 320px: categories, search, empty
   results, and photo-wall placement handoff. Build passes. Not deployed.
 
+- **Build room overview spacing (2026-09-15):** the overview was a 3:2 box
+  fitted by height into a ~2:1 band, so it shrank to ~64% and floated
+  mid-right with a void under the nameplate. Recomposed to three columns
+  (pile / roundtable · hot now, five deep / wide shipping wall · keepers as
+  two stacked index cards) at ~2.1:1 so it fits by width and spans the band
+  flush with the title; leftover height is split above and below. Same
+  widget scale on a 1440×900, larger on 1920×1080. All placements are remapped
+  in `buildRoomPresentation.ts` (nothing written to the DB; the canvas grows
+  in `LiveSpace` past the row's 1640×1080). Kept takeaways now land in the
+  keepers column via `keeperNoteSlot`. Build passes; not deployed.
+
 - **Add tray redesign (2026-09-15):** eight quick-pick widgets now lead;
   the frame action is a compact secondary row. Stickers sit in one horizontal
   paper strip at the bottom with scroll arrows. “Browse all” opens a searchable
@@ -55,6 +103,22 @@ Backward-looking history lives in `hackathon.md`.
   `WidgetPicker.tsx`; no backend changes. Browser-verified at 1280px, 390px, and 320px, including search, filters,
   empty results, sticker scrolling, and widget placement handoff. Build passes;
   not deployed.
+
+- **Potluck sheet no longer collides with itself (2026-09-15):** on a
+  narrow card the item name and the claimant's signature printed on top of
+  each other ("monday" under "Maya"). The row was a 4-column grid whose
+  `1fr` signature track collapsed to zero and then overflowed leftwards.
+  The row is a flex line now — nothing can overlap at any width — and
+  `.widget-potluck` is a named query container with two fallbacks:
+  **≤340px** drops the pen-name (the face already says who signed) and
+  **≤286px** drops the center fold and runs one item per line, which buys the
+  signature back. That last one is gated on `.potluck-short` (≤4 items, set
+  in `core.tsx`) — a six-slot sheet in one column runs off the bottom of the
+  paper, so it stays in two columns. A line you claimed shows "you've got it"
+  at rest and swaps it for **release** on hover, so a half-width line never
+  carries three things. Repros (local-only): `.context/potluck/repro.mjs`,
+  `states.mjs`, `stress.mjs` — the last one asserts no line overlaps or
+  spills and the list still fits, at six slots with long names.
 
 - **Room liveness: your own clicks, and who's here (2026-09-14):** two gaps
   left after the cursor work, both now closed.
@@ -1207,6 +1271,11 @@ Backward-looking history lives in `hackathon.md`.
 
 - Playlist widget is a real SomaFM room radio: play/pause, 6 stations,
   live track titles, Convex-synced station so others can tap join.
+- **Radio in the dock (2026-09-15):** the bottom dock always shows the
+  room's station once a playlist widget exists (play key + "tap play" /
+  "join · X put this on" / live track). The card stays on the canvas as the
+  room object; the dock label pans to it. Was hidden before: the chip only
+  appeared once something was playing.
 - Audio is local (browser autoplay). Pause does not stop the room for
   everyone. Audio is Radio Paradise (main/mellow/serenity/global/rock/beyond —
   SomaFM's streams 403 browsers); station names are still the SomaFM ones.
@@ -1238,11 +1307,6 @@ Backward-looking history lives in `hackathon.md`.
   strip, tap a line → pan to the widget (`docs/mail.md` goal 0,
   `docs/spaces-and-widgets.md` §1).
   - Open for review: the sentence voice (three runs of the same email gave
-- **Radio in the dock (2026-09-15):** the bottom dock always shows the
-  room's station once a playlist widget exists (play key + "tap play" /
-  "join · X put this on" / live track). The card stays on the canvas as the
-  room object; the dock label pans to it. Was hidden before: the chip only
-  appeared once something was playing.
     "this clears jules' tahoe iou" / "jules' tahoe cabin half is settled" /
     "jules cleared his tahoe half"), and the crew canvas seats a decorative
     sticker over the tahoe receipt's footer, which covers the pinned line.
@@ -1297,6 +1361,19 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- 2026-09-15: **The entry gate is a doorway, not a form.** Name the room,
+  show your cursor live, make the look one tap, Enter walks in, and the exit
+  is a sequence (card → cursor, then blur lifts, then the wavefront) rather
+  than an unmount. Kept the photo faces for visitors (they match the crew's
+  faces on the canvas); the hash-assigned emoji stays in the data as the
+  no-avatar fallback but is no longer shown in the heading. Invite links
+  still remount on the route swap after the collapse.
+
+- 2026-09-15: **Radio entry point lives in the bottom dock, not the header.**
+  The header is the nameplate and fades on scroll; the dock is the room
+  controls strip. The playlist card stays on the canvas (who put it on, vibes,
+  station picker); the dock chip is the always-visible way in.
+
 - 2026-09-13: **About is the logo destination.** The user asked for a full
   redesign and a small visible About link. The logo and bottom-right link
   open `#/about` and remember the current room, including the default route.
@@ -1324,24 +1401,6 @@ Backward-looking history lives in `hackathon.md`.
   counts in it — with a page that only describes it. And the block (`#/home`)
   already is a lobby with real rooms and real counts, it was just unreachable:
   the rail brand pointed at `/`, which is the build room. Shipped instead:
-- 2026-09-15: **The entry gate is a doorway, not a form.** Name the room,
-  show your cursor live, make the look one tap, Enter walks in, and the exit
-  is a sequence (card → cursor, then blur lifts, then the wavefront) rather
-  than an unmount. Kept the photo faces for visitors (they match the crew's
-  faces on the canvas); the hash-assigned emoji stays in the data as the
-  no-avatar fallback but is no longer shown in the heading. Invite links
-  still remount on the route swap after the collapse.
-
-- 2026-09-15: **Radio entry point lives in the bottom dock, not the header.**
-  The header is the nameplate and fades on scroll; the dock is the room
-  controls strip. The playlist card stays on the canvas (who put it on, vibes,
-  station picker); the dock chip is the always-visible way in.
-
-- 2026-09-15: **Radio entry point lives in the bottom dock, not the header.**
-  The header is the nameplate and fades on scroll; the dock is the room
-  controls strip. The playlist card stays on the canvas (who put it on, vibes,
-  station picker); the dock chip is the always-visible way in.
-
   brand → the block, plus the `#/about` page above, both at non-root hashes so
   the root stays a live room. The remaining legitimacy lever is the URL —
   `necessary-cobra-892.convex.site` reads like a test deploy. **Open:**
