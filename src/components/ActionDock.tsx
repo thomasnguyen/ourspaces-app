@@ -73,7 +73,7 @@ function DockRadio({
       ? room?.playedBy
         ? `join · ${room.playedBy} put this on`
         : "join the room"
-      : "tap play";
+      : "listen to space radio";
   const widgetId = on ? radio.ownerId : room?.widgetId;
 
   const toggle = () => {
