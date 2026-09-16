@@ -10,6 +10,9 @@ Backward-looking history lives in `hackathon.md`.
   app captures; fresh receipt-result and couple-room captures remain next.
   All creative material stays gitignored. App source and deployment unchanged.
   `npm run build` passes; browser preview was unavailable in this session.
+  Follow-up: checked the local preview against the public VibeApps source;
+  corrected field limits, card order and gallery behavior. Verification
+  details remain in the local copy document; live organizer settings unknown.
 
 - **The space narrates itself while it works (2026-09-15):** new `work` table
   + `convex/work.ts`. Every slow thing the brain does used to be invisible —
