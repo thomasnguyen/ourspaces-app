@@ -46,7 +46,9 @@ presence/gestures) ·
 `WidgetCard.tsx` (widget shell: drag/resize/thread chip) · `WidgetEditorPanel.tsx`
 (per-type edit forms) · `WidgetPicker.tsx` (add tray: eight quick picks, searchable categorized
 catalog, compact frame action, and fixed single-row sticker footer; preview
-art and local catalog descriptions live here; styles in index.css “Add tray”) · `WidgetThreadDock.tsx` ·
+art (`CatalogPreview` for the expanded illustrated gallery) and local catalog
+descriptions live here; styles in index.css “Add tray” and “Browse all”) ·
+`WidgetThreadDock.tsx` ·
 `GlobalChatPanel.tsx` · `ThreadContent.tsx` (messages + composer + promote) ·
 `Rail.tsx` (space rail; the brand mark opens `#/about`, and a sibling fixed
 `about ↗` link sits bottom-right on both room paths. Room tiles handle all

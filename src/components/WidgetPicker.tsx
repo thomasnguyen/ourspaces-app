@@ -199,6 +199,45 @@ function WidgetPreview({ item }: { item: WidgetTemplate }) {
   }
 }
 
+const CATEGORY_TITLES: Record<string, string> = {
+  Share: "a little of you",
+  Plan: "make a plan",
+  Play: "just for fun",
+  Build: "make something together",
+};
+
+function CatalogPreview({ item }: { item: WidgetTemplate }) {
+  return (
+    <span className={`catalog-art catalog-art-${item.type}`} aria-hidden="true">
+      {item.type === "note" ? (
+        <span className="catalog-note"><i /><small>little reminder</small><strong>bring the<br />good snacks.</strong><span>♡</span></span>
+      ) : item.type === "photoWall" ? (
+        <span className="catalog-photos"><span><WidgetPreview item={item} /><small>the good days</small></span><span><WidgetPreview item={item} /><small>us, lately ♡</small></span></span>
+      ) : item.type === "poll" ? (
+        <span className="catalog-paper catalog-poll"><strong>friday dinner?</strong><span>pizza <b>3</b></span><span>tacos <b>2</b></span><small>everyone gets a say</small></span>
+      ) : item.type === "countdown" ? (
+        <span className="catalog-countdown"><small>next adventure</small><strong>12<span>days!</span></strong><i>✦</i></span>
+      ) : item.type === "dailyQ" ? (
+        <span className="catalog-question"><small>today's question</small><strong>what's your<br />comfort show?</strong><span>your turn ↗</span></span>
+      ) : item.type === "potluck" ? (
+        <span className="catalog-paper catalog-list"><strong>who's bringing what</strong><span>✓ <b>snacks</b><i>maya</i></span><span>✓ <b>drinks</b><i>sam</i></span><span>○ <b>something sweet</b></span></span>
+      ) : item.type === "rsvp" ? (
+        <span className="catalog-rsvp"><small>see you friday</small><strong>3 <span>in!</span></strong><span className="catalog-faces"><i>M</i><i>J</i><i>S</i></span></span>
+      ) : item.type === "expenseSplit" ? (
+        <span className="catalog-paper catalog-receipt"><small>weekend split</small><strong>$48.00</strong><span>pizza night <b>$36</b></span><span>snacks <b>$12</b></span><small>we're even ♡</small></span>
+      ) : item.type === "itinerary" ? (
+        <span className="catalog-paper catalog-list"><small>the weekend away</small><strong>a little adventure</strong><span>01 <b>hit the road</b></span><span>02 <b>find good coffee</b></span><span>03 <b>see where we end up</b></span></span>
+      ) : item.type === "linkCard" ? (
+        <span className="catalog-web"><span className="catalog-web-cover">↗</span><strong>found this.<br />thought of you.</strong><small>something worth sharing</small></span>
+      ) : item.type === "linkShelf" || item.type === "linkPile" || item.type === "hotLinks" || item.type === "shipPost" ? (
+        <span className="catalog-stack"><span /><span /><span><WidgetPreview item={item} /><strong>{item.type === "shipPost" ? "look what I made" : item.type === "hotLinks" ? "worth a look" : "the good finds"}</strong></span></span>
+      ) : (
+        <span className="catalog-icon-preview"><WidgetPreview item={item} /></span>
+      )}
+    </span>
+  );
+}
+
 export function WidgetPicker({
   open,
   onAddSticker,
@@ -247,6 +286,10 @@ export function WidgetPicker({
     : QUICK_TYPES.map((type) => addableWidgets.find((item) => item.type === type)).filter(
         (item): item is WidgetTemplate => Boolean(item),
       );
+  const catalogGroups = CATEGORIES.slice(1).map((name) => ({
+    name,
+    items: visibleWidgets.filter((item) => WIDGET_DETAILS[item.type]?.category === name),
+  })).filter((group) => group.items.length > 0);
   const switchView = () => {
     setShowAll(!showAll);
     setSearch("");
@@ -255,14 +298,14 @@ export function WidgetPicker({
   };
 
   return (
-    <div className="widget-picker-backdrop widget-picker-backdrop-popover" onClick={onClose} role="presentation">
+    <div className={`widget-picker-backdrop widget-picker-backdrop-popover${showAll ? " is-catalog-open" : ""}`} onClick={onClose} role="presentation">
       <div className={`widget-picker widget-picker-popover widget-picker-tray${showAll ? " is-browsing" : ""}`}
         onClick={(event) => event.stopPropagation()} role="dialog" aria-labelledby={titleId} aria-describedby={descriptionId}>
         <header>
           <div>
             {showAll && <button type="button" className="widget-picker-back" onClick={switchView}>← quick picks</button>}
-            <h2 id={titleId}>{showAll ? "find your next widget" : "add to this space"}</h2>
-            <p id={descriptionId}>{showAll ? "A little something for whatever you're doing." : "Make a plan, share a moment, start something."}</p>
+            <h2 id={titleId}>{showAll ? "little things, shared." : "add to this space"}</h2>
+            <p id={descriptionId}>{showAll ? "Pick something to make this space yours." : "Make a plan, share a moment, start something."}</p>
           </div>
           <button type="button" className="widget-picker-close" onClick={onClose} aria-label="Close widget picker">×</button>
         </header>
@@ -275,21 +318,45 @@ export function WidgetPicker({
           </label>
           <div className="widget-picker-categories">
             {CATEGORIES.map((name) => <button type="button" key={name} className={category === name ? "is-selected" : ""}
-              onClick={() => { setCategory(name); scrollRef.current?.scrollTo({ top: 0 }); }}>{name.toLowerCase()}</button>)}
+              onClick={() => { setCategory(name); scrollRef.current?.scrollTo({ top: 0 }); }}>{name.toLowerCase()}<span>{name === "All" ? addableWidgets.length : addableWidgets.filter((item) => WIDGET_DETAILS[item.type]?.category === name).length}</span></button>)}
           </div>
         </div>}
 
         <div className="widget-picker-content" ref={scrollRef}>
-          <div className="widget-picker-section-heading"><h3>{showAll ? (category === "All" ? "all widgets" : category.toLowerCase()) : "the go-tos"}</h3><span>{showAll ? `${visibleWidgets.length} widgets` : "pick one, place it anywhere"}</span></div>
-          <ul className="widget-picker-grid">
-            {visibleWidgets.map((item) => <li key={item.type}>
-              <button type="button" onClick={(event) => { onAddWidget?.(item.type, { x: event.clientX, y: event.clientY }); onClose(); }}>
-                <span className="widget-picker-art"><WidgetPreview item={item} /></span>
-                <span className="widget-picker-copy"><span className="widget-picker-label">{item.label}</span><span className="widget-picker-description">{WIDGET_DETAILS[item.type]?.description}</span></span>
-                <span className="widget-picker-tile-add" aria-hidden="true">+</span>
-              </button>
-            </li>)}
-          </ul>
+          {showAll ? (
+            <div className="widget-catalog">
+              {catalogGroups.map((group) => (
+                <section className="catalog-group" key={group.name}>
+                  <div className="catalog-group-heading"><h3>{CATEGORY_TITLES[group.name]}</h3><span>{group.items.length} widgets</span></div>
+                  <ul className="catalog-grid">
+                    {group.items.map((item) => (
+                      <li key={item.type}>
+                        <button type="button" className="catalog-tile" onClick={(event) => {
+                          onAddWidget?.(item.type, { x: event.clientX, y: event.clientY });
+                          onClose();
+                        }}>
+                          <CatalogPreview item={item} />
+                          <span className="catalog-tile-caption"><strong>{item.label}</strong><span className="catalog-add" aria-hidden="true">+</span></span>
+                          <span className="catalog-tile-description">{WIDGET_DETAILS[item.type]?.description}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          ) : <>
+            <div className="widget-picker-section-heading"><h3>the go-tos</h3><span>pick one, place it anywhere</span></div>
+            <ul className="widget-picker-grid">
+              {visibleWidgets.map((item) => <li key={item.type}>
+                <button type="button" onClick={(event) => { onAddWidget?.(item.type, { x: event.clientX, y: event.clientY }); onClose(); }}>
+                  <span className="widget-picker-art"><WidgetPreview item={item} /></span>
+                  <span className="widget-picker-copy"><span className="widget-picker-label">{item.label}</span><span className="widget-picker-description">{WIDGET_DETAILS[item.type]?.description}</span></span>
+                  <span className="widget-picker-tile-add" aria-hidden="true">+</span>
+                </button>
+              </li>)}
+            </ul>
+          </>}
           {visibleWidgets.length === 0 && <div className="widget-picker-empty"><strong>No widgets found</strong><p>Try “photo”, “plan”, or another word.</p><button type="button" onClick={() => { setSearch(""); setCategory("All"); }}>show all widgets ↗</button></div>}
           {!showAll && <button type="button" className="widget-picker-more" onClick={switchView}><span>browse all widgets <small>{addableWidgets.length}</small></span><span aria-hidden="true">↗</span></button>}
           {frameItem && <button type="button" className="widget-picker-frame-option" onClick={(event) => { onAddWidget?.("frame", { x: event.clientX, y: event.clientY }); onClose(); }}>

@@ -5,6 +5,13 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Browse-all gallery (2026-09-15):** expanded catalog to an 880px gallery
+  with illustrated widget samples, grouped Share / Plan / Play / Build sections,
+  counted filters, and a smaller single-row sticker footer. Phone layouts use
+  two columns and nearly the full screen. Quick picks keep their compact tray.
+  Browser-verified at 1280px, 390px, and 320px: categories, search, empty
+  results, and photo-wall placement handoff. Build passes. Not deployed.
+
 - **Add tray redesign (2026-09-15):** eight quick-pick widgets now lead;
   the frame action is a compact secondary row. Stickers sit in one horizontal
   paper strip at the bottom with scroll arrows. “Browse all” opens a searchable
