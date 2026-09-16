@@ -44,7 +44,9 @@ apart. CSS lives at the end of `index.css`
 under SPACE HEADER — THE NAMEPLATE, the dev guild fork only sets offsets;
 presence/gestures) ·
 `WidgetCard.tsx` (widget shell: drag/resize/thread chip) · `WidgetEditorPanel.tsx`
-(per-type edit forms) · `WidgetPicker.tsx` · `WidgetThreadDock.tsx` ·
+(per-type edit forms) · `WidgetPicker.tsx` (add tray: eight quick picks, searchable categorized
+catalog, compact frame action, and fixed single-row sticker footer; preview
+art and local catalog descriptions live here; styles in index.css “Add tray”) · `WidgetThreadDock.tsx` ·
 `GlobalChatPanel.tsx` · `ThreadContent.tsx` (messages + composer + promote) ·
 `Rail.tsx` (space rail; the brand mark opens `#/about`, and a sibling fixed
 `about ↗` link sits bottom-right on both room paths. Room tiles handle all

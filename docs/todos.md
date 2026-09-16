@@ -5,6 +5,15 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Add tray redesign (2026-09-15):** eight quick-pick widgets now lead;
+  the frame action is a compact secondary row. Stickers sit in one horizontal
+  paper strip at the bottom with scroll arrows. “Browse all” opens a searchable
+  catalog with Share / Plan / Play / Build filters, short descriptions, and
+  drawn previews instead of emoji fallbacks. Both live and mock paths share
+  `WidgetPicker.tsx`; no backend changes. Browser-verified at 1280px, 390px, and 320px, including search, filters,
+  empty results, sticker scrolling, and widget placement handoff. Build passes;
+  not deployed.
+
 - **Room liveness: your own clicks, and who's here (2026-09-14):** two gaps
   left after the cursor work, both now closed.
   **Your own actions no longer wait for the server.** Claiming a potluck item
