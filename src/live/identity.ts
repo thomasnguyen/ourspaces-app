@@ -175,3 +175,37 @@ export const PERSONAS: readonly Persona[] = PERSONA_NAMES.map((name, index) => (
 export function isPersonaName(name: string) {
   return (PERSONA_NAMES as readonly string[]).includes(name.trim().toLowerCase());
 }
+
+const TAB_KEY = "ourspaces:tab-id";
+let tabId: string | null = null;
+
+/**
+ * Presence is per TAB, not per person — and that distinction is the whole
+ * reason live cursors used to die the moment you tested them.
+ *
+ * Convex Auth keeps its tokens in localStorage, so two windows of the same
+ * browser are the same authenticated user and share `identity.userId`. The
+ * presence row is keyed by (spaceId, userId), so window B overwrote window
+ * A's row twenty times a second, and each window filtered the single row out
+ * as "me". No peer cursor, no peer drag — only the committed drop, which
+ * rides the widgets table and never touched presence. Opening a second window
+ * is exactly how anyone checks a live canvas, so the feature looked broken
+ * while being entirely built.
+ *
+ * A random id in sessionStorage is per-tab by definition and survives a
+ * reload of that tab. Figma and Docs treat your other window as a real second
+ * presence for the same reason: it is a real second viewport. Anything about
+ * the PERSON — votes, claims, createdBy, who owns a widget — still uses
+ * `identity.userId`.
+ *
+ * It also outlives `adoptAuthUserId`: the presence key never changes mid-
+ * session, so the tab can't leave a ghost of itself behind when the silent
+ * sign-in lands and swaps the user id underneath it.
+ */
+export function getPresenceId(): string {
+  if (tabId) return tabId;
+  const existing = window.sessionStorage.getItem(TAB_KEY);
+  tabId = existing ?? crypto.randomUUID();
+  if (!existing) window.sessionStorage.setItem(TAB_KEY, tabId);
+  return tabId;
+}

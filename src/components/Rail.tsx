@@ -3,7 +3,7 @@ import { Fragment, type CSSProperties } from "react";
 import { useQuery } from "convex-helpers/react/cache";
 import { api } from "../../convex/_generated/api";
 import { getDataMode } from "../live/dataMode";
-import { useIdentity } from "../live/identity";
+import { getPresenceId } from "../live/identity";
 import { SPACES, SPACES_BY_ID } from "../data/spaces";
 import type { SpaceMeta } from "../data/types";
 
@@ -17,7 +17,9 @@ import type { SpaceMeta } from "../data/types";
  * two. Passing `excludeUserId` to only one of them is what used to double
  * the rail's presence traffic. */
 function OnlineCountSuffix({ spaceId }: { spaceId: string }) {
-  const { userId } = useIdentity();
+  /* The tab's presence id, not the person's — the same key the cursors use,
+     so "N here" and the number of cursors on the canvas can never disagree. */
+  const userId = getPresenceId();
   const count =
     useQuery(api.roomPresence.onlineForSpace, { spaceId, userId })?.total ?? 0;
   if (count <= 0) return null;
@@ -37,7 +39,7 @@ function OnlineCount({ spaceId }: { spaceId: string }) {
 /* Lime dot on the tile when someone ELSE is in that space — the caller is
    excluded, so the room you're standing in never lights up for you. */
 function OnlineDotLive({ spaceId }: { spaceId: string }) {
-  const { userId } = useIdentity();
+  const userId = getPresenceId();
   const count =
     useQuery(api.roomPresence.onlineForSpace, { spaceId, userId })?.others ?? 0;
   if (count <= 0) return null;
