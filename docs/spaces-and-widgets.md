@@ -248,3 +248,13 @@ These exist so the gallery reads alive and personal — never demo beats.
 
 The hackathon (buildclub) and Tahoe (trip) stay cut. `npx convex run seed:demo`
 retires leftover backend rows for both.
+
+## Add tray (2026-09-15)
+
+The shared add panel opens with eight quick picks (note, photo wall, poll,
+countdown, web post, daily q, rsvp, potluck). Browse all shows every addable
+widget with a miniature preview and short description, search, and Share /
+Plan / Play / Build categories. Frames are a separate compact action. Stickers
+stay in one horizontal paper strip at the bottom, with arrows and native
+horizontal scrolling. Choosing an item preserves the existing cursor placement
+flow. Closing the panel resets the catalog to quick picks.
