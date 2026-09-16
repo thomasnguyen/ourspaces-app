@@ -77,7 +77,8 @@ rides the pointer over the blurred room while the gate is up
 in: the card collapses into the cursor tip (WAAPI, glide, 440ms), the scrim
 lifts from 120ms off the canvas that was there all along, the header enters
 at 200ms (`enterRoom` in `pages/LiveSpace.tsx`). "keep this on your other devices"
-is still the quiet second CTA under the way in.
+is still the quiet second CTA under the way in. The popover (header self
+face) rides the same cursor and collapses into it on done.
 
 **As built (2026-09-12).** Guest works end to end: silent anonymous sign-in,
 server-validated token, identity stable across reloads. Wiring:

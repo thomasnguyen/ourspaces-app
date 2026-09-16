@@ -25131,12 +25131,19 @@
  * "look"); Enter walks you in. On enter the card collapses into the cursor
  * tip (glide, 440ms), then the scrim lifts (glide, 500ms from 120ms) off a
  * canvas that was there all along; the header enters underneath at 200ms.
- * ClaimCard.tsx, GateCursor.tsx, enterRoom in LiveSpace.tsx.
+ * The identity popover (header self face) mounts the same riding cursor and
+ * collapses into it on done. ClaimCard.tsx, GateCursor.tsx, enterRoom and
+ * closeClaim in LiveSpace.tsx.
  */
 
-/* One cursor on screen: over the room the OS arrow goes, yours stays. */
+/* One cursor on screen: over the room the OS arrow goes, yours stays. The
+   identity popover does the same — the room is a backdrop while it's open —
+   everywhere but on the card itself, where the input still wants its I-beam. */
 @media (hover: hover) and (pointer: fine) {
   .entry-gate-scrim {
+    cursor: none;
+  }
+  .has-claim-popover *:not(.claim-card, .claim-card *) {
     cursor: none;
   }
 }

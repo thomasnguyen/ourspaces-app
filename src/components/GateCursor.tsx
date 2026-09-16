@@ -18,21 +18,35 @@ export function canFollowPointer() {
  * for a peer, riding your real pointer over the blurred room. Tap a look on
  * the card and it recolours under your hand. The scrim hides the OS arrow
  * (cursor: none) so there is exactly one cursor on screen. Phones get the
- * parked copy inside the card instead (see .claim-you-perch).
+ * parked copy inside the card instead (see .claim-you-perch). The identity
+ * popover mounts the same cursor, so "that's your cursor" is always true.
  */
 export function GateCursor({
   identity,
   leaving,
   positionRef,
+  initialPoint = null,
 }: {
   identity: LiveIdentity;
   leaving: boolean;
   /** The tip's last position — the collapse in ClaimCard aims at it. */
   positionRef: GatePointRef;
+  /** Where the pointer already is (the click that opened the popover), so the
+   *  cursor appears at once instead of on the first move. */
+  initialPoint?: GatePoint | null;
 }) {
   const node = useRef<HTMLDivElement | null>(null);
   const [shown, setShown] = useState(false);
   const follow = canFollowPointer();
+
+  useEffect(() => {
+    if (!follow || !initialPoint) return;
+    positionRef.current = initialPoint;
+    if (node.current) {
+      node.current.style.transform = `translate3d(${initialPoint.x}px, ${initialPoint.y}px, 0)`;
+    }
+    setShown(true);
+  }, [follow, initialPoint, positionRef]);
 
   useEffect(() => {
     if (!follow) return;

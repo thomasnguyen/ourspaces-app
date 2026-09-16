@@ -19,8 +19,12 @@ Backward-looking history lives in `hackathon.md`.
   120ms off a canvas that was there all along (the canvas is keyed on the slug
   now, not on the gate state — remounting it on entry replayed the wavefront
   and the widgets you were looking at blinked out), the header enters at
-  200ms, and the drawn cursor hands over to the real one last. Popover variant (header self
-  face) keeps the same looks row. Browser-verified in live mode at 1440×900
+  200ms, and the drawn cursor hands over to the real one last. The popover
+  variant (header self face) mounts the same riding cursor — it appears at
+  the click point, the native cursor hides over the room while the popover is
+  open, and done collapses the popover into it the same way. Decision: the
+  cursor is a preview that lives with the identity card, not a full-time
+  companion (the native grab / I-beam states are real information in the room). Browser-verified in live mode at 1440×900
   and on a 390px touch profile with a **read-only harness** (the Convex
   socket forwards reads but drops every Mutation/Action, so the run wrote no
   member, presence or sign-in into prod — `.claude/skills/run-ourspaces/readonly.mjs`).

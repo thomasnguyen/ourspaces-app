@@ -348,6 +348,9 @@ export function LiveSpacePage({
   const [gateLeaving, setGateLeaving] = useState(false);
   const gateCursorPoint = useRef<GatePoint | null>(null);
   const gateTimers = useRef<number[]>([]);
+  const [claimLeaving, setClaimLeaving] = useState(false);
+  const [claimPoint, setClaimPoint] = useState<GatePoint | null>(null);
+  const claimTimer = useRef<number | null>(null);
   const [entered, setEntered] = useState(
     () => !isInviteEntry && window.sessionStorage.getItem(CLAIM_DISMISSED_KEY) === "done",
   );
@@ -421,9 +424,26 @@ export function LiveSpacePage({
   const clearPaint = useMutation(api.paint.clear);
   const ensureCozyColorWidget = useMutation(api.paint.ensureCozyColorWidget);
   const roomEntered = entered && !isInviteEntry;
-  const closeClaim = useCallback(() => {
-    setClaimOpen(false);
+  /* The identity popover: your cursor rides while it is open (so "that's
+     your cursor" is literally true), and it leaves the way the gate does —
+     the card collapses into the cursor, then the drawn cursor hands over. */
+  const openClaim = useCallback((event: { clientX: number; clientY: number }) => {
+    if (claimTimer.current) window.clearTimeout(claimTimer.current);
+    setClaimLeaving(false);
+    setClaimPoint({ x: event.clientX, y: event.clientY });
+    setClaimOpen(true);
   }, []);
+  const closeClaim = useCallback(() => {
+    if (!claimOpen) return;
+    playSound("tap");
+    setClaimOpen(false);
+    setClaimLeaving(true);
+    if (claimTimer.current) window.clearTimeout(claimTimer.current);
+    claimTimer.current = window.setTimeout(
+      () => setClaimLeaving(false),
+      GATE_LEAVE_MS,
+    );
+  }, [claimOpen]);
 
   /* The door opens. The card collapses into your cursor (ClaimCard, 440ms),
      then the scrim lifts (from 120ms, 500ms) over a canvas that was there all
@@ -445,7 +465,10 @@ export function LiveSpacePage({
     gateTimers.current = [settle, leave];
   }, [gateLeaving, identity, isInviteEntry, join, slug, space]);
   useEffect(
-    () => () => gateTimers.current.forEach((timer) => window.clearTimeout(timer)),
+    () => () => {
+      gateTimers.current.forEach((timer) => window.clearTimeout(timer));
+      if (claimTimer.current) window.clearTimeout(claimTimer.current);
+    },
     [],
   );
 
@@ -2148,7 +2171,7 @@ export function LiveSpacePage({
   );
 
   return (
-    <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${gateLeaving ? "is-gate-leaving" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""} ${spacePan.panning ? "is-canvas-panning" : ""} ${spacePan.spaceHeld ? "is-space-panning" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
+    <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${gateLeaving ? "is-gate-leaving" : ""} ${claimOpen ? "has-claim-popover" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""} ${spacePan.panning ? "is-canvas-panning" : ""} ${spacePan.spaceHeld ? "is-space-panning" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
       <Rail activeId={slug} onSelectSpace={selectSpace} onCreateClick={openSpacePicker} />
       {roomEntered && space?.slug && (
         <RoomPresenceHeartbeat roomId={space.slug} userId={identity.userId} />
@@ -2163,7 +2186,7 @@ export function LiveSpacePage({
         members={members}
         hereCount={headerHereCount}
         self={identity}
-        onSelfClick={() => setClaimOpen(true)}
+        onSelfClick={openClaim}
         livePeers={liveCursors}
         arrivalPeerId={arrivalPeer?.userId}
         inboxAddress={space?.inboxAddress}
@@ -2461,11 +2484,12 @@ export function LiveSpacePage({
           aria-hidden="true"
         />
       )}
-      {(gateOpen || gateLeaving) && (
+      {(gateOpen || gateLeaving || claimOpen || claimLeaving) && (
         <GateCursor
           identity={identity}
-          leaving={gateLeaving}
+          leaving={gateLeaving || claimLeaving}
           positionRef={gateCursorPoint}
+          initialPoint={roomEntered ? claimPoint : null}
         />
       )}
       {isInvalidInvite || isMissingSpace ? (
@@ -2488,9 +2512,9 @@ export function LiveSpacePage({
         </div>
       ) : (
         <ClaimCard
-          open={gateOpen || gateLeaving || claimOpen}
+          open={gateOpen || gateLeaving || claimOpen || claimLeaving}
           variant={roomEntered && !gateLeaving ? "popover" : "gate"}
-          leaving={gateLeaving}
+          leaving={gateLeaving || claimLeaving}
           cursorPosition={gateCursorPoint}
           onClose={roomEntered ? closeClaim : enterRoom}
           room={{
