@@ -12,7 +12,7 @@
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-16T06:55:10Z
+- **Last updated:** 2026-09-16T07:14:14Z
 
 ## Highlights
 
@@ -676,8 +676,10 @@ Build passes. No verification email sent, space created, or deployment performed
 
 ### 2026-09-16 - working tree
 Prepared local presentation drafts using existing app captures and a supplied
-video still. Creative files remain gitignored; two fresh feature captures are
-still needed. App source unchanged. Build passes; browser review unavailable.
+video still. Revised the thumbnail and filled all five gallery slots from
+visually reviewed saved app captures, preserving source pixels and recording
+provenance locally. Creative files remain gitignored. App source unchanged.
+Build passes; browser review unavailable.
 No deployment or submission.
 Follow-up: checked the presentation preview against the upstream public source
 and corrected its field mapping and media layout. Live judge settings remain
