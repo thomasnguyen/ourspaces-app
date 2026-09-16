@@ -12,7 +12,7 @@
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-16T02:21:26Z
+- **Last updated:** 2026-09-16T06:48:10Z
 
 ## Highlights
 
@@ -673,3 +673,9 @@ Customize. The native dialog stays above raised canvas items; empty starts
 keep the same email handoff. Browser-reviewed desktop and 390px/320px layouts,
 template switching, customization and back navigation (SpaceMaker.tsx, index.css).
 Build passes. No verification email sent, space created, or deployment performed.
+
+### 2026-09-16 - working tree
+Prepared local presentation drafts using existing app captures and a supplied
+video still. Creative files remain gitignored; two fresh feature captures are
+still needed. App source unchanged. Build passes; browser review unavailable.
+No deployment or submission.
