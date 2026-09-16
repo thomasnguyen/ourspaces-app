@@ -2613,6 +2613,8 @@ export function LiveSpacePage({
         chatOpen={chatOpen}
         messageCount={globalMessages.length}
         soundEnabled={soundEnabled}
+        radioRoom={radioRoomOf(adaptedWidgets)}
+        onRadioTune={handlers.onPlaylistTune}
         onRecapToggle={() => {
           playSound("tap");
           if (recapOpen) closeRecap();
@@ -2624,8 +2626,6 @@ export function LiveSpacePage({
         }}
         onChatToggle={() => {
           if (focusedTarget?.kind === "widget") {
-        radioRoom={radioRoomOf(adaptedWidgets)}
-        onRadioTune={handlers.onPlaylistTune}
             leaveFocus(false);
             playSound("tap");
             setChatOpen(true);
