@@ -12,7 +12,7 @@
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-16T07:14:14Z
+- **Last updated:** 2026-09-16T16:47:18Z
 
 ## Highlights
 
@@ -683,4 +683,5 @@ Build passes; browser review unavailable.
 No deployment or submission.
 Follow-up: checked the presentation preview against the upstream public source
 and corrected its field mapping and media layout. Live reviewer settings remain
-unverified; no product code changed.
+unverified; no product code changed. Shortened project copy in the local
+preview to reduce repetition before the video.
