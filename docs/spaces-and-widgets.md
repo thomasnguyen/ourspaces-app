@@ -6,6 +6,14 @@ for threads); widget components live in `src/widgets/core.tsx` and
 `extras.tsx`. The group chat is the reference — it's the most complete space, and
 its anatomy is the pattern the others should follow.
 
+## Creating a space
+
+The rail “+” opens a starting-point picker above a compact board preview.
+Name the space directly on that preview, then use “create space.” Color, symbol
+and up to six starting widgets live under the optional Customize disclosure.
+“Start empty” needs no widget selection; widgets can be added on the canvas.
+Guests verify their email inline before creation; joined people create directly.
+
 ## Names vs slugs (renamed 2026-09-13)
 
 Three rooms were renamed for legibility — a stranger should know what a room

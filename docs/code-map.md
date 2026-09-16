@@ -194,8 +194,9 @@ holds it in effect deps. Tuning constants are measured, not guessed — see
 so movement re-renders nothing; `CozyPeerCursor` inside `CozyColorWidget.tsx`
 is the same idea for the coloring room)
 
-**Join / make a space** — `components/SpaceMaker.tsx` (rail "+": shape →
-name → keep it; guests do email + code inline and the sixth digit makes and
+**Join / make a space** — `components/SpaceMaker.tsx` (rail "+": starting-point pills →
+compact editable board preview → create space; optional Customize disclosure
+contains color, symbol and starting widgets. Guests do email + code inline and the sixth digit makes and
 opens the space) · `components/JoinForm.tsx` (email → six digits →
 "you're in the book" on the claim card; see `docs/data-model-plan.md` §1) ·
 `components/CodeSlots.tsx` (six painted boxes over one real input) ·
