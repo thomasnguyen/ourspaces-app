@@ -12,7 +12,7 @@
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-16T16:49:22Z
+- **Last updated:** 2026-09-16T18:18:35Z
 
 ## Highlights
 
@@ -685,3 +685,13 @@ Follow-up: checked the presentation preview against the upstream public source
 and corrected its field mapping and media layout. Live reviewer settings remain
 unverified; no product code changed. Revised local project copy into two
 short paragraphs with context and concrete examples.
+
+### 2026-09-16 - working tree
+Created and visually reviewed two alternative logo and brand concept boards
+using built-in image generation. Saved the boards and full prompts locally;
+the user then selected the first direction. Developed a refined brand system
+and landing-page visual concept, with prompts and an implementation handoff
+saved locally. No identity applied to the app. Build passes. No deployment.
+Follow-up: refined the logo itself and saved a reviewed presentation with
+monochrome and app-icon examples locally; the app still uses its existing mark.
+Git operations are blocked by the pending Xcode license agreement.

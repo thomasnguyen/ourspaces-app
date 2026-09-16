@@ -5,6 +5,30 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Live drag + two-window cursors (2026-09-16):** presence is now keyed per
+  TAB (`getPresenceId()`), not per authenticated user. Two windows of one
+  browser share the Convex Auth session, so they shared `identity.userId` and
+  therefore one presence row — each overwrote the other and filtered it out as
+  "me". Peer cursors and mid-drag widget motion were fully built and simply
+  never visible to the one person testing them; only the committed drop synced,
+  because that rides the widgets table. Room occupancy (`RoomPresenceHeartbeat`,
+  Rail) uses the same key, so "N here" matches the cursors on screen. Also added
+  a 500ms gesture keepalive: holding a drag still stopped all writes, the lock
+  went stale at 1.5s, peers saw the card glide home and the drop was refused.
+  Verified two tabs in one context against prod with
+  `.context/live-perf/two-tabs.mjs`: peer cursor travels 1584px over 197
+  spots, the widget moves 251px mid-drag across 439 held frames, held through a
+  2.2s pause, "here now" reads 2, board restored. Frontend only — not deployed.
+
+- **Brand exploration (2026-09-16):** two new local concept boards and full
+  generation prompts are indexed in `docs/local/doc-map.local.md`. Visually
+  reviewed. User selected Common room; a more playful brand system and landing
+  concept are now saved locally with prompts and implementation handoff.
+  Follow-up: revised the logo itself with softer geometry and an asymmetric
+  opening; local v3 logo board is indexed with its prompt. Not yet implemented.
+  Selection is a design direction, not an app implementation: source and
+  deployment unchanged. Build passes. Git is blocked by the pending Xcode license.
+
 - **Local submission draft (2026-09-16):** presentation assets and copy are
   indexed in `docs/local/doc-map.local.md`. All five gallery slots now contain
   visually reviewed saved app captures, with provenance in the local copy
