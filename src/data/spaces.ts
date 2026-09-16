@@ -1,5 +1,5 @@
 import type { Space, SpaceMeta, Widget } from "./types";
-import { withBuildRoomLayout } from "../lib/buildRoomPresentation";
+import { BUILD_ROOM_CANVAS, withBuildRoomLayout } from "../lib/buildRoomPresentation";
 
 export type { Widget, Space, SpaceMeta, WidgetType } from "./types";
 
@@ -923,9 +923,9 @@ function shortDaysAgo(days: number): string {
     .toLowerCase();
 }
 
-/* Five outlined frames on a 1640×1080 canvas: the pile fills the left column,
-   hot now / keepers / roundtable stack down the right, shipping wall sits
-   under the pile. Matches the approved concept. */
+/* Five outlined frames. These are the original demo coordinates; every one of
+   them is remapped by withBuildRoomLayout to the current three-column
+   composition (see buildRoomPresentation.ts), same as the live rows. */
 export const BUILD_ROOM_WIDGETS: Widget[] = ([
   {
     id: "br-frame-pile",
@@ -1132,7 +1132,7 @@ export const SPACES: SpaceMeta[] = [
     name: "the build room",
     color: "#ff7c42",
     icon: "</>",
-    canvasSize: { width: 1640, height: 1080 },
+    canvasSize: { width: BUILD_ROOM_CANVAS.width, height: BUILD_ROOM_CANVAS.height },
     activity: true,
     kind: "ongoing",
     tagline: "drop it, argue it, keep it",
@@ -1204,8 +1204,8 @@ export const SPACE_CURSORS: Record<
 > = {
   buildroom: [
     { name: "Alex", color: "#ff7c42", x: 1180, y: 250 },
-    { name: "Marco", color: "#ffb02e", x: 300, y: 700 },
-    { name: "Jordan", color: "#13b8a6", x: 960, y: 640 },
+    { name: "Marco", color: "#ffb02e", x: 1330, y: 800 },
+    { name: "Jordan", color: "#13b8a6", x: 520, y: 780 },
   ],
   crew: [
     { name: "Jules", color: "#e63da8", x: 792, y: 430 },

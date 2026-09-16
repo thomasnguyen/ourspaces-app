@@ -36,6 +36,7 @@ import type * as recap from "../recap.js";
 import type * as roomPresence from "../roomPresence.js";
 import type * as seed from "../seed.js";
 import type * as shootReset from "../shootReset.js";
+import type * as similar from "../similar.js";
 import type * as spaces from "../spaces.js";
 import type * as staticHosting from "../staticHosting.js";
 import type * as stats from "../stats.js";
@@ -43,6 +44,7 @@ import type * as streaming from "../streaming.js";
 import type * as votes from "../votes.js";
 import type * as widgetData from "../widgetData.js";
 import type * as widgets from "../widgets.js";
+import type * as work from "../work.js";
 
 import type {
   ApiFromModules,
@@ -79,6 +81,7 @@ declare const fullApi: ApiFromModules<{
   roomPresence: typeof roomPresence;
   seed: typeof seed;
   shootReset: typeof shootReset;
+  similar: typeof similar;
   spaces: typeof spaces;
   staticHosting: typeof staticHosting;
   stats: typeof stats;
@@ -86,6 +89,7 @@ declare const fullApi: ApiFromModules<{
   votes: typeof votes;
   widgetData: typeof widgetData;
   widgets: typeof widgets;
+  work: typeof work;
 }>;
 
 /**

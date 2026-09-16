@@ -5,6 +5,7 @@ import { ActionRetrier } from "@convex-dev/action-retrier";
 import { ActionCache } from "@convex-dev/action-cache";
 import { components, internal } from "./_generated/api";
 import { action, internalAction, internalMutation, query } from "./_generated/server";
+import { logWork } from "./work";
 
 const firecrawl = new FirecrawlClient(components.firecrawl);
 // action-retrier: Firecrawl scrapes hit a real network + a third-party API —
@@ -94,7 +95,12 @@ async function resolveHnStory(parsed: URL): Promise<HnStory | null> {
  * normal action — callers (WidgetEditorPanel, the mail-drop router) never
  * see the cache or retry machinery. */
 export const scrapeLink = action({
-  args: { url: v.string() },
+  // `spaceId` is optional and narration-only: pass it and the room says what
+  // it is doing while it does it (convex/work.ts); leave it off and this is
+  // the same action it always was. The callers that have a room pass one —
+  // a link dropped on a canvas, an emailed link — and `batch.ts` (the stale
+  // link sweep, which nobody is watching) does not.
+  args: { url: v.string(), spaceId: v.optional(v.id("spaces")), runId: v.optional(v.string()) },
   returns: linkCardScrapeValidator,
   handler: async (ctx, args): Promise<{
     url: string;
@@ -113,7 +119,37 @@ export const scrapeLink = action({
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       throw new Error("Use a webpage link");
     }
-    return await scrapeCache.fetch(ctx, { url });
+    const domain = parsed.hostname.replace(/^www\./, "");
+    const spaceId = args.spaceId;
+    // Deliberately wraps the cache rather than living inside scrapeLinkOnce:
+    // a cache hit is still the board waiting on this call, and moving the
+    // narration inside would also change the cached action's args — and so
+    // its cache key — for every caller.
+    const runId = args.runId ?? `link-${Date.now().toString(36)}`;
+    if (spaceId) {
+      await logWork(ctx, {
+        spaceId, runId, kind: "link", step: "fetch", status: "running",
+        line: `fetching ${domain}`, subject: domain,
+      });
+    }
+    try {
+      const page = await scrapeCache.fetch(ctx, { url });
+      if (spaceId) {
+        await logWork(ctx, {
+          spaceId, runId, kind: "link", step: "fetch", status: "done",
+          line: page.title ? `read “${page.title}”` : `read ${domain}`, subject: domain,
+        });
+      }
+      return page;
+    } catch (error) {
+      if (spaceId) {
+        await logWork(ctx, {
+          spaceId, runId, kind: "link", step: "fetch", status: "failed",
+          line: `couldn't read ${domain}`, subject: domain,
+        });
+      }
+      throw error;
+    }
   },
 });
 
@@ -219,11 +255,22 @@ const searchHitValidator = v.object({
  *  already renders. Uses firecrawl.search (web-search-then-clean) — a different
  *  Firecrawl surface than the single-URL scrape above. */
 export const searchTopic = action({
-  args: { query: v.string(), limit: v.optional(v.number()) },
+  args: {
+    query: v.string(),
+    limit: v.optional(v.number()),
+    spaceId: v.optional(v.id("spaces")), // narration only, see scrapeLink
+  },
   returns: v.array(searchHitValidator),
-  handler: async (ctx, { query, limit }) => {
+  handler: async (ctx, { query, limit, spaceId }) => {
     const trimmed = query.trim();
     if (!trimmed) return [];
+    const runId = `search-${Date.now().toString(36)}`;
+    if (spaceId) {
+      await logWork(ctx, {
+        spaceId, runId, kind: "search", step: "search", status: "running",
+        line: `searching the web for “${trimmed}”`, subject: trimmed,
+      });
+    }
     // Clamped: `limit` is caller-supplied and Firecrawl bills per credit.
     const response = await firecrawl.search(ctx, trimmed, {
       limit: Math.min(20, Math.max(1, limit ?? 8)),
@@ -249,7 +296,17 @@ export const searchTopic = action({
         siteName: textValue(metadata.ogSiteName, domain),
       };
     });
-    return hits.filter((hit): hit is NonNullable<typeof hit> => hit !== null);
+    const found = hits.filter((hit): hit is NonNullable<typeof hit> => hit !== null);
+    if (spaceId) {
+      await logWork(ctx, {
+        spaceId, runId, kind: "search", step: "search", status: "done",
+        line: found.length === 0
+          ? `nothing good for “${trimmed}”`
+          : `found ${found.length} page${found.length === 1 ? "" : "s"} on “${trimmed}”`,
+        subject: trimmed,
+      });
+    }
+    return found;
   },
 });
 
@@ -259,13 +316,32 @@ export const searchTopic = action({
  *  the UI subscribes reactively via listCrawlPages/getCrawlStatus below rather
  *  than copying every page into one widget doc. */
 export const crawlSite = action({
-  args: { url: v.string(), limit: v.optional(v.number()) },
+  args: {
+    url: v.string(),
+    limit: v.optional(v.number()),
+    spaceId: v.optional(v.id("spaces")), // narration only, see scrapeLink
+  },
   returns: v.object({ crawlId: v.string() }),
-  handler: async (ctx, { url, limit }) => {
+  handler: async (ctx, { url, limit, spaceId }) => {
     const normalized = url.includes("://") ? url : `https://${url}`;
     const parsed = new URL(normalized);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       throw new Error("Use a website link");
+    }
+    if (spaceId) {
+      const domain = parsed.hostname.replace(/^www\./, "");
+      // Only the start: the crawl is durable and its pages already stream
+      // into CrawlStrip reactively, so a line per page would be the board
+      // narrating something the board is already showing.
+      await logWork(ctx, {
+        spaceId,
+        runId: `crawl-${Date.now().toString(36)}`,
+        kind: "crawl",
+        step: "crawl",
+        status: "running",
+        line: `walking ${domain}`,
+        subject: domain,
+      });
     }
     const { crawlId } = await firecrawl.startCrawl(ctx, {
       url: normalized,

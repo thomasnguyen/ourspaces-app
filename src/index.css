@@ -1636,6 +1636,50 @@
   animation: space-live-strip-say var(--dur-quick) var(--ease-pop) both;
 }
 
+/* The space's own hands, mid-work (convex/work.ts). A person moving a widget
+   is already visible on the board; the brain reading an emailed PDF is not,
+   so this line is the only place that work exists on screen and it has to
+   look unfinished. A slow light sweep travels the words while the action
+   runs and stops the instant the row flips to done — the one looping
+   animation in the strip, and it is load-bearing: it is the difference
+   between "the space is doing this" and "the space did this". */
+.space-live-strip-busy.is-work-running {
+  color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.92) 38%,
+    var(--color-lime) 50%,
+    rgba(255, 255, 255, 0.92) 62%,
+    rgba(255, 255, 255, 0.92) 100%
+  );
+  background-size: 280% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation:
+    space-live-strip-say var(--dur-quick) var(--ease-pop) both,
+    space-live-strip-work 2.4s linear infinite;
+}
+
+/* Finished: the payoff keeps the lime pop the busy line already had. */
+
+/* Couldn't do it. Says so plainly and gives up the accent — a failure that
+   glows lime reads as a feature. */
+.space-live-strip-busy.is-work-failed {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 600;
+}
+
+@keyframes space-live-strip-work {
+  from {
+    background-position: 140% 0;
+  }
+  to {
+    background-position: -40% 0;
+  }
+}
+
 @keyframes space-live-strip-in {
   from {
     opacity: 0;
@@ -1670,6 +1714,15 @@
   .space-live-strip,
   .space-live-strip-busy {
     animation: none;
+  }
+
+  /* No sweep, but the words still have to read as unfinished — the gradient
+     goes away and the plain lime stays, so "running" is a colour rather than
+     a motion. */
+  .space-live-strip-busy.is-work-running {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    color: var(--color-lime);
   }
 
   .space-live-strip-name {
@@ -3185,6 +3238,7 @@
    sit on real baseline rules, claimants "sign" the line, tally marks count
    the claims, and an ALL SET stamp slams in when the sheet fills up. */
 .widget-potluck {
+  container: potluck / inline-size;
   --potluck-bg: var(--color-card);
   --potluck-ink: var(--color-ink);
   --potluck-muted: #2f6b4f;
@@ -3432,10 +3486,9 @@
 }
 
 .potluck-list li {
-  display: grid;
+  display: flex;
   min-width: 0;
   min-height: 27px;
-  grid-template-columns: 15px minmax(0, auto) minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
   border-bottom: 1.5px dashed var(--potluck-rule);
@@ -3456,6 +3509,7 @@
   display: grid;
   width: 15px;
   height: 15px;
+  flex: 0 0 auto;
   place-items: center;
   border: 1.5px solid var(--potluck-rule);
   border-radius: 3px 5px 2px 4px;
@@ -3501,6 +3555,8 @@
 
 .potluck-item-name {
   overflow: hidden;
+  min-width: 0;
+  flex: 0 1 auto;
   color: inherit;
   font-size: 10.5px;
   font-weight: 800;
@@ -3511,7 +3567,9 @@
 /* the claimant signs the line — different pen, slanted */
 .potluck-signature {
   overflow: hidden;
-  justify-self: end;
+  min-width: 0;
+  flex: 0 4 auto;
+  margin-left: auto;
   color: var(--potluck-accent);
   font-size: 10px;
   font-style: italic;
@@ -3537,11 +3595,13 @@
 .potluck-list .member-face {
   width: 17px;
   height: 17px;
+  flex: 0 0 auto;
 }
 
 /* claiming is this card's primary verb → solid sticker-black pill */
 .potluck-claim {
-  grid-column: 4;
+  flex: 0 0 auto;
+  margin-left: auto;
   border: 0;
   border-radius: 999px;
   background: var(--color-sticker, #111114);
@@ -3567,6 +3627,7 @@
 }
 
 .potluck-release {
+  flex: 0 0 auto;
   border: 0;
   background: transparent;
   color: var(--potluck-muted);
@@ -3581,6 +3642,22 @@
 .potluck-release:hover {
   opacity: 1;
   text-decoration: underline;
+}
+
+/* A line you signed says "you've got it" — the name, the note and a release
+   button is three things on a half-width line. Reach for the row and the note
+   hands its place to the way out. */
+.is-yours .potluck-release {
+  display: none;
+}
+
+.potluck-list li.is-yours:hover .potluck-signature {
+  display: none;
+}
+
+.is-yours:hover .potluck-release {
+  display: block;
+  margin-left: auto;
 }
 
 /* rubber stamp slammed across the corner once every line is signed */
@@ -3638,6 +3715,67 @@
   margin: 0;
   font-size: 11px;
   font-weight: 700;
+}
+
+/* A narrow sheet can't carry a day, a signature and a face on one line. The
+   face already says who signed, so the pen-name steps aside and the item
+   name keeps the whole line instead of everyone truncating together. */
+@container potluck (max-width: 340px) {
+  .potluck-list {
+    gap: 0 16px;
+  }
+
+  .potluck-list li {
+    gap: 5px;
+  }
+
+  .potluck-signature {
+    display: none;
+  }
+
+  .potluck-list .member-face {
+    margin-left: auto;
+  }
+
+  .potluck-claim {
+    padding: 4px 7px;
+  }
+
+  .potluck-release {
+    margin-left: auto;
+  }
+
+  .potluck-sparkle-small {
+    display: none;
+  }
+}
+
+/* Narrower still: two columns stop being columns. The sheet drops the fold
+   and runs one line per item, which buys back the signature — but only up to
+   four slots. A longer list has to stay in two columns or the paper runs out
+   of room and the last lines get cut off. */
+@container potluck (max-width: 286px) {
+  .potluck-short {
+    grid-template-columns: 1fr;
+  }
+
+  .potluck-short::before {
+    display: none;
+  }
+
+  .potluck-short li {
+    min-height: 24px;
+    gap: 6px;
+  }
+
+  .potluck-short .potluck-signature {
+    display: block;
+  }
+
+  /* the signature already claims the free space — the face rides beside it */
+  .potluck-short .member-face {
+    margin-left: 0;
+  }
 }
 
 @keyframes potluck-claim-in {
@@ -12702,83 +12840,6 @@
 }
 
 .action-dock .action-dock-radio:hover {
-  background: var(--color-lime);
-  color: var(--color-sticker);
-}
-
-.action-dock-radio-track {
-  overflow: hidden;
-  font-size: 11px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.action-dock-radio-eq {
-  display: flex;
-  height: 12px;
-  flex: 0 0 auto;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.action-dock-radio-eq i {
-  width: 2px;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--color-lime);
-  transform-origin: bottom;
-  animation: dock-radio-eq 0.72s ease-in-out infinite;
-}
-
-.action-dock-radio-eq i:nth-child(2) { animation-delay: 120ms; }
-.action-dock-radio-eq i:nth-child(3) { animation-delay: 240ms; }
-
-/* hovering the live key means "stop": the bars fall flat */
-.action-dock .action-dock-radio-key:hover .action-dock-radio-eq i {
-  animation: none;
-  transform: scaleY(0.25);
-  background: white;
-}
-
-/* while tuning the bars idle low instead of dancing to nothing */
-.action-dock-radio.is-tuning .action-dock-radio-eq i {
-  animation: dock-radio-tune 1.1s ease-in-out infinite;
-}
-
-@keyframes dock-radio-in {
-  from { opacity: 0; scale: 0.86; }
-  to { opacity: 1; scale: 1; }
-}
-
-@keyframes dock-radio-eq {
-  0%, 100% { transform: scaleY(0.3); }
-  50% { transform: scaleY(1); }
-}
-
-@keyframes dock-radio-tune {
-  0%, 100% { transform: scaleY(0.25); opacity: 0.5; }
-  50% { transform: scaleY(0.45); opacity: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .action-dock-radio,
-  .action-dock-radio-eq i {
-    animation: none;
-  }
-
-  .action-dock-radio-eq i,
-  .action-dock-radio.is-join .action-dock-radio-sub {
-    transform: scaleY(0.6);
-  }
-}
-
-.action-dock-count {
-  display: grid;
-  min-width: 20px;
-  min-height: 20px;
-  place-items: center;
-  border-radius: 50%;
   translate: 0 -2px;
 }
 
@@ -12827,6 +12888,107 @@
 
 .action-dock .action-dock-radio-label:hover .action-dock-radio-track {
   color: var(--color-lime);
+}
+
+.action-dock-radio-track {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color var(--dur-quick) var(--ease-glide);
+}
+
+.action-dock-radio-sub {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+}
+
+.action-dock-radio.is-join .action-dock-radio-sub {
+  color: var(--color-lime);
+  animation: dock-radio-join 1.6s var(--ease-glide) infinite;
+}
+
+.action-dock-radio-eq {
+  display: none;
+  height: 12px;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.action-dock-radio.is-on .action-dock-radio-eq {
+  display: flex;
+}
+
+.action-dock-radio-eq i {
+  width: 2px;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-lime);
+  transform-origin: bottom;
+  animation: dock-radio-eq 0.72s ease-in-out infinite;
+}
+
+.action-dock-radio-eq i:nth-child(2) { animation-delay: 120ms; }
+.action-dock-radio-eq i:nth-child(3) { animation-delay: 240ms; }
+
+/* hovering the live key means "stop": the bars fall flat */
+.action-dock .action-dock-radio-key:hover .action-dock-radio-eq i {
+  animation: none;
+  transform: scaleY(0.25);
+  background: white;
+}
+
+/* while tuning the bars idle low instead of dancing to nothing */
+.action-dock-radio.is-tuning .action-dock-radio-eq i {
+  animation: dock-radio-tune 1.1s ease-in-out infinite;
+}
+
+@keyframes dock-radio-in {
+  from { opacity: 0; scale: 0.86; }
+  to { opacity: 1; scale: 1; }
+}
+
+@keyframes dock-radio-eq {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+@keyframes dock-radio-tune {
+  0%, 100% { transform: scaleY(0.25); opacity: 0.5; }
+  50% { transform: scaleY(0.45); opacity: 1; }
+}
+
+@keyframes dock-radio-join {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-dock-radio,
+  .action-dock-radio-eq i,
+  .action-dock-radio.is-join .action-dock-radio-sub {
+    animation: none;
+  }
+
+  .action-dock-radio-eq i {
+    transform: scaleY(0.6);
+  }
+}
+
+.action-dock-count {
+  display: grid;
+  min-width: 20px;
+  min-height: 20px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-lime);
+  color: var(--color-sticker);
   font-size: 9px;
   font-weight: 800;
 }
@@ -12842,26 +13004,11 @@
   gap: 8px;
   max-width: min(560px, calc(100vw - 32px));
   border-radius: 999px;
-  max-width: 100%;
   background: var(--color-sticker);
   box-shadow: 0 6px 0 rgba(17, 17, 20, 0.22);
   color: white;
   padding: 9px 12px 9px 15px;
   translate: -50% 0;
-  transition: color var(--dur-quick) var(--ease-glide);
-}
-
-.action-dock-radio-sub {
-  font-size: 8.5px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.5);
-  text-transform: uppercase;
-}
-
-.action-dock-radio.is-join .action-dock-radio-sub {
-  color: var(--color-lime);
-  animation: dock-radio-join 1.6s var(--ease-glide) infinite;
   rotate: -1.6deg;
   font-size: 13px;
   font-weight: 800;
@@ -12872,10 +13019,6 @@
 
 .welcome-pill span + span {
   color: var(--color-lime);
-.action-dock-radio.is-on .action-dock-radio-eq {
-  display: flex;
-}
-
 }
 
 .welcome-pill button {
@@ -12912,11 +13055,6 @@
   to {
     opacity: 1;
     translate: -50% 0;
-@keyframes dock-radio-join {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
-}
-
     scale: 1;
   }
 }
@@ -12934,7 +13072,7 @@
   position: absolute;
   left: 0;
   bottom: calc(100% + 12px);
-  display: none;
+  display: flex;
   width: 396px;
   flex-direction: column;
   gap: 12px;
@@ -22502,6 +22640,7 @@
   .paper-bg[data-space-id="buildroom"] .space-scroll::-webkit-scrollbar { display: none; }
   .paper-bg[data-space-id="buildroom"] .canvas-stage {
     margin-left: max(0px, calc((100% - var(--build-room-width, 100%)) / 2));
+    margin-top: var(--build-room-offset-y, 0px);
   }
   /* Header: the nameplate (end of file) is the design; only the offsets are
      the build room's own. */
