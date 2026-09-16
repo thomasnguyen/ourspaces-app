@@ -1,25 +1,14 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { SPACE_TEMPLATES, WIDGET_CATALOG } from "../data/templates";
 import type { SpaceTemplate, WidgetType } from "../data/types";
-import { useIdentity } from "../live/identity";
 import { useCreateSpace } from "../live/useCreateSpace";
 import { useAccount, useJoin } from "../live/useJoin";
 import { CodeSlots } from "./CodeSlots";
-import { MemberFace } from "./MemberFace";
 
 /**
- * "start a new space" — one sheet, three beats.
- *
- *   1. pick a shape: the sheet drenches in that template's colour and the
- *      mini board fills with its widgets, so you see the room before it's real.
- *   2. call it something (or don't — the shape's name is the default).
- *   3. keep it: joined people press one button. A guest gets the email + code
- *      right here, and the sixth digit is the last thing they touch — the
- *      space is made and opened on its own, no "you're in" pit stop.
- *
- * The order matters. The old flow asked for an email before you'd picked or
- * named anything, which read as a login wall over a title that said "start".
- * Investment first, the gate last, and the gate is one line.
+ * Pick a starting point, name it on the preview, then create.
+ * Color, symbol and widgets are optional under Customize. Guests keep the
+ * existing inline email/code step; joined people create with one click.
  */
 
 /**
@@ -280,7 +269,8 @@ export function SpaceMaker({
   const [pickedId, setPickedId] = useState<string>(SPACE_TEMPLATES[0].id);
   const [custom, setCustom] = useState<Draft>(() => draftFrom(SPACE_TEMPLATES[0]));
   const [name, setName] = useState("");
-  // Two prongs. "build" is the board, the dock and the builder; "keep" is
+  const [customizing, setCustomizing] = useState(false);
+  // "build" is the starting point, preview and optional customization; "keep" is
   // the same board with only the email + code under it, and a way back.
   const [step, setStep] = useState<"build" | "keep">("build");
   const [draft, setDraft] = useState("");
@@ -289,10 +279,14 @@ export function SpaceMaker({
   const [makeWhenJoined, setMakeWhenJoined] = useState(false);
 
   const account = useAccount();
-  const identity = useIdentity();
   const join = useJoin();
   const maker = useCreateSpace();
   const madeRef = useRef(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    if (open) dialogRef.current?.showModal();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -348,10 +342,11 @@ export function SpaceMaker({
   const marks = CUSTOM_MARKS.includes(custom.icon)
     ? CUSTOM_MARKS
     : [custom.icon, ...CUSTOM_MARKS];
-  const types = [
+  const types = [...new Set([
+    ...(preset?.widgets.map((item) => item.type) ?? []),
     ...custom.types.filter((type) => !CUSTOM_TYPES.includes(type)),
     ...CUSTOM_TYPES,
-  ];
+  ])];
 
   const toggleType = (type: WidgetType) =>
     setCustom((prev) => {
@@ -366,7 +361,7 @@ export function SpaceMaker({
   const settingUp = maker.busy || makeWhenJoined;
 
   return (
-    <div className="widget-picker-backdrop" onClick={onClose} role="presentation">
+    <dialog ref={dialogRef} className="widget-picker-backdrop space-maker-backdrop" onClick={onClose} onCancel={onClose}>
       <div
         className={`widget-picker space-maker is-${step}`}
         style={{ "--maker-color": template.color } as CSSProperties}
@@ -376,11 +371,11 @@ export function SpaceMaker({
       >
         <header>
           <div>
-            <h2>{step === "build" ? "start a new space" : "keep it"}</h2>
+            <h2>{step === "build" ? "a space for your people" : "save your space"}</h2>
             <p>
               {step === "build"
-                ? "pick a shape, name it on the board."
-                : "one code to your email. no password, and it's yours on any browser."}
+                ? "pick a starting point. change anything later."
+                : "use your email to keep it across devices."}
             </p>
           </div>
           <button
@@ -392,6 +387,33 @@ export function SpaceMaker({
             ×
           </button>
         </header>
+
+        <ul className="space-maker-shapes">
+          {SPACE_TEMPLATES.map((item) => (
+            <li key={item.id}>
+              <button
+                type="button"
+                className={item.id === pickedId ? "is-picked" : ""}
+                disabled={settingUp}
+                onClick={() => pick(item.id)}
+              >
+                <span aria-hidden="true">{`${item.icon}\uFE0E`}</span>
+                {item.name}
+              </button>
+            </li>
+          ))}
+          <li>
+            <button
+              type="button"
+              className={isCustom ? "is-picked" : ""}
+              disabled={settingUp}
+              onClick={() => pick(CUSTOM_ID)}
+            >
+              <span aria-hidden="true">✎</span>
+              start empty
+            </button>
+          </li>
+        </ul>
 
         {/* The board: the new space at postage-stamp size. Keyed on the
             template so the tiles re-land on every pick. */}
@@ -415,16 +437,6 @@ export function SpaceMaker({
             />
             <span className="space-maker-board-pencil" aria-hidden="true">
               ✎
-            </span>
-            <span className="space-maker-faces" aria-hidden="true">
-              <MemberFace
-                name={identity.name}
-                color={identity.color}
-                avatarUrl={identity.avatarUrl}
-                size="sm"
-              />
-              <i />
-              <i />
             </span>
           </div>
           {template.widgets.map((item, i) => {
@@ -451,119 +463,88 @@ export function SpaceMaker({
           })}
           {custom.types.length === 0 && (
             <span className="space-maker-empty">
-              tap a widget below to put it on the wall
+              a little room for whatever comes next.
             </span>
           )}
-          <div
-            className="space-maker-cursor"
-            style={{ "--cursor-color": identity.color } as CSSProperties}
-            aria-hidden="true"
-          >
-            <svg viewBox="0 0 16 16" width="14" height="14">
-              <path d="M2 1.5 L13.5 8 L8.2 9.3 L5.6 14.5 Z" />
-            </svg>
-            <span>{identity.name}</span>
-          </div>
           {settingUp && <span className="join-stamp space-maker-stamp">yours</span>}
         </div>
-
-        <ul className="space-maker-shapes">
-          {SPACE_TEMPLATES.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className={item.id === pickedId ? "is-picked" : ""}
-                style={{ "--shape-color": item.color } as CSSProperties}
-                disabled={settingUp}
-                onClick={() => pick(item.id)}
-              >
-                <span aria-hidden="true">{`${item.icon}\uFE0E`}</span>
-                {item.name}
-              </button>
-            </li>
-          ))}
-          <li>
-            <button
-              type="button"
-              className={isCustom ? "is-picked" : ""}
-              style={{ "--shape-color": custom.color } as CSSProperties}
-              disabled={settingUp}
-              onClick={() => pick(CUSTOM_ID)}
-            >
-              <span aria-hidden="true">✎</span>
-              blank
-            </button>
-          </li>
-        </ul>
 
         {/* Keyed on the step so the new prong slides in. */}
         <div className="space-maker-body" key={step}>
           {step === "build" ? (
             <>
-          <div className="space-maker-custom">
-              <div className="space-maker-custom-row">
-                <span className="space-maker-custom-label">colour</span>
-                <span className="space-maker-swatches">
-                  {swatches.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      className={color === custom.color ? "is-picked" : ""}
-                      style={{ background: color }}
-                      aria-label="Pick a colour"
-                      onClick={() => setCustom((prev) => ({ ...prev, color }))}
-                    />
-                  ))}
-                </span>
-                <span className="space-maker-custom-label">mark</span>
-                <span className="space-maker-marks">
-                  {marks.map((mark) => (
-                    <button
-                      key={mark}
-                      type="button"
-                      className={mark === custom.icon ? "is-picked" : ""}
-                      onClick={() => setCustom((prev) => ({ ...prev, icon: mark }))}
-                    >
-                      {`${mark}\uFE0E`}
-                    </button>
-                  ))}
-                </span>
-              </div>
-              <div className="space-maker-custom-row">
-                <span className="space-maker-custom-label">
-                  on the wall
-                  <small>
-                    {custom.types.length}/{CUSTOM_MAX}
-                  </small>
-                </span>
-                <span className="space-maker-types">
-                  {types.map((type) => {
-                    const item = widgetEntry(type);
-                    if (!item) return null;
-                    const on = custom.types.includes(type);
-                    return (
-                      <button
-                        key={type}
-                        type="button"
-                        className={on ? "is-on" : ""}
-                        onClick={() => toggleType(type)}
-                      >
-                        <span aria-hidden="true">{item.emoji}</span>
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </span>
-              </div>
-            </div>
+              <details className="space-maker-custom" open={customizing} onToggle={(event) => setCustomizing(event.currentTarget.open)}>
+                <summary>
+                  <span>customize <span className="space-maker-custom-chevron">⌄</span></span>
+                  <span className="space-maker-custom-summary">color, symbol & widgets</span>
+                </summary>
+                <div className="space-maker-custom-options">
+                  <div className="space-maker-custom-row">
+                    <span className="space-maker-custom-label">color</span>
+                    <span className="space-maker-swatches">
+                      {swatches.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={color === custom.color ? "is-picked" : ""}
+                          style={{ background: color }}
+                          aria-label="Pick a colour"
+                          onClick={() => setCustom((prev) => ({ ...prev, color }))}
+                        />
+                      ))}
+                    </span>
+                  </div>
+                  <div className="space-maker-custom-row">
+                    <span className="space-maker-custom-label">symbol</span>
+                    <span className="space-maker-marks">
+                      {marks.map((mark) => (
+                        <button
+                          key={mark}
+                          type="button"
+                          className={mark === custom.icon ? "is-picked" : ""}
+                          onClick={() => setCustom((prev) => ({ ...prev, icon: mark }))}
+                        >
+                          {`${mark}\uFE0E`}
+                        </button>
+                      ))}
+                    </span>
+                  </div>
+                  <div className="space-maker-custom-row">
+                    <span className="space-maker-custom-label">
+                      starting widgets
+                      <small>
+                        {custom.types.length}/{CUSTOM_MAX}
+                      </small>
+                    </span>
+                    <span className="space-maker-types">
+                      {types.map((type) => {
+                        const item = widgetEntry(type);
+                        if (!item) return null;
+                        const on = custom.types.includes(type);
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            className={on ? "is-on" : ""}
+                            disabled={settingUp || (!on && custom.types.length >= CUSTOM_MAX)}
+                            onClick={() => toggleType(type)}
+                          >
+                            <span aria-hidden="true">{on ? "✓" : "+"}</span>
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </details>
 
+              {maker.error && <span className="join-form-error">{maker.error}</span>}
               <div className="space-maker-foot">
                 <span className="space-maker-hint">
                   {settingUp
                     ? "setting the room up…"
-                    : account.joined
-                      ? `${shownName} — yours, from today.`
-                      : `${shownName}, with ${custom.types.length} things on the wall.`}
+                    : "make it yours as you go."}
                 </span>
                 <button
                   type="button"
@@ -571,7 +552,7 @@ export function SpaceMaker({
                   disabled={settingUp}
                   onClick={() => (account.joined ? void make() : setStep("keep"))}
                 >
-                  {account.joined ? "make it" : "keep it"} <span aria-hidden="true">→</span>
+                  {settingUp ? "creating…" : "create space"} <span aria-hidden="true">→</span>
                 </button>
               </div>
             </>
@@ -657,6 +638,6 @@ export function SpaceMaker({
           )}
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

@@ -5,6 +5,15 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **New-space flow (2026-09-15):** templates now lead above a compact board
+  preview, with a single “create space” action. Color, symbol and starting
+  widgets are tucked into Customize; removed the decorative cursor and crowd.
+  The empty template can be created without picking widgets. Existing email
+  verification stays inline. The native modal stays above raised canvas items.
+  Browser-verified at 1280px, 390px and 320px: templates, naming, optional
+  controls, six-widget cap, empty start and email handoff/back navigation.
+  Build passes; no email sent or space created during verification. Not deployed.
+
 - **Browse-all gallery (2026-09-15):** expanded catalog to an 880px gallery
   with illustrated widget samples, grouped Share / Plan / Play / Build sections,
   counted filters, and a smaller single-row sticker footer. Phone layouts use

@@ -8724,24 +8724,27 @@
 }
 
 
-/* ── start a new space: the maker sheet ──
-   One sheet, three beats: pick a shape (the sheet drenches in its colour and
-   the mini board fills), call it something, keep it. The email + code live at
-   the bottom, folded until pressed — investment first, the gate last. */
+/* ── New space: starting point → preview → create. Extras unfold on demand. ── */
+.space-maker-backdrop {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+}
+.space-maker-backdrop::backdrop { background: transparent; }
+
 .widget-picker.space-maker {
   display: flex;
   width: min(640px, 100%);
+  max-height: calc(100dvh - 40px);
   flex-direction: column;
   padding: 0;
-  overflow: hidden;
-  /* The sheet IS the space: it wears the picked colour head to toe, and the
-     black strip below is the dock, like the real room. */
-  background: var(--maker-color);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.18),
-    0 24px 60px rgba(17, 17, 20, 0.5);
+  overflow: auto;
+  border-radius: 16px;
+  background: var(--color-sticker);
   transition:
-    background var(--dur-base) var(--ease-glide),
     opacity var(--dur-stage) var(--ease-glide),
     translate var(--dur-stage) var(--ease-pop),
     scale var(--dur-stage) var(--ease-pop);
@@ -8756,31 +8759,36 @@
 }
 
 .space-maker > header {
-  padding: 20px 20px 0;
-  margin-bottom: 14px;
+  flex: 0 0 auto;
+  padding: 26px 26px 0;
+  margin-bottom: 20px;
 }
 
 .space-maker > header p {
-  color: rgba(255, 255, 255, 0.84);
+  margin-top: 9px;
+  color: color-mix(in srgb, var(--color-card) 65%, transparent);
+  font-size: 13px;
+  font-weight: 400;
 }
 
 .space-maker > header .widget-picker-close {
-  background: rgba(0, 0, 0, 0.22);
-  color: white;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  color: var(--color-card);
 }
 
 /* The board: the new space at postage-stamp size, wearing its colour head
    to toe, with the canvas's own dot grid on the wall. */
 .space-maker-board {
   position: relative;
-  height: 296px;
-  background-image: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.22) 0 1px,
-    transparent 1.4px
-  );
-  background-size: 22px 22px;
+  flex: 0 0 auto;
+  height: 264px;
+  margin: 0 26px;
+  border-radius: 12px;
+  background-color: var(--maker-color);
   overflow: hidden;
+  transition: background-color var(--dur-base) var(--ease-glide);
 }
 
 .space-maker-board-head {
@@ -8830,7 +8838,7 @@
 }
 
 .space-maker-board-name::placeholder {
-  color: rgba(255, 255, 255, 0.66);
+  color: var(--color-card);
 }
 
 .space-maker-board-name:focus {
@@ -8846,33 +8854,6 @@
 
 .space-maker-board-name:focus + .space-maker-board-pencil {
   opacity: 0;
-}
-
-/* You, and two seats waiting — a space is a group thing. */
-.space-maker-faces {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  margin-left: auto;
-}
-
-.space-maker-faces > * {
-  margin-left: -6px;
-  box-shadow: 0 0 0 2px var(--maker-color);
-  border-radius: 50%;
-}
-
-.space-maker-faces > :first-child {
-  margin-left: 0;
-}
-
-.space-maker-faces i {
-  width: 26px;
-  height: 26px;
-  border: 2px dashed rgba(255, 255, 255, 0.75);
-  border-radius: 50%;
-  box-sizing: border-box;
-  box-shadow: none;
 }
 
 /* Paper on the wall, hand-placed (SLOTS in SpaceMaker.tsx). Each one lands
@@ -9343,83 +9324,39 @@
 }
 
 /* Your own cursor, already in the room. The name is the one you claimed. */
-.space-maker-cursor {
-  position: absolute;
-  z-index: 4;
-  left: 57%;
-  top: 50%;
-  display: flex;
-  align-items: flex-start;
-  gap: 2px;
-  color: var(--cursor-color, var(--color-lime));
-  animation: space-maker-cursor-in var(--dur-stage) var(--ease-glide) 380ms backwards;
-}
-
-.space-maker-cursor svg {
-  fill: currentColor;
-  stroke: white;
-  stroke-width: 1.2;
-  filter: drop-shadow(0 1px 1px rgba(17, 17, 20, 0.3));
-}
-
-.space-maker-cursor span {
-  translate: 6px 8px;
-  border-radius: 999px;
-  background: var(--cursor-color, var(--color-lime));
-  padding: 3px 7px;
-  font-size: 10px;
-  font-weight: 800;
-  line-height: 1;
-  color: white;
-  white-space: nowrap;
-  box-shadow: 0 1px 0 rgba(17, 17, 20, 0.25);
-}
-
-@keyframes space-maker-cursor-in {
-  from {
-    opacity: 0;
-    translate: -28px 18px;
-  }
-}
-
 /* A custom wall with nothing on it yet. */
 .space-maker-empty {
   position: absolute;
-  left: 50%;
-  top: 70%;
-  translate: -50% -50%;
-  border: 1.5px dashed rgba(255, 255, 255, 0.6);
-  border-radius: 999px;
-  color: rgba(255, 255, 255, 0.9);
-  padding: 8px 14px;
-  font-size: 12px;
+  inset: 42% 24px auto;
+  color: var(--color-card);
+  font-family: var(--font-display);
+  font-size: 22px;
   font-weight: 700;
-  white-space: nowrap;
+  line-height: 1.2;
+  text-align: center;
+  text-wrap: balance;
 }
 
 /* The custom builder, in the strip: colour, mark, what's on the wall. */
 .space-maker-custom {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-card) 14%, transparent);
 }
 
 .space-maker-custom-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .space-maker-custom-label {
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
-  color: rgba(255, 255, 255, 0.56);
-  font-size: 11px;
-  font-weight: 800;
+  gap: 6px;
+  color: color-mix(in srgb, var(--color-card) 65%, transparent);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .space-maker-custom-label small {
@@ -9510,8 +9447,9 @@
 }
 
 .space-maker-types button.is-on {
-  border-color: var(--maker-color);
-  background: var(--maker-color);
+  border-color: var(--color-card);
+  background: var(--color-card);
+  color: var(--color-ink);
 }
 
 /* "yours" lands on the board the moment the code does. */
@@ -9526,28 +9464,21 @@
 
 .space-maker-body {
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
   background: var(--color-sticker);
-  padding: 18px 20px 20px;
+  padding: 20px 26px 24px;
 }
 
-/* The switcher is the dock: a black pill floating on the seam between the
-   wall and the strip, exactly where the real room keeps its dock. */
+/* Templates lead; only the selected room preview wears its identity color. */
 .space-maker-shapes {
-  position: relative;
-  z-index: 6;
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 2px;
-  width: max-content;
-  max-width: calc(100% - 40px);
-  margin: -24px auto 0;
-  padding: 5px;
-  border-radius: 999px;
-  background: var(--color-sticker);
-  box-shadow: 0 7px 0 rgba(17, 17, 20, 0.28);
+  gap: 6px;
+  margin: 0;
+  padding: 0 26px 20px;
   list-style: none;
 }
 
@@ -9555,18 +9486,17 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border: 1.5px solid transparent;
-  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-card) 18%, transparent);
+  border-radius: var(--radius-pill);
   background: transparent;
-  color: white;
-  padding: 7px 10px;
+  color: var(--color-card);
+  padding: 8px 11px;
   cursor: pointer;
-  font-size: 11.5px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 500;
   transition:
     background var(--dur-quick) var(--ease-glide),
-    border-color var(--dur-quick) var(--ease-glide),
-    translate var(--dur-quick) var(--ease-glide);
+    border-color var(--dur-quick) var(--ease-glide);
 }
 
 .space-maker-shapes button span {
@@ -9580,8 +9510,9 @@
 }
 
 .space-maker-shapes button.is-picked {
-  border-color: var(--shape-color);
-  background: var(--shape-color);
+  border-color: var(--color-card);
+  background: var(--color-card);
+  color: var(--color-ink);
 }
 
 .space-maker-shapes button:disabled {
@@ -9658,6 +9589,51 @@
 .space-maker-keep .code-slot.is-next,
 .space-maker-keep .claim-name-input:focus {
   border-color: var(--maker-color);
+}
+
+
+.space-maker-custom summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--color-card);
+  font-size: 13px;
+  font-weight: 500;
+}
+.space-maker-custom summary::-webkit-details-marker { display: none; }
+.space-maker-custom-summary {
+  color: color-mix(in srgb, var(--color-card) 48%, transparent);
+  font-size: 12px;
+  font-weight: 400;
+}
+.space-maker-custom-chevron { display: inline-block; margin-left: 5px; }
+.space-maker-custom[open] .space-maker-custom-chevron { rotate: 180deg; }
+.space-maker-custom-options { display: flex; flex-direction: column; gap: 18px; padding-top: 20px; }
+.space-maker-types { gap: 6px; }
+.space-maker-types button:disabled { opacity: 0.35; cursor: default; translate: none; }
+.space-maker-types button.is-on:disabled { opacity: 1; }
+.space-maker-foot .claim-done { padding: 12px 20px; }
+
+@media (max-width: 540px) {
+  .space-maker-backdrop { padding: 12px; }
+  .widget-picker.space-maker { max-height: calc(100dvh - 24px); }
+  .space-maker > header { padding: 20px 18px 0; margin-bottom: 18px; }
+  .space-maker > header h2 { font-size: 22px; }
+  .space-maker-shapes { padding: 0 18px 16px; gap: 5px; }
+  .space-maker-shapes button { padding: 7px 10px; }
+  .space-maker-board { margin: 0 18px; height: 220px; }
+  .space-maker-board-name { font-size: 22px; }
+  .space-maker-tile { padding: 7px; gap: 6px; }
+  .space-maker-tile-label { font-size: 8px; padding: 3px 5px; }
+  .space-maker-body { padding: 18px; gap: 18px; }
+  .space-maker-custom-summary { font-size: 11px; }
+  .space-maker-foot { flex-wrap: wrap; }
+  .space-maker-foot .claim-done { margin-left: auto; }
+  .space-maker-keep-row { flex-wrap: wrap; }
+  .space-maker-keep-row .claim-name-input { min-width: 0; width: 100%; }
 }
 
 /* ── widget groups + per-widget threads ── */
