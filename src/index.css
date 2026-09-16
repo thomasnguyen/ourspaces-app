@@ -25122,3 +25122,321 @@
   .widget-picker-tray.is-browsing header h2 { font-size: 23px; }
   .widget-picker-tray.is-browsing header p { font-size: 11px; }
 }
+
+/* —— ENTRY GATE — THE DOOR OPENS ——————————————————————————————————————————
+ * The claim gate is the first thing a visitor sees, so it is a doorway, not
+ * a form. The room you're walking into is named at the top; your real cursor
+ * (the same LiveCursor peers will see) rides your pointer over the blurred
+ * room and recolours under your hand; name + colour + face are one tap (a
+ * "look"); Enter walks you in. On enter the card collapses into the cursor
+ * tip (glide, 440ms), then the scrim lifts (glide, 500ms from 120ms) off a
+ * canvas that was there all along; the header enters underneath at 200ms.
+ * ClaimCard.tsx, GateCursor.tsx, enterRoom in LiveSpace.tsx.
+ */
+
+/* One cursor on screen: over the room the OS arrow goes, yours stays. */
+@media (hover: hover) and (pointer: fine) {
+  .entry-gate-scrim {
+    cursor: none;
+  }
+}
+
+/* Widgets carry big z-indices for bring-to-front. While the gate is up (and
+   while it lifts) the canvas stacks as one layer, so nothing on the board
+   floats over the scrim or the card — it did on phones. */
+.has-entry-gate .space-scroll,
+.is-gate-leaving .space-scroll {
+  isolation: isolate;
+}
+
+/* The blur lifts a beat after the card starts to collapse, so the order
+   reads: you become your cursor, then the room comes into focus around you. */
+.entry-gate-scrim.is-lifting {
+  pointer-events: none;
+  animation: gate-scrim-out var(--dur-stage) var(--ease-glide) 120ms both;
+}
+
+@keyframes gate-scrim-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.claim-card.is-gate {
+  width: 360px;
+  gap: 18px;
+  border-radius: 24px;
+  padding: 22px 20px 20px;
+  box-shadow: 0 10px 0 rgba(45, 22, 31, 0.28);
+  animation: claim-gate-in var(--dur-stage) var(--ease-pop) both;
+}
+
+.claim-card.is-leaving {
+  pointer-events: none;
+}
+
+/* Where you are, who lives here, who's in. */
+.claim-room {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.claim-room-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.claim-room-name strong {
+  color: white;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.claim-room-color {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.18);
+  rotate: -8deg;
+}
+
+.claim-room-here {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.claim-room-here > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.claim-room-here i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-lime);
+  animation: gate-live-dot 1.8s ease-in-out infinite;
+}
+
+@keyframes gate-live-dot {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.claim-room-faces {
+  display: flex;
+  align-items: center;
+}
+
+.claim-room-faces > * + * {
+  margin-left: -8px;
+}
+
+.claim-room-faces .member-face {
+  box-shadow: 0 0 0 2px var(--color-sticker);
+}
+
+/* The parked cursor — phones only (hover devices hide this, see above). */
+.claim-you-perch {
+  position: relative;
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-lime);
+  padding-left: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.claim-card .claim-you-perch .live-cursor-positioner {
+  position: relative;
+  z-index: 1;
+  display: block; /* phones hide peer cursors; this one is yours */
+}
+
+/* Hover devices ride the pointer instead (GateCursor) — after the base rule
+   so it wins the cascade. */
+@media (hover: hover) and (pointer: fine) {
+  .claim-you-perch {
+    display: none;
+  }
+}
+
+/* The name is the identity: loud, in the display face, selected on arrival
+   so the first keystroke replaces it. */
+.claim-card.is-gate .claim-name-label {
+  gap: 8px;
+}
+
+.claim-card.is-gate .claim-name-input {
+  min-height: 54px;
+  border-radius: 16px;
+  padding: 10px 16px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.claim-card.is-gate .claim-name-input::selection {
+  background: var(--color-lime);
+  color: var(--color-sticker);
+}
+
+/* Looks: one tap sets colour + face (+ the placeholder name). */
+.claim-look-row {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.claim-look {
+  display: grid;
+  min-width: 0;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+  transition:
+    scale var(--dur-quick) var(--ease-glide),
+    opacity var(--dur-quick) var(--ease-glide);
+}
+
+.claim-look .member-face {
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 0 0 2.5px var(--look);
+  transition: box-shadow var(--dur-quick) var(--ease-glide);
+}
+
+.claim-look:hover {
+  scale: 1.1;
+}
+
+.claim-look.is-selected {
+  scale: 1.14;
+}
+
+.claim-look.is-selected .member-face {
+  box-shadow:
+    0 0 0 2.5px var(--color-sticker),
+    0 0 0 5.5px var(--look);
+  animation: claim-look-pop var(--dur-arrive) var(--ease-pop) both;
+}
+
+.claim-card:has(.claim-look.is-selected) .claim-look:not(.is-selected):not(:hover) {
+  opacity: 0.72;
+}
+
+@keyframes claim-look-pop {
+  from {
+    scale: 0.84;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+.claim-card.is-gate .claim-done {
+  min-height: 50px;
+  font-size: 15px;
+}
+
+/* Your cursor, riding the pointer above scrim (71) and card (72). */
+.gate-cursor-layer {
+  position: fixed;
+  z-index: 73;
+  inset: 0;
+  pointer-events: none;
+}
+
+.gate-cursor.is-hidden {
+  opacity: 0;
+}
+
+/* A touch bigger than life while you're choosing; back to true size as the
+   door opens, then it hands over to the OS arrow. */
+.gate-cursor .live-cursor-entrance {
+  transform-origin: 0 0;
+  scale: 1.3;
+  transition: scale var(--dur-base) var(--ease-glide);
+}
+
+.gate-cursor.is-shown .live-cursor-entrance {
+  animation: gate-cursor-in var(--dur-arrive) var(--ease-pop) both;
+}
+
+.gate-cursor.is-leaving .live-cursor-entrance {
+  scale: 1;
+  animation: gate-cursor-out var(--dur-base) var(--ease-glide) 400ms both;
+}
+
+.gate-cursor .cs-pill {
+  transition: background-color var(--dur-quick) var(--ease-glide);
+}
+
+.gate-cursor .cs-classic svg path {
+  transition: fill var(--dur-quick) var(--ease-glide);
+}
+
+@keyframes gate-cursor-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes gate-cursor-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 540px) {
+  .claim-card.is-gate {
+    gap: 16px;
+    padding: 20px 18px 18px;
+  }
+  .claim-room-name strong {
+    font-size: 26px;
+  }
+  .claim-card.is-gate .claim-name-input {
+    min-height: 48px;
+    font-size: 22px;
+  }
+  .claim-look-row {
+    gap: 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry-gate-scrim.is-lifting,
+  .claim-room-here i,
+  .claim-look.is-selected .member-face,
+  .gate-cursor .live-cursor-entrance {
+    animation: none;
+  }
+}
