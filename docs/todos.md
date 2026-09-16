@@ -5,6 +5,12 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Local submission draft (2026-09-16):** presentation assets and copy are
+  indexed in `docs/local/doc-map.local.md`. The draft includes two existing
+  app captures; fresh receipt-result and couple-room captures remain next.
+  All creative material stays gitignored. App source and deployment unchanged.
+  `npm run build` passes; browser preview was unavailable in this session.
+
 - **The space narrates itself while it works (2026-09-15):** new `work` table
   + `convex/work.ts`. Every slow thing the brain does used to be invisible —
   the board showed nothing for 3–8 seconds and then the finished thing
