@@ -48,7 +48,7 @@ a config-time choice, not a runtime failover) · AgentMail · Firecrawl
 - **Schema & data:** tables + indexes for spaces, members, widgets, messages
   (+ full-text search index), votes, collaborative paint marks, recaps,
   presence, email events; `returns:` validators on all 130 functions that can
-  carry one (the 5 HTTP actions return a `Response`)
+  carry one (the 6 HTTP actions return a `Response`)
 - **Realtime:** every in-space surface is a Convex subscription — no refetch,
   no invalidate-on-write, no hand-rolled sync between clients. Each one is a
   `useQuery` / `usePaginatedQuery` against an indexed query:

@@ -1166,7 +1166,11 @@ Backward-looking history lives in `hackathon.md`.
 - Playlist widget is a real SomaFM room radio: play/pause, 6 stations,
   live track titles, Convex-synced station so others can tap join.
 - Audio is local (browser autoplay). Pause does not stop the room for
-  everyone. Streams are ice2/ice6/ice5 `*-128-mp3` from somafm.com.
+  everyone. Audio is Radio Paradise (main/mellow/serenity/global/rock/beyond —
+  SomaFM's streams 403 browsers); station names are still the SomaFM ones.
+  Titles come from `/radio/now` on the Convex site (2026-09-15) so the line
+  matches what's actually playing — RP's API has no CORS header, and Serenity
+  has no API channel so its title is sniffed off the stream's ICY metadata.
 - **Catch me up is live** on the personal Convex dev deployment. Daily cron
   (8am PT) writes a `recaps` row per space; tap generates if none exists; ↻
   refreshes now.   Follow-up composer is board-only. Live calls go through RoomDone's

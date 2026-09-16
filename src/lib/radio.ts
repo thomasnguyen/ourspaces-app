@@ -10,7 +10,7 @@ export type RadioStation = {
 export const RADIO_STATIONS: RadioStation[] = [
   { id: "indiepop", name: "Indie Pop Rocks", chip: "indie", tag: "indie pop" },
   { id: "groovesalad", name: "Groove Salad", chip: "chill", tag: "chill beats" },
-  { id: "lush", name: "Lush", chip: "lush", tag: "mellow vocals" },
+  { id: "lush", name: "Lush", chip: "lush", tag: "serene ambient" },
   { id: "folkfwd", name: "Folk Forward", chip: "folk", tag: "indie folk" },
   { id: "poptron", name: "PopTron", chip: "pop", tag: "alt pop" },
   { id: "thetrip", name: "The Trip", chip: "trip", tag: "prog house" },
@@ -31,10 +31,12 @@ export type RadioSnapshot = {
 };
 
 // SomaFM ice 403s any browser request with a Referer. Radio Paradise allows it.
+// Station → channel is mirrored in convex/http.ts (/radio/now), which reads the
+// title for whatever is actually streaming — RP's API has no CORS header.
 const OPEN_STREAMS: Record<string, string> = {
   indiepop: "https://stream.radioparadise.com/aac-128",
   groovesalad: "https://stream.radioparadise.com/mellow-128",
-  lush: "https://stream.radioparadise.com/mellow-128",
+  lush: "https://stream.radioparadise.com/serenity",
   folkfwd: "https://stream.radioparadise.com/global-128",
   poptron: "https://stream.radioparadise.com/rock-128",
   thetrip: "https://stream.radioparadise.com/beyond-128",
@@ -153,11 +155,13 @@ async function loadTrack(stationId: string) {
     return;
   }
   try {
-    const response = await fetch(`https://somafm.com/songs/${stationId}.json`);
+    const site = String(import.meta.env.VITE_CONVEX_SITE_URL ?? "");
+    if (!site) throw new Error("no site url");
+    const response = await fetch(`${site}/api/radio/now?station=${stationId}`);
     const data = (await response.json()) as {
-      songs?: Array<{ title?: string; artist?: string }>;
+      track?: { title?: string; artist?: string } | null;
     };
-    const song = data.songs?.[0];
+    const song = data.track;
     const track =
       song?.title && song.artist ? { title: song.title, artist: song.artist } : null;
     trackCache = { stationId, track, at: Date.now() };
