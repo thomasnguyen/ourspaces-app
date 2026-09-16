@@ -12,43 +12,119 @@ import {
   type RecapTurn,
 } from "../data/recap";
 import {
+  DEFAULT_STATION_ID,
   getRadioSnapshot,
+  playRadio,
   stationById,
   stopRadio,
   subscribeRadio,
 } from "../lib/radio";
+import { playSound } from "../lib/sounds";
 
-/** The radio lives in a widget that scrolls off canvas — the dock keeps it in view. */
-function DockNowPlaying() {
+export type DockRadioRoom = {
+  widgetId: string;
+  stationId: string;
+  playedBy: string;
+  roomLive: boolean;
+};
+
+/** The room's radio, if the board has a playlist widget with a station picked. */
+export function radioRoomOf(
+  widgets: { id: string; type: string; data: Record<string, unknown> }[],
+): DockRadioRoom | undefined {
+  const widget = widgets.find((row) => row.type === "playlist" && row.data.stationId !== "");
+  if (!widget) return undefined;
+  return {
+    widgetId: widget.id,
+    stationId: String(widget.data.stationId || DEFAULT_STATION_ID),
+    playedBy: String(widget.data.playedBy ?? widget.data.pickedBy ?? "").trim(),
+    roomLive: Boolean(widget.data.playing),
+  };
+}
+
+/** The radio lives in a widget that scrolls off canvas — the dock keeps the
+    station in reach: idle it's "tap play", live it's the track, and when someone
+    else already started it it's "join". The label pans back to the card. */
+function DockRadio({
+  room,
+  onTune,
+}: {
+  room?: DockRadioRoom;
+  onTune?: (widgetId: string, tune: { stationId: string; playing: boolean }) => void;
+}) {
   const radio = useSyncExternalStore(subscribeRadio, getRadioSnapshot, getRadioSnapshot);
   const on = Boolean(radio.stationId && !radio.error && (radio.playing || radio.waiting));
-  if (!on) return null;
+  if (!on && !room) return null;
 
-  const station = stationById(radio.stationId ?? undefined);
-  const track = radio.stationId ? radio.tracks[radio.stationId] : undefined;
-  const label = radio.waiting
-    ? "tuning…"
-    : track
-      ? `${track.title} — ${track.artist}`
-      : station.name;
+  const stationId = on ? radio.stationId ?? undefined : room?.stationId;
+  const station = stationById(stationId);
+  const track = on && radio.stationId ? radio.tracks[radio.stationId] : undefined;
+  const join = !on && Boolean(room?.roomLive);
+  const label = on
+    ? radio.waiting
+      ? "tuning…"
+      : track
+        ? `${track.title} — ${track.artist}`
+        : station.name
+    : station.name;
+  const sub = on
+    ? null
+    : join
+      ? room?.playedBy
+        ? `join · ${room.playedBy} put this on`
+        : "join the room"
+      : "tap play";
+  const widgetId = on ? radio.ownerId : room?.widgetId;
+
+  const toggle = () => {
+    if (on) {
+      stopRadio();
+      return;
+    }
+    if (!room) return;
+    playSound("tap");
+    playRadio(room.widgetId, room.stationId);
+    onTune?.(room.widgetId, { stationId: room.stationId, playing: true });
+  };
+
+  const reveal = () => {
+    if (!widgetId) return;
+    playSound("tap");
+    document
+      .querySelector(`[data-widget-id="${widgetId}"]`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+  };
 
   return (
     <>
       <span className="action-dock-divider" aria-hidden="true" />
-      <button
-        type="button"
-        className={`action-dock-radio${radio.waiting ? " is-tuning" : ""}`}
-        onClick={stopRadio}
-        title={`${label} · ${station.name} — click to stop`}
-        aria-label={`Now playing ${label} on ${station.name}. Click to stop.`}
+      <div
+        className={`action-dock-radio${on ? " is-on" : ""}${radio.waiting && on ? " is-tuning" : ""}${
+          join ? " is-join" : ""
+        }`}
       >
-        <span className="action-dock-radio-eq" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-        </span>
-        <span className="action-dock-radio-track">{label}</span>
-      </button>
+        <button
+          type="button"
+          className="action-dock-radio-key"
+          onClick={toggle}
+          title={on ? `${label} · ${station.name} — click to stop` : `Play ${station.name}`}
+        >
+          <span className="action-dock-radio-eq" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        </button>
+        <button
+          type="button"
+          className="action-dock-radio-label"
+          onClick={reveal}
+          title={`${station.name} — show the radio`}
+        >
+          <span className="action-dock-radio-track">{label}</span>
+          {sub && <span className="action-dock-radio-sub">{sub}</span>}
+        </button>
+      </div>
     </>
   );
 }
@@ -76,6 +152,8 @@ export function ActionDock({
   recapTurnsReady = true,
   onRecapRefresh,
   onRecapAsk,
+  radioRoom,
+  onRadioTune,
 }: {
   recapOpen: boolean;
   recapRunId: number;
@@ -99,6 +177,8 @@ export function ActionDock({
   recapTurnsReady?: boolean;
   onRecapRefresh?: () => void;
   onRecapAsk?: (text: string) => void;
+  radioRoom?: DockRadioRoom;
+  onRadioTune?: (widgetId: string, tune: { stationId: string; playing: boolean }) => void;
 }) {
   const [revealed, setRevealed] = useState(0);
   const [draft, setDraft] = useState("");
@@ -407,7 +487,7 @@ export function ActionDock({
           <div className="action-dock-nav">{nav}</div>
         </>
       )}
-      <DockNowPlaying />
+      <DockRadio room={radioRoom} onTune={onRadioTune} />
       <span className="action-dock-divider" aria-hidden="true" />
       <button
         type="button"

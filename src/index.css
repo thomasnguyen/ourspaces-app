@@ -12711,14 +12711,18 @@
   background: rgba(255, 255, 255, 0.14);
 }
 
-/* now playing: only mounts while the radio is live, so it slides in as a surprise */
+/* room radio: always in the dock once the board has a station. Idle it's a
+   play key + "tap play"; live it's the dancing bars + the track; "join" when
+   someone else already started it. The label pans back to the card. */
 .action-dock .action-dock-radio {
-  max-width: 200px;
-  gap: 8px;
+  display: flex;
+  max-width: 236px;
+  align-items: center;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   color: white;
-  padding: 8px 13px;
-  animation: dock-radio-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: dock-radio-in var(--dur-arrive) var(--ease-pop);
+  transition: translate var(--dur-quick) var(--ease-glide);
 }
 
 .action-dock .action-dock-radio:hover {
@@ -12754,8 +12758,11 @@
 .action-dock-radio-eq i:nth-child(2) { animation-delay: 120ms; }
 .action-dock-radio-eq i:nth-child(3) { animation-delay: 240ms; }
 
-.action-dock .action-dock-radio:hover .action-dock-radio-eq i {
-  background: var(--color-sticker);
+/* hovering the live key means "stop": the bars fall flat */
+.action-dock .action-dock-radio-key:hover .action-dock-radio-eq i {
+  animation: none;
+  transform: scaleY(0.25);
+  background: white;
 }
 
 /* while tuning the bars idle low instead of dancing to nothing */
@@ -12784,7 +12791,8 @@
     animation: none;
   }
 
-  .action-dock-radio-eq i {
+  .action-dock-radio-eq i,
+  .action-dock-radio.is-join .action-dock-radio-sub {
     transform: scaleY(0.6);
   }
 }
@@ -12795,8 +12803,54 @@
   min-height: 20px;
   place-items: center;
   border-radius: 50%;
-  background: var(--color-lime);
-  color: var(--color-sticker);
+  translate: 0 -2px;
+}
+
+.action-dock .action-dock-radio button {
+  min-height: 34px;
+  background: transparent;
+  color: inherit;
+}
+
+.action-dock .action-dock-radio button:hover {
+  translate: none;
+}
+
+.action-dock .action-dock-radio-key {
+  position: relative;
+  width: 36px;
+  justify-content: center;
+  padding: 0 0 0 4px;
+}
+
+.action-dock .action-dock-radio-key::before {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--color-lime);
+  content: "▶";
+  transition: scale var(--dur-quick) var(--ease-glide);
+}
+
+.action-dock .action-dock-radio-key:hover::before {
+  scale: 1.25;
+}
+
+.action-dock-radio.is-on .action-dock-radio-key::before {
+  display: none;
+}
+
+.action-dock .action-dock-radio-label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 5px 14px 5px 4px;
+  text-align: left;
+}
+
+.action-dock .action-dock-radio-label:hover .action-dock-radio-track {
+  color: var(--color-lime);
   font-size: 9px;
   font-weight: 800;
 }
@@ -12812,11 +12866,26 @@
   gap: 8px;
   max-width: min(560px, calc(100vw - 32px));
   border-radius: 999px;
+  max-width: 100%;
   background: var(--color-sticker);
   box-shadow: 0 6px 0 rgba(17, 17, 20, 0.22);
   color: white;
   padding: 9px 12px 9px 15px;
   translate: -50% 0;
+  transition: color var(--dur-quick) var(--ease-glide);
+}
+
+.action-dock-radio-sub {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+}
+
+.action-dock-radio.is-join .action-dock-radio-sub {
+  color: var(--color-lime);
+  animation: dock-radio-join 1.6s var(--ease-glide) infinite;
   rotate: -1.6deg;
   font-size: 13px;
   font-weight: 800;
@@ -12827,6 +12896,10 @@
 
 .welcome-pill span + span {
   color: var(--color-lime);
+.action-dock-radio.is-on .action-dock-radio-eq {
+  display: flex;
+}
+
 }
 
 .welcome-pill button {
@@ -12863,6 +12936,11 @@
   to {
     opacity: 1;
     translate: -50% 0;
+@keyframes dock-radio-join {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
     scale: 1;
   }
 }
@@ -12880,7 +12958,7 @@
   position: absolute;
   left: 0;
   bottom: calc(100% + 12px);
-  display: flex;
+  display: none;
   width: 396px;
   flex-direction: column;
   gap: 12px;
@@ -13327,8 +13405,11 @@
   }
 
   .action-dock .action-dock-radio {
-    max-width: 116px;
-    padding: 8px 10px;
+    max-width: 128px;
+  }
+
+  .action-dock-radio-sub {
+    display: none;
   }
 
   .canvas-focus-hud {

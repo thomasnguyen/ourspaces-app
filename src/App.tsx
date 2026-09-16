@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { ActionDock } from "./components/ActionDock";
+import { ActionDock, radioRoomOf } from "./components/ActionDock";
 import { Canvas, SpaceHeader } from "./components/Canvas";
 import { CanvasEdgePan } from "./components/CanvasEdgePan";
 import type { CanvasPoint } from "./components/FirstRunSticky";
@@ -2273,6 +2273,8 @@ export default function App() {
           (currentLocalMessages.global?.length ?? 0)
         }
         soundEnabled={soundEnabled}
+        radioRoom={radioRoomOf(visibleWidgets)}
+        onRadioTune={tunePlaylist}
         onRecapToggle={() => {
           if (recapOpen) {
             playSound("tap");

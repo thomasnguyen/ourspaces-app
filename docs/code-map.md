@@ -56,7 +56,13 @@ navigating, including the default `#/` room; `OnlineCountSuffix` shows "· N her
 presence component's `roomPresence.onlineCountForSpace`, mounted by
 `LiveSpace.tsx`'s `RoomPresenceHeartbeat` once a room is entered) ·
 `ActionDock.tsx` (bottom dock + catch-me-up panel:
-briefing, ↻ refresh, follow-up composer) ·
+briefing, ↻ refresh, follow-up composer; also the room radio chip `DockRadio` —
+always mounted once the board has a playlist widget with a station, via
+`radioRoomOf(widgets)` from both App.tsx and LiveSpace.tsx. Play key + label:
+idle "tap play", live = dancing bars + track, `is-join` when `data.playing`
+is true but you're not tuned; the label pans the canvas to the card with
+`scrollIntoView` on `[data-widget-id]`; playing from the dock goes through the
+same tune handler as the widget so `playedBy`/`playing` sync) ·
 `CanvasNavigator.tsx` (minimap) · `CanvasEdgePan.tsx` · `SpaceEditorPanel.tsx`
 (theme editor) · `ClaimCard.tsx` (identity claim) · `FirstRunSticky.tsx` ·
 `PlacementGhost.tsx` (pick it up, put it down — a sticker or widget chosen in
