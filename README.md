@@ -47,8 +47,10 @@ a config-time choice, not a runtime failover) · AgentMail · Firecrawl
   `components.aggregate`.
 - **Schema & data:** tables + indexes for spaces, members, widgets, messages
   (+ full-text search index), votes, collaborative paint marks, recaps,
-  presence, email events; `returns:` validators on all 130 functions that can
-  carry one (the 6 HTTP actions return a `Response`)
+  presence, email events; a vector index on `widgets` powers "already on the
+  board" (`convex/similar.ts`) — arriving mail is embedded and `ctx.vectorSearch` asks
+  if the room already has it; `returns:` validators on all 142
+  functions that can carry one (the 6 HTTP actions return a `Response`)
 - **Realtime:** every in-space surface is a Convex subscription — no refetch,
   no invalidate-on-write, no hand-rolled sync between clients. Each one is a
   `useQuery` / `usePaginatedQuery` against an indexed query:

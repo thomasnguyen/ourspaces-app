@@ -439,3 +439,69 @@ Three features, one shape: a Convex **action** in `convex/ai.ts` calls Claude (A
 - Potluck claim **races** → last-write-wins, don't guard.
 - Poll optimistic UI → let the query echo do it; a ~100ms bar lag is invisible.
 - `sports` widget + its `SportsData` → P3, cut first.
+
+---
+
+## 11. Why the schema is shaped this way
+
+`convex/schema.ts` is the first file the repo scanner and any reader open, and
+it stays deliberately terse. The reasoning that used to live in its comments is
+here, so the file can carry structure and this doc can carry argument.
+
+### 11.1 `work` — the table that exists so the room is never silent
+
+Everything the brain does — reading a letter, fetching a page, working out where
+something goes — happens inside an action that can run for seconds. Before this
+table the board showed nothing at all and then the finished thing appeared, so
+the one moment where the space is visibly thinking was the one moment it was
+silent. Each real boundary inside those actions writes a row; the canvas
+subscribes and says it out loud (`convex/work.ts`,
+`src/components/SpaceLiveStrip.tsx`).
+
+**Load-bearing rule:** a row is only ever written where the work *actually*
+happened. Nothing is timed, guessed, or interpolated to make a nicer sequence. A
+line on the board is a claim about the server, and the whole point is that the
+claim is true. Bounded per space in `work.ts`.
+
+### 11.2 Copied author identity on `messages` and `paintMarks`
+
+`authorName` / `authorColor` / `authorEmoji` / `authorAvatarUrl` are copied onto
+each row rather than joined from `members`. Two reasons:
+
+1. The space thread is a live subscription. A join would cost one extra read per
+   message on **every** update.
+2. A message should keep the name its author had when they sent it.
+
+The cost is deliberate: a rename patches `members` only. Old rows keep the old
+name and nothing backfills them.
+
+### 11.3 Index choices that look redundant and are not
+
+- **`messages.by_space` vs `by_space_widget`** — `by_space` orders a space's
+  whole thread chronologically, which the widget-scoped index cannot do.
+- **`recaps.by_space` vs `by_space_created`** — `by_space` is a strict prefix of
+  the compound index, kept because `spaces.deleteSpaceBySlug` sweeps five tables
+  through one loop and needs the same index name on all of them.
+- **`widgets.by_space`** — the canvas subscription. Every widget for a space in
+  one indexed read, no per-widget fan-out, so a drag re-renders one query for
+  everyone.
+
+### 11.4 `presence.by_updated` exists for contention, not speed
+
+The cleanup cron used to `.collect()` the whole table, which made its read set
+every presence row — so any heartbeat landing mid-sweep lost an OCC conflict and
+re-ran the whole mutation (310 retries in 72h). A range read over
+`updatedAt < staleBefore` only conflicts with writes into the stale range, and a
+live heartbeat always writes `now`. The index is cross-space on purpose; the
+sweep is not per room.
+
+There is deliberately **no** `by_space_updated`. `listHereNow` reads the whole
+room and lets the cron and the client's own tick decide what is stale, because a
+wall-clock bound inside a query never re-evaluates (`convex/presence.ts`).
+
+### 11.5 `spaces.ownerId` is optional on purpose
+
+It is unset on every seeded and showcase space, and that is load-bearing: "no
+owner" means nobody can rename or delete it from the client. Only `createSpace`
+writes it, always from the caller's authenticated identity, never from an
+argument.

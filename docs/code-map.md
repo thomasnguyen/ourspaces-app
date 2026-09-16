@@ -88,9 +88,15 @@ links/reading-circle switch, reading circle whose tag
 pills set the same tag filter) · `CrawlStrip.tsx` (live Firecrawl crawl panel —
 usePaginatedQuery over `firecrawl.listCrawlPages`, pages stream in, each keepable
 to the pile) · `ShipRoom.tsx` (a ship post's full view) ·
-`SpaceLiveStrip.tsx` (the canvas's own pulse line — "live · sam is moving the
-friday poll" / "live · last change 8s ago" / "live · nothing on the board
-yet". One fact, one home: it never repeats the header's faces + "N here now"
+`SpaceLiveStrip.tsx` (the canvas's own pulse line — "live · fetching
+anthropic.com" / "live · sam is moving the friday poll" / "live · last change
+8s ago" / "live · nothing on the board yet". Ladder is busiest-first and the
+SPACE's own hands outrank a person's: a member dragging a poll is visible on
+the board already, the brain reading an emailed PDF is not, so `work` (from
+`useSpaceWork`) takes the line while it runs. `.is-work-running` sweeps a
+light across the words and stops dead on `.is-work-done`, which keeps the
+lime pop; `.is-work-failed` drops the accent.
+One fact, one home: it never repeats the header's faces + "N here now"
 or the title; the room name rides along collapsed and CSS opens it on
 `.is-canvas-away` once the title has scrolled off. Sits on the action dock's
 midline so the bottom gutter reads as one row. Every value is a live
@@ -184,6 +190,11 @@ coloring-room cursors. Owns the transform of anything it drives; do not also
 set one in CSS or JSX. The returned handle is memoised because every consumer
 holds it in effect deps. Tuning constants are measured, not guessed — see
 `.context/live-perf/`) ·
+`useSpaceWork.ts` (what the space is DOING right now, for the live strip —
+subscribes to `work.recent` with a 30s-quantized `since` so the query args
+are stable between buckets, takes the newest row, and expires it: a `done`
+line lingers 9s as the payoff, a `running` line is capped at 45s so a dead
+action can never pin "fetching x" to the canvas forever) ·
 `dataMode.ts` (live/mock detection) · `identity.ts` (local identity + colors; `PERSONAS` = the eight one-tap looks, `isPersonaName`) ·
 `presenceTypes.ts` · `snapshot.ts` (localStorage snapshot) · `adapt.ts`
 (Convex↔UI key escaping)
@@ -365,7 +376,19 @@ send [rate-limiter wrapped], `ackInbound` [reply-in-thread + label], and
 `inbox.ts` (per-space email router: couple→letter widget, buildroom→pile drop +
 Firecrawl enrich, default→AI files into expense/itinerary/create/unfiled — each
 branch returns an `{label, reply}` ack the space mails back) ·
-`mailArrival.ts` (`recentInbound`: the bounded public query the envelope watches — sender, subject, verdict, reason, timestamps, never the body) · `shootReset.ts` (the mail beat's take reset: drop the take's events + mail-made widgets, restore the crew fixtures the beat touches, clear recaps) ·
+`mailArrival.ts` (`recentInbound`: the bounded public query the envelope watches — sender, subject, verdict, reason, timestamps, never the body) ·
+`work.ts` (**the space narrating itself while it works** — `logWork(ctx, …)`
+from inside the slow actions, `work.recent` for the canvas. One row per REAL
+boundary the action crosses: `inbox.processInbound` writes open → read →
+decide → file → reply, `inboxRouting.routeBuildRoom` writes fetch/done per
+emailed link, `firecrawl.scrapeLink|searchTopic|crawlSite` bracket their own
+network call when the caller passes a `spaceId` (optional, narration-only —
+`batch.ts` deliberately does not, nobody is watching the stale-link sweep).
+The rule that keeps it worth trusting: **no row is ever timed, guessed or
+interpolated**; a step with no boundary to hang a row on gets no row.
+`logWork` swallows its own failures, since narration must never be the
+reason an email fails to file. Bounded to 40 rows/space, trimmed on write) ·
+`shootReset.ts` (the mail beat's take reset: drop the take's events + mail-made widgets, restore the crew fixtures the beat touches, clear recaps) ·
 `digest.ts` (`weeklyDigestWorkflow`: durable multi-step weekly digest —
 recipients → snapshot → LLM compose → send, each independently retried;
 cron calls `start()` fire-and-forget with an `onComplete` logger; manual
@@ -388,6 +411,11 @@ for `agent.ts`/`rag.ts` — embeddings are real-OpenAI-only, the proxy has no
 `recap.ask`'s conversational memory) ·
 `rag.ts` (`@convex-dev/rag`: indexes a space's widgets + recent chat,
 semantic-searches to ground `recap.ask`; lazy 5min-staleness reindex) ·
+`similar.ts` (the space's own `widgets.by_embedding` vector index — not rag:
+embeds arriving mail and `ctx.vectorSearch`es the board for a near-duplicate,
+so a re-sent link says "already on the board" in the live strip instead of
+landing twice. Cosine floor 0.55, measured; degrades to a no-op with no
+`OPENAI_API_KEY`) ·
 `streaming.ts` (`@convex-dev/persistent-text-streaming`: real HTTP token
 streaming for ask answers at `POST /ask-stream` — not wired into
 `ActionDock`'s UI, which keeps its own fake-reveal animation) ·

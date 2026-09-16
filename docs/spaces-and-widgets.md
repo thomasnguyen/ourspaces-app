@@ -55,6 +55,12 @@ a space reads lived-in instead of demo-empty.
 **Core** (`core.tsx`): sticker · frame · countdown · poll · potluck · chat ·
 note · media.
 
+The **potluck** sheet is width-aware (`@container potluck` in `index.css`):
+two columns with the claimant's signature at its 400px default, signature
+dropped below 340px, one item per line below 286px when there are four slots
+or fewer (`.potluck-short`). Rows are flex, so a long item name truncates
+instead of printing over the signature.
+
 **Extras** (`extras.tsx`): wheel · dualClock · dailyQ · rsvp · decision ·
 availability · photoWall · linkCard · linkShelf · playlist · jokeRegistry ·
 expenseSplit · itinerary · messageWall · quote · weather · sports ·
@@ -84,14 +90,21 @@ Left on the widget layer: no editor forms yet for the four build-room types
 
 ## 0. the dev guild — slug `buildroom` (`#/`, bottle-green `torch` theme)
 
-**Status: built.** Seven members, 1640×1080. The default demo space; the group chat
-stays one click away in the rail.
+**Status: built.** Seven members, 2048×1016 (`BUILD_ROOM_CANVAS`; the live row
+still says 1640×1080 and `LiveSpace` grows it). The default demo space; the
+group chat stays one click away in the rail.
 
-Desktop opens on a centered overview of all five zones, with a wider pile and
-landscape shipping wall on the left, compact hot/keepers/roundtable on the right.
-The shared mock/live camera fits the frame bounds between the header and dock
-(max scale `1`). `buildRoomPresentation.ts` maps recognized legacy demo
-placements to this composition without writing the database; later member moves
+Desktop opens on an overview of all five zones in three columns (~2.1:1, the
+shape of the band between nameplate and dock): the pile over the roundtable on
+the left, hot now (five deep) over a wide shipping wall in the middle, keepers
+on the right as two stacked index cards (kept takeaways land via
+`keeperNoteSlot`, fanning off the second card). The shared mock/live camera fits
+the frame bounds (`BUILD_ROOM_OVERVIEW_RIGHT/BOTTOM`) by width, so the block
+spans the band flush with the nameplate's left edge instead of shrinking to
+height and floating in the middle; leftover height is split above and below
+(capped at 72px, `--build-room-offset-y`). `buildRoomPresentation.ts` maps
+recognized demo placements — the seeded fixtures and every earlier pass of the
+composition — to this one without writing the database; later member moves
 retain their saved coordinates. The wall uses `--color-buildroom`, a bottle-green chalkboard (three
 oranges, a denim felt and a cobalt blueprint came before it; the user picked the green off a four-up sheet).
 It is a tonal system: the five zone frames are panels one step lighter in the same hue, shadows are
