@@ -4,6 +4,7 @@ import type { ActionCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { completeJson } from "./ai";
 import { droppedLinkPatchValidator } from "./widgetData";
+import { logWork } from "./work";
 
 /** What to reply + how to label an inbound email once the router has filed it. */
 export type InboundAck = { label?: string; reply?: string };
@@ -75,7 +76,18 @@ export function extractUrls(text: string): string[] {
 
 export async function routeBuildRoom(
   ctx: ActionCtx,
-  { event, pileId, urls }: { event: Doc<"emailEvents">; pileId: Id<"widgets">; urls: string[] },
+  {
+    event,
+    pileId,
+    urls,
+    runId,
+  }: {
+    event: Doc<"emailEvents">;
+    pileId: Id<"widgets">;
+    urls: string[];
+    /** the email's run, so the canvas reads the whole arrival as one thing */
+    runId?: string;
+  },
 ) {
   const batchKey = `mail-${String(event._id).slice(-8)}`;
   const dropped = urls.map((url, index) => ({
@@ -100,6 +112,18 @@ export async function routeBuildRoom(
   // Sequential on purpose: each patch read-modify-writes the pile document.
   for (const link of dropped) {
     let patch: Infer<typeof droppedLinkPatchValidator>;
+    // These two lines bracket the one genuinely slow call in this loop, so
+    // the board says "fetching x" for exactly as long as x is being fetched.
+    await logWork(ctx, {
+      spaceId: event.spaceId,
+      runId: runId ?? `links-${batchKey}`,
+      kind: "link",
+      step: "fetch",
+      status: "running",
+      line: `fetching ${link.domain}`,
+      subject: link.domain,
+      widgetId: pileId,
+    });
     try {
       const scraped: {
         title: string;
@@ -119,8 +143,28 @@ export async function routeBuildRoom(
         ],
         status: "ready",
       };
+      await logWork(ctx, {
+        spaceId: event.spaceId,
+        runId: runId ?? `links-${batchKey}`,
+        kind: "link",
+        step: "fetch",
+        status: "done",
+        line: patch.title ? `read “${patch.title}”` : `read ${link.domain}`,
+        subject: link.domain,
+        widgetId: pileId,
+      });
     } catch {
       patch = { status: "failed", title: link.domain };
+      await logWork(ctx, {
+        spaceId: event.spaceId,
+        runId: runId ?? `links-${batchKey}`,
+        kind: "link",
+        step: "fetch",
+        status: "failed",
+        line: `couldn't read ${link.domain}`,
+        subject: link.domain,
+        widgetId: pileId,
+      });
     }
     await ctx.runMutation(internal.inbox.patchDroppedLink, {
       pileId,

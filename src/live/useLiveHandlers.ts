@@ -533,21 +533,27 @@ export function useLiveHandlers(
     void remove({ spaceId: spaceId as never, id: widget.id as never });
   }, [remove, spaceId]);
 
+  /* All three pass `spaceId` purely so the room can narrate the wait
+     (convex/work.ts → the live strip): these are the calls where the board
+     sits there doing nothing visible for several seconds. The actions work
+     exactly the same without it. */
   const onResolveLink = useCallback(
-    async (url: string): Promise<LinkCardScrape> => await scrapeLink({ url }),
-    [scrapeLink],
+    async (url: string): Promise<LinkCardScrape> =>
+      await scrapeLink({ url, spaceId: (spaceId as never) ?? undefined }),
+    [scrapeLink, spaceId],
   );
 
   // Firecrawl web search → link-card-shaped hits for the pile.
   const onSearchTopic = useCallback(
-    async (query: string) => await searchTopic({ query }),
-    [searchTopic],
+    async (query: string) => await searchTopic({ query, spaceId: (spaceId as never) ?? undefined }),
+    [searchTopic, spaceId],
   );
 
   // Firecrawl durable crawl → a crawlId the UI subscribes to for live pages.
   const onCrawlSite = useCallback(
-    async (url: string): Promise<{ crawlId: string }> => await crawlSite({ url }),
-    [crawlSite],
+    async (url: string): Promise<{ crawlId: string }> =>
+      await crawlSite({ url, spaceId: (spaceId as never) ?? undefined }),
+    [crawlSite, spaceId],
   );
 
   return {

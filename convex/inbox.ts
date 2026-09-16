@@ -23,6 +23,7 @@ import {
   senderName,
   type InboundAck,
 } from "./inboxRouting";
+import { logWork } from "./work";
 
 
 /**
@@ -73,13 +74,47 @@ export const processInbound = internalAction({
     let { event } = context;
     const slug = space.slug ?? "";
 
+    /* The canvas narrates this run as it happens (convex/work.ts). One runId
+       per email, and every line below sits at a boundary this action really
+       crosses — nothing here is on a timer. */
+    const runId = `mail-${String(eventId).slice(-10)}`;
+    const who = senderName(event.from);
+    const work = (
+      step: string,
+      status: "running" | "done" | "failed",
+      line: string,
+      widgetId?: Id<"widgets">,
+    ) => logWork(ctx, {
+      spaceId: space._id,
+      runId,
+      kind: "mail",
+      step,
+      status,
+      line,
+      subject: who,
+      widgetId,
+    });
+
     // The envelope on every open canvas is watching this row
     // (docs/mail-arrival.md): "reading" starts now.
     await ctx.runMutation(internal.inbox.markEvent, { eventId, readingAt: Date.now() });
+    await work("open", "running", `opening mail from ${who}`);
 
     // Attachments first: a receipt PDF with an empty email body has to be
     // readable *before* anything decides where the email goes. AgentMail's
     // download_url → Firecrawl parse → text on the event.
+    //
+    // Only announced when something is actually attached — an email with no
+    // PDF crosses this boundary in milliseconds and a line about it would be
+    // narration of nothing.
+    const attachedCount = attachments?.length ?? 0;
+    if (attachedCount > 0) {
+      await work(
+        "read",
+        "running",
+        attachedCount === 1 ? "reading the attachment" : `reading ${attachedCount} attachments`,
+      );
+    }
     const parsed = await ctx.runAction(internal.agentmail.parseAttachments, {
       inboxId: space.inboxId,
       messageId: event.messageId,
@@ -91,12 +126,33 @@ export const processInbound = internalAction({
         attachments: parsed,
       });
       event = { ...event, attachments: parsed };
+      await work("read", "done", `read ${parsed.map((file) => file.filename).join(", ")}`);
+    } else if (attachedCount > 0) {
+      await work("read", "failed", "couldn't open what was attached");
+    }
+
+    /* Before anything is filed: has this room already got this? The space's
+       own vector index over `widgets.by_embedding` answers it
+       (convex/similar.ts). The answer is said out loud, not acted on — a
+       second copy is sometimes exactly what someone meant to send. */
+    const echo = await ctx.runAction(internal.similar.echoCheck, {
+      spaceId: space._id,
+      text: routableText(event),
+    });
+    if (echo) {
+      await work(
+        "echo",
+        "done",
+        `already on the board: ${echo.summary.toLowerCase()}`,
+        echo.widgetId,
+      );
     }
 
     let ack: InboundAck = {};
 
     if (slug === "couple") {
       await ctx.runMutation(internal.inbox.addLetter, { eventId, unfiled: false, label: "letter" });
+      await work("file", "done", `sealed ${who}'s letter onto the canvas`);
       ack = { label: "letter", reply: "Sealed your letter onto the canvas. 💌" };
     } else if (slug === "buildroom") {
       const urls = extractUrls(routableText(event));
@@ -110,19 +166,39 @@ export const processInbound = internalAction({
           widgetId: pile._id,
           because: `${urls.length} link${urls.length === 1 ? "" : "s"} inside`,
         });
-        await routeBuildRoom(ctx, { event, pileId: pile._id, urls });
+        await work(
+          "file",
+          "done",
+          `${urls.length} link${urls.length === 1 ? "" : "s"} from ${who} into the pile`,
+          pile._id,
+        );
+        // Each link narrates its own fetch from here (routeBuildRoom logs
+        // under the same runId, so the canvas reads it as one arrival).
+        await routeBuildRoom(ctx, { event, pileId: pile._id, urls, runId });
         ack = {
           label: "links",
           reply: `Dropped ${urls.length} link${urls.length === 1 ? "" : "s"} into the dev guild pile.`,
         };
       } else {
         await ctx.runMutation(internal.inbox.markEvent, { eventId, label: "unfiled" });
+        await work("file", "done", `left ${who}'s note on the canvas`);
       }
     } else {
+      await work("decide", "running", `working out where ${who}'s mail goes`);
       ack = await routeSmart(ctx, { event, space, widgets });
       if (ack.label === "spam") {
         await ctx.runMutation(internal.inbox.markEvent, { eventId, label: "spam" });
       }
+      // The router's own sentence is already the best thing anyone could say
+      // about where this landed — read it back off the event rather than
+      // writing a second, worse one here.
+      const verdict = await ctx.runQuery(internal.inbox.eventVerdict, { eventId });
+      await work(
+        "file",
+        "done",
+        verdict?.because ?? `filed ${who}'s mail`,
+        verdict?.widgetId,
+      );
     }
 
     // reply in-thread + label the message with what the space did with it
@@ -134,8 +210,37 @@ export const processInbound = internalAction({
     });
     if (replied) {
       await ctx.runMutation(internal.inbox.markEvent, { eventId, repliedAt: Date.now() });
+      await work("reply", "done", `told ${who} what happened`);
+    }
+
+    /* Embed whatever this email became, so the next arrival can be compared
+       against it. Scheduled rather than awaited: the arrival is over, and an
+       embedding must never sit between a letter and its reply. */
+    const landed = await ctx.runQuery(internal.inbox.eventVerdict, { eventId });
+    if (landed?.widgetId) {
+      await ctx.scheduler.runAfter(0, internal.similar.embedWidget, {
+        widgetId: landed.widgetId,
+      });
     }
     return null;
+  },
+});
+
+/** What the router decided, for the line the canvas reads after it filed. */
+export const eventVerdict = internalQuery({
+  args: { eventId: v.id("emailEvents") },
+  returns: v.union(
+    v.object({
+      label: v.optional(v.string()),
+      because: v.optional(v.string()),
+      widgetId: v.optional(v.id("widgets")),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, { eventId }) => {
+    const event = await ctx.db.get(eventId);
+    if (!event) return null;
+    return { label: event.label, because: event.because, widgetId: event.widgetId };
   },
 });
 

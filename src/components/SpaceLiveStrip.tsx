@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { relTime } from "../live/adapt";
+import type { SpaceWork } from "../live/useSpaceWork";
 
 /** Someone with a hand on a widget right now, straight off their presence row. */
 export type LiveStripGesture = {
@@ -51,8 +52,15 @@ function gestureLine(gestures: LiveStripGesture[]) {
  *
  * One fact, one home: the header owns the faces and "N here now", the title
  * owns the room's name. This line only says what nothing else on screen
- * says — that the board is live, who has a hand on something, how fresh the
- * last change is, and (only when it is news) that the board is still empty.
+ * says — that the board is live, what the space itself is doing, who has a
+ * hand on something, how fresh the last change is, and (only when it is
+ * news) that the board is still empty.
+ *
+ * The ladder is busiest-first, and the space's own hands rank above a
+ * person's: a member moving a poll is a thing you can already SEE happening,
+ * while the brain reading an emailed PDF is invisible until it finishes. The
+ * strip is the only place that work exists on screen, so while it is running
+ * it gets the line (`work`, from convex/work.ts via useSpaceWork).
  * The name rides along hidden and CSS reveals it once the title has scrolled
  * off (`.is-canvas-away`), so the strip takes over as the wayfinder exactly
  * when the header stops being one.
@@ -66,6 +74,7 @@ export function SpaceLiveStrip({
   boardCount,
   lastChangeAt,
   gestures = [],
+  work = null,
 }: {
   /** the room this line is about — shown only once the title has scrolled away */
   spaceName?: string;
@@ -74,11 +83,14 @@ export function SpaceLiveStrip({
   /** newest real write we know about (widget or message) */
   lastChangeAt?: number;
   gestures?: LiveStripGesture[];
+  /** what the space itself is doing right now, or null when it is idle */
+  work?: SpaceWork | null;
 }) {
   const [now, setNow] = useState(() => Date.now());
   /* The clock only has to tick while it is the thing on show; a live gesture
-     takes the tail of the line and freezes the timer until it lets go. */
-  const ticking = lastChangeAt != null && gestures.length === 0;
+     or a running job takes the tail of the line and freezes the timer until
+     it lets go. */
+  const ticking = lastChangeAt != null && gestures.length === 0 && !work;
 
   useEffect(() => {
     if (!ticking) return;
@@ -91,7 +103,8 @@ export function SpaceLiveStrip({
      itself, and "13 things" next to 13 visible things is a stat, not a pulse. */
   const board = boardCount === 0 ? "nothing on the board yet" : null;
 
-  const busy = gestures.length > 0 ? gestureLine(gestures) : null;
+  /* The space's own hands first (see the note above), then a person's. */
+  const busy = work ? work.line : gestures.length > 0 ? gestureLine(gestures) : null;
   const changed =
     !busy && lastChangeAt != null ? `last change ${since(lastChangeAt, now)}` : null;
 
@@ -130,7 +143,13 @@ export function SpaceLiveStrip({
             <span className="space-live-strip-dot-sep" aria-hidden="true">
               ·
             </span>
-            <em className="space-live-strip-busy">{busy}</em>
+            <em
+              className={
+                work ? `space-live-strip-busy is-work-${work.status}` : "space-live-strip-busy"
+              }
+            >
+              {busy}
+            </em>
           </>
         )}
       </span>

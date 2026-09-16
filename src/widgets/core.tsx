@@ -538,8 +538,10 @@ export function PotluckWidget({
             <small>{allSet ? "all set" : `${openItems.length} still open`}</small>
           </div>
         </div>
+        {/* potluck-short: a four-slot sheet can run one item per line once the
+            card gets narrow; a longer one stays in two columns to fit the paper */}
         {items.length > 0 ? (
-          <ul className="potluck-list">
+          <ul className={`potluck-list${items.length <= 4 ? " potluck-short" : ""}`}>
             {items.map((item, index) => {
               const mine = onClaim
                 ? Boolean(claimantId && item.byUserId === claimantId)

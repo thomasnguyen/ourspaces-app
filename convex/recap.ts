@@ -80,7 +80,7 @@ function weekdaySince(now = Date.now()) {
   return `since ${day.toLowerCase()}`;
 }
 
-function summarizeWidget(
+export function summarizeWidget(
   type: string,
   data: Record<string, unknown>,
   voteLine?: string,

@@ -305,7 +305,9 @@ export function RoundtableWidget({
 }) {
   const category = String(widget.data.category ?? "topic");
   const title = String(widget.data.title ?? "what should we talk about?");
-  const preview = replies.slice(-2);
+  /* The wide card on the build room overview holds three replies; the compact
+     one two. */
+  const preview = replies.slice(widget.h >= 280 ? -3 : -2);
   const total = replyCount ?? replies.length;
 
   return (

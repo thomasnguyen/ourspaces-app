@@ -78,6 +78,7 @@ import { useLiveHandlers } from "../live/useLiveHandlers";
 import { useLivePoll } from "../live/useLivePoll";
 import { useLiveSpace } from "../live/useLiveSpace";
 import { usePresence } from "../live/usePresence";
+import { useSpaceWork } from "../live/useSpaceWork";
 import useRoomPresence from "@convex-dev/presence/react";
 import { useShowAfter } from "../lib/entrance";
 import { freshWidgetData, getWidgetBlueprint } from "../lib/widgetDefaults";
@@ -89,7 +90,9 @@ import type { CanvasLayout, LivePeer } from "../live/presenceTypes";
 import { DEFAULT_SPACE_SLUG, normalSpaceHash } from "../lib/routes";
 import { useCanvasSpacePan } from "../lib/canvasSpacePan";
 import {
+  BUILD_ROOM_CANVAS,
   buildRoomOverviewScale,
+  keeperNoteSlot,
   withBuildRoomCover,
 } from "../lib/buildRoomPresentation";
 
@@ -887,10 +890,7 @@ export function LiveSpacePage({
         document.querySelector(".rr-cover")?.getBoundingClientRect() ?? null;
       const created = await handlers.onCreate({
         type: "note",
-        x: (keepers?.x ?? 850) + 36 + (slot % 2) * 336 + Math.floor(slot / 2) * 20,
-        y: (keepers?.y ?? 470) + 42 + Math.floor(slot / 2) * 18,
-        w: 320,
-        h: 150,
+        ...keeperNoteSlot(keepers, slot),
         z: 1000 + slot,
         rotate: slot % 2 === 0 ? -1.2 : 1.4,
         data: {
@@ -1316,12 +1316,25 @@ export function LiveSpacePage({
       }),
     [liveCursors, widgets],
   );
+  /* What the space itself is doing right now — the brain's slow actions
+     writing a line per real boundary (convex/work.ts). It outranks a
+     gesture on the strip because it is the only place that work is visible
+     at all; see the note in SpaceLiveStrip. */
+  const spaceWork = useSpaceWork(mode === "live" && space ? String(space._id) : undefined);
   /* The header always needs a number to print, so an unloaded count reads as
      quiet rather than falling through to the seeded roster. The strip can
      stay silent until the real one lands, so it gets the raw value. */
   const headerHereCount = mode === "live" ? hereCount ?? 0 : hereCount;
-  const canvasWidth = space?.canvasW ?? snapshot?.canvasW ?? 1640;
-  const canvasHeight = space?.canvasH ?? snapshot?.canvasH ?? 1080;
+  /* The build room composition is wider than the 1640×1080 the row was seeded
+     with; the canvas grows to hold it whatever the row says. */
+  const canvasWidth = Math.max(
+    space?.canvasW ?? snapshot?.canvasW ?? 1640,
+    slug === "buildroom" ? BUILD_ROOM_CANVAS.width : 0,
+  );
+  const canvasHeight = Math.max(
+    space?.canvasH ?? snapshot?.canvasH ?? 1080,
+    slug === "buildroom" ? BUILD_ROOM_CANVAS.height : 0,
+  );
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -1581,12 +1594,16 @@ export function LiveSpacePage({
     }
 
     const viewportStyles = window.getComputedStyle(viewport);
-    const stageMargin = canvasStageRef.current
-      ? cssPixels(window.getComputedStyle(canvasStageRef.current).marginLeft)
-      : 0;
-    const paddingLeft = cssPixels(viewportStyles.paddingLeft) + stageMargin;
+    const stageStyles = canvasStageRef.current
+      ? window.getComputedStyle(canvasStageRef.current)
+      : null;
+    const paddingLeft =
+      cssPixels(viewportStyles.paddingLeft) +
+      (stageStyles ? cssPixels(stageStyles.marginLeft) : 0);
     const paddingRight = cssPixels(viewportStyles.paddingRight);
-    const paddingTop = cssPixels(viewportStyles.paddingTop);
+    const paddingTop =
+      cssPixels(viewportStyles.paddingTop) +
+      (stageStyles ? cssPixels(stageStyles.marginTop) : 0);
     const paddingBottom = cssPixels(viewportStyles.paddingBottom);
     const maxScrollLeft = Math.max(
       0,
@@ -2210,6 +2227,7 @@ export function LiveSpacePage({
           boardCount={boardRows?.widgets.length}
           lastChangeAt={lastChangeAt}
           gestures={liveGestures}
+          work={spaceWork}
         />
       )}
       {/* Mail arrival — the envelope that narrates the filing
