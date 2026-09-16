@@ -9,6 +9,8 @@ Backward-looking history lives in `hackathon.md`.
   indexed in `docs/local/doc-map.local.md`. All five gallery slots now contain
   visually reviewed saved app captures, with provenance in the local copy
   document. Revised thumbnail and a five-image download pack are included.
+  Project copy is now a short tagline plus one concrete demo moment; the
+  implementation credits remain in the longer video description.
   All creative material stays gitignored. App source and deployment unchanged.
   `npm run build` passes; browser preview was unavailable in this session.
   Follow-up: checked the local preview against the public VibeApps source;
