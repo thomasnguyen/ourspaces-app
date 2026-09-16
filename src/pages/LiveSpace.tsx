@@ -17,7 +17,7 @@ const PlayLab = lazy(() =>
     by fixture id, so it borrows the crew's fixture (docs/local/play-lab.md). */
 const PLAY_LAB_SOURCE = "crew";
 import type { Id } from "../../convex/_generated/dataModel";
-import { ActionDock } from "../components/ActionDock";
+import { ActionDock, radioRoomOf } from "../components/ActionDock";
 import { Canvas, SpaceHeader } from "../components/Canvas";
 import { ClaimCard, type InviteContext } from "../components/ClaimCard";
 import { MemberFace } from "../components/MemberFace";
@@ -2581,6 +2581,8 @@ export function LiveSpacePage({
         }}
         onChatToggle={() => {
           if (focusedTarget?.kind === "widget") {
+        radioRoom={radioRoomOf(adaptedWidgets)}
+        onRadioTune={handlers.onPlaylistTune}
             leaveFocus(false);
             playSound("tap");
             setChatOpen(true);

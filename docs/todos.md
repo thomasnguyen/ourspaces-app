@@ -1192,6 +1192,11 @@ Backward-looking history lives in `hackathon.md`.
   strip, tap a line → pan to the widget (`docs/mail.md` goal 0,
   `docs/spaces-and-widgets.md` §1).
   - Open for review: the sentence voice (three runs of the same email gave
+- **Radio in the dock (2026-09-15):** the bottom dock always shows the
+  room's station once a playlist widget exists (play key + "tap play" /
+  "join · X put this on" / live track). The card stays on the canvas as the
+  room object; the dock label pans to it. Was hidden before: the chip only
+  appeared once something was playing.
     "this clears jules' tahoe iou" / "jules' tahoe cabin half is settled" /
     "jules cleared his tahoe half"), and the crew canvas seats a decorative
     sticker over the tahoe receipt's footer, which covers the pinned line.
@@ -1273,6 +1278,11 @@ Backward-looking history lives in `hackathon.md`.
   counts in it — with a page that only describes it. And the block (`#/home`)
   already is a lobby with real rooms and real counts, it was just unreachable:
   the rail brand pointed at `/`, which is the build room. Shipped instead:
+- 2026-09-15: **Radio entry point lives in the bottom dock, not the header.**
+  The header is the nameplate and fades on scroll; the dock is the room
+  controls strip. The playlist card stays on the canvas (who put it on, vibes,
+  station picker); the dock chip is the always-visible way in.
+
   brand → the block, plus the `#/about` page above, both at non-root hashes so
   the root stays a live room. The remaining legitimacy lever is the URL —
   `necessary-cobra-892.convex.site` reads like a test deploy. **Open:**
