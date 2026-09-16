@@ -19,7 +19,8 @@ const PLAY_LAB_SOURCE = "crew";
 import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock, radioRoomOf } from "../components/ActionDock";
 import { Canvas, SpaceHeader } from "../components/Canvas";
-import { ClaimCard, type InviteContext } from "../components/ClaimCard";
+import { ClaimCard, type RoomContext } from "../components/ClaimCard";
+import { GateCursor, type GatePoint } from "../components/GateCursor";
 import { MemberFace } from "../components/MemberFace";
 import { PhotoWallGallery } from "../components/PhotoWallGallery";
 import { ReadingRoom, type RoomReply } from "../components/ReadingRoom";
@@ -234,6 +235,11 @@ const DEFAULT_THREAD_DOCK_SIZE: ThreadDockSize = {
   height: 540,
 };
 const CLAIM_DISMISSED_KEY = "ourspaces:claim-dismissed";
+/** The door opening: the header enters and the room becomes yours at SETTLE,
+ *  the card + scrim are gone at LEAVE. Card collapse is 440ms, scrim lift 500ms,
+ *  the cursor hands over to the OS arrow from 400ms to 620ms. */
+const GATE_SETTLE_MS = 200;
+const GATE_LEAVE_MS = 660;
 
 type GhostLifecycle = "hidden" | "in" | "leaving";
 
@@ -339,6 +345,9 @@ export function LiveSpacePage({
   const canvasCameraAnimation = useRef(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
+  const [gateLeaving, setGateLeaving] = useState(false);
+  const gateCursorPoint = useRef<GatePoint | null>(null);
+  const gateTimers = useRef<number[]>([]);
   const [entered, setEntered] = useState(
     () => !isInviteEntry && window.sessionStorage.getItem(CLAIM_DISMISSED_KEY) === "done",
   );
@@ -416,13 +425,29 @@ export function LiveSpacePage({
     setClaimOpen(false);
   }, []);
 
+  /* The door opens. The card collapses into your cursor (ClaimCard, 440ms),
+     then the scrim lifts (from 120ms, 500ms) over a canvas that was there all
+     along; the header enters at 200ms and presence joins. Invite links swap
+     the route at the end — that remount plays the full space entrance. */
   const enterRoom = useCallback(() => {
+    if (gateLeaving) return;
     window.sessionStorage.setItem(CLAIM_DISMISSED_KEY, "done");
-    setEntered(true);
-    if (space) void join({ spaceId: space._id, ...identity });
-    if (isInviteEntry) window.location.hash = normalSpaceHash(slug);
     playSound("place");
-  }, [identity, isInviteEntry, join, slug, space]);
+    setGateLeaving(true);
+    const settle = window.setTimeout(() => {
+      setEntered(true);
+      if (space) void join({ spaceId: space._id, ...identity });
+    }, GATE_SETTLE_MS);
+    const leave = window.setTimeout(() => {
+      setGateLeaving(false);
+      if (isInviteEntry) window.location.hash = normalSpaceHash(slug);
+    }, GATE_LEAVE_MS);
+    gateTimers.current = [settle, leave];
+  }, [gateLeaving, identity, isInviteEntry, join, slug, space]);
+  useEffect(
+    () => () => gateTimers.current.forEach((timer) => window.clearTimeout(timer)),
+    [],
+  );
 
   // A space someone made has no fixture, and getSpace() would hand back the
   // CREW's name/colour/faces for it. Prefer the live row whenever the slug
@@ -2081,6 +2106,10 @@ export function LiveSpacePage({
   };
 
   const hasBoard = status === "ready" || status === "cached" || status === "empty";
+  /* The header is hidden behind the gate, so it remounts and enters when the
+     door opens. The canvas does not: it settles behind the frosted scrim at
+     load and is simply there, sharp, when the blur lifts — replaying its
+     wavefront on entry made the widgets you were looking at blink out. */
   const boardKey = `${slug}:${roomEntered ? "in" : "gate"}`;
   const canvasRecapCites = useMemo(
     () => recapHover
@@ -2119,7 +2148,7 @@ export function LiveSpacePage({
   );
 
   return (
-    <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""} ${spacePan.panning ? "is-canvas-panning" : ""} ${spacePan.spaceHeld ? "is-space-panning" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
+    <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${gateLeaving ? "is-gate-leaving" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""} ${spacePan.panning ? "is-canvas-panning" : ""} ${spacePan.spaceHeld ? "is-space-panning" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
       <Rail activeId={slug} onSelectSpace={selectSpace} onCreateClick={openSpacePicker} />
       {roomEntered && space?.slug && (
         <RoomPresenceHeartbeat roomId={space.slug} userId={identity.userId} />
@@ -2241,7 +2270,7 @@ export function LiveSpacePage({
           >
             {hasBoard ? (
               <Canvas
-                key={boardKey}
+                key={`${slug}:board`}
                 spaceId={slug}
                 widgets={adaptedWidgets}
                 cursors={liveCursors}
@@ -2291,7 +2320,7 @@ export function LiveSpacePage({
                 promoted={promotedMessageIds.size > 0}
                 onPromote={ignorePromote}
                 recapCites={canvasRecapCites}
-                entrance={roomEntered}
+                entrance
                 arrivalPeerId={arrivalPeer?.userId}
                 viewportRef={viewportRef}
                 placingItem={placing}
@@ -2426,7 +2455,19 @@ export function LiveSpacePage({
           }
         />
       )}
-      {gateOpen && <div className="entry-gate-scrim" aria-hidden="true" />}
+      {(gateOpen || gateLeaving) && (
+        <div
+          className={`entry-gate-scrim${gateLeaving ? " is-lifting" : ""}`}
+          aria-hidden="true"
+        />
+      )}
+      {(gateOpen || gateLeaving) && (
+        <GateCursor
+          identity={identity}
+          leaving={gateLeaving}
+          positionRef={gateCursorPoint}
+        />
+      )}
       {isInvalidInvite || isMissingSpace ? (
         <div className="invalid-invite-card" role="alert">
           <span className="invalid-invite-mark" aria-hidden="true">↗</span>
@@ -2447,18 +2488,20 @@ export function LiveSpacePage({
         </div>
       ) : (
         <ClaimCard
-          open={gateOpen || claimOpen}
-          variant={roomEntered ? "popover" : "gate"}
+          open={gateOpen || gateLeaving || claimOpen}
+          variant={roomEntered && !gateLeaving ? "popover" : "gate"}
+          leaving={gateLeaving}
+          cursorPosition={gateCursorPoint}
           onClose={roomEntered ? closeClaim : enterRoom}
-          inviteContext={isInviteEntry ? {
+          room={{
             spaceName: mockSpace.name,
             spaceColor: mockSpace.color,
-            // Same rule as the header and the strip: the fixture roster's
-            // `online` flags never stand in for a live count. The invite
-            // gate reads the real room occupancy or says nobody.
-            memberNames: [],
+            // The roster says who lives here; only the presence component's
+            // occupancy says who is in. Fixture `online` flags never stand
+            // in for the live count.
+            memberNames: members.map((member) => member.name),
             presenceCount: hereCount ?? 0,
-          } satisfies InviteContext : undefined}
+          } satisfies RoomContext}
         />
       )}
       <WidgetPicker

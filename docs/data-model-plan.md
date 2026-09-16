@@ -67,6 +67,18 @@ you're walking into the crew
 dismisses. Popover (already in) can grow a "join so you come back" link;
 don't nag.
 
+**Gate as built (2026-09-15).** `components/ClaimCard.tsx` variant `gate`:
+the room is named at the top for every entry (roster faces + the presence
+component's live count), the name field is loud and pre-selected on desktop,
+and colour + face + placeholder name are one tap (`PERSONAS` in
+`live/identity.ts`; a typed name survives a look change). Your own cursor
+rides the pointer over the blurred room while the gate is up
+(`components/GateCursor.tsx`; phones get it parked in the card). Enter walks
+in: the card collapses into the cursor tip (WAAPI, glide, 440ms), the scrim
+lifts from 120ms off the canvas that was there all along, the header enters
+at 200ms (`enterRoom` in `pages/LiveSpace.tsx`). "keep this on your other devices"
+is still the quiet second CTA under the way in.
+
 **As built (2026-09-12).** Guest works end to end: silent anonymous sign-in,
 server-validated token, identity stable across reloads. Wiring:
 

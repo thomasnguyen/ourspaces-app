@@ -66,7 +66,7 @@ is true but you're not tuned; the label pans the canvas to the card with
 `scrollIntoView` on `[data-widget-id]`; playing from the dock goes through the
 same tune handler as the widget so `playedBy`/`playing` sync) ·
 `CanvasNavigator.tsx` (minimap) · `CanvasEdgePan.tsx` · `SpaceEditorPanel.tsx`
-(theme editor) · `ClaimCard.tsx` (identity claim) · `FirstRunSticky.tsx` ·
+(theme editor) · `ClaimCard.tsx` (the entry gate + identity popover: room name/faces/live count, the loud name field, eight one-tap looks, Enter submits; on `leaving` the card WAAPI-collapses into the cursor tip) · `GateCursor.tsx` (your own LiveCursor riding the real pointer while the gate is up, `canFollowPointer` = hover + fine pointer; writes the tip position for the collapse to aim at) · `FirstRunSticky.tsx` ·
 `PlacementGhost.tsx` (pick it up, put it down — a sticker or widget chosen in
 the tray rides the cursor at its real footprint and lands where you click;
 shift-click keeps it in hand, esc/right-click drops it. Rendered inside
@@ -184,7 +184,7 @@ coloring-room cursors. Owns the transform of anything it drives; do not also
 set one in CSS or JSX. The returned handle is memoised because every consumer
 holds it in effect deps. Tuning constants are measured, not guessed — see
 `.context/live-perf/`) ·
-`dataMode.ts` (live/mock detection) · `identity.ts` (local identity + colors) ·
+`dataMode.ts` (live/mock detection) · `identity.ts` (local identity + colors; `PERSONAS` = the eight one-tap looks, `isPersonaName`) ·
 `presenceTypes.ts` · `snapshot.ts` (localStorage snapshot) · `adapt.ts`
 (Convex↔UI key escaping)
 
@@ -419,7 +419,7 @@ mobile reading/ship rooms), "BUILD ROOM — COLOR PASS" (tonal
 panels, wall-shade shadows; the pegboard grid sits in the torch theme block
 near line 171), then "BUILD ROOM — ARRIVAL CHOREOGRAPHY" (the
 pending row's stage text, caret, step ticks, tile scan line, and the
-`is-landing` print-in sequence), and "MAIL ARRIVAL — THE ENVELOPE THAT THINKS OUT LOUD" (end of file: the envelope, the slip, the stamp, the flight endings, the widget wash, the reply tick). New CSS goes in a new banner section at the end.
+`is-landing` print-in sequence), then "MAIL ARRIVAL — THE ENVELOPE THAT THINKS OUT LOUD" (the envelope, the slip, the stamp, the flight endings, the widget wash, the reply tick), and "ENTRY GATE — THE DOOR OPENS" (end of file: the gate card, room block, looks, the parked/phone cursor, the riding gate cursor, scrim lift, canvas isolation under the gate). New CSS goes in a new banner section at the end.
 
 ## scripts/
 

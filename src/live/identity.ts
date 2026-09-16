@@ -16,6 +16,8 @@ export const IDENTITY_COLORS = [
   "#3D6EFF",
   "#13B8A6",
   "#C6F750",
+  "#FFB020",
+  "#FF3B5C",
 ] as const;
 
 export const IDENTITY_EMOJIS = [
@@ -37,7 +39,7 @@ export const IDENTITY_EMOJIS = [
 
 const SESSION_KEY = "ourspaces:tab-identity";
 const SEQUENCE_KEY = "ourspaces:persona-sequence";
-const PERSONA_NAMES = [
+export const PERSONA_NAMES = [
   "juno",
   "momo",
   "pico",
@@ -152,4 +154,24 @@ export function useIdentity() {
     getIdentity,
     getIdentity,
   );
+}
+
+/** One tap on the entry gate: a name, its colour and its face travel together. */
+export type Persona = {
+  name: string;
+  color: string;
+  emoji: string;
+  avatarUrl?: string;
+};
+
+export const PERSONAS: readonly Persona[] = PERSONA_NAMES.map((name, index) => ({
+  name,
+  color: IDENTITY_COLORS[index % IDENTITY_COLORS.length],
+  emoji: IDENTITY_EMOJIS[index % 8],
+  avatarUrl: getAvatarSrc(name),
+}));
+
+/** A persona name is a placeholder the next look may replace; a typed name is yours. */
+export function isPersonaName(name: string) {
+  return (PERSONA_NAMES as readonly string[]).includes(name.trim().toLowerCase());
 }

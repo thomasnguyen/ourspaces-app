@@ -69,6 +69,28 @@ No tests, ever (hackathon rule — see AGENTS.md). The check is:
 npm run build   # tsc -b && vite build; convex/ has its own: npx tsc -p convex --noEmit
 ```
 
+## Read-only live sessions
+
+Some UI only exists in live mode — the entry gate (`ClaimCard` gate variant,
+`GateCursor`) is never mounted by the mock page. To drive live without
+writing anything into prod, wire `readonly.mjs` into your `eval` script:
+
+```js
+import { makeReadOnly } from "../../.claude/skills/run-ourspaces/readonly.mjs";
+export default async ({ page, ctx, mockUrl }) => {
+  const dropped = await makeReadOnly(ctx);      // before the first goto
+  await page.goto(mockUrl("#/space/crew"));     // LIVE=1 makes this the real room
+  // ... drive ...
+  console.log([...new Set(dropped)]);           // e.g. Mutation:spaces:joinDemoSpace
+};
+```
+
+It routes the Convex sync WebSocket, forwards every server→client frame and
+every read, and drops client→server `Mutation` / `Action` frames (join,
+presence heartbeats, anonymous sign-in). Queries still stream, so the room
+renders real data. Run with `LIVE=1`. Pass the same `dropped` array to a
+second context (e.g. a phone profile) to keep one log.
+
 ## Gotchas
 
 - **`?mock=1` must be in the search string, before the hash** —

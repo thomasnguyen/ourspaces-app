@@ -5,6 +5,28 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Entry gate — the door opens (2026-09-15):** the claim gate is a doorway,
+  not a form. Every entry names the room at the top (roster faces + the live
+  "N here right now" from the presence component, or "nobody in yet · you're
+  first"); the name is the loud field, pre-selected on desktop so one
+  keystroke replaces "momo" and Enter walks in; colour + face + placeholder
+  name collapsed into eight one-tap **looks** (`PERSONAS`, a typed name
+  survives a look change; two colours added so all eight are distinct). Your
+  own cursor — the same LiveCursor peers see — rides the pointer over the
+  blurred room and recolours as you tap (`GateCursor.tsx`; the OS arrow is
+  hidden over the scrim; phones get it parked in the card). On enter the card
+  collapses into the cursor tip (WAAPI, glide, 440ms), the scrim lifts from
+  120ms off a canvas that was there all along (the canvas is keyed on the slug
+  now, not on the gate state — remounting it on entry replayed the wavefront
+  and the widgets you were looking at blinked out), the header enters at
+  200ms, and the drawn cursor hands over to the real one last. Popover variant (header self
+  face) keeps the same looks row. Browser-verified in live mode at 1440×900
+  and on a 390px touch profile with a **read-only harness** (the Convex
+  socket forwards reads but drops every Mutation/Action, so the run wrote no
+  member, presence or sign-in into prod — `.claude/skills/run-ourspaces/readonly.mjs`).
+  Mock mode has no gate at all (App.tsx's mock page never mounts ClaimCard),
+  so the gate can only be checked live. Build passes. Not deployed.
+
 - **New-space flow (2026-09-15):** templates now lead above a compact board
   preview, with a single “create space” action. Color, symbol and starting
   widgets are tucked into Customize; removed the decorative cursor and crowd.
@@ -1298,6 +1320,19 @@ Backward-looking history lives in `hackathon.md`.
   counts in it — with a page that only describes it. And the block (`#/home`)
   already is a lobby with real rooms and real counts, it was just unreachable:
   the rail brand pointed at `/`, which is the build room. Shipped instead:
+- 2026-09-15: **The entry gate is a doorway, not a form.** Name the room,
+  show your cursor live, make the look one tap, Enter walks in, and the exit
+  is a sequence (card → cursor, then blur lifts, then the wavefront) rather
+  than an unmount. Kept the photo faces for visitors (they match the crew's
+  faces on the canvas); the hash-assigned emoji stays in the data as the
+  no-avatar fallback but is no longer shown in the heading. Invite links
+  still remount on the route swap after the collapse.
+
+- 2026-09-15: **Radio entry point lives in the bottom dock, not the header.**
+  The header is the nameplate and fades on scroll; the dock is the room
+  controls strip. The playlist card stays on the canvas (who put it on, vibes,
+  station picker); the dock chip is the always-visible way in.
+
 - 2026-09-15: **Radio entry point lives in the bottom dock, not the header.**
   The header is the nameplate and fades on scroll; the dock is the room
   controls strip. The playlist card stays on the canvas (who put it on, vibes,
