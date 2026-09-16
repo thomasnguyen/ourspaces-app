@@ -73,7 +73,7 @@ import type { BuildRoomLink } from "../data/buildroom";
 import { cannedLinkQuestions } from "../lib/linkQuestions";
 import { guessLinkKind } from "../lib/mockArrival";
 import type { PhotoComment } from "../components/PhotoWallGallery";
-import { useIdentity } from "../live/identity";
+import { getPresenceId, useIdentity } from "../live/identity";
 import { useLiveHandlers } from "../live/useLiveHandlers";
 import { useLivePoll } from "../live/useLivePoll";
 import { useLiveSpace } from "../live/useLiveSpace";
@@ -338,6 +338,10 @@ export function LiveSpacePage({
   const showLoading = useShowAfter(status === "loading");
   const ghostLifecycle = useGhostLifecycle(showLoading, status);
   const identity = useIdentity();
+  /* Room occupancy counts TABS, like the cursors do (see getPresenceId) —
+     two windows of one browser are two viewports, and the head count that
+     disagreed with the cursors on screen was the tell. */
+  const presenceId = getPresenceId();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasStageRef = useRef<HTMLDivElement>(null);
@@ -524,7 +528,7 @@ export function LiveSpacePage({
      canvas's live strip both take this number, so they cannot disagree. */
   const hereCount = useQuery(
     api.roomPresence.onlineForSpace,
-    space?.slug ? { spaceId: space.slug, userId: identity.userId } : "skip",
+    space?.slug ? { spaceId: space.slug, userId: presenceId } : "skip",
   )?.total;
   /* The board's raw rows, for their createdAt — the adapted widgets the page
      draws with drop it. Same query + args as useSpaceData's, so the client
@@ -2191,7 +2195,7 @@ export function LiveSpacePage({
     <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${gateLeaving ? "is-gate-leaving" : ""} ${claimOpen ? "has-claim-popover" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""} ${spacePan.panning ? "is-canvas-panning" : ""} ${spacePan.spaceHeld ? "is-space-panning" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
       <Rail activeId={slug} onSelectSpace={selectSpace} onCreateClick={openSpacePicker} />
       {roomEntered && space?.slug && (
-        <RoomPresenceHeartbeat roomId={space.slug} userId={identity.userId} />
+        <RoomPresenceHeartbeat roomId={space.slug} userId={presenceId} />
       )}
       <SpaceHeader
         key={boardKey}

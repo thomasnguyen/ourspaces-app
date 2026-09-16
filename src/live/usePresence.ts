@@ -8,7 +8,7 @@ import {
 } from "react";
 import type { RefObject } from "react";
 import { api } from "../../convex/_generated/api";
-import type { LiveIdentity } from "./identity";
+import { getPresenceId, type LiveIdentity } from "./identity";
 import type {
   CanvasLayout,
   GestureClaim,
@@ -30,6 +30,12 @@ const SEND_INTERVAL_MS = 50;
 const KEEPALIVE_MS = 20_000;
 const PRESENCE_TTL_MS = 30_000;
 const GESTURE_TTL_MS = 1_500;
+/* A held-still drag still has to say so. Nothing writes while the pointer
+ * isn't moving, so a hand that pauses mid-drag for a beat let the server-side
+ * gesture go stale — peers watched the card glide home as if it had been
+ * dropped, and the real drop was then refused as a stale lock and snapped the
+ * card back. Comfortably inside GESTURE_TTL_MS, and 2/s while parked. */
+const GESTURE_KEEPALIVE_MS = 500;
 
 type GestureInput = Omit<LocalGesture, "sessionId"> & { sessionId: string };
 type PresencePoint = { x: number; y: number };
@@ -62,6 +68,11 @@ export function usePresence(
     api.presence.listHereNow,
     spaceId ? { spaceId: spaceId as never } : "skip",
   );
+  /* Presence is keyed per TAB, not per person — see getPresenceId(). Two
+     windows of one browser are one authenticated user, and keying on that
+     made the second window overwrite the first one's row instead of joining
+     it. Everything else about this person still travels under identity. */
+  const presenceId = getPresenceId();
   const [expiryTick, setExpiryTick] = useState(0);
   const point = useRef({ x: 0, y: 0 });
   const zonePoint = useRef({ x: 0, y: 0 });
@@ -93,10 +104,11 @@ export function usePresence(
     () => ({
       spaceId: spaceId as never,
       ...identity,
+      userId: presenceId,
       cursorX: point.current.x,
       cursorY: point.current.y,
     }),
-    [identity, spaceId],
+    [identity, presenceId, spaceId],
   );
 
   const clearHeartbeatTimer = useCallback(() => {
@@ -125,10 +137,11 @@ export function usePresence(
     void heartbeatMutation({
       spaceId: spaceId as never,
       ...identity,
+      userId: presenceId,
       ...(zoneName.current ? zonePoint.current : point.current),
       zone: zoneName.current,
     });
-  }, [clearHeartbeatTimer, heartbeatMutation, identity, spaceId]);
+  }, [clearHeartbeatTimer, heartbeatMutation, identity, presenceId, spaceId]);
 
   const queueHeartbeat = useCallback(() => {
     if (!spaceId || document.hidden || activeSessionId.current) return;
@@ -269,12 +282,35 @@ export function usePresence(
     };
   }, [sendHeartbeat, spaceId]);
 
+  /* "I am still holding it." Pointermove is the only thing that refreshes a
+     gesture, and sendHeartbeat deliberately bows out while one is active — so
+     a hand that pauses mid-drag stops writing entirely, and past
+     GESTURE_TTL_MS the server calls the lock abandoned. Peers then watch the
+     card glide home while it is still very much held, and the drop that
+     follows is refused as stale, snapping it back to where it was picked up. */
+  useEffect(() => {
+    if (!spaceId) return;
+    const timer = window.setInterval(() => {
+      const gesture = latestGesture.current;
+      if (
+        !gesture ||
+        !gestureClaimed.current ||
+        activeSessionId.current !== gesture.sessionId ||
+        performance.now() - lastGestureSent.current < GESTURE_KEEPALIVE_MS
+      ) {
+        return;
+      }
+      queueGestureUpdate(gesture);
+    }, GESTURE_KEEPALIVE_MS);
+    return () => window.clearInterval(timer);
+  }, [queueGestureUpdate, spaceId]);
+
   useEffect(() => {
     if (!(rows ?? []).length) return;
     const now = Date.now();
     let nextExpiry = Number.POSITIVE_INFINITY;
     for (const row of rows ?? []) {
-      if (row.userId === identity.userId) continue;
+      if (selfIds.current.has(row.userId)) continue;
       const presenceExpiry = row.updatedAt + PRESENCE_TTL_MS;
       if (presenceExpiry > now) nextExpiry = Math.min(nextExpiry, presenceExpiry);
       const gestureExpiry = row.gesture?.updatedAt
@@ -288,7 +324,7 @@ export function usePresence(
       Math.max(1, nextExpiry - now + 1),
     );
     return () => window.clearTimeout(timer);
-  }, [expiryTick, identity.userId, rows]);
+  }, [expiryTick, rows]);
 
   useEffect(
     () => () => {
@@ -298,7 +334,7 @@ export function usePresence(
       if (spaceId && sessionId) {
         void cancelMutation({
           spaceId: spaceId as never,
-          userId: identity.userId,
+          userId: presenceId,
           sessionId,
         });
       }
@@ -307,7 +343,7 @@ export function usePresence(
       pendingGesture.current = null;
       latestGesture.current = null;
     },
-    [cancelMutation, clearGestureTimer, clearHeartbeatTimer, identity.userId, spaceId],
+    [cancelMutation, clearGestureTimer, clearHeartbeatTimer, presenceId, spaceId],
   );
 
   const claimGesture = useCallback(
@@ -402,7 +438,7 @@ export function usePresence(
       }
       const cancelled = await cancelMutation({
         spaceId: spaceId as never,
-        userId: identity.userId,
+        userId: presenceId,
         sessionId,
       });
       if (activeSessionId.current === sessionId) {
@@ -415,7 +451,7 @@ export function usePresence(
     [
       cancelMutation,
       clearGestureTimer,
-      identity.userId,
+      presenceId,
       queueHeartbeat,
       spaceId,
     ],
@@ -441,6 +477,9 @@ export function usePresence(
     // Idempotent, so doing it here rather than in an effect is safe — and an
     // effect would run a frame too late, which is exactly the frame the
     // phantom self-cursor would paint in.
+    selfIds.current.add(presenceId);
+    // The person, too: a row this browser wrote under its auth id before this
+    // tab keyed on the tab id is still us, and shouldn't render as company.
     selfIds.current.add(identity.userId);
     return (rows ?? [])
       .filter(
@@ -469,7 +508,7 @@ export function usePresence(
           gesture,
         };
       });
-  }, [expiryTick, identity.userId, rows]);
+  }, [expiryTick, identity.userId, presenceId, rows]);
 
   // Company changes the write rate: alone is keepalive-only, occupied streams.
   // The edge that matters is the transition INTO company — the newcomer's own

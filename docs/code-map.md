@@ -179,6 +179,15 @@ except the legacy unprefixed scene) · `boards/starry.ts` + `boards/wave.ts`
 **live/** — `useSpaceData.ts` / `useLiveSpace.ts` / `useLiveHandlers.ts`
 (gesture claim/accept/reject) / `useLivePoll.ts` / `usePresence.ts`
 (canvas cursors + gestures at 20Hz — `SEND_INTERVAL_MS` = 50ms;
+**keyed per TAB, not per person**: `getPresenceId()` from identity.ts, because
+two windows of one browser share the Convex Auth session and so share
+`identity.userId` — they used to overwrite each other's single presence row
+and each filtered it out as "me", which killed peer cursors and live drag for
+anyone testing the obvious way. Room occupancy (`RoomPresenceHeartbeat`,
+Rail's dots) uses the same key so the head count and the cursors agree.
+`GESTURE_KEEPALIVE_MS` = 500ms re-sends a held-still gesture, since
+pointermove is otherwise the only thing refreshing it and a paused drag went
+stale at the 1.5s TTL — peers saw the card glide home and the drop was refused.
 `reportZone(x, y, "cozy:<boardId>")` switches the
 heartbeat to 0..1 zone coords for the coloring room, canvas pointermove
 switches it back) ·
@@ -195,7 +204,7 @@ subscribes to `work.recent` with a 30s-quantized `since` so the query args
 are stable between buckets, takes the newest row, and expires it: a `done`
 line lingers 9s as the payoff, a `running` line is capped at 45s so a dead
 action can never pin "fetching x" to the canvas forever) ·
-`dataMode.ts` (live/mock detection) · `identity.ts` (local identity + colors; `PERSONAS` = the eight one-tap looks, `isPersonaName`) ·
+`dataMode.ts` (live/mock detection) · `identity.ts` (local identity + colors; `PERSONAS` = the eight one-tap looks, `isPersonaName`; `getPresenceId()` = the per-tab presence key, sessionStorage, never swapped by `adoptAuthUserId`) ·
 `presenceTypes.ts` · `snapshot.ts` (localStorage snapshot) · `adapt.ts`
 (Convex↔UI key escaping)
 
