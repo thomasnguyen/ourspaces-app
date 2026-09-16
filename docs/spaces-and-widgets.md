@@ -258,3 +258,9 @@ Plan / Play / Build categories. Frames are a separate compact action. Stickers
 stay in one horizontal paper strip at the bottom, with arrows and native
 horizontal scrolling. Choosing an item preserves the existing cursor placement
 flow. Closing the panel resets the catalog to quick picks.
+
+Browse-all is an expanded gallery: four columns on desktop, three on tablet,
+and two on phones. Widgets group under “a little of you,” “make a plan,”
+“just for fun,” and “make something together.” Illustrated samples are
+noninteractive previews; the enclosing tile starts the existing placement
+flow. The search and counted filters stay above the scrolling gallery.

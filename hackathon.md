@@ -12,7 +12,7 @@
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-16T01:55:03Z
+- **Last updated:** 2026-09-16T02:11:20Z
 
 ## Highlights
 
@@ -656,3 +656,12 @@ Browser-verified at desktop and phone widths, including filtering, empty
 results, sticker scrolling, and the existing cursor placement handoff;
 reviewed a recorded interaction frame. `npm run build` passes. No backend
 changes or deployment.
+
+### 2026-09-16 - working tree
+Expanded browse-all into a grouped widget gallery with larger illustrated
+samples, counted category filters, and an add affordance on each tile.
+The gallery uses four desktop columns and two phone columns, with a smaller
+sticker strip to leave more room for browsing. Quick picks retain their compact
+layout (`WidgetPicker.tsx`, `index.css`). Verified desktop and phone layouts,
+search, empty results, filters, and photo-wall placement in the browser; reviewed
+a recorded interaction frame. Build passes. Not deployed.
