@@ -518,7 +518,8 @@ export function SpaceHeader({
   spaceName?: string;
   hereCount?: number;
   self?: { name: string; color: string; emoji: string; avatarUrl?: string };
-  onSelfClick?: () => void;
+  /** Gets the click point so the identity popover can show your cursor right there. */
+  onSelfClick?: (event: { clientX: number; clientY: number }) => void;
   livePeers?: LivePeer[];
   arrivalPeerId?: string;
 }) {

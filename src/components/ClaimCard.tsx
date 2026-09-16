@@ -36,7 +36,8 @@ const COLLAPSE_MS = 440;
  * The gate is a doorway, not a form: the room is named at the top, your real
  * cursor rides the pointer outside the card (GateCursor), a look is one tap,
  * and Enter walks you in. On `leaving` the whole card collapses into the
- * cursor tip — the room's own entrance plays underneath (see enterRoom).
+ * cursor tip — both variants; the popover leaves the same way (see enterRoom
+ * and closeClaim in LiveSpace).
  */
 export function ClaimCard({
   open,
@@ -94,6 +95,7 @@ export function ClaimCard({
     const target = cursorPosition?.current ?? { x: centerX, y: centerY - 60 };
     const dx = target.x - centerX;
     const dy = target.y - centerY;
+    card.style.transformOrigin = "50% 50%"; // the popover's is top right
     card.animate(
       [
         { transform: "translate(0px, 0px) scale(1)", opacity: 1 },
