@@ -7,37 +7,31 @@
 - **Repo:** https://github.com/thomasnguyen/ourspaces-app
 - **Frontend:** Convex static hosting
 - **Convex deployment:** https://necessary-cobra-892.convex.cloud
-- **Components:** static-hosting, firecrawl, agentMail, migrations, aggregate, sharded-counter, rate-limiter, action-retrier, action-cache, workpool, workflow, batch-worker, agent, rag, persistent-text-streaming, presence
-- **Convex features:** schema (`widgets.data` is a union of 32 typed per-widget validators, plus one open `v.record` arm still carried for pre-union prod rows — see `convex/widgetData.ts`), tables, indexes, full-text search index, queries, mutations, actions, HTTP actions (svix-verified inbound mail, token-streaming ask endpoint), realtime queries, real cursor pagination, a subscribed deploy-version row (static-hosting) that offers every open tab a refresh, crons (presence sweep, daily recap via workpool, Friday weekly digest via a durable workflow, Friday stale-link refresh), scheduled functions, internal mutations, file storage, presence (canvas cursors/gestures, hand-rolled; room occupancy, component), agent threads, semantic retrieval (the `rag` component owns the vector index; no hand-rolled `.vectorIndex()` in our schema), `returns:` validators on all 130 functions that can carry one (the 5 HTTP actions return a `Response`)
+- **Components:** static-hosting, agentMail, firecrawl, migrations, aggregate, sharded-counter, rate-limiter, action-retrier, action-cache, workpool, workflow, batch-worker, agent, rag, persistent-text-streaming, presence, authWellKnown
+  - 17 components, 18 mounts: `aggregate` is mounted twice (as `pollTallies` and `memberCounts`), and `agentMail` + `authWellKnown` are ours — `authWellKnown` only publishes OIDC documents over HTTP, so no app code calls it. `@convex-dev/ai-sdk-provider` is not a component either — it is the AI SDK provider package `convex/ai.ts` imports for the gateway.
+- **Convex features:** schema — 12 tables, 29 indexes, 1 full-text search index, 1 vector index (`widgets.data` is a union of 32 typed per-widget validators plus one open `v.record` arm — `convex/widgetData.ts`). 43 queries + 69 mutations + 33 actions = 145 functions, every one carrying a `returns:` validator; the 6 HTTP actions (svix-verified inbound mail, `/api/ask-stream`) have no `returns:` slot to fill — `httpAction` takes a bare handler returning a `Response`. Realtime queries, real cursor pagination, a subscribed deploy-version row (static-hosting) that offers every open tab a refresh, 4 crons (presence sweep, daily recap via workpool, Friday weekly digest via a durable workflow, Friday stale-link refresh), scheduled functions, internal mutations, file storage, presence (canvas cursors/gestures hand-rolled; room occupancy via the component), agent threads, semantic retrieval (`rag` grounds ask-the-space; `widgets.by_embedding` is the vector index behind "already on the board" — `convex/similar.ts`)
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
-- **AI models:** gpt-oss-120b via a Cloudflare AI proxy (chat, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set), gpt-4o-mini via the OpenAI API (chat, used when the proxy is not configured — a config-time choice, not a runtime failover), text-embedding-3-small via the OpenAI API (rag embeddings — the proxy has no embeddings route)
+- **AI models:** everything runs through the **Convex AI Gateway** (`@convex-dev/ai-sdk-provider` + `getServiceToken("ai-gateway")`, so the deployment itself is the credential and no API key of ours is in the path): `openai/gpt-4o-mini` for chat and structured decisions, `openai/text-embedding-3-small` (1536 dims) for rag + the `widgets.by_embedding` echo index. Set `AI_GATEWAY_DISABLED` to route around a gateway incident without a deploy and the two pre-gateway targets take over — gpt-oss-120b via a Cloudflare AI proxy (`AI_PROXY_URL` + `AI_PROXY_TOKEN`), else gpt-4o-mini via `OPENAI_API_KEY` (embeddings too — the proxy is chat-only). That order is a config-time choice, not a runtime failover
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-16T18:18:35Z
+- **Last updated:** 2026-09-17T21:30:00Z
 
 ## Highlights
 
-- Sixteen Convex components, **each doing a real job** — migrations backfill
-  legacy data, two named aggregate instances replace `.collect()` counting
-  for poll tallies and member counts, a sharded counter drives the landing
-  page's live totals, a rate limiter guards every LLM/mail/paint hot path,
-  action-retrier + action-cache wrap every Firecrawl/AgentMail call, workpool
-  bounds the daily recap fan-out, workflow makes the weekly digest durable,
-  batch-worker drains a stale-link refresh queue, an agent thread gives
-  "ask the space" real conversational memory, rag grounds it with real
-  vector search, persistent-text-streaming streams answers over HTTP, and
-  presence tracks room occupancy for the space list — layered on top of a
-  typed `widgets.data` schema, real cursor pagination, full-text search, and
-  `returns:` validators on all 78 functions. Went from 1 component in use to
-  15 in a single session; every one verified live against the dev
-  deployment, not just deployed.
-- 148 commits in 7 days, **all inside the hackathon window**; every log entry
-  below is pinned to a commit hash so the story is checkable against history.
+- Seventeen Convex components, **each doing a real job** — migrations backfills
+  legacy rows; two named aggregate instances replace `.collect()` counting;
+  sharded-counter drives the landing page's totals; rate-limiter puts token
+  buckets on the LLM, mail and paint paths; action-retrier and action-cache wrap
+  the Firecrawl and AgentMail calls; workpool bounds the daily recap fan-out;
+  workflow makes the weekly digest durable; batch-worker drains a stale-link
+  refresh queue; agent gives "ask the space" conversational memory; rag grounds
+  it with vector search; persistent-text-streaming backs `/api/ask-stream`,
+  which streams an answer token by token and persists it; presence tracks room
+  occupancy — **depth, not a demo veneer**.
+- 262 commits, **all inside the hackathon window**; every log entry below is
+  pinned to a commit hash so the story is checkable against history.
 - 32 widget types on **one live multiplayer canvas** — countdowns, ballot
   polls, potluck sign-up sheets, expense splits, itineraries, photo walls,
   daily questions, and more — all driven by Convex realtime queries.
-- Deep Convex surface, **not a demo veneer**: presence with live cursors and a
-  cron that sweeps stale rows, file-storage-backed photo prints with notes on
-  the back, scheduled and internal mutations, HTTP actions for inbound email.
 - All three sponsors **doing real work**: Convex hosts the backend *and* the
   static frontend, Firecrawl turns any pasted URL into a structured reading
   card, and AgentMail provisions a real inbox per space with a live webhook.
@@ -48,9 +42,10 @@
   someone's IOU; a URL mailed to the build room lands in the reading pile
   Firecrawl-enriched; a note mailed to the couple arrives as a sealed kraft
   letter you unfold. Friday, each space mails its week back.
-- Collaborative **paint-by-number**: 50-region vector boards (traced Starry
-  Night and Great Wave postcards) where fills, palettes, and board-scoped
-  cursors sync live between two people coloring together.
+- Collaborative **paint-by-number**: three vector boards — traced Starry Night
+  (78 regions) and Great Wave (58), plus a 50-region scene — where fills,
+  palettes, and board-scoped cursors sync live between two people coloring
+  together.
 - A handmade **material language**: torn-paper notes with real fiber texture,
   frosted-glass reading sheets, die-cut vinyl stickers — built as a design
   system, not one-off CSS.
@@ -82,12 +77,12 @@
 | Static hosting component | `convex/convex.config.ts` | `fa9688e` |
 | AgentMail (per-space inboxes, inbound webhook) | `convex/agentmail.ts` | `16fa04a` |
 | Firecrawl (URL → structured reading card) | `convex/firecrawl.ts` | `ec07426`, `9a63ab7` |
-| OpenAI `gpt-4o-mini` (reading-circle starters) | `convex/questions.ts` | `8c20025` |
+| `gpt-4o-mini` via the AI Gateway (reading-circle starters) | `convex/questions.ts` | `8c20025` |
 | Inbound-mail router (email → widget mutations) | `convex/inbox.ts` | `653453b` |
 | Weekly digest cron (space → its senders) | `convex/digest.ts`, `convex/crons.ts` | `c2e2c43` |
 | Live inboxes, real end-to-end mail | `convex/agentmail.ts` | `8c42502` |
 | Typed `widgets.data` union, real pagination, full-text search index | `convex/widgetData.ts`, `convex/schema.ts`, `convex/messages.ts` | `602fff6` |
-| `returns:` validators on all 78 functions | every `convex/*.ts` | `495584a` |
+| `returns:` validators on every function | every `convex/*.ts` | `495584a` |
 | migrations (legacy letter backfill) | `convex/migrations.ts` | `45ff2a3` |
 | aggregate — poll tallies + member counts | `convex/votes.ts`, `convex/spaces.ts` | `45ff2a3` |
 | sharded-counter — landing page live totals | `convex/stats.ts` | `0e5ca3c` |
@@ -98,7 +93,7 @@
 | batch-worker — stale-linkCard refresh queue | `convex/batch.ts` | `67d5452` |
 | agent — "ask the space" conversational threads | `convex/agent.ts`, `convex/recap.ts` | `b1173c7` |
 | rag — vector search grounding `recap.ask` | `convex/rag.ts` | `a7db717` |
-| persistent-text-streaming — HTTP token streaming | `convex/streaming.ts` | `d017eb7` |
+| persistent-text-streaming — `/api/ask-stream`, streamed + persisted | `convex/streaming.ts` | `d017eb7` |
 | messages full-text search | `convex/messages.ts` | `d017eb7` |
 | presence — space-list room occupancy | `convex/roomPresence.ts`, `src/components/Rail.tsx` | `fc2418b` |
 
@@ -695,3 +690,72 @@ saved locally. No identity applied to the app. Build passes. No deployment.
 Follow-up: refined the logo itself and saved a reviewed presentation with
 monochrome and app-icon examples locally; the app still uses its existing mark.
 Git operations are blocked by the pending Xcode license agreement.
+
+### 2026-09-17 - working tree
+Made the self-reported numbers match a repo scan. Counted the function surface
+with a TypeScript AST pass, not grep: 41 queries + 68 mutations + 33 actions =
+142, and all 142 carry a `returns:` validator — zero misses, and none of the
+142 `returns:` keys is a false positive from a nested object. The 6 HTTP actions
+are the only functions without one, because `httpAction` takes a bare handler
+returning a `Response` (`HttpActionBuilder` has no options object), so the
+coverage is 100% of what can be validated. That arithmetic is now stated in
+`README.md`, the `hackathon.md` header and `public/hackathon.json` instead of
+being left implied. Corrected in the same pass: the header claimed 130
+functions and 5 HTTP actions, the highlights claimed 78 functions and 16
+components, and the commit count said 148 in 7 days (it is 262). The header also
+claimed "no hand-rolled `.vectorIndex()` in our schema" — `convex/schema.ts`
+declares `widgets.by_embedding`, which is exactly the vector index the facts
+block counts, so that read as a denial of our own feature. Components are now
+listed as what they are: 17 components over 18 mounts, including `authWellKnown`
+(ours, OIDC discovery) and `aggregate` mounted twice as `pollTallies` and
+`memberCounts`. No code changed.
+
+### 2026-09-17 - working tree
+Adopted the **Convex AI Gateway** as the app's model provider. `convex/ai.ts`
+had routed every LLM call to one of two third parties — RoomDone's shared
+Cloudflare Worker (`AI_PROXY_URL` + `AI_PROXY_TOKEN`) or direct OpenAI with our
+own `OPENAI_API_KEY` — and its header comment said why: the gateway "isn't
+enabled on our team's plan (checked 2026-09-09)". Re-checked on 2026-09-17 and
+it is enabled, so the hand-rolled provider routing that existed only to stand
+in for the platform feature now stands behind it.
+
+Verified before rewiring anything, with a throwaway `internalAction` against
+prod: `getServiceToken("ai-gateway")` mints a 752-char deployment JWT,
+`GET /v1/models` returns 445 models, a real `generateText` through
+`convexGateway("openai/gpt-4o-mini")` came back with usage accounting, and a
+real embedding through `/v1/embeddings` came back at **1536 dims** — the number
+`convex/schema.ts` pins `widgets.by_embedding` and the `rag` component to. The
+load-bearing check was whether the gateway's `openai/text-embedding-3-small` is
+*the same* model as the vectors already in the index: embedding one string both
+ways scored **cosine 1.0000000000000002**, with an
+`openai/text-embedding-3-large` control coming back at 3072 dims to prove the
+gateway honours the model id at all. Nothing stored needed re-indexing.
+
+So chat *and* embeddings moved: `chatTarget()` gained a `gateway` arm (all
+three targets speak OpenAI's `/v1/chat/completions`, so only the URL, the model
+id and how the request is authorized differ), `languageModel()` hands
+`agent.ts` a `convexGateway` model, and `embeddingModel()` hands `rag.ts` and
+`similar.ts` the gateway's embedding model, capped at the gateway's documented
+512-input batch limit. `@convex-dev/ai-sdk-provider@0.1.0` ships only a chat
+model — `convexGateway.embeddingModel` lands in 0.2.x — so the embedding side is
+assembled from the same two pieces that package uses. The credential is minted
+per call, inside the running action, and never stored; `response_format:
+json_object` is now on by default instead of only on the OpenAI path.
+
+The Cloudflare proxy and direct-OpenAI paths stay, unchanged, as the
+config-time fallbacks they always were, reachable by setting the new
+`AI_GATEWAY_DISABLED` env var — a switch that routes around a gateway incident
+without a deploy, which matters for a service this new sitting under a live
+demo. Order is still a preference, not a failover.
+
+Confirmed end to end against prod after the cutover, not just deployed:
+`chatTarget()` resolves to `{kind: "gateway", url:
+https://ai-gateway.convex.dev/v1/chat/completions}`, `languageModel()` reports
+provider `convexGateway.chat` and `embeddingModel()` reports
+`convexGateway.embedding` / `openai/text-embedding-3-small`;
+`digest.composeDigestText` wrote a real weekly digest (not its canned
+`summaries` fallback) through `completeJson`; `similar.echoCheck` matched a
+fresh gateway query vector against an OpenAI-era stored vector for the crew
+board's cake poll at **0.711** — inside the 0.62–0.79 band the 0.55 threshold
+was measured with — while an unrelated control still returned `null`; and
+`rag.groundQuestion` retrieved real grounding text. The probe file was deleted.

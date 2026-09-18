@@ -2,42 +2,40 @@
   "manifestVersion": 1,
   "project": "OurSpaces",
   "tagline": "Group chats forget. Spaces remember.",
-  "whatItDoes": "Group plans die in the group chat. OurSpaces gives a friend group a persistent shared canvas — countdowns, polls, potluck sheets, photo piles, reading cards — that every member sees update live, cursor to cursor. 32 widget types, one realtime board per space.",
+  "whatItDoes": "Group plans die in the group chat. OurSpaces gives a friend group a persistent shared canvas — countdowns, polls, potluck sheets, photo piles — that every member sees update live, cursor to cursor. 32 widget types, one board per space.",
   "liveApp": "https://necessary-cobra-892.convex.site",
   "repo": "https://github.com/thomasnguyen/ourspaces-app",
   "convexDeployment": "https://necessary-cobra-892.convex.cloud",
-  "frontend": "React 19 + Vite + Tailwind v4, served by @convex-dev/static-hosting mounted at \"/\"; our own HTTP routes sit under /api.",
+  "frontend": "React 19 + Vite + Tailwind v4, served by @convex-dev/static-hosting at \"/\"; our HTTP routes sit under /api.",
   "event": "Convex All Gas Hackathon",
   "started": "2026-08-27",
-  "lastUpdated": "2026-09-16",
-  "repoActivity": {
-    "commits": 260,
-    "contributors": 1
-  },
+  "lastUpdated": "2026-09-17",
   "convex": {
-    "sourceFiles": 50,
+    "sourceFiles": 47,
+    "sourceFilesNote": "47 TypeScript modules under convex/, excluding convex/_generated (plus convex/tsconfig.json).",
     "schema": {
       "file": "convex/schema.ts",
-      "tablesDefined": 11,
-      "indexes": 27,
+      "tablesDefined": 12,
+      "indexes": 29,
       "searchIndexes": 1,
       "vectorIndexes": 1,
-      "tablesNote": "11 tables of our own; @convex-dev/auth's ...authTables are spread in on top and not counted in the 11.",
-      "typedWidgetData": "widgets.data is a 33-arm union (convex/widgetData.ts): 32 typed per-widget validators plus one open fallback arm for pre-union rows."
+      "tablesNote": "12 of our own; @convex-dev/auth's ...authTables are spread in on top, uncounted.",
+      "typedWidgetData": "widgets.data is a 33-arm union (convex/widgetData.ts): 32 typed per-widget validators plus one open fallback arm."
     },
     "functions": {
-      "queries": 41,
-      "mutations": 68,
+      "queries": 43,
+      "mutations": 69,
       "actions": 33,
       "httpActions": 6,
-      "returnValidators": 142
+      "returnValidators": 145,
+      "note": "145 = 43 queries + 69 mutations + 33 actions, every one carrying a returns: validator. The 6 HTTP actions have no returns: slot — httpAction takes a bare handler returning a Response."
     },
     "features": [
       "Realtime reactive queries drive every board and thread.",
       "Cursor pagination (.paginate) on message threads; full-text search index on messages, filtered by spaceId.",
       "Vector index widgets.by_embedding + ctx.vectorSearch (convex/similar.ts): an arriving link asks whether the board already holds it.",
       "Scheduler, internal mutations, 4 crons (convex/crons.ts), file storage behind the photo walls.",
-      "HTTP router (convex/http.ts): token-streaming /api/ask-stream and an svix-HMAC-verified inbound AgentMail webhook."
+      "HTTP router (convex/http.ts): /api/ask-stream is the live ask path — persistent-text-streaming streams the answer to the asking tab and persists it for everyone else; svix-HMAC-verified inbound AgentMail webhook."
     ]
   },
   "components": {
@@ -65,27 +63,32 @@
       "auth",
       "authWellKnown"
     ],
-    "aggregateNote": "memberCounts and pollTallies ARE @convex-dev/aggregate: convex.config.ts registers that component twice under those names, so code calls components.pollTallies / components.memberCounts, never components.aggregate.",
-    "authNote": "\"auth\" is @convex-dev/auth, a library rather than an app.use'd component; authWellKnown is our own component, mounted at /.well-known for OIDC discovery documents."
+    "aggregateNote": "memberCounts and pollTallies ARE @convex-dev/aggregate, registered twice under those names — code calls components.pollTallies / components.memberCounts, never components.aggregate.",
+    "authNote": "\"auth\" is @convex-dev/auth, a library rather than an app.use'd component; authWellKnown is our own component, mounted at /.well-known for OIDC discovery documents.",
+    "aiSdkProviderNote": "@convex-dev/ai-sdk-provider is an AI SDK provider package, not a Convex component: nothing to app.use, nothing to call as components.<name>. Its convexGateway(modelId) is imported and called in convex/ai.ts."
   },
   "auth": {
     "provider": "Convex Auth (@convex-dev/auth)",
     "modes": "Anonymous guest sessions, plus join with a six-digit code emailed from the space's AgentMail inbox (convex/otp.ts).",
-    "note": "Identity comes from getAuthUserId(), so a scan for direct ctx.auth calls finds none."
+    "note": "Identity comes from getAuthUserId() (@convex-dev/auth), which wraps ctx.auth — nothing of ours calls ctx.auth directly."
   },
   "ai": {
+    "provider": "Convex AI Gateway (https://ai-gateway.convex.dev/v1) via @convex-dev/ai-sdk-provider + getServiceToken(\"ai-gateway\"): every call authenticates as the deployment on a per-call credential, no API key of ours in the path.",
     "chatModels": [
-      "@cf/openai/gpt-oss-120b — via a Cloudflare Workers AI proxy, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set",
-      "gpt-4o-mini — direct OpenAI API when the proxy is unconfigured; a config-time choice, not a runtime failover"
+      "openai/gpt-4o-mini — structured JSON decisions (completeJson → the gateway's /v1/chat/completions) and the agent component's model (convexGateway(), convex/agent.ts)"
     ],
-    "embeddingModel": "text-embedding-3-small, 1536 dimensions",
-    "convexAiGateway": false,
-    "scannerNote": "A scan may report no model ids: they are string constants in convex/ai.ts, not inline SDK model literals."
+    "embeddingModel": "openai/text-embedding-3-small, 1536 dimensions — rag retrieval and the widgets.by_embedding echo index, on the same gateway through an OpenAI-compatible client.",
+    "convexAiGateway": true,
+    "fallbacks": [
+      "Config-time order, never a runtime failover (a failing target is not retried against the next): the gateway unless AI_GATEWAY_DISABLED is set, then @cf/openai/gpt-oss-120b on a Cloudflare Workers AI proxy (AI_PROXY_URL + AI_PROXY_TOKEN), else gpt-4o-mini on OPENAI_API_KEY.",
+      "That proxy is chat-only, so with the gateway off embeddings need OPENAI_API_KEY — the same 1536-dim text-embedding-3-small."
+    ],
+    "modelIdsNote": "Model ids are named constants in convex/ai.ts, not inline literals."
   },
   "highlights": [
-    "17 component references across 16 installed components, each with a job: migrations backfills legacy rows, two aggregate instances replace .collect() counting, sharded-counter drives the landing totals, rate-limiter guards every LLM/mail/paint path.",
-    "action-retrier + action-cache wrap the Firecrawl and AgentMail calls, workpool bounds the daily recap fan-out, workflow makes the Friday digest durable, batch-worker drains the stale-link queue.",
-    "\"Ask the space\" = an agent thread for memory, rag for retrieval, persistent-text-streaming pushing tokens over /api/ask-stream.",
+    "17 components mounted 18 times in convex.config.ts, each with a job: migrations backfills legacy rows, two aggregate instances replace .collect() counting, sharded-counter drives the landing totals, rate-limiter buckets the LLM, mail and paint paths.",
+    "action-retrier + action-cache wrap Firecrawl and AgentMail calls, workpool bounds the daily recap fan-out, workflow makes the Friday digest durable, batch-worker drains the stale-link queue.",
+    "\"Ask the space\" = an agent thread for memory plus rag retrieval; ask in the dock and the reply types itself in over /api/ask-stream (persistent-text-streaming), persisted so a reload or a second viewer reads the same answer.",
     "Every space has a real AgentMail inbox and mail arrives as furniture on the board; a pasted URL becomes a Firecrawl-enriched reading card.",
     "Convex hosts both halves: static-hosting serves the React build at /, convex/http.ts owns /api."
   ]

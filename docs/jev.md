@@ -66,7 +66,7 @@ action        Choice  expense | itinerary | create | unfiled | discard
 expenseTarget Choice  <live expenseSplit lines> | none
 itinTarget    Choice  <live itinerary lines> | none
 kind          Choice  expenseSplit | itinerary
-isPast        Noul    "is the money or event here about something that already happened?"
+isSettled     Noul    "does the sender describe this as already done, rather than upcoming?"
 isCompound    Noul    "does this contain more than one separate thing to file?"
 needsHuman    Noul    "would a person want to look at this themselves?"
 ```
@@ -74,9 +74,18 @@ needsHuman    Noul    "would a person want to look at this themselves?"
 `expenseTarget` and `itinTarget` are asked **both times, always** — the code
 reads whichever one `action` made relevant. That is the whole trick.
 
-`isPast` is the test `architecture.md` calls "what makes the demo legible":
-money about a past trip goes to that trip's tracker, a booking with future
-dates goes to the itinerary. It was a prompt bullet; now it is a number.
+**`isSettled` is deliberately about tense, not dates.** The test
+`architecture.md` calls "what makes the demo legible" — money about a past
+trip goes to that trip's tracker, a booking with future dates goes to the
+itinerary — is a date comparison, and **Jev cannot do date comparison**
+(see Limitations). So the question asks the thing Jev is actually good at:
+does this sound like "I paid for" / "we stayed at", or like "I booked" /
+"we're going to"? That is language, not arithmetic.
+
+The dates themselves stay where they already are: `today` is computed in
+`routeSmart` and OpenAI pulls the day label in phase B. Code compares them.
+Deterministic code finds the values, Jev judges the meaning — that is
+TypeSafe's own documented extraction pattern, not a workaround.
 
 ### Building the option lists
 
@@ -92,6 +101,49 @@ map on our side:
 
 `widgetInventory()` in `inboxRouting.ts` already builds exactly these lines.
 Reuse it verbatim, split per type, cap at 255 (unreachable in practice).
+
+## Writing the questions
+
+A question is `instructions` (required) plus `criteria`. `criteria` is
+**required** for Choice and Score, optional for Noul.
+
+```
+choice  criteria: { "expense": "a receipt, IOU or payment request", ... }
+score   criteria: ["Level 1 text", "Level 2 text", ...]   (2-10 levels)
+noul    criteria: { true: "...", false: "..." }            (optional)
+```
+
+House rules, from TypeSafe's own guidance and worth obeying literally:
+
+- **Criteria describe situations, not degrees.** "a receipt, IOU or payment
+  request" beats "money-related". Degrees confuse it.
+- **No double negatives, no indirection.** It reads your exact words. If
+  explaining a wrong answer would need a clarification, put the
+  clarification in the instructions.
+- **Always leave an escape hatch.** `unfiled` and `none` are that, and they
+  are what the confidence gate falls through to.
+- **One judgment per question.** Split a compound judgment into independent
+  questions and combine them in code — never ask one hard question.
+- **Filter the state first.** Context rot hits Jev like it hits an LLM.
+  `widgetInventory()` already filters to four widget types; keep it that
+  way.
+
+## Limitations that shape this design
+
+Jev **cannot**, per TypeSafe's own docs and third-party write-ups:
+
+- compare dates or times → hence `isSettled` asks about tense
+- count, or compare numbers precisely → amounts stay with OpenAI
+- extract a value from free text → "pick from these candidates" works,
+  "extract the amount" does not; hence phase B exists at all
+- reason through multi-step chains → hence `isCompound` hands off
+- take images, audio or video → a receipt photo still needs the vision path
+  (`architecture.md` brain play B2)
+
+And the one to keep saying out loud: **calibration describes groups, not
+individual answers.** A 0.94 can still be wrong. The gate reduces bad
+filings; it does not eliminate them, and the sealed envelope is the reason
+that is survivable.
 
 ## The confidence gate
 
@@ -175,6 +227,41 @@ decide step. Leave it in — attachment parsing can still be slow.
 | `src/components/MailArrival.tsx` | stamp reads `RECEIPT · 94%`; a gated envelope says `not sure enough — 41%` |
 | `#/mail` lab fixtures | a confidence field, so the lab and live cannot drift |
 
+## How `convex/jev.ts` talks to the API
+
+**Hand-rolled `fetch`, mirroring `completeJson`.** Not the SDK. Reasons, in
+order: `convex/ai.ts` next door already does exactly this; it needs no
+version bump five days out; and the `null`-on-anything-unusable contract is
+what the whole fallback below depends on.
+
+```
+POST https://api.typesafe.ai/v1/systemone
+Authorization: Bearer $JEV_API_KEY
+{ "model": "jev-latest", "state": <string|object|array>, "questions": {...} }
+
+→ { "model": "...", "answers": { "<id>": {...} }, "usage": {...} }
+```
+
+Answer shapes: Choice → `.choice` + `.probabilities` + `.confidence` ·
+Score → `.score` (fractional) + `.probabilities` + `.confidence` · Noul →
+`.noul` (0–1, **no separate confidence field** — the probability is the
+answer).
+
+Errors: `401` bad key · `422` malformed request · `429` rate limited ·
+`529` overloaded. Treat all four the same way `completeJson` treats a
+non-ok response — **return `null`, do not retry, fall through**. Inbound
+mail has no retrier today and this change does not add one.
+
+Log the `model` field off the **response**, not the request alias — pin to
+`jev-1.13.0` in `emailEvents` if we ever tune thresholds against a version.
+
+**The alternative, deliberately not taken:** AI SDK 7.0.105+ ships
+`experimental_evaluate` with a native `@ai-sdk/typesafe-ai` provider
+(`typeSafeAi.evaluationModel("jev-latest")`, env `TYPESAFE_AI_API_KEY`).
+We are on `ai@^7.0.85`, so it is one `npm update ai` away and it would
+handle backoff for us. It is also an `experimental_` API against a
+two-week-old model. Revisit after the hackathon, not during it.
+
 ## The fallback is the whole safety story
 
 `convex/ai.ts` already has the discipline: `chatTarget()` returns `null` when
@@ -226,6 +313,15 @@ key.
 Voice is this router with a different input. Email text in, or a
 transcribed sentence in; both ask "which thing on this board, and what
 should happen to it," against the same live inventory.
+
+The shape underneath both is a **state machine whose transition function is
+fuzzy**. We own the states, the legal transitions and every side effect in
+code; Jev only answers "which edge, given this mess?" — as a Choice built
+from the *current* state's outgoing edges, so an illegal transition is
+unrepresentable rather than merely unlikely. Jev is single-turn and has no
+memory, so it can never run the machine. One hop per call. TypeSafe's own
+framing: `state → code → Jev judges → code → action`, and "questions
+describe judgments; code owns composition, thresholds, and side effects."
 
 ```
 webkitSpeechRecognition  (built into Chrome — no vendor, no key, no audio pipeline)

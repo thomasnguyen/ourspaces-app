@@ -91,6 +91,11 @@ presence heartbeats, anonymous sign-in). Queries still stream, so the room
 renders real data. Run with `LIVE=1`. Pass the same `dropped` array to a
 second context (e.g. a phone profile) to keep one log.
 
+To test one write path without opening the rest, copy the same route handler
+with an allowlist — `.context/ask-stream/check.mjs` drives the real "ask the
+space" stream on prod while still dropping join/presence/sign-in, so the blast
+radius is exactly the mutations the feature is made of.
+
 ## Gotchas
 
 - **`?mock=1` must be in the search string, before the hash** —
