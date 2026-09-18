@@ -2,65 +2,66 @@
 
 - **Project:** OurSpaces
 - **Event:** Convex All Gas Hackathon
-- **What it does:** Group plans die in the group chat. OurSpaces gives a friend group a persistent shared canvas — countdowns, polls, potluck sheets, photo piles — that every member sees update live, cursor to cursor.
+- **What it does:** Group chats forget; OurSpaces gives a friend group a persistent shared canvas with 32 widget types — countdowns, polls, potluck sheets, expenses, reading circles, letters, photos and collaborative art — that every member sees update live.
 - **Live app:** https://necessary-cobra-892.convex.site
 - **Repo:** https://github.com/thomasnguyen/ourspaces-app
 - **Frontend:** Convex static hosting
 - **Convex deployment:** https://necessary-cobra-892.convex.cloud
 - **Components:** static-hosting, agentMail, firecrawl, migrations, aggregate, sharded-counter, rate-limiter, action-retrier, action-cache, workpool, workflow, batch-worker, agent, rag, persistent-text-streaming, presence, authWellKnown
-  - 17 components, 18 mounts: `aggregate` is mounted twice (as `pollTallies` and `memberCounts`), and `agentMail` + `authWellKnown` are ours — `authWellKnown` only publishes OIDC documents over HTTP, so no app code calls it. `@convex-dev/ai-sdk-provider` is not a component either — it is the AI SDK provider package `convex/ai.ts` imports for the gateway.
-- **Convex features:** schema — 12 tables, 29 indexes, 1 full-text search index, 1 vector index (`widgets.data` is a union of 32 typed per-widget validators plus one open `v.record` arm — `convex/widgetData.ts`). 43 queries + 69 mutations + 33 actions = 145 functions, every one carrying a `returns:` validator; the 6 HTTP actions (svix-verified inbound mail, `/api/ask-stream`) have no `returns:` slot to fill — `httpAction` takes a bare handler returning a `Response`. Realtime queries, real cursor pagination, a subscribed deploy-version row (static-hosting) that offers every open tab a refresh, 4 crons (presence sweep, daily recap via workpool, Friday weekly digest via a durable workflow, Friday stale-link refresh), scheduled functions, internal mutations, file storage, presence (canvas cursors/gestures hand-rolled; room occupancy via the component), agent threads, semantic retrieval (`rag` grounds ask-the-space; `widgets.by_embedding` is the vector index behind "already on the board" — `convex/similar.ts`)
+  - 17 components across 18 mounts; `aggregate` is mounted separately for poll tallies and member counts. Each component's product job is mapped below.
+- **Convex features:** 12 tables, 29 indexes, full-text and vector search, 145 validated queries/mutations/actions, 6 HTTP actions, reactive subscriptions, pagination, auth, file storage, scheduled functions, 4 crons, streaming, agent threads and semantic retrieval.
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
-- **AI models:** everything runs through the **Convex AI Gateway** (`@convex-dev/ai-sdk-provider` + `getServiceToken("ai-gateway")`, so the deployment itself is the credential and no API key of ours is in the path): `openai/gpt-4o-mini` for chat and structured decisions, `openai/text-embedding-3-small` (1536 dims) for rag + the `widgets.by_embedding` echo index. Set `AI_GATEWAY_DISABLED` to route around a gateway incident without a deploy and the two pre-gateway targets take over — gpt-oss-120b via a Cloudflare AI proxy (`AI_PROXY_URL` + `AI_PROXY_TOKEN`), else gpt-4o-mini via `OPENAI_API_KEY` (embeddings too — the proxy is chat-only). That order is a config-time choice, not a runtime failover
+- **AI models:** `openai/gpt-4o-mini` for structured decisions and conversation; `openai/text-embedding-3-small` (1536 dimensions) for RAG and related-widget search, both through the Convex AI Gateway
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-18T08:09:42Z
+- **Last updated:** 2026-09-18T08:20:44Z
 
-## Highlights
+## Live demo path
 
-- Seventeen Convex components, **each doing a real job** — migrations backfills
-  legacy rows; two named aggregate instances replace `.collect()` counting;
-  sharded-counter drives the landing page's totals; rate-limiter puts token
-  buckets on the LLM, mail and paint paths; action-retrier and action-cache wrap
-  the Firecrawl and AgentMail calls; workpool bounds the daily recap fan-out;
-  workflow makes the weekly digest durable; batch-worker drains a stale-link
-  refresh queue; agent gives "ask the space" conversational memory; rag grounds
-  it with vector search; persistent-text-streaming backs `/api/ask-stream`,
-  which streams an answer token by token and persists it; presence tracks room
-  occupancy — **depth, not a demo veneer**.
-- 282 commits, **all inside the hackathon window**; every log entry below is
-  pinned to a commit hash so the story is checkable against history.
-- 32 widget types on **one live multiplayer canvas** — countdowns, ballot
-  polls, potluck sign-up sheets, expense splits, itineraries, photo walls,
-  daily questions, and more — all driven by Convex realtime queries.
-- All three sponsors **doing real work**: Convex hosts the backend *and* the
-  static frontend, Firecrawl turns any pasted URL into a structured reading
-  card, and AgentMail provisions a real inbox per space with a live webhook.
-- AI **reading circles**: `gpt-4o-mini` reads a saved article and seeds two
-  conversation starters, each wired into the existing reactive message threads.
-- Email that **becomes furniture**: every showcase space has a real AgentMail
-  address. A receipt mailed to the crew appends an expense row and clears
-  someone's IOU; a URL mailed to the build room lands in the reading pile
-  Firecrawl-enriched; a note mailed to the couple arrives as a sealed kraft
-  letter you unfold. Friday, each space mails its week back.
-- Collaborative **paint-by-number**: three vector boards — traced Starry Night
-  (78 regions) and Great Wave (58), plus a 50-region scene — where fills,
-  palettes, and board-scoped cursors sync live between two people coloring
-  together.
-- A handmade **material language**: torn-paper notes with real fiber texture,
-  frosted-glass reading sheets, die-cut vinyl stickers — built as a design
-  system, not one-off CSS.
+The live URL opens the complete deployed application directly, not a landing
+page or mockup. It contains seeded shared rooms and works without an account.
 
-## Try it in 60 seconds
+1. Enter **the crew**, open the same room in two tabs, and vote in the cake
+   poll. The Convex mutation writes the vote and the reactive query updates both
+   tabs; the black live-sync pill reflects the client's WebSocket state.
+2. Claim the open party item, post a birthday message, change availability or
+   upload a photo. Each action becomes shared board state for every viewer.
+3. Drag any card to see the other tab's cursor and moving card. Open the photo
+   pile for a full-screen memory wall, then switch to **us two** and fill a
+   paint-by-number region together.
 
-1. Open the [live app](https://necessary-cobra-892.convex.site) and claim a
-   name at the identity gate — no signup.
-2. You land in **the crew**: drag the birthday countdown, vote in the cake
-   poll, claim a potluck slot. Open the same space in a second tab and watch
-   cursors and votes move in realtime.
-3. Click the photo pile to enter the **memory wall** — a full-screen room of
-   physical prints; flip one over and leave a note on its back.
-4. Switch to **us two** in the rail and open the coloring postcard: a shared
-   paint-by-number room where both tabs fill regions live.
+## Implementation evidence
+
+- Convex is the system of record and execution layer: database, backend
+  functions, realtime sync, auth, files, scheduled work, components, HTTP
+  routes, AI Gateway and frontend hosting all run through the deployed Convex
+  application.
+- The schema has 12 application tables, 29 access-pattern indexes, one
+  space-filtered full-text index and one 1536-dimensional vector index.
+  `widgets.data` is a 33-arm union: 32 specific widget validators plus one open
+  fallback (`convex/schema.ts`, `convex/widgetData.ts`).
+- The backend has 43 queries, 69 mutations and 33 actions. All 145 declare
+  return validators. Reads use indexes and cursor pagination; external I/O is
+  isolated in actions; six HTTP actions handle signed inbound mail and the
+  streamed ask path.
+- Realtime subscriptions drive the canvas, cursors, gestures, votes, messages,
+  availability, collaborative paint, crawl progress, AI streams, room
+  occupancy and deployment refreshes. This is shared product state rather than
+  a standalone realtime sample.
+- The 17 registered components perform product work: migrations backfill data;
+  aggregates and sharded counters maintain counts; rate limits, retries and
+  caching protect external work; workpool, workflow and batch-worker run
+  bounded or durable jobs; agent, RAG and persistent streaming power grounded
+  answers; presence tracks room occupancy.
+- OpenAI produces structured filing decisions, summaries, conversation prompts
+  and grounded answers. Firecrawl turns pasted or emailed URLs into structured
+  reading furniture. AgentMail gives each showcase space an inbox: receipts
+  update expenses, links enter the reading flow, personal notes become letters,
+  and weekly digests are sent back out.
+- The product includes 32 widget types on one multiplayer canvas plus three
+  collaborative paint boards. Its visual system uses paper, glass and sticker
+  materials consistently across the rooms.
+- The repository contains 282 commits, all inside the event window, and the
+  dated log below ties shipped behavior to commit hashes and source files.
 
 ## Convex + sponsor usage map
 
@@ -406,7 +407,7 @@ inbox (recipients mined from `emailEvents`), with `digest:sendNow` for demos
 
 ### 2026-08-30 - 8c42502
 Live inboxes with an unrestricted key: crew rides the account default
-`ourspaces@agentmail.to` (`thecrew` is taken org-wide, and the 3-inbox free
+`[redacted inbox]` (`thecrew` is taken org-wide, and the 3-inbox free
 tier is shared between dev and prod), plus `ustwo@` and `buildroom@`, on a
 fresh webhook created through the API. Verified with real mail — buildroom's
 inbox → `ustwo@` → a letter appeared in us two, and the digest landed in a real
@@ -801,3 +802,10 @@ two-tab demo path, real connection/write receipts, deterministic counts and the
 implementation summary. The explanatory function, component and AI-provider
 details were restored while keeping the file below its published read cap
 (`public/hackathon.json`).
+
+### 2026-09-18 - working tree
+Retired the optional `hackathon.json` manifest and moved its useful facts into
+the documented public build log. The standard header is now concise enough that
+the live two-tab demo, implementation counts, realtime behavior, component
+jobs, and sponsor integrations all appear within the log's first 5,000
+characters (`hackathon.md`, `public/hackathon.json`).
