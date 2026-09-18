@@ -542,7 +542,6 @@ export function LiveSpacePage({
     identity,
     wrapperRef,
     canvasScaleLayerRef,
-    { x: 72, y: 72 },
   );
   const liveCursors = presence.peers;
   /* "who is here" has exactly one source: the presence component's room

@@ -5,6 +5,30 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **One person, one cursor (2026-09-17):** a peer moving a card showed up
+  twice on everyone else's board — the grab hand saying "juno is moving this",
+  plus a second arrow with the same name and face parked on a widget near the
+  top-left. Two causes, both in the cursor layer. Presence's "I'm here" write
+  (the one that puts your face in the header before you have touched anything)
+  carried the door's coordinates, 72,72 — so every tab that had joined but
+  never moved a pointer painted a real arrow on that one pixel; three idle
+  tabs stacked three cursors, and the one that picked a card up left the pile
+  behind as its own duplicate. And the persona sequence restarts in every
+  fresh browser profile, so a second window is very often another "juno":
+  same name, same colour, same face. Now presence writes `NO_POINTER` (-1,-1)
+  on arrival and the canvas draws a peer only once they are actually pointing
+  or holding something (`src/live/presenceTypes.ts`, `isPointing`), and the
+  cursor layer never draws the same look twice — the hand doing something
+  wins, then the freshest row (`src/components/Canvas.tsx`). Presence itself
+  is unchanged: everyone still counts in "N here now" and still has a face up
+  top. A hand holding a card with no pointer of its own (a phone, a driven
+  tab) gets its cursor on the card it is holding. `isPointing` also reads a
+  bare 72,72 as "not pointing" so tabs still running the old bundle stop
+  leaving ghosts; that clause can go once they are all closed. Verified live
+  against prod with two read-mostly tabs (`presence:*` allowed, every other
+  mutation dropped): before, the watcher saw three cursors — two parked at
+  the door, one dragging; after, exactly one.
+
 - **Every model path re-proved on the gateway, and one was silently dead
   (2026-09-18):** swept `convex/` for everything that ends in a model call and
   ran each on prod. Working through `ai-gateway.convex.dev`: mail routing

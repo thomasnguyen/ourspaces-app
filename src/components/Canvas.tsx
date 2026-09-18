@@ -9,6 +9,7 @@ import { DECISION_WIDGET, getSpace, SPACE_CURSORS } from "../data/spaces";
 import type { BackendCount } from "../lib/backendCounts";
 import type { SpaceMember, SpaceMeta, Widget } from "../data/types";
 import { useSpaceEntrance, wavefrontDelays } from "../lib/entrance";
+import { isPointing } from "../live/presenceTypes";
 import type {
   CanvasGestureKind,
   CanvasLayout,
@@ -30,6 +31,21 @@ import { playSound } from "../lib/sounds";
 import { inviteUrlForSpace } from "../lib/routes";
 
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
+/** Where a hand sits on a card it is holding, for the one peer who can be
+ *  moving something without a pointer position of their own (a phone, a tab
+ *  driven by a script). Just inside the top-left corner: that is where you
+ *  grab a card, and it keeps "juno is moving this" next to the card it means. */
+const HELD_CARD_GRIP = { x: 26, y: 20 };
+
+/** Which of two rows wearing the same look gets the arrow: a hand on a card
+ *  beats an idle one, and after that the row that reported most recently. */
+function outranks(
+  cursor: { updatedAt?: number; gesture?: LiveGesture },
+  held: { updatedAt?: number; gesture?: LiveGesture },
+) {
+  if (Boolean(cursor.gesture) !== Boolean(held.gesture)) return Boolean(cursor.gesture);
+  return (cursor.updatedAt ?? 0) > (held.updatedAt ?? 0);
+}
 type CanvasCursor = {
   userId?: string;
   name: string;
@@ -253,21 +269,62 @@ export function Canvas({
     return next;
   }, [gestureSignature]);
 
+  /* One person, one arrow.
+   *
+   * Two different rows used to draw a second cursor for the same person, and
+   * both showed up at the worst moment — while somebody was moving a card.
+   * A tab that has joined but never moved a pointer still writes a presence
+   * row (that is what keeps its face in the header), and that row used to
+   * carry the door's coordinates, so every idle tab parked an arrow on the
+   * same pixel; the moment one of them picked a card up, the arrow it left
+   * behind read as a duplicate of the hand that was moving. The other is the
+   * persona sequence: it restarts in every fresh browser profile, so a second
+   * window is very often another "juno" — same name, same face, same colour.
+   *
+   * So the cursor layer draws a peer only once they are actually pointing (or
+   * holding a card), and never draws the same look twice: the hand doing
+   * something wins, then the freshest row. Presence itself is untouched —
+   * everyone in the room still counts, and still has a face up top. */
+  const drawn: CanvasCursor[] = [];
+  const looks = new Map<string, number>();
+  for (const cursor of cursors) {
+    if (cursor.zone) continue;
+    if (!cursor.gesture && !isPointing(cursor)) continue;
+    const look = `${cursor.name.trim().toLowerCase()}|${cursor.color}|${
+      cursor.avatarUrl ?? cursor.emoji ?? ""
+    }`;
+    const seat = looks.get(look);
+    if (seat === undefined) {
+      looks.set(look, drawn.length);
+      drawn.push(cursor);
+    } else if (outranks(cursor, drawn[seat])) {
+      drawn[seat] = cursor;
+    }
+  }
+
   /* Sampling in render rather than an effect is on purpose: an effect lands a
      frame later, and that frame is the one where the cursor would still be
      painted at the previous position. `sample` only touches refs, so it is
      safe to call here. */
+  for (const cursor of drawn) {
+    const grip =
+      isPointing(cursor) || !cursor.gesture
+        ? cursor
+        : {
+            x: cursor.gesture.x + HELD_CARD_GRIP.x,
+            y: cursor.gesture.y + HELD_CARD_GRIP.y,
+          };
+    motion.sample(
+      `cursor:${spaceId}:${cursor.userId ?? cursor.name}`,
+      grip.x,
+      grip.y,
+      CURSOR_MOTION,
+      cursor.updatedAt,
+    );
+  }
+  /* Widgets follow every gesture in the room, deduped or not: a card being
+     dragged has to keep moving even when its owner's arrow lost the tie. */
   for (const cursor of cursors) {
-    const key = cursor.userId ?? cursor.name;
-    if (!cursor.zone) {
-      motion.sample(
-        `cursor:${spaceId}:${key}`,
-        cursor.x,
-        cursor.y,
-        CURSOR_MOTION,
-        cursor.updatedAt,
-      );
-    }
     const gesture = cursor.gesture;
     if (!gesture) continue;
     const held = widgets.find((widget) => widget.id === gesture.widgetId);
@@ -444,7 +501,7 @@ export function Canvas({
     >
       {widgetCards}
 
-      {cursors.filter((cursor) => !cursor.zone).map((cursor) => (
+      {drawn.map((cursor) => (
         <PeerCursor
           key={`${spaceId}-${cursor.userId ?? cursor.name}`}
           motion={motion}
