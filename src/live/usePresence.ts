@@ -9,6 +9,7 @@ import {
 import type { RefObject } from "react";
 import { api } from "../../convex/_generated/api";
 import { getPresenceId, type LiveIdentity } from "./identity";
+import { NO_POINTER } from "./presenceTypes";
 import type {
   CanvasLayout,
   GestureClaim,
@@ -38,7 +39,6 @@ const GESTURE_TTL_MS = 1_500;
 const GESTURE_KEEPALIVE_MS = 500;
 
 type GestureInput = Omit<LocalGesture, "sessionId"> & { sessionId: string };
-type PresencePoint = { x: number; y: number };
 
 export type PresenceController = {
   peers: LivePeer[];
@@ -57,7 +57,6 @@ export function usePresence(
   identity: LiveIdentity,
   pointerSurfaceRef: RefObject<HTMLElement | null>,
   canvasLayerRef: RefObject<HTMLElement | null>,
-  entrancePoint: PresencePoint = { x: 72, y: 72 },
 ): PresenceController {
   const heartbeatMutation = useMutation(api.presence.heartbeat);
   const claimMutation = useMutation(api.presence.claimGesture);
@@ -201,18 +200,26 @@ export function usePresence(
     [sendGestureUpdate],
   );
 
+  /* Arriving writes a row at once — that is what puts your face in the header
+     and your body in the count before you have touched anything. It used to
+     write the door's coordinates (72,72) as a stand-in position, which drew a
+     real arrow there: three idle tabs stacked three cursors on the same pixel,
+     and when one of them picked a card up, the pile it left behind read as a
+     second cursor for the person who was moving. NO_POINTER says "here, not
+     pointing yet" instead, and the canvas leaves it undrawn until the pointer
+     actually reports (see isPointing). */
   useEffect(() => {
     hasPoint.current = false;
     if (!spaceId) return;
 
     const frame = window.requestAnimationFrame(() => {
-      point.current = entrancePoint;
+      point.current = NO_POINTER;
       hasPoint.current = true;
       sendHeartbeat();
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [entrancePoint.x, entrancePoint.y, sendHeartbeat, spaceId]);
+  }, [sendHeartbeat, spaceId]);
 
   useEffect(() => {
     const surface = pointerSurfaceRef.current;
