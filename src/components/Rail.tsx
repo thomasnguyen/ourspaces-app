@@ -149,7 +149,7 @@ export function Rail({
         aria-label="About OurSpaces"
         onClick={rememberCurrentSpace}
       >
-        <img src="/assets/ourspace-mark.png" alt="" />
+        <img src="/assets/ourspace-mark.png" alt="ourspaces" />
       </a>
 
       <div className="space-list">

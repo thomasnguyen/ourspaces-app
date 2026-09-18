@@ -9926,16 +9926,29 @@
   cursor: grabbing !important;
 }
 
-.widget-drag-handle > span {
+/* Glyph + verb are generated content, not DOM text: identical flex boxes
+   (::before/::after are flex items too, so the 6px gap still applies), but a
+   text-only reader gets the aria-label instead of "⠿drag↗zoom". */
+.widget-drag-handle::before {
+  content: "⠿";
   color: var(--color-lime);
   font-size: 18px;
   line-height: 1;
 }
 
-.widget-open-button > span {
+.widget-drag-handle::after {
+  content: "drag";
+}
+
+.widget-open-button::before {
+  content: "↗";
   color: var(--color-lime);
   font-size: 15px;
   line-height: 1;
+}
+
+.widget-open-button::after {
+  content: "zoom";
 }
 
 .widget-open-button[aria-pressed="true"] {
@@ -9943,13 +9956,21 @@
   color: var(--color-sticker);
 }
 
-.widget-open-button[aria-pressed="true"] > span {
+.widget-open-button[aria-pressed="true"]::before {
   color: inherit;
+}
+
+.widget-edit-button::after {
+  content: "edit";
 }
 
 /* Destructive verb reads different at a glance — no accidental takes ruined. */
 .widget-delete-button {
   color: #ff9c7a;
+}
+
+.widget-delete-button::after {
+  content: "delete";
 }
 
 .widget-delete-button:hover {
@@ -9980,6 +10001,12 @@
   transition:
     opacity 160ms ease-out,
     translate 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Same speech bubble, first flex item as before — just not DOM text. The
+   unread count and the face stack stay real children. */
+.widget-comment-chip::before {
+  content: "💬";
 }
 
 .widget-group:hover .widget-comment-chip,
@@ -13651,8 +13678,11 @@
     max-height: calc(100dvh - 180px);
   }
 
+  /* Clearance for the floating header. The orienting line under the name
+     runs three lines at phone width, so the board starts lower or the mail
+     chip lands on the first card. */
   .space-scroll {
-    padding: 96px 14px 106px;
+    padding: 150px 14px 106px;
   }
 
   .space-canvas {
@@ -19422,11 +19452,11 @@
   font-size: 10px;
 }
 
-.widget-drag-handle > span {
+.widget-drag-handle::before {
   font-size: 15px;
 }
 
-.widget-open-button > span {
+.widget-open-button::before {
   font-size: 13px;
 }
 
@@ -23422,6 +23452,21 @@
   gap: 0;
 }
 
+/* The orienting line. Sits under the name in the room's own ink, one small
+   step down in size and weight so it reads as the name's subtitle and never
+   competes with it. Measure is capped so it breaks into two tidy lines
+   instead of running the width of the header. */
+.space-what {
+  max-width: 46ch;
+  margin: 8px 0 0;
+  color: var(--space-heading-color, var(--color-ink));
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  opacity: 0.72;
+}
+
 .space-title-handles {
   display: flex;
   flex-wrap: wrap;
@@ -23486,6 +23531,13 @@
 .space-mail-chip.is-copied {
   background: var(--color-lime);
   color: var(--color-ink);
+}
+
+/* Entrance: the line rides the name out, then the handles follow — same
+   keyframe as the rest of the nameplate, so it does not sit there fully
+   drawn while the name is still arriving. */
+.space-header.is-entering .space-what {
+  animation: space-header-in var(--dur-arrive) var(--ease-glide) 230ms both;
 }
 
 /* Entrance: the handles follow the name out, address then pencil. */
@@ -23604,6 +23656,14 @@
 }
 
 @media (min-width: 801px) {
+  /* Desktop gets the extra half-step; on a phone it stays 12px so three
+     lines of it never crowd the name. */
+  .space-what {
+    margin-top: 9px;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
   .space-header-side {
     flex-direction: row;
     align-items: center;

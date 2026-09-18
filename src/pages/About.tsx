@@ -78,10 +78,10 @@ function BoardPreview() {
         <div className="about-board">
           <span className="about-board-label">Maya’s birthday club <span>✳</span></span>
           <figure className="about-photo">
-            <img src="/assets/the-crew-snapshot.jpg" alt="" />
+            <img src="/assets/the-crew-snapshot.jpg" alt="six friends around a cafe table" />
             <figcaption>same people, next friday.</figcaption>
           </figure>
-          <img className="about-ours" src="/assets/stickers/ours.png" alt="" />
+          <img className="about-ours" src="/assets/stickers/ours.png" alt="“ours” bubble sticker" />
           <div className="about-preview-poll">
             <PollWidget
               widget={{ ...CAKE_POLL, rotate: 0, data: { ...CAKE_POLL.data, waitingOn: [] } }}
@@ -95,7 +95,7 @@ function BoardPreview() {
             <p>show up.<br />bring something.<br /><strong>stay a little longer.</strong></p>
             <small>— all of us</small>
           </div>
-          <img className="about-cake" src="/assets/stickers/matcha-cake.png" alt="" />
+          <img className="about-cake" src="/assets/stickers/matcha-cake.png" alt="matcha layer cake with candles" />
           <span className="about-board-tag">a plan worth keeping.</span>
         </div>
       </div>
@@ -163,7 +163,7 @@ function AboutOverview() {
         <div className="about-how-heading">
           <h2>Good things<br />get lost in<br /><span>the group chat.</span></h2>
           <p>Give them somewhere to stay. A space is one board your whole group can add to, move around, and come back to.</p>
-          <img src="/assets/stickers/glad-ur-here.png" alt="" loading="lazy" />
+          <img src="/assets/stickers/glad-ur-here.png" alt="“glad ur here” smiley sticker" loading="lazy" />
         </div>
         <div className="about-ways">
           <article>
@@ -189,7 +189,7 @@ function AboutOverview() {
         <div className="about-room-list">
           {ROOMS.map((room, i) => (
             <a key={room.slug} className="about-room" href={normalSpaceHash(room.slug)} style={{ "--room-color": `var(--color-${room.color})`, "--i": i } as CSSProperties}>
-              <span className="about-room-picture">{room.image ? <img src={room.image} alt="" loading="lazy" /> : <span>{room.symbol}</span>}</span>
+              <span className="about-room-picture">{room.image ? <img src={room.image} alt={`${room.label} space cover`} loading="lazy" /> : <span>{room.symbol}</span>}</span>
               <span className="about-room-name">{room.label}</span>
               <span className="about-room-detail">{room.detail}</span>
               <span className="about-room-arrow">↗</span>
