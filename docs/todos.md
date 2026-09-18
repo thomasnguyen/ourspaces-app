@@ -18,7 +18,10 @@ Backward-looking history lives in `hackathon.md`.
   Verified two tabs in one context against prod with
   `.context/live-perf/two-tabs.mjs`: peer cursor travels 1584px over 197
   spots, the widget moves 251px mid-drag across 439 held frames, held through a
-  2.2s pause, "here now" reads 2, board restored. Frontend only — not deployed.
+  2.2s pause, "here now" reads 2, board restored. **Deployed** — verified
+  2026-09-17 by fetching the live bundle off
+  `necessary-cobra-892.convex.site`; it carries the `ourspaces:tab-id`
+  sessionStorage key, so the fix is on the public site.
 
 - **Brand exploration (2026-09-16):** two new local concept boards and full
   generation prompts are indexed in `docs/local/doc-map.local.md`. Visually
@@ -1202,18 +1205,17 @@ Backward-looking history lives in `hackathon.md`.
 
 - **Live Convex still needs a re-seed** for the SomaFM playlist fields and the
   seeded buildclub / Tahoe web-post cards (`npx convex run seed:demo`).
-- **`prosemirror-sync` is wired in `convex.config.ts` but referenced nowhere
-  in code.** Known-deferred ("Not done, by choice" above), so this is
-  bookkeeping, not new work: any repo scan reads it as an unused dep. Worth
-  dropping from `package.json` + `convex.config.ts` if it stays unbuilt through
-  the deadline. (`better-auth` was the other one — removed 2026-09-12 when auth
-  moved to `@convex-dev/auth`.)
-- **`hackathon.md` contradicts the repo in three places.** It says
-  `Auth: none` while `@convex-dev/better-auth` sits in the manifest; it claims
-  vector search "via rag" when there is no `.vectorIndex()` of ours and no
-  `ctx.vectorSearch` call (that was the deliberate call — the *claim* is what's
-  wrong, not the code); and the header numbers are stale (says 122 commits in
-  5 days, git says 142 in 6).
+- ~~**`prosemirror-sync` is wired in `convex.config.ts` but referenced
+  nowhere in code.**~~ — resolved. Checked 2026-09-17: neither
+  `prosemirror-sync` nor `better-auth` appears in `package.json` or
+  `convex.config.ts` any more, so no repo scan reads an unused dep.
+- ~~**`hackathon.md` contradicts the repo in three places.**~~ — resolved,
+  re-read 2026-09-17. The header now says Convex Auth (`@convex-dev/auth`,
+  guest + emailed code), the retrieval line is precise ("the `rag` component
+  owns the vector index; no hand-rolled `.vectorIndex()` in our schema"), and
+  the stale commit count is gone. `prosemirror-sync` / `better-auth` still
+  appear at line 429, but that is a dated 2026-08-31 log entry describing what
+  was installed that day — history, not a claim about today's manifest.
 - **Fixed 2026-09-10: a live-missing space hung forever.** `#/space/trip`
   exists in the mock fixtures but not on the deployment, so
   `isInvalidInvite` (which requires `!SPACES_BY_ID[slug]`) never fired and
@@ -1330,6 +1332,32 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Next up
 
+- **Liveness to 10** — plan written 2026-09-17, not started.
+  `docs/local/liveness-10.md`. reviewer run that day: 10, 9, 10 on a
+  byte-identical packet (mean 9.67), and the 9 names no fault, so part of
+  the gap is variance. What is real: the scrape is 6,847 of its 8,000-char
+  cap and **51% of it is image markdown with empty alt** (52 of 54 images),
+  plus 466 chars of `⠿drag↗zoomeditdelete` control noise. Four fixes with
+  acceptance tests — alt text on the 22 `alt=""` sites, publish
+  `public/hackathon.json` (nobody in the field does; the reviewer fetches
+  `origin/hackathon.json`), drop the redundant inner labels on widget
+  controls (the `aria-label` already carries the name), one plain sentence
+  in main content. Verify on `--tree origin/main` with 6 replays, not 3.
+  Ceiling is +0.33 of one criterion — do it for the honest read, not the score.
+
+- **Jev router split** — plan written 2026-09-17, not started. `docs/jev.md`.
+  Jev decides where mail goes (typed Choice over the live canvas inventory,
+  plus a calibrated confidence), OpenAI keeps the amounts/dates and the
+  `because` sentence. Removes a real bug: `inboxRouting.ts` hands
+  `applyExpense` an unvalidated model-typed widget id, and a fumbled one
+  silently creates a duplicate tracker instead of erroring. Speculative
+  prompting throughout — every branch's question asked in the one call,
+  code reads what the action makes relevant. Steps 1-4 ship with no key
+  (falls back to today's `routeSmartLLM`); **no `JEV_API_KEY` exists yet,
+  early access is waitlist-only**. Open: `MAIL_VERDICT_FLOOR_MS` — 900ms
+  lands the arrival at ~2.5s but re-times demo shots 8-11 and means a
+  reshoot of the mail beat. Voice (`webkitSpeechRecognition` → same
+  router, ~4h) only after step 5 is green.
 - **Brain play B1** — half done (2026-09-01). **Shipped:** `because` on
   `routeSmart` (`convex/inbox.ts`) — one lowercase sentence, ≤10 words,
   banned from naming anything on the board; `cleanBecause()` strips convex
@@ -1364,10 +1392,9 @@ Backward-looking history lives in `hackathon.md`.
   (**local-only / gitignored** — submission copy doesn't ship in the public
   repo). Fill the [bracketed] placeholders at submit time (Sep 21) and cut any
   line whose feature didn't land.
-- **Prod mail cutover** — the one thing between "works" and "works in the
-  demo": second AgentMail webhook at `necessary-cobra-892.convex.site`, key +
-  secret with `--prod`, then `setSpaceInbox` for the three spaces. Do not
-  create inboxes again (org-wide 3-inbox cap). Recipe in the setup doc § Prod.
+- ~~**Prod mail cutover**~~ — done 2026-09-13 (see "Now working": one
+  deployment, one database). This entry was left stale; removed from the
+  queue 2026-09-17.
 - Re-seed live Convex (`npx convex run seed:demo` or equivalent) so
   production canvases pick up the SomaFM fields and seeded buildclub/Tahoe
   web-post cards.
@@ -1375,9 +1402,11 @@ Backward-looking history lives in `hackathon.md`.
   live on dev with real mail (crew `ourspaces@`, couple `ustwo@`, buildroom
   `buildroom@`).
 - ~~Reading-room tag filters~~ — done 2026-08-30 night.
-- Mail polish, if time: emailed widgets should *arrive* (envelope drop + house
-  motion, not a reactive pop-in); letters could open live for both people
-  (shared `sealed` state) instead of per-tab local state.
+- ~~Mail polish: envelope drop + shared `sealed` state.~~ — **both done**,
+  confirmed 2026-09-17. The arrival is `src/components/MailArrival.tsx` +
+  `src/lib/mailArrival.ts` (see `docs/mail-arrival.md`), and `sealed` rides
+  the widget row in `src/live/useLiveHandlers.ts:517`, so a letter opened on
+  one phone opens on every screen.
 - Build room, still open: the shipping wall uses the old
   `public/photos/hackathon/*.jpg` people-shots, not product screenshots —
   generate three dashboard images. OpenAI doesn't write `whyItMatters`/`kind`
@@ -1391,12 +1420,37 @@ Backward-looking history lives in `hackathon.md`.
   leave them. The OpenAI beat is the visible filing, not more starters.
 - Build four static vendor pages in `public/` (convex / agentmail / firecrawl /
   openai) from one shared template: per-page OG tags, hero clip,
-  what-it-does-in-OurSpaces, code peek, deep link into the live app. Needed
-  live by Sep 16. Spec in the local marketing playbook §5.
+  what-it-does-in-OurSpaces, code peek, deep link into the live app.
+  ~~Needed live by Sep 16.~~ **Shipped — as in-app routes, not static files.**
+  Verified 2026-09-17: all four live at `#/about/{convex,openai,agentmail,
+  firecrawl}` (`src/pages/About.tsx`, routed in `App.tsx:225`), each with
+  role, headline, intro, a 4-step journey citing real files, capabilities,
+  a technical list, and a deep link into a room. The `#/about` makers strip
+  links out to them. **The one spec gap: no per-page OG tags** — a hash route
+  never reaches the server, so every vendor link unfurls as the generic
+  OurSpaces card from `index.html`. Fixing that means real paths
+  (`/convex`), which today are the SPA catch-all: `/convex` is byte-identical
+  to `/` on the live site. Spec in the local marketing playbook §5.
 - Stand up the public "commons" space for hackathon builders (separate from
-  the demo spaces — strangers get write access) around Sep 16.
+  the demo spaces — strangers get write access) around Sep 16 — **past its
+  date as of 2026-09-17, and genuinely not built**: "commons" appears nowhere
+  in `src/` or `convex/`. With 5 days to the Sep 22 deadline this is the last
+  open marketing item (the vendor pages above shipped), so cut it or schedule
+  it deliberately.
 
 ## Decisions
+
+- 2026-09-16: **Demo-video clips are captured frame-by-frame, not screen-
+  recorded.** `.context/web-video/record.mjs` drives headless Chrome over CDP
+  with a virtual clock (setTimeout/setInterval/rAF/`performance.now` replaced,
+  every CSS animation pinned to the frame's time), so motion is exact at any
+  resolution with no dropped frames. Shot 1 (myspace, 8.0s), the ads beat
+  (feed, 5.8s) and the widget wall (12.0s, 3840×2160) are in
+  `docs/local/demo-video-assets/video/`. For the wall this added two query
+  params to `WidgetWall.tsx`: `?cols=N` (three columns leave dead air at 16:9;
+  four fills it, five makes the cards too small to read) and `?rec=1` (drops
+  the lab pill, exposes `window.__wall = { replay, close }`). Both default to
+  the page exactly as it ships, so `#/wall` from About is unchanged.
 
 - 2026-09-15: **The entry gate is a doorway, not a form.** Name the room,
   show your cursor live, make the look one tap, Enter walks in, and the exit
