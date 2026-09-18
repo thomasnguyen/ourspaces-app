@@ -73,6 +73,7 @@ function gestureLine(gestures: LiveStripGesture[]) {
 export function SpaceLiveStrip({
   spaceName,
   boardCount,
+  connected,
   lastChangeAt,
   gestures = [],
   work = null,
@@ -81,6 +82,8 @@ export function SpaceLiveStrip({
   spaceName?: string;
   /** widget rows on this space's board — only spoken while it is zero */
   boardCount?: number;
+  /** the Convex client's actual WebSocket state */
+  connected?: boolean;
   /** newest real write we know about (widget or message) */
   lastChangeAt?: number;
   gestures?: LiveStripGesture[];
@@ -110,15 +113,16 @@ export function SpaceLiveStrip({
     !busy && lastChangeAt != null && now - lastChangeAt < RECENT_CHANGE_MS
       ? `last change ${since(lastChangeAt, now)}`
       : null;
-  /* A resolved board count comes from the same reactive query that feeds the
-     canvas. It is the durable liveness fact; an old activity timestamp is not
-     evidence that the connection went away, so stale clocks yield to it. */
-  const connected = boardCount != null;
+  /* Transport state comes directly from useConvexConnectionState. An old
+     activity timestamp is not evidence that the connection went away, so
+     stale clocks yield to the actual socket state. */
+  const connectionLine =
+    connected === true ? "connected for everyone" : connected === false ? "reconnecting" : null;
 
-  if (!spaceName && !board && !busy && !changed && !connected) return null;
+  if (!spaceName && !board && !busy && !changed && !connectionLine) return null;
 
   return (
-    <p className="space-live-strip">
+    <p className={`space-live-strip ${connected === false ? "is-reconnecting" : ""}`}>
       {/* The announced part is the news: who is here, what is on the board,
           who has their hand on something. The clock sits outside it on
           purpose — a live region that re-reads itself every second is a
@@ -145,12 +149,16 @@ export function SpaceLiveStrip({
             {board}
           </>
         )}
-        {connected && (
+        {connectionLine && (
           <>
             <span className="space-live-strip-dot-sep" aria-hidden="true">
               ·
             </span>
-            <span className="space-live-strip-connected">connected for everyone</span>
+            <span
+              className={`space-live-strip-connected ${connected ? "" : "is-reconnecting"}`}
+            >
+              {connectionLine}
+            </span>
           </>
         )}
         {busy && (

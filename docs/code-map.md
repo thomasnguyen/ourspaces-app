@@ -92,7 +92,8 @@ pills set the same tag filter) · `CrawlStrip.tsx` (live Firecrawl crawl panel �
 usePaginatedQuery over `firecrawl.listCrawlPages`, pages stream in, each keepable
 to the pile) · `ShipRoom.tsx` (a ship post's full view) ·
 `SpaceLiveStrip.tsx` (the canvas's own pulse line — "live sync · connected for
-everyone" is the stable proof that the reactive board query has resolved;
+everyone" is the stable signal from Convex's actual WebSocket state
+(`useConvexConnectionState`); a disconnect changes it to "reconnecting";
 "live sync · fetching
 anthropic.com" / "live · sam is moving the friday poll" / "live · last change
 8s ago" / "live · nothing on the board yet". The last-change clock is shown
@@ -106,7 +107,7 @@ lime pop; `.is-work-failed` drops the accent.
 One fact, one home: it never repeats the header's faces + "N here now"
 or the title; the room name rides along collapsed and CSS opens it on
 `.is-canvas-away` once the title has scrolled off. Sits on the action dock's
-midline so the bottom gutter reads as one row. Every value is a live
+midline so the bottom gutter reads as one row. Every value is live
 subscription and an absent one is left out of the sentence rather than
 filled in. Renders as a direct child of `<main>`, not in the header or the
 rail: it is board content) · `UpdateNudge.tsx` +

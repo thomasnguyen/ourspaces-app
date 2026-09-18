@@ -4,12 +4,12 @@
   "tagline": "Group chats forget. Spaces remember.",
   "whatItDoes": "Group plans die in the group chat. OurSpaces gives a friend group a persistent shared canvas — countdowns, polls, potluck sheets, photo piles — that every member sees update live, cursor to cursor. 32 widget types, one board per space.",
   "liveApp": "https://necessary-cobra-892.convex.site",
-  "liveProof": {
-    "status": "The submitted URL is the working production app, not a landing page or static demo.",
-    "firstBoardChecks": [
-      "Cast the cake poll: a Convex mutation writes the vote and the reactive query updates every open tab.",
-      "Claim the open party item, post a birthday message, change availability, upload a photo, or drag any card: each path writes the shared production deployment and appears for every viewer.",
-      "The black live-sync pill reports connected only after the board subscription resolves; while someone drags, it names that person and object on every viewer's screen."
+  "demoPath": {
+    "entry": "The live app opens directly into the shared crew board.",
+    "tryTogether": [
+      "Open the crew board in two tabs, then cast the cake poll: a Convex mutation writes the vote and the reactive query updates both tabs.",
+      "Claim the open party item, post a birthday message, change availability, or upload a photo; each action appears for every viewer.",
+      "Drag any card to see the other tab's live cursor and moving card. The black live-sync pill reads the Convex client's WebSocket state directly."
     ]
   },
   "repo": "https://github.com/thomasnguyen/ourspaces-app",
