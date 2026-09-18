@@ -28,6 +28,8 @@ const app = defineApp({
     OPENAI_API_KEY: v.optional(v.string()),
     AI_PROXY_URL: v.optional(v.string()),
     AI_PROXY_TOKEN: v.optional(v.string()),
+    // Any non-empty value routes around the Convex AI Gateway (see convex/ai.ts).
+    AI_GATEWAY_DISABLED: v.optional(v.string()),
     AGENTMAIL_API_KEY: v.string(),
     AGENTMAIL_WEBHOOK_SECRET: v.optional(v.string()),
     SITE_URL: v.optional(v.string()),

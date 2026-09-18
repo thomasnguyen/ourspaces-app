@@ -20,8 +20,9 @@ import type { Id } from "./_generated/dataModel";
  * one space, and wants the widget id back — not a text blob to paste into a
  * prompt.
  *
- * Degrades quietly: with no OPENAI_API_KEY there is no embedding, so nothing
- * is written and every echo check returns null. Arrival is unaffected.
+ * Degrades quietly: with no embedding model reachable there is no embedding,
+ * so nothing is written and every echo check returns null. Arrival is
+ * unaffected.
  */
 
 /** Cosine floor for "this is the same thing" rather than merely "related".
