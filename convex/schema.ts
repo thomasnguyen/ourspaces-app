@@ -11,8 +11,8 @@ import { EMBEDDING_DIMENSIONS } from "./ai";
  * docs/data-model-plan.md §11.
  */
 export default defineSchema({
-  // Convex Auth owns users/authSessions/authAccounts/… (convex/auth.ts).
-  // members.userId stays v.string() so seeded crew ("seed:maya") coexist.
+  // Convex Auth owns users/authSessions/authAccounts/… (convex/auth.ts);
+  // members.userId is v.string() so seeded crew ("seed:maya") coexist.
   ...authTables,
 
   spaces: defineTable({
@@ -32,9 +32,9 @@ export default defineSchema({
     inboxAddress: v.optional(v.string()),
     askThreadId: v.optional(v.string()),
     ragIndexedAt: v.optional(v.number()),
-    // Unset on seeded spaces, load-bearing: "no owner" means nobody can rename
-    // or delete it from the client. Only createSpace writes it, from the
-    // caller's identity, never from an argument.
+    // Unset on seeded spaces, load-bearing: "no owner" means nobody can
+    // rename or delete it from the client. Only createSpace writes it from
+    // the caller's identity, never an argument.
     ownerId: v.optional(v.string()),
   })
     .index("by_name", ["name"])
@@ -53,16 +53,11 @@ export default defineSchema({
     widgetId: v.optional(v.id("widgets")),
     messageId: v.optional(v.string()),
     threadId: v.optional(v.string()),
-    // Pre-parsed to text by Firecrawl: an empty-bodied receipt still files
-    // itself off the PDF.
+    // Pre-parsed by Firecrawl: an empty-bodied receipt still files itself
+    // off the PDF.
     attachments: v.optional(
       v.array(
-        v.object({
-          filename: v.string(),
-          contentType: v.string(),
-          size: v.number(),
-          text: v.string(),
-        }),
+        v.object({ filename: v.string(), contentType: v.string(), size: v.number(), text: v.string() }),
       ),
     ),
     because: v.optional(v.string()),
@@ -75,12 +70,7 @@ export default defineSchema({
   work: defineTable({
     spaceId: v.id("spaces"),
     runId: v.string(),
-    kind: v.union(
-      v.literal("mail"),
-      v.literal("link"),
-      v.literal("search"),
-      v.literal("crawl"),
-    ),
+    kind: v.union(v.literal("mail"), v.literal("link"), v.literal("search"), v.literal("crawl")),
     step: v.string(),
     status: v.union(v.literal("running"), v.literal("done"), v.literal("failed")),
     line: v.string(),
@@ -116,7 +106,7 @@ export default defineSchema({
     createdBy: v.string(),
     createdAt: v.number(),
     rotate: v.optional(v.number()),
-    // Set by convex/similar.ts so an arriving card can ask whether the board
+    // Set by convex/similar.ts so an arriving card can ask if the board
     // already holds it. Optional — embeddings may be unconfigured.
     embedding: v.optional(v.array(v.float64())),
     embeddedText: v.optional(v.string()),
@@ -130,7 +120,7 @@ export default defineSchema({
 
   messages: defineTable({
     spaceId: v.id("spaces"),
-    // "global", a widget id, or "<widgetId>::q:<n>" for a question sub-thread —
+    // "global" | a widget id | "<widgetId>::q:<n>" for a question sub-thread —
     // a string, not v.id, because of the first two.
     widgetId: v.string(),
     userId: v.string(),
@@ -166,14 +156,7 @@ export default defineSchema({
     userId: v.string(),
     authorName: v.string(),
     authorColor: v.string(),
-    tone: v.union(
-      v.literal("berry"),
-      v.literal("orange"),
-      v.literal("blue"),
-      v.literal("violet"),
-      v.literal("teal"),
-      v.literal("lime"),
-    ),
+    tone: v.union(v.literal("berry"), v.literal("orange"), v.literal("blue"), v.literal("violet"), v.literal("teal"), v.literal("lime")),
     size: v.number(),
     points: v.array(v.object({ x: v.number(), y: v.number() })),
     regionId: v.optional(v.string()),
@@ -188,11 +171,7 @@ export default defineSchema({
     kind: v.union(v.literal("daily"), v.literal("ask")),
     since: v.string(),
     lines: v.array(
-      v.object({
-        text: v.string(),
-        widgetId: v.optional(v.string()),
-        messageId: v.optional(v.string()),
-      }),
+      v.object({ text: v.string(), widgetId: v.optional(v.string()), messageId: v.optional(v.string()) }),
     ),
     createdAt: v.number(),
   })
@@ -221,6 +200,9 @@ export default defineSchema({
     avatarUrl: v.optional(v.string()),
     // unset = canvas cursor; "cozy:<id>" = x/y normalized 0..1 on a board
     zone: v.optional(v.string()),
+    // Also the gesture lock: holding `gesture` for a widget means owning its
+    // drag, so "who is moving it" and "who may write it" are the same row
+    // (arbitration + TTL sweep in presence.ts).
     gesture: v.optional(
       v.object({
         sessionId: v.string(),
@@ -239,7 +221,7 @@ export default defineSchema({
     .index("by_space_user", ["spaceId", "userId"])
     .index("by_updated", ["updatedAt"]),
 
-  // batch-worker queue: stale linkCards awaiting a Firecrawl refresh.
+  // batch-worker queue: stale linkCards awaiting Firecrawl refresh.
   linkRefreshQueue: defineTable({
     widgetId: v.id("widgets"),
     queuedAt: v.commitTs(), // commit-order cursor, not a wall-clock read
