@@ -1471,15 +1471,18 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Next up
 
-- **Liveness to 10** — readability pass shipped 2026-09-17; reliability pass
-  underway. The first pass took the scrape from 52 empty-alt images to zero,
+- **Liveness to 10 — complete (2026-09-17).** The first pass took the scrape
+  from 52 empty-alt images to zero,
   removed control noise, published `hackathon.json`, and added the room intro.
-  The remaining 9s named no broken feature; they withheld a point because a
-  scrape could not complete an interaction. The follow-up makes the evidence
+  The follow-up makes the evidence
   concrete without faking activity: a real production cake-poll vote, a stable
   `live sync · connected for everyone` receipt backed by the resolved board
   subscription, action-oriented room copy, and exact first-board checks near
-  the top of the public manifest. `docs/local/liveness-10.md` holds the runs.
+  the top of the public manifest. On the pushed, deployed and cache-refreshed
+  packet, liveness scored **10, 10, 9, 10, 10, 10** (mean 9.83) and one run was
+  a perfect 60/60 overall. The lone 9 named no fault: it called the app working,
+  error-free and non-placeholder, then reserved a point because the evaluation
+  was not a deep UX review. `docs/local/liveness-10.md` holds the raw run paths.
 
 - **Jev router split** — plan written 2026-09-17, not started. `docs/jev.md`.
   Jev decides where mail goes (typed Choice over the live canvas inventory,
