@@ -41,7 +41,15 @@ import { createDemoWidget } from "../lib/widgetDefaults";
  * fine for a recording.
  */
 
-const COLS = 3;
+/* Recording knobs, read once from the query string (which must sit before the
+   hash: /?cols=4&rec=1#/wall). 'cols' widens the wall for a full-frame shot —
+   three columns leave dead air at 16:9 — and 'rec' drops the lab pill so it
+   can't flash on a synthetic click. Both default to the page as it ships. */
+const WALL_PARAMS = new URLSearchParams(
+  typeof window === "undefined" ? "" : window.location.search,
+);
+const COLS = Math.min(6, Math.max(1, Number(WALL_PARAMS.get("cols")) || 3));
+const REC = WALL_PARAMS.get("rec") === "1";
 const COL_W = 400;
 const GAP = 26;
 const SIZES = [
@@ -698,6 +706,16 @@ export function WidgetWall() {
     setRunKey((key) => key + 1);
   };
 
+  /* In rec mode the pill is gone, so hand the recorder what the pill drove:
+     a clean entrance and a spotlight close (what Esc does). */
+  useEffect(() => {
+    if (!REC) return;
+    (window as Window & { __wall?: { replay: () => void; close: () => void } }).__wall = {
+      replay,
+      close: closeSpotlight,
+    };
+  });
+
   const focusZoom = selected
     ? Math.min(
         1.8,
@@ -855,6 +873,7 @@ export function WidgetWall() {
         </div>
       )}
 
+      {!REC && (
       <div className="arrival-lab-bar ww-bar">
         <span className="arrival-lab-kicker">widget wall</span>
         <button type="button" className="is-main" onClick={replay}>
@@ -895,6 +914,7 @@ export function WidgetWall() {
         <i aria-hidden="true" />
         <a href="#/widgets">widget lab</a>
       </div>
+      )}
     </div>
   );
 }

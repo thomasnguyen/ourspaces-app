@@ -46,6 +46,7 @@ Product spec and positioning are **local-only** — see the bottom table.
 | Demo rooms, widget catalog, what each space still needs | `docs/spaces-and-widgets.md` |
 | The build room / reading room (widgets, funnel, where link state lives) | `docs/spaces-and-widgets.md` §0 |
 | Every subsystem explained: mail brain, Firecrawl, AI layer, components | `docs/architecture.md` |
+| The decision model: Jev decides / OpenAI writes, the router split, voice later | `docs/jev.md` |
 | Schema, auth (guest or join), Convex-as-state | `docs/data-model-plan.md` |
 | Email → canvas: the 3 mail cases, router, digest, status, open goals | `docs/mail.md` |
 | Mail arrival — the envelope that narrates the filing (spec + build decisions: stages, state, motion, `#/mail` lab, take reset) | `docs/mail-arrival.md` |
