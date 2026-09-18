@@ -11,6 +11,14 @@ import { v, type Infer } from "convex/values";
  * every producer payload validates against one — nothing we ship reaches the
  * permissive record at the end of the union. See the note above
  * `fallbackData` for the two reasons it is still there.
+ *
+ * The union itself is at the bottom of the file: 33 arms, in order — poll,
+ * note, decision, countdown, linkCard, letter, photoWall, expenseSplit,
+ * itinerary, potluck, rsvp, dailyQ (the 12 core types, defined first), then
+ * frame, sticker, media, availability, linkShelf, playlist, jokeRegistry,
+ * messageWall, chat, backendLive, quote, weather, sports, wheel, dualClock,
+ * cozyColor, linkPile, hotLinks, shipPost, roundtable, and `fallbackData`
+ * last. `convex/schema.ts` uses it as the validator for `widgets.data`.
  */
 
 const pollData = v.object({
