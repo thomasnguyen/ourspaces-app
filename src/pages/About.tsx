@@ -288,9 +288,9 @@ const VENDORS: VendorStory[] = [
       ["Uncertainty has a place, too.", "When the router cannot make a useful decision, mail can remain as an unfiled envelope. The model chooses from a small set of actions; app functions own the actual writes.", "convex/inbox.ts"],
     ],
     technical: [
-      ["One model-routing module", "convex/ai.ts chooses gpt-oss-120b through a configured Cloudflare proxy, or gpt-4o-mini through the OpenAI API when that proxy is not configured. This is a configuration choice, not automatic failover after an error.", "convex/ai.ts"],
-      ["JSON decisions, with app-owned writes", "completeJson requests a JSON object on the direct OpenAI path and uses prompt-directed JSON on the proxy path. Callers interpret the fields; the expense and itinerary mutations check the target’s room and type before updating it.", "convex/inboxRouting.ts"],
-      ["Embeddings and memory", "text-embedding-3-small runs through OpenAI’s API. The RAG component indexes widget summaries and recent messages in a namespace for each space, then retrieves context for a follow-up.", "convex/rag.ts"],
+      ["One model-routing module", "convex/ai.ts sends every model call through the Convex AI Gateway, which the deployment authenticates to with a short-lived credential minted inside the running action, so this app carries no model API key of its own. A Cloudflare proxy and a direct OpenAI key remain as fallbacks selected by configuration, not by automatic failover after an error.", "convex/ai.ts"],
+      ["JSON decisions, with app-owned writes", "completeJson asks the gateway for a JSON object, and falls back to prompt-directed JSON on the Cloudflare proxy path, whose model rejects the field. Callers interpret the fields; the expense and itinerary mutations check the target’s room and type before updating it.", "convex/inboxRouting.ts"],
+      ["Embeddings and memory", "text-embedding-3-small runs through the same gateway at 1536 dimensions, the size the vector indexes were built for. The RAG component indexes widget summaries and recent messages in a namespace for each space, then retrieves context for a follow-up.", "convex/rag.ts"],
       ["A bounded job for the agent", "The follow-up agent is instructed to answer briefly from the supplied context and cite a real object when useful. It has no canvas-writing role. Mail filing follows the separate structured-decision path.", "convex/agent.ts"],
     ],
   },

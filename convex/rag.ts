@@ -10,8 +10,9 @@ const REINDEX_STALE_MS = 5 * 60 * 1000;
 /**
  * rag component: semantic search over a space's widgets + recent chat,
  * grounding recap.ask with retrieved context instead of a raw snapshot
- * dump. Real OpenAI embeddings only (see ai.ts) — never crashes at
- * module load when unconfigured, matching the languageModel() fallback
+ * dump. Embeddings come from the Convex AI Gateway (see ai.ts) — the same
+ * 1536-dim text-embedding-3-small the index was built with. Never crashes
+ * at module load when unconfigured, matching the languageModel() fallback
  * pattern; callers check embeddingModel() before indexing/searching.
  */
 export const rag = new RAG(components.rag, {
