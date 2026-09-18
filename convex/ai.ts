@@ -98,7 +98,15 @@ export function chatTarget(): ChatTarget | null {
 /** Same chat backend as completeJson, wrapped as an AI SDK model for the
  * agent component. Never throws at construction — agent.ts builds this at
  * module load, and an unconfigured target fails at call time the same way
- * completeJson already degrades. */
+ * completeJson already degrades.
+ *
+ * One sharp edge on the gateway path: `convexGateway()` builds its provider
+ * without `supportsStructuredOutputs`, so an AI SDK `generateObject` cannot
+ * send `response_format: json_schema` — it silently downgrades to
+ * `json_object` (it logs an AI SDK warning) and OpenAI answers 400 to a
+ * json_object request whose messages never contain the word "json". So every
+ * generateObject through this model must name JSON in its prompt; recap.ts's
+ * `ask` does. streamText is unaffected — it sends no response_format. */
 export function languageModel(): LanguageModelV4 {
   const target = chatTarget();
   if (target?.kind === "gateway") return convexGateway(target.model);

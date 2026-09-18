@@ -210,9 +210,16 @@ function widgetInventory(widgets: Doc<"widgets">[]): string {
   return lines.join("\n");
 }
 
+/** Everything `decideFiling` reads off an inbound email. Narrower than the
+ *  stored row so the mail brain can be dry-run on a synthetic email. */
+export type RoutableEvent = Pick<
+  Doc<"emailEvents">,
+  "from" | "subject" | "summary" | "body" | "attachments" | "createdAt"
+>;
+
 /** The parsed attachment text, framed for the model. Empty when nothing was
  *  attached, so the prompt stays identical to what it was before. */
-function attachmentBlock(event: Doc<"emailEvents">): string {
+function attachmentBlock(event: RoutableEvent): string {
   const files = event.attachments ?? [];
   if (files.length === 0) return "";
   return files
@@ -220,12 +227,23 @@ function attachmentBlock(event: Doc<"emailEvents">): string {
     .join("\n");
 }
 
-export async function routeSmart(
-  ctx: ActionCtx,
-  { event, space, widgets }: { event: Doc<"emailEvents">; space: Doc<"spaces">; widgets: Doc<"widgets">[] },
-): Promise<InboundAck> {
+/**
+ * The model half of routeSmart: the live canvas and the email in, the router's
+ * JSON object out, nothing written. Separate from the applying half so the
+ * mail brain can be dry-run against the real board — the only way to check
+ * this prompt's structured output without an email landing on a canvas.
+ */
+export async function decideFiling({
+  event,
+  space,
+  widgets,
+}: {
+  event: RoutableEvent;
+  space: Pick<Doc<"spaces">, "name">;
+  widgets: Doc<"widgets">[];
+}): Promise<Record<string, unknown> | null> {
   const today = new Date(event.createdAt).toISOString().slice(0, 10);
-  const decision = await completeJson({
+  return await completeJson({
     system: [
       `You are the mail sorter for "${space.name}", a friend group's shared canvas.`,
       "An email arrived at the group's inbox. Decide where it belongs on the canvas.",
@@ -265,6 +283,13 @@ export async function routeSmart(
     ].filter(Boolean).join("\n"),
     temperature: 0.2,
   });
+}
+
+export async function routeSmart(
+  ctx: ActionCtx,
+  { event, space, widgets }: { event: Doc<"emailEvents">; space: Doc<"spaces">; widgets: Doc<"widgets">[] },
+): Promise<InboundAck> {
+  const decision = await decideFiling({ event, space, widgets });
 
   // Naming the file back to the sender is the whole tell that we opened it.
   const files = event.attachments ?? [];

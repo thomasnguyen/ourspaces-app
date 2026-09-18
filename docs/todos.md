@@ -5,6 +5,25 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Every model path re-proved on the gateway, and one was silently dead
+  (2026-09-18):** swept `convex/` for everything that ends in a model call and
+  ran each on prod. Working through `ai-gateway.convex.dev`: mail routing
+  (`decideFiling`, 1.1s, returns `action`/`widgetId`/`expense.amount` as a
+  number and picked the right expense card), the weekly digest compose (1.2–5.2s),
+  spark questions (2.0s), the daily recap (1.6s), rag index + search
+  (15 chunks in 5.3s / 0.3–0.6s), the echo check (0.89 cosine onto a vector
+  written by direct OpenAI — new vectors are still 1536), and the streaming
+  ask over `/api/ask-stream` (2.3–2.7s). **Broken and now fixed:** `recap.ask`,
+  the non-streaming ask fallback, was 400ing on every call and returning
+  `cannedAsk` — `convexGateway()` builds its provider without
+  `supportsStructuredOutputs`, so the agent's `generateObject` downgrades
+  `json_schema` to `json_object`, and OpenAI rejects a `json_object` request
+  whose messages never say "json". Naming the JSON shape in the ask prompt
+  fixes it (`convex/recap.ts`; the edge is written up in `convex/ai.ts`).
+  `routeBuildRoom` and `convex/firecrawl.ts` turn out to make no model call at
+  all, and `askOpenAi("ask", …)` in `recap.ts` is dead since the agent took
+  that path over. No gateway error, retry or throttle in the logs.
+
 - **"ask the space" actually streams now (2026-09-17):** the dock's follow-up
   composer was the last honest gap — `convex/streaming.ts` was complete and
   unreachable (`createAskStream` and `getAskStreamBody` had zero callers), so
@@ -49,6 +68,32 @@ Backward-looking history lives in `hackathon.md`.
   deployment and the two pre-gateway targets take over in their old order
   (Cloudflare proxy → direct OpenAI), with no deploy needed. `AI_PROXY_URL`,
   `AI_PROXY_TOKEN` and `OPENAI_API_KEY` are still set on prod for exactly that.
+
+- **Gateway rollback runbook — drilled on prod 2026-09-17, it works.** Flip
+  takes **~1s**, no deploy, and the first fallback answer lands on the next
+  call (~4s later). Commands:
+  `npx convex env set AI_GATEWAY_DISABLED 1` → verify with
+  `npx convex run digest:composeDigestText '{"spaceName":"the crew","slug":"crew","summaries":["poll: cake flavor? carrot leading"]}'`
+  (a rewritten subject = a real model answered; `subject: "this week in the crew"`
+  with the summaries echoed back verbatim = canned, i.e. the model call failed)
+  and `npx convex run similar:echoCheck '{"spaceId":"jh70xy7cnfdrk527x6dqargrkx8dkyf6","text":"poll: what cake should we get for the birthday?"}'`
+  (a non-null hit = embeddings alive; crew's cake poll scores **0.7135** on
+  both targets — identical to 4 decimals, direct OpenAI and the gateway are
+  the same 1536-dim model). Back on: `npx convex env remove AI_GATEWAY_DISABLED`,
+  then re-run the digest probe. Measured under fallback: chat 3.9s vs 3.6s on
+  the gateway, embeddings 1.7s vs 1.4s.
+  **Must stay set for the rollback to work:** `AI_PROXY_URL` + `AI_PROXY_TOKEN`
+  (chat → `@cf/openai/gpt-oss-120b`) and `OPENAI_API_KEY` (embeddings — the
+  proxy has no `/v1/embeddings`; without the key `embeddingModel()` is null and
+  echo/rag go quiet). All three are set on prod as of today.
+  **Traps:** `convex env set` accepts a *misspelled* name with a green
+  checkmark and does nothing — after flipping, confirm the name is in
+  `npx convex env list` and that a probe actually changed. Fallback prose is
+  visibly worse (gpt-oss emits markdown `**bold**` and U+2011 hyphens, which
+  the typing "ask" answer renders literally), so flip only for a real incident.
+  `agent.ts` binds `languageModel()` at module load, so "ask the space" is the
+  one path the drill couldn't prove read-only — after a flip, ask one question
+  in the crew room and watch it type before trusting it on camera.
 
 - **Truth sweep over the public files (2026-09-17):** `README.md`,
   `hackathon.md` and `public/hackathon.json` re-checked line by line against
