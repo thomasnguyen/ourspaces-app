@@ -560,7 +560,17 @@ export const ask = action({
             `Space: ${snap.space}\nBoard: ${JSON.stringify(snap.widgets).slice(0, 2500)}\n` +
             `Chat: ${JSON.stringify(snap.chat).slice(0, 1000)}` +
             (retrieved ? `\n\nMost relevant to this question:\n${retrieved.slice(0, 2000)}` : "") +
-            `\n\nQuestion: ${question}`,
+            `\n\nQuestion: ${question}` +
+            // Naming the shape — and the word "json" — is load-bearing, not
+            // decoration. The gateway's provider has no json_schema, so the
+            // agent's generateObject degrades to json_object, and OpenAI 400s
+            // a json_object request whose messages never say "json". Without
+            // this line every ask on this path fell through to cannedAsk and
+            // looked like an answer. See convex/ai.ts. The streaming twin in
+            // streaming.ts writes prose and must NOT get this.
+            '\n\nAnswer with one JSON object: {"reply":"<1-2 sentences, lowercase>",' +
+            '"widgetId":"<id from the board, optional>",' +
+            '"messageId":"<id from the chat, optional>"}',
         },
       )
       .then((result) => result.object)
