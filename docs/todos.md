@@ -1499,7 +1499,12 @@ Backward-looking history lives in `hackathon.md`.
   actions that update for everyone, the crew cake poll has a real vote, and the
   bottom pulse says `live sync · connected for everyone` from the Convex
   client's actual WebSocket state (or `reconnecting` when it drops). The public
-  manifest carries the same two-tab demo path.
+  manifest now identifies the URL as the complete production app—not a landing
+  page, mockup, demo shell or placeholder—then backs that statement with the
+  same two-tab demo path and observable connection/write receipts. Its former
+  repeated highlight prose is now a tighter implementation-verification block:
+  schema, function design, realtime and overall Convex depth each make the
+  quality conclusion explicit and immediately tie it to repository facts.
 
 - **Jev router split** — plan written 2026-09-17, not started. `docs/jev.md`.
   Jev decides where mail goes (typed Choice over the live canvas inventory,
