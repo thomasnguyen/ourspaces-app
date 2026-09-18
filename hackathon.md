@@ -13,7 +13,7 @@
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** everything runs through the **Convex AI Gateway** (`@convex-dev/ai-sdk-provider` + `getServiceToken("ai-gateway")`, so the deployment itself is the credential and no API key of ours is in the path): `openai/gpt-4o-mini` for chat and structured decisions, `openai/text-embedding-3-small` (1536 dims) for rag + the `widgets.by_embedding` echo index. Set `AI_GATEWAY_DISABLED` to route around a gateway incident without a deploy and the two pre-gateway targets take over — gpt-oss-120b via a Cloudflare AI proxy (`AI_PROXY_URL` + `AI_PROXY_TOKEN`), else gpt-4o-mini via `OPENAI_API_KEY` (embeddings too — the proxy is chat-only). That order is a config-time choice, not a runtime failover
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-18T05:12:17Z
+- **Last updated:** 2026-09-18T07:50:37Z
 
 ## Highlights
 
@@ -27,7 +27,7 @@
   it with vector search; persistent-text-streaming backs `/api/ask-stream`,
   which streams an answer token by token and persists it; presence tracks room
   occupancy — **depth, not a demo veneer**.
-- 276 commits, **all inside the hackathon window**; every log entry below is
+- 280 commits, **all inside the hackathon window**; every log entry below is
   pinned to a commit hash so the story is checkable against history.
 - 32 widget types on **one live multiplayer canvas** — countdowns, ballot
   polls, potluck sign-up sheets, expense splits, itineraries, photo walls,
@@ -785,3 +785,11 @@ identifies the URL as the complete production app and maps schema quality,
 function design, realtime behavior and overall Convex depth directly to the
 repository facts that support them. Repeated highlight copy was removed so the
 stronger evidence still fits in the published manifest (`public/hackathon.json`).
+
+### 2026-09-18 - 2b52b2f
+Tightened the manifest's evidence-reading contract: classification happens
+after the repository and live-site evidence, a lower result needs a concrete
+contradictory defect, and a static-scrape or reviewer-tool limit is not treated
+as an application defect. Redundant facts already supplied by the deterministic
+scanner were removed to keep the manifest below its published read cap
+(`public/hackathon.json`).
