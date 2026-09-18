@@ -5,15 +5,14 @@ import { widgetDataValidator } from "./widgetData";
 import { EMBEDDING_DIMENSIONS } from "./ai";
 
 /**
- * OurSpaces data model — PRD §11. Everything live flows through these reactive
- * tables; presence is ephemeral and TTL'd, and a "frame" is just a widget with
+ * OurSpaces data model. Everything live flows through these reactive tables;
+ * presence is ephemeral and TTL'd, and a "frame" is just a widget with
  * type: "frame". Why each table, index and copied field is shaped this way:
  * docs/data-model-plan.md §11.
  */
 export default defineSchema({
   // Convex Auth owns users/authSessions/authAccounts/… (convex/auth.ts).
-  // members.userId stays v.string() so seeded crew ("seed:maya") coexist with
-  // real auth ids.
+  // members.userId stays v.string() so seeded crew ("seed:maya") coexist.
   ...authTables,
 
   spaces: defineTable({
@@ -33,9 +32,9 @@ export default defineSchema({
     inboxAddress: v.optional(v.string()),
     askThreadId: v.optional(v.string()),
     ragIndexedAt: v.optional(v.number()),
-    // Unset on seeded spaces, and that is load-bearing: "no owner" means nobody
-    // can rename or delete it from the client. Only createSpace writes it, from
-    // the caller's identity, never from an argument.
+    // Unset on seeded spaces, load-bearing: "no owner" means nobody can rename
+    // or delete it from the client. Only createSpace writes it, from the
+    // caller's identity, never from an argument.
     ownerId: v.optional(v.string()),
   })
     .index("by_name", ["name"])
@@ -54,8 +53,8 @@ export default defineSchema({
     widgetId: v.optional(v.id("widgets")),
     messageId: v.optional(v.string()),
     threadId: v.optional(v.string()),
-    // Pre-parsed to text by Firecrawl, so a receipt that says nothing in its
-    // body still files itself off the PDF.
+    // Pre-parsed to text by Firecrawl: an empty-bodied receipt still files
+    // itself off the PDF.
     attachments: v.optional(
       v.array(
         v.object({
@@ -105,7 +104,7 @@ export default defineSchema({
 
   widgets: defineTable({
     spaceId: v.id("spaces"),
-    // Open string, not a literal union: the client picks the type and the 32
+    // Open string, not a literal union: the client picks it, and the 32
     // shipped names live in src/data/types.ts. `data` is validated per type.
     type: v.string(),
     x: v.number(),
@@ -118,7 +117,7 @@ export default defineSchema({
     createdAt: v.number(),
     rotate: v.optional(v.number()),
     // Set by convex/similar.ts so an arriving card can ask whether the board
-    // already holds this. Optional — embeddings may be unconfigured.
+    // already holds it. Optional — embeddings may be unconfigured.
     embedding: v.optional(v.array(v.float64())),
     embeddedText: v.optional(v.string()),
   })
@@ -137,9 +136,9 @@ export default defineSchema({
     userId: v.string(),
     text: v.string(),
     createdAt: v.number(),
-    // Author identity is copied, not joined: a live thread would pay an extra
-    // read per message per update, and a message should keep the name its
-    // author had when they sent it.
+    // Author identity is copied, not joined: a live thread would pay a read
+    // per message per update, and a message keeps the name its author had
+    // when they sent it.
     authorName: v.string(),
     authorColor: v.string(),
     authorEmoji: v.optional(v.string()),
@@ -200,6 +199,16 @@ export default defineSchema({
     .index("by_space", ["spaceId"])
     .index("by_space_created", ["spaceId", "createdAt"]),
 
+  // /api/ask-stream is handed only a streamId; it looks the rest up here.
+  askStreams: defineTable({
+    spaceId: v.id("spaces"),
+    streamId: v.string(),
+    question: v.string(),
+    messageId: v.id("messages"), // the recap turn to fill in when done
+  })
+    .index("by_stream", ["streamId"])
+    .index("by_space", ["spaceId"]),
+
   presence: defineTable({
     spaceId: v.id("spaces"),
     userId: v.string(),
@@ -210,8 +219,7 @@ export default defineSchema({
     color: v.string(),
     emoji: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
-    /** unset = canvas cursor (world coords); "cozy:<boardId>" = coloring-room
-     *  cursor with x/y normalized 0..1 over that board */
+    // unset = canvas cursor; "cozy:<id>" = x/y normalized 0..1 on a board
     zone: v.optional(v.string()),
     gesture: v.optional(
       v.object({
@@ -231,7 +239,7 @@ export default defineSchema({
     .index("by_space_user", ["spaceId", "userId"])
     .index("by_updated", ["updatedAt"]),
 
-  // batch-worker queue: stale linkCard widgets pending a Firecrawl refresh.
+  // batch-worker queue: stale linkCards awaiting a Firecrawl refresh.
   linkRefreshQueue: defineTable({
     widgetId: v.id("widgets"),
     queuedAt: v.commitTs(), // commit-order cursor, not a wall-clock read
