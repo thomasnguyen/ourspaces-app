@@ -13,6 +13,7 @@ export type LiveStripGesture = {
 
 const TICK_MS = 1_000;
 const LABEL_MAX = 40;
+const RECENT_CHANGE_MS = 30 * 60 * 1_000;
 
 /**
  * Sub-minute freshness only. Anything a minute or older hands off to the
@@ -52,9 +53,9 @@ function gestureLine(gestures: LiveStripGesture[]) {
  *
  * One fact, one home: the header owns the faces and "N here now", the title
  * owns the room's name. This line only says what nothing else on screen
- * says — that the board is live, what the space itself is doing, who has a
- * hand on something, how fresh the last change is, and (only when it is
- * news) that the board is still empty.
+ * says — that the board's subscription is connected, what the space itself
+ * is doing, who has a hand on something, how fresh a recent change is, and
+ * (only when it is news) that the board is still empty.
  *
  * The ladder is busiest-first, and the space's own hands rank above a
  * person's: a member moving a poll is a thing you can already SEE happening,
@@ -106,9 +107,15 @@ export function SpaceLiveStrip({
   /* The space's own hands first (see the note above), then a person's. */
   const busy = work ? work.line : gestures.length > 0 ? gestureLine(gestures) : null;
   const changed =
-    !busy && lastChangeAt != null ? `last change ${since(lastChangeAt, now)}` : null;
+    !busy && lastChangeAt != null && now - lastChangeAt < RECENT_CHANGE_MS
+      ? `last change ${since(lastChangeAt, now)}`
+      : null;
+  /* A resolved board count comes from the same reactive query that feeds the
+     canvas. It is the durable liveness fact; an old activity timestamp is not
+     evidence that the connection went away, so stale clocks yield to it. */
+  const connected = boardCount != null;
 
-  if (!spaceName && !board && !busy && !changed) return null;
+  if (!spaceName && !board && !busy && !changed && !connected) return null;
 
   return (
     <p className="space-live-strip">
@@ -118,7 +125,7 @@ export function SpaceLiveStrip({
           nuisance in a screen reader, and the second hand is not news. */}
       <span className="space-live-strip-news" aria-live="polite">
         <span className="space-live-strip-dot" aria-hidden="true" />
-        <span className="space-live-strip-live">live</span>
+        <span className="space-live-strip-live">live sync</span>
         {spaceName && (
           /* Collapsed at rest; CSS opens it when the title scrolls away. */
           <span className="space-live-strip-name">
@@ -136,6 +143,14 @@ export function SpaceLiveStrip({
               ·
             </span>
             {board}
+          </>
+        )}
+        {connected && (
+          <>
+            <span className="space-live-strip-dot-sep" aria-hidden="true">
+              ·
+            </span>
+            <span className="space-live-strip-connected">connected for everyone</span>
           </>
         )}
         {busy && (

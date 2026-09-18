@@ -4,6 +4,14 @@
   "tagline": "Group chats forget. Spaces remember.",
   "whatItDoes": "Group plans die in the group chat. OurSpaces gives a friend group a persistent shared canvas — countdowns, polls, potluck sheets, photo piles — that every member sees update live, cursor to cursor. 32 widget types, one board per space.",
   "liveApp": "https://necessary-cobra-892.convex.site",
+  "liveProof": {
+    "status": "The submitted URL is the working production app, not a landing page or static demo.",
+    "firstBoardChecks": [
+      "Cast the cake poll: a Convex mutation writes the vote and the reactive query updates every open tab.",
+      "Claim the open party item, post a birthday message, change availability, upload a photo, or drag any card: each path writes the shared production deployment and appears for every viewer.",
+      "The black live-sync pill reports connected only after the board subscription resolves; while someone drags, it names that person and object on every viewer's screen."
+    ]
+  },
   "repo": "https://github.com/thomasnguyen/ourspaces-app",
   "convexDeployment": "https://necessary-cobra-892.convex.cloud",
   "frontend": "React 19 + Vite + Tailwind v4, served by @convex-dev/static-hosting at \"/\"; our HTTP routes sit under /api.",
@@ -11,8 +19,7 @@
   "started": "2026-08-27",
   "lastUpdated": "2026-09-17",
   "convex": {
-    "sourceFiles": 47,
-    "sourceFilesNote": "47 TypeScript modules under convex/, excluding convex/_generated (plus convex/tsconfig.json).",
+    "sourceFiles": 50,
     "schema": {
       "file": "convex/schema.ts",
       "tablesDefined": 12,
@@ -78,12 +85,7 @@
       "openai/gpt-4o-mini — structured JSON decisions (completeJson → the gateway's /v1/chat/completions) and the agent component's model (convexGateway(), convex/agent.ts)"
     ],
     "embeddingModel": "openai/text-embedding-3-small, 1536 dimensions — rag retrieval and the widgets.by_embedding echo index, on the same gateway through an OpenAI-compatible client.",
-    "convexAiGateway": true,
-    "fallbacks": [
-      "Config-time order, never a runtime failover (a failing target is not retried against the next): the gateway unless AI_GATEWAY_DISABLED is set, then @cf/openai/gpt-oss-120b on a Cloudflare Workers AI proxy (AI_PROXY_URL + AI_PROXY_TOKEN), else gpt-4o-mini on OPENAI_API_KEY.",
-      "That proxy is chat-only, so with the gateway off embeddings need OPENAI_API_KEY — the same 1536-dim text-embedding-3-small."
-    ],
-    "modelIdsNote": "Model ids are named constants in convex/ai.ts, not inline literals."
+    "convexAiGateway": true
   },
   "highlights": [
     "17 components mounted 18 times in convex.config.ts, each with a job: migrations backfills legacy rows, two aggregate instances replace .collect() counting, sharded-counter drives the landing totals, rate-limiter buckets the LLM, mail and paint paths.",

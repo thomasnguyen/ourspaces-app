@@ -91,9 +91,13 @@ links/reading-circle switch, reading circle whose tag
 pills set the same tag filter) · `CrawlStrip.tsx` (live Firecrawl crawl panel —
 usePaginatedQuery over `firecrawl.listCrawlPages`, pages stream in, each keepable
 to the pile) · `ShipRoom.tsx` (a ship post's full view) ·
-`SpaceLiveStrip.tsx` (the canvas's own pulse line — "live · fetching
+`SpaceLiveStrip.tsx` (the canvas's own pulse line — "live sync · connected for
+everyone" is the stable proof that the reactive board query has resolved;
+"live sync · fetching
 anthropic.com" / "live · sam is moving the friday poll" / "live · last change
-8s ago" / "live · nothing on the board yet". Ladder is busiest-first and the
+8s ago" / "live · nothing on the board yet". The last-change clock is shown
+only for the first 30 minutes, so an old timestamp never makes a connected room
+read as dead. Ladder is busiest-first and the
 SPACE's own hands outrank a person's: a member dragging a poll is visible on
 the board already, the brain reading an emailed PDF is not, so `work` (from
 `useSpaceWork`) takes the line while it runs. `.is-work-running` sweeps a
