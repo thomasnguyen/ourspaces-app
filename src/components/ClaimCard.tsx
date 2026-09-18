@@ -225,6 +225,18 @@ export function ClaimCard({
         </div>
       )}
 
+      {/* The door says it's a door. Everything under here — a name field, a
+          row of faces — reads like a sign-up sheet to anyone who hasn't
+          used the app, and to any reader that only gets the text (a link
+          preview, a crawler, someone with images off). It isn't one: the
+          name is your label to the room, the account below is optional,
+          and there is no wall. Say so before the fields start. */}
+      {isGate && (
+        <p className="claim-gate-note">
+          no account needed — your name is just what the room sees
+        </p>
+      )}
+
       <label className="claim-name-label">
         {isGate ? "your name" : "name"}
         <input
