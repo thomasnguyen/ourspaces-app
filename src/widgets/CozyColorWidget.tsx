@@ -555,7 +555,7 @@ export function CozyColorWidget({
                 aria-label={`${entry.title} — ${fillsByBoard.get(entry.id) ?? 0} of ${entry.regions.length} filled`}
                 aria-pressed={entry.id === board.id}
               >
-                <img src={entry.poster} alt="" />
+                <img src={entry.poster} alt={`${entry.title} postcard`} />
                 <span>{fillsByBoard.get(entry.id) ?? 0}/{entry.regions.length}</span>
               </button>
             ))}

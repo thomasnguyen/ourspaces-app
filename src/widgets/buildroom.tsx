@@ -32,7 +32,7 @@ function LinkTile({ link, className = "" }: { link: BuildRoomLink; className?: s
       aria-hidden="true"
     >
       {link.imageUrl ? (
-        <img src={link.imageUrl} alt="" referrerPolicy="no-referrer" draggable={false} />
+        <img src={link.imageUrl} alt={`${link.title} cover`} referrerPolicy="no-referrer" draggable={false} />
       ) : (
         <i>{linkMonogram(link)}</i>
       )}
@@ -205,7 +205,7 @@ export function ShipPreview({ imageUrl }: { imageUrl: string }) {
   const demo = ["demo-day", "hack-weekend", "shipped-v01"].find(
     (name) => imageUrl === `/photos/hackathon/${name}.jpg`,
   );
-  if (!demo) return <img src={imageUrl} alt="" draggable={false} />;
+  if (!demo) return <img src={imageUrl} alt="project screenshot" draggable={false} />;
   const spec = demo === "hack-weekend";
   const release = demo === "shipped-v01";
   const ink = spec ? "var(--color-ink)" : "var(--color-card)";

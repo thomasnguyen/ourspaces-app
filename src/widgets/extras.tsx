@@ -960,12 +960,11 @@ export function PhotoWallWidget({ widget, style }: { widget: Widget; style: Styl
               key={photo.caption}
               className={`photo-wall-peek photo-wall-peek-${index + 1}`}
               style={{ "--tilt": `${Math.max(-4, Math.min(4, photo.rotate ?? (index === 0 ? 3 : -3)))}deg` } as Style}
-              aria-hidden="true"
             >
               <span className="photo-wall-frame">
                 <img
                   src={photo.thumbnailSrc ?? photo.src ?? "/assets/the-crew-snapshot-thumb.jpg"}
-                  alt=""
+                  alt={photo.caption}
                   style={{ objectPosition: photo.focus ?? "center" }}
                   onError={(event) => {
                     event.currentTarget.onerror = null;
@@ -1129,7 +1128,7 @@ export function LinkCardWidget({ widget, style }: { widget: Widget; style: Style
       <img
         className="link-card-cover-image"
         src={artSrc}
-        alt=""
+        alt={artSrc === LINK_CARD_FALLBACK ? "torn paper collage" : `${title} cover`}
         referrerPolicy="no-referrer"
         draggable={false}
         onError={() => setArtSrc(LINK_CARD_FALLBACK)}

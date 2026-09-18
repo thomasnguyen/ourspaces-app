@@ -1,0 +1,92 @@
+{
+  "manifestVersion": 1,
+  "project": "OurSpaces",
+  "tagline": "Group chats forget. Spaces remember.",
+  "whatItDoes": "Group plans die in the group chat. OurSpaces gives a friend group a persistent shared canvas — countdowns, polls, potluck sheets, photo piles, reading cards — that every member sees update live, cursor to cursor. 32 widget types, one realtime board per space.",
+  "liveApp": "https://necessary-cobra-892.convex.site",
+  "repo": "https://github.com/thomasnguyen/ourspaces-app",
+  "convexDeployment": "https://necessary-cobra-892.convex.cloud",
+  "frontend": "React 19 + Vite + Tailwind v4, served by @convex-dev/static-hosting mounted at \"/\"; our own HTTP routes sit under /api.",
+  "event": "Convex All Gas Hackathon",
+  "started": "2026-08-27",
+  "lastUpdated": "2026-09-16",
+  "repoActivity": {
+    "commits": 260,
+    "contributors": 1
+  },
+  "convex": {
+    "sourceFiles": 50,
+    "schema": {
+      "file": "convex/schema.ts",
+      "tablesDefined": 11,
+      "indexes": 27,
+      "searchIndexes": 1,
+      "vectorIndexes": 1,
+      "tablesNote": "11 tables of our own; @convex-dev/auth's ...authTables are spread in on top and not counted in the 11.",
+      "typedWidgetData": "widgets.data is a 33-arm union (convex/widgetData.ts): 32 typed per-widget validators plus one open fallback arm for pre-union rows."
+    },
+    "functions": {
+      "queries": 41,
+      "mutations": 68,
+      "actions": 33,
+      "httpActions": 6,
+      "returnValidators": 142
+    },
+    "features": [
+      "Realtime reactive queries drive every board and thread.",
+      "Cursor pagination (.paginate) on message threads; full-text search index on messages, filtered by spaceId.",
+      "Vector index widgets.by_embedding + ctx.vectorSearch (convex/similar.ts): an arriving link asks whether the board already holds it.",
+      "Scheduler, internal mutations, 4 crons (convex/crons.ts), file storage behind the photo walls.",
+      "HTTP router (convex/http.ts): token-streaming /api/ask-stream and an svix-HMAC-verified inbound AgentMail webhook."
+    ]
+  },
+  "components": {
+    "usedInCode": [
+      "action-cache",
+      "action-retrier",
+      "agent",
+      "agentMail",
+      "batch-worker",
+      "firecrawl",
+      "memberCounts",
+      "migrations",
+      "persistent-text-streaming",
+      "pollTallies",
+      "presence",
+      "rag",
+      "rate-limiter",
+      "sharded-counter",
+      "static-hosting",
+      "workflow",
+      "workpool"
+    ],
+    "installedNotReferencedInCode": [
+      "aggregate",
+      "auth",
+      "authWellKnown"
+    ],
+    "aggregateNote": "memberCounts and pollTallies ARE @convex-dev/aggregate: convex.config.ts registers that component twice under those names, so code calls components.pollTallies / components.memberCounts, never components.aggregate.",
+    "authNote": "\"auth\" is @convex-dev/auth, a library rather than an app.use'd component; authWellKnown is our own component, mounted at /.well-known for OIDC discovery documents."
+  },
+  "auth": {
+    "provider": "Convex Auth (@convex-dev/auth)",
+    "modes": "Anonymous guest sessions, plus join with a six-digit code emailed from the space's AgentMail inbox (convex/otp.ts).",
+    "note": "Identity comes from getAuthUserId(), so a scan for direct ctx.auth calls finds none."
+  },
+  "ai": {
+    "chatModels": [
+      "@cf/openai/gpt-oss-120b — via a Cloudflare Workers AI proxy, preferred when AI_PROXY_URL + AI_PROXY_TOKEN are set",
+      "gpt-4o-mini — direct OpenAI API when the proxy is unconfigured; a config-time choice, not a runtime failover"
+    ],
+    "embeddingModel": "text-embedding-3-small, 1536 dimensions",
+    "convexAiGateway": false,
+    "scannerNote": "A scan may report no model ids: they are string constants in convex/ai.ts, not inline SDK model literals."
+  },
+  "highlights": [
+    "17 component references across 16 installed components, each with a job: migrations backfills legacy rows, two aggregate instances replace .collect() counting, sharded-counter drives the landing totals, rate-limiter guards every LLM/mail/paint path.",
+    "action-retrier + action-cache wrap the Firecrawl and AgentMail calls, workpool bounds the daily recap fan-out, workflow makes the Friday digest durable, batch-worker drains the stale-link queue.",
+    "\"Ask the space\" = an agent thread for memory, rag for retrieval, persistent-text-streaming pushing tokens over /api/ask-stream.",
+    "Every space has a real AgentMail inbox and mail arrives as furniture on the board; a pasted URL becomes a Firecrawl-enriched reading card.",
+    "Convex hosts both halves: static-hosting serves the React build at /, convex/http.ts owns /api."
+  ]
+}

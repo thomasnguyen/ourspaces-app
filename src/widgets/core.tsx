@@ -19,8 +19,7 @@ export function StickerWidget({ widget, style }: { widget: Widget; style: Style 
     <div className="widget-shell widget-sticker" style={style}>
       <img
         src={sticker.src}
-        alt=""
-        aria-hidden="true"
+        alt={`${sticker.label} sticker`}
         draggable={false}
         decoding="async"
       />

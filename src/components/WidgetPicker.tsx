@@ -369,7 +369,7 @@ export function WidgetPicker({
           <ul className="widget-picker-sticker-list" ref={stickersRef}>
             {STICKER_CATALOG.map((sticker, index) => <li key={sticker.id} style={{ "--i": index } as CSSProperties}>
               <button type="button" onClick={(event) => { onAddSticker?.(sticker.id, { x: event.clientX, y: event.clientY }); onClose(); }} aria-label={`Add ${sticker.label} sticker`} title={sticker.label}>
-                <img src={sticker.src} alt="" aria-hidden="true" draggable={false} decoding="async" />
+                <img src={sticker.src} alt={sticker.label} draggable={false} decoding="async" />
               </button>
             </li>)}
           </ul>

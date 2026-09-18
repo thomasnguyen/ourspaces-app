@@ -139,7 +139,7 @@ export function PlacementGhost({
       aria-hidden="true"
     >
       {sticker ? (
-        <img src={sticker.src} alt="" draggable={false} decoding="async" />
+        <img src={sticker.src} alt={sticker.label} draggable={false} decoding="async" />
       ) : (
         <span className="placement-ghost-card">
           <span className="placement-ghost-emoji">{template?.emoji ?? "▢"}</span>

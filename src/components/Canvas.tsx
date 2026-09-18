@@ -706,6 +706,13 @@ export function SpaceHeader({
           <div className="space-title-row">
             <h1><span className="space-title-text">{name}</span></h1>
           </div>
+          {/* One plain line under the name: what this is and that it moves for
+              everyone at once. A first-time visitor lands inside someone else's
+              room with no orientation otherwise, and a text-only reader (link
+              preview, crawler, images off) gets nothing but widget names. */}
+          <p className="space-what">
+            ourspaces is a space you and your friends fill together, and everyone in it sees every change as it happens.
+          </p>
           {/* The name's handles: the inbox address first (mail in → widgets
               out is a demo beat), then the pencil. Two quiet chips in the
               room's ink, one family. */}

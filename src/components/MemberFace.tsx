@@ -50,7 +50,7 @@ export function MemberFace({
         <img
           className="member-face-img"
           src={resolvedAvatar}
-          alt=""
+          alt={name}
           draggable={false}
           onError={() => setImageFailed(true)}
         />

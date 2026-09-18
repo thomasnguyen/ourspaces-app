@@ -771,7 +771,7 @@ export const PhotoWallGallery = memo(function PhotoWallGallery({
                               ? photo.src ?? photo.thumbnailSrc ?? FALLBACK_PHOTO
                               : photo.thumbnailSrc ?? photo.src ?? FALLBACK_PHOTO
                           }
-                          alt=""
+                          alt={photo.caption || "a moment on the wall"}
                           loading={index > 4 ? "lazy" : undefined}
                           decoding="async"
                           style={{ objectPosition: photo.focus ?? "center" }}

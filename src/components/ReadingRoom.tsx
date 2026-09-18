@@ -566,7 +566,7 @@ export function ReadingRoom({
                           aria-hidden="true"
                         >
                           {link.imageUrl ? (
-                            <img src={link.imageUrl} alt="" referrerPolicy="no-referrer" />
+                            <img src={link.imageUrl} alt={`${link.domain} preview`} referrerPolicy="no-referrer" />
                           ) : (
                             <i>{linkMonogram(link)}</i>
                           )}
@@ -730,7 +730,7 @@ export function ReadingRoom({
                   <span className="rr-hero-tape" />
                   <img
                     src={selected.imageUrl || LINK_CARD_FALLBACK}
-                    alt=""
+                    alt={`${selected.domain} link card`}
                     referrerPolicy="no-referrer"
                     onError={(event) => {
                       event.currentTarget.src = LINK_CARD_FALLBACK;

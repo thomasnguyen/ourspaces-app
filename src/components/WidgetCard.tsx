@@ -1138,6 +1138,10 @@ function WidgetCardComponent({
       {/* role="group" so the aria-label below is actually exposed — a bare div
           is role=generic and AT drops its name. Not role="toolbar": the drag
           handle already owns the arrow keys for nudging the widget. */}
+      {/* These four buttons look empty on purpose: their glyph and verb are CSS
+          generated content (.widget-drag-handle::before/::after et al in
+          index.css) so the visible label is not duplicated as DOM text for
+          scrapers and screen readers. The aria-label is the accessible name. */}
       <div
         className="widget-management"
         role="group"
@@ -1204,10 +1208,7 @@ function WidgetCardComponent({
             }
           }}
           aria-label={`Drag ${controlLabel}. Use arrow keys to move it.`}
-        >
-          <span aria-hidden="true">⠿</span>
-          drag
-        </button>
+        ></button>
         {supportsThread && (
           <button
             type="button"
@@ -1218,10 +1219,7 @@ function WidgetCardComponent({
             }}
             aria-label={`Zoom into ${label} and open its thread`}
             aria-pressed={widgetFocused}
-          >
-            <span aria-hidden="true">↗</span>
-            zoom
-          </button>
+          ></button>
         )}
         {widget.type !== "sticker" && (
           <button
@@ -1232,9 +1230,7 @@ function WidgetCardComponent({
               onEdit?.(widget.id);
             }}
             aria-label={`Edit ${controlLabel}`}
-          >
-            edit
-          </button>
+          ></button>
         )}
         <button
           type="button"
@@ -1244,9 +1240,7 @@ function WidgetCardComponent({
             onDelete?.(widget.id, controlLabel);
           }}
           aria-label={`Delete ${controlLabel}`}
-        >
-          delete
-        </button>
+        ></button>
       </div>
       {supportsThread && (
         <button
@@ -1258,7 +1252,6 @@ function WidgetCardComponent({
           aria-label={`Open ${count} ${count === 1 ? "comment" : "comments"} on ${label}`}
           aria-pressed={widgetFocused}
         >
-          <span aria-hidden="true">💬</span>
           {count > 0 && thread.unread && !threadRead && <span>{count}</span>}
           {count > 0 && thread.unread && !threadRead && commenters.length > 0 && (
             <span className="widget-comment-faces" aria-hidden="true">
