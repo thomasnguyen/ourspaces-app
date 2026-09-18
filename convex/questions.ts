@@ -37,7 +37,10 @@ async function askOpenAi(title: string, description: string) {
       "Each is under 12 words, lowercase, casual and direct, no emoji, and " +
       "answerable even by friends who only skimmed the article.",
     user: `Article: ${title}\n\n${description}`.slice(0, 1200),
-  }).catch(() => null);
+  }).catch((error) => {
+    console.error("questions.askOpenAi failed:", error);
+    return null;
+  });
   if (!parsed) return null;
   try {
     const questions = Array.isArray(parsed.questions)

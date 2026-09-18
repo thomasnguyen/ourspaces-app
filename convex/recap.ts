@@ -232,7 +232,7 @@ async function askOpenAi(
   const system =
     kind === "recap"
       ? "You recap a friend group's shared canvas. Return JSON " +
-        '{"since":"since friday","lines":[{"text":"...","widgetId":"...","messageId":"..."}]} ' +
+        '{"lines":[{"text":"...","widgetId":"...","messageId":"..."}]} ' +
         "with 2-4 lines. Each line is under 18 words, lowercase, casual, specific " +
         "(names + what moved). Cite widgetId when it's about a widget, messageId when " +
         "it's still only in chat. Never invent ids — only use ones from the snapshot. " +
@@ -248,7 +248,13 @@ async function askOpenAi(
       ? `Space: ${snapshot.space}\n\nBoard:\n${JSON.stringify(snapshot.widgets).slice(0, 3500)}\n\nChat:\n${JSON.stringify(snapshot.chat).slice(0, 1500)}`
       : `Space: ${snapshot.space}\nBoard: ${JSON.stringify(snapshot.widgets).slice(0, 2500)}\nChat: ${JSON.stringify(snapshot.chat).slice(0, 1000)}\nRecent recap chat: ${JSON.stringify(snapshot.thread).slice(0, 800)}\n\nQuestion: ${extra ?? ""}`;
 
-  const parsed = await completeJson({ system, user }).catch(() => null);
+  // Loud, not silent: a swallowed model error here reads as a real answer
+  // downstream (cannedRecap / cannedAsk), which is exactly how the gateway's
+  // json_schema downgrade hid for hours.
+  const parsed = await completeJson({ system, user }).catch((error) => {
+    console.error(`recap.askOpenAi(${kind}) failed:`, error);
+    return null;
+  });
   if (!parsed) return null;
   try {
     if (kind === "ask") {
@@ -280,11 +286,10 @@ async function askOpenAi(
       .filter((line): line is RecapLine => Boolean(line))
       .slice(0, 4);
     if (lines.length === 0) return null;
-    return {
-      since: typeof parsed.since === "string" && parsed.since.trim() ? parsed.since.trim() : weekdaySince(),
-      kind: "daily",
-      lines,
-    };
+    // `since` is a clock read, not a judgement call — the model used to be
+    // asked for it and would copy the example verbatim, so the panel said
+    // "since friday" on a Wednesday.
+    return { since: weekdaySince(), kind: "daily", lines };
   } catch {
     return null;
   }
@@ -459,7 +464,10 @@ async function buildRecap(
   kind: "daily" | "ask",
 ): Promise<RecapPayload> {
   const snap = await ctx.runQuery(internal.recap.snapshot, { spaceId });
-  const generated = (await askOpenAi("recap", snap).catch(() => null)) as RecapPayload | null;
+  const generated = (await askOpenAi("recap", snap).catch((error) => {
+    console.error("recap.buildRecap fell back to canned prose:", error);
+    return null;
+  })) as RecapPayload | null;
   const payload = generated ?? cannedRecap(snap);
   return { ...payload, kind };
 }
@@ -541,7 +549,10 @@ export const ask = action({
     // time — falls back to "" (snapshot-only grounding) if unconfigured.
     const retrieved = await ctx
       .runAction(internal.rag.groundQuestion, { spaceId, question })
-      .catch(() => "");
+      .catch((error) => {
+        console.error("recap.ask lost rag grounding:", error);
+        return "";
+      });
 
     let threadId = await ctx.runQuery(internal.recap.getAskThreadId, { spaceId });
     if (!threadId) {
@@ -574,7 +585,10 @@ export const ask = action({
         },
       )
       .then((result) => result.object)
-      .catch(() => null);
+      .catch((error) => {
+        console.error("recap.ask fell back to canned prose:", error);
+        return null;
+      });
 
     const answer = generated ?? cannedAsk(snap, question);
     await ctx.runMutation(internal.recap.reply, { spaceId, text: answer.reply });
