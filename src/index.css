@@ -25413,6 +25413,18 @@
   rotate: -8deg;
 }
 
+/* The one line that tells you the door is open. Quieter than the room name
+   above it, louder than the field labels below — it is the answer to a
+   question, not a label. */
+.claim-gate-note {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+
 .claim-room-here {
   display: flex;
   align-items: center;
