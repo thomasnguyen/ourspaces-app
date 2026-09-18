@@ -127,8 +127,7 @@ export default defineSchema({
     text: v.string(),
     createdAt: v.number(),
     // Author identity is copied, not joined: a live thread would pay a read
-    // per message per update, and a message keeps the name its author had
-    // when they sent it.
+    // per message per update, and the name stays what it was when sent.
     authorName: v.string(),
     authorColor: v.string(),
     authorEmoji: v.optional(v.string()),
