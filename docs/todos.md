@@ -1471,18 +1471,15 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Next up
 
-- **Liveness to 10** — plan written 2026-09-17, not started.
-  `docs/local/liveness-10.md`. reviewer run that day: 10, 9, 10 on a
-  byte-identical packet (mean 9.67), and the 9 names no fault, so part of
-  the gap is variance. What is real: the scrape is 6,847 of its 8,000-char
-  cap and **51% of it is image markdown with empty alt** (52 of 54 images),
-  plus 466 chars of `⠿drag↗zoomeditdelete` control noise. Four fixes with
-  acceptance tests — alt text on the 22 `alt=""` sites, publish
-  `public/hackathon.json` (nobody in the field does; the reviewer fetches
-  `origin/hackathon.json`), drop the redundant inner labels on widget
-  controls (the `aria-label` already carries the name), one plain sentence
-  in main content. Verify on `--tree origin/main` with 6 replays, not 3.
-  Ceiling is +0.33 of one criterion — do it for the honest read, not the score.
+- **Liveness to 10** — readability pass shipped 2026-09-17; reliability pass
+  underway. The first pass took the scrape from 52 empty-alt images to zero,
+  removed control noise, published `hackathon.json`, and added the room intro.
+  The remaining 9s named no broken feature; they withheld a point because a
+  scrape could not complete an interaction. The follow-up makes the evidence
+  concrete without faking activity: a real production cake-poll vote, a stable
+  `live sync · connected for everyone` receipt backed by the resolved board
+  subscription, action-oriented room copy, and exact first-board checks near
+  the top of the public manifest. `docs/local/liveness-10.md` holds the runs.
 
 - **Jev router split** — plan written 2026-09-17, not started. `docs/jev.md`.
   Jev decides where mail goes (typed Choice over the live canvas inventory,
