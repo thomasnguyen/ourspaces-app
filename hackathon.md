@@ -13,7 +13,7 @@
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** everything runs through the **Convex AI Gateway** (`@convex-dev/ai-sdk-provider` + `getServiceToken("ai-gateway")`, so the deployment itself is the credential and no API key of ours is in the path): `openai/gpt-4o-mini` for chat and structured decisions, `openai/text-embedding-3-small` (1536 dims) for rag + the `widgets.by_embedding` echo index. Set `AI_GATEWAY_DISABLED` to route around a gateway incident without a deploy and the two pre-gateway targets take over — gpt-oss-120b via a Cloudflare AI proxy (`AI_PROXY_URL` + `AI_PROXY_TOKEN`), else gpt-4o-mini via `OPENAI_API_KEY` (embeddings too — the proxy is chat-only). That order is a config-time choice, not a runtime failover
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-17T21:30:00Z
+- **Last updated:** 2026-09-18T03:57:13Z
 
 ## Highlights
 
@@ -759,3 +759,12 @@ fresh gateway query vector against an OpenAI-era stored vector for the crew
 board's cake poll at **0.711** — inside the 0.62–0.79 band the 0.55 threshold
 was measured with — while an unrelated control still returned `null`; and
 `rag.groundQuestion` retrieved real grounding text. The probe file was deleted.
+
+### 2026-09-18 - 11c50dd
+Made the live room prove its connection before anyone touches it. The room intro
+now names the working actions, and the canvas pulse reports `live sync ·
+connected for everyone` only after the reactive board query resolves; activity
+times disappear after 30 minutes instead of making an idle-but-connected room
+look dead. The public manifest now gives concrete first-board checks for votes,
+claims, messages, uploads and shared dragging (`src/components/Canvas.tsx`,
+`src/components/SpaceLiveStrip.tsx`, `public/hackathon.json`).
