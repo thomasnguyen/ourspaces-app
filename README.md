@@ -12,45 +12,42 @@ by Thomas Nguyen (build) and Holly (design).
 
 ## Stack
 
-Convex · Vite + React + TypeScript · Tailwind v4 · OpenAI-class models (a
-Cloudflare Worker proxy when its env vars are set, the OpenAI API otherwise —
-a config-time choice, not a runtime failover) · AgentMail · Firecrawl
+Convex (including the **Convex AI Gateway** for every model call) · Vite +
+React + TypeScript · Tailwind v4 · AgentMail · Firecrawl
 
 ## Convex depth
 
-- **Components (17 used in code):** `static-hosting` (serves this site, and
-  `getCurrentDeployment` is subscribed to so an open tab is offered a refresh
-  the moment a new build lands — `convex/staticHosting.ts`), `firecrawl` (single-URL scrape + web
-  search + durable site crawl), `agentMail` (our own first-party component in
-  `convex/components/agentMail/` — every space's inbox: create/send/reply/label
-  over the AgentMail REST API, plus an inbound-message store + webhook dedup;
-  the published `@agentmail/convex` 0.1.0 is unusable), `migrations`
-  (widget-data backfills), `aggregate` (poll tallies + member counts — mounted
-  as two *named instances*, so the call sites read `components.pollTallies`
-  and `components.memberCounts` rather than `components.aggregate`;
-  `convex/votes.ts` and `convex/spaces.ts`), `sharded-counter` (global live
-  totals), `rate-limiter`
-  (LLM/mail/paint quotas), `action-retrier` (Firecrawl + AgentMail retries),
-  `action-cache` (scrape + question-gen caching), `workpool` (bounded recap
-  fan-out), `workflow` (durable weekly digest), `batch-worker` (stale-link
-  refresh queue), `agent` (ask-the-space threads), `rag` (semantic search
-  grounding `recap.ask`), `persistent-text-streaming` (HTTP token
-  streaming for ask answers), `presence` (space-list "N here" — separate
+- **Components (17 used in code):** `static-hosting` (serves this site —
+  `convex/staticHosting.ts`), `firecrawl` (scrape, web search, durable crawl),
+  `agentMail` (our own first-party component in `convex/components/agentMail/` —
+  every space's inbox: create/send/reply/label over the AgentMail REST API, plus
+  an inbound-message store + webhook dedup), `migrations` (widget-data
+  backfills), `aggregate` (poll tallies + member counts, mounted as two *named
+  instances* — `convex/votes.ts`, `convex/spaces.ts`), `sharded-counter` (global
+  live totals), `rate-limiter` (LLM/mail/paint quotas), `action-retrier`
+  (Firecrawl + AgentMail retries), `action-cache` (scrape + question-gen
+  caching), `workpool` (bounded recap fan-out), `workflow` (durable weekly
+  digest), `batch-worker` (stale-link refresh queue), `agent` (ask-the-space
+  threads), `rag` (semantic search grounding `recap.ask`),
+  `persistent-text-streaming` (the ask answer types itself into the dock over
+  `/api/ask-stream`, persisted so a reload or a second window reads the same
+  one), `presence` (space-list "N here" — separate
   from the hand-rolled canvas cursor/gesture system)
 - **Plus Convex Auth (`@convex-dev/auth`)** — silent anonymous guest sessions,
   so every visitor has a real Convex identity without ever seeing a login form,
   and an optional join with a six-digit code emailed through AgentMail
   (`convex/auth.ts`, `convex/otp.ts`). The canvas is never behind a wall.
-- **A note on the count:** a scan for `components.<name>` finds 17, because
-  `aggregate` is mounted as the two *named* instances above — the call sites
-  are `components.pollTallies` and `components.memberCounts`, never a bare
-  `components.aggregate`.
-- **Schema & data:** tables + indexes for spaces, members, widgets, messages
-  (+ full-text search index), votes, collaborative paint marks, recaps,
-  presence, email events; a vector index on `widgets` powers "already on the
-  board" (`convex/similar.ts`) — arriving mail is embedded and `ctx.vectorSearch` asks
-  if the room already has it; `returns:` validators on all 142
-  functions that can carry one (the 6 HTTP actions return a `Response`)
+- **A note on the count:** the 17 are the names code calls — `aggregate` appears
+  as its two instance names. Three installed packages are never called as
+  `components.<name>`: `aggregate` itself, `auth` (a library, not an `app.use`d
+  component), `authWellKnown` (ours, mounted for its OIDC routes). A fourth,
+  `@convex-dev/ai-sdk-provider`, is an AI SDK provider rather than a component —
+  no `convex.config` to mount; `convex/ai.ts` imports `convexGateway` from it.
+- **Schema & data:** 12 tables, 29 indexes, 1 full-text search index, 1 vector
+  index — spaces, members, widgets, messages, votes, collaborative paint marks,
+  recaps, presence, ask streams, email events. The vector index
+  `widgets.by_embedding` powers "already on the board" (`convex/similar.ts`):
+  arriving mail is embedded and `ctx.vectorSearch` asks if the room has it.
 - **Realtime:** every in-space surface is a Convex subscription — no refetch,
   no invalidate-on-write, no hand-rolled sync between clients. Each one is a
   `useQuery` / `usePaginatedQuery` against an indexed query:
@@ -69,10 +66,9 @@ a config-time choice, not a runtime failover) · AgentMail · Firecrawl
 
   ```ts
   // src/live/useLiveHandlers.ts — Convex's optimistic layer on the writes the
-  // server applies unconditionally. The gesture path deliberately keeps a
-  // hand-rolled one: `finishGesture` can *refuse* a commit (stale lock,
-  // competing peer, TTL) and an optimistic update can neither read a
-  // mutation's verdict nor roll back conditionally.
+  // server applies unconditionally. The gesture path keeps a hand-rolled one:
+  // `finishGesture` can *refuse* a commit (stale lock, competing peer, TTL) and
+  // an optimistic update can neither read that verdict nor roll back on it.
   const move = useMemo(
     () => moveWidget.withOptimisticUpdate((store, { spaceId, id, x, y, z }) =>
       patchWidgetBox(store, spaceId, id, z === undefined ? { x, y } : { x, y, z }),
@@ -88,12 +84,12 @@ a config-time choice, not a runtime failover) · AgentMail · Firecrawl
   - `presence.listHereNow` → cursors and gesture locks (`src/live/usePresence.ts`).
     `claimGesture` / `updateGesture` / `finishGesture` double as the widget-commit
     and lock-arbitration mechanism, so "who is dragging this" and "who owns the
-    write" are the same reactive row — and the canvas's live strip names them
-    ("sam is moving the friday poll") straight off it.
+    write" are the same reactive row the live strip reads ("sam is moving the
+    friday poll").
   - `votes.getResults` → poll bars move as votes land (`src/live/useLivePoll.ts`).
-    The rows carry voter names because every bar names who is behind it and who
-    still owes a vote; the `pollTallies` aggregate serves the counts where only
-    the number is wanted (`convex/recap.ts`).
+    The rows carry voter names, so every bar says who is behind it and who still
+    owes a vote; the `pollTallies` aggregate serves the counts-only call sites
+    (`convex/recap.ts`).
   - `paint.listBySpace` → collaborative paint-by-number marks.
   - `messages.listBySpace` → the thread. A real cursor-paginated subscription
     (`paginationOpts` + `usePaginatedQuery`); the space-wide thread currently
@@ -105,16 +101,17 @@ a config-time choice, not a runtime failover) · AgentMail · Firecrawl
     one query, so the three numbers on screen cannot disagree.
   - `stats.getLiveCounts` → global totals on the landing block, backed by
     `sharded-counter`. The one surface that is not push-only: a clock read
-    inside a query would freeze at whatever the first caller saw, so the query
-    takes a `now` bucket as an argument and the client re-keys it every 15s.
+    inside a query would freeze at whatever the first caller saw, so it takes a
+    `now` bucket argument the client re-keys every 15s.
   - `firecrawl.getCrawlStatus` + `firecrawl.listCrawlPages` → crawled pages
     stream into the strip as they arrive (`src/components/CrawlStrip.tsx`).
   - `staticHosting.getCurrentDeployment` → publishing a build patches the
     component's deployment row, which invalidates this subscription, and every
     open tab is offered a refresh before its lazy chunks 404.
-- **Functions:** queries, mutations, internal mutations, actions, HTTP actions
-  (svix-verified inbound-mail webhook, token-streaming ask endpoint), paginated
-  message history
+- **Functions:** 43 queries + 69 mutations + 33 actions = 145, every one carrying
+  a `returns:` validator. The other 6 are HTTP actions (svix-verified inbound
+  mail, `/api/ask-stream`): `httpAction` takes a bare handler returning a
+  `Response`, so there is no `returns:` slot to fill.
 - **Scheduling:** crons (stale-presence sweep every 5 minutes, daily recap via
   workpool, Friday weekly digest via a durable workflow, Friday stale-link
   refresh) + scheduled functions
@@ -125,9 +122,13 @@ a config-time choice, not a runtime failover) · AgentMail · Firecrawl
   in-thread + labels** each message with what it did; Firecrawl turns pasted
   webpages into reactive rich-post widgets, and also powers **research a topic**
   (web search → cards) and **crawl a site** (durable crawl whose pages stream
-  live into the reading room); OpenAI-class models through a Cloudflare AI
-  proxy when it is configured, the OpenAI API otherwise (real OpenAI embeddings
-  for rag either way — the proxy has no embeddings route)
+  live into the reading room); every model call goes through the **Convex AI
+  Gateway** on a short-lived deployment credential rather than an API key we
+  carry: `openai/gpt-4o-mini` for chat and structured decisions,
+  `openai/text-embedding-3-small` (1536 dims) for rag and the echo index. Setting
+  `AI_GATEWAY_DISABLED` picks the pre-gateway targets instead — a Cloudflare
+  Workers AI proxy (`@cf/openai/gpt-oss-120b`), else OpenAI directly — a
+  config-time choice, not a runtime failover
 
 ## Run
 

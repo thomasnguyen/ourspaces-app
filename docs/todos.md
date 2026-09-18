@@ -5,6 +5,100 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **"ask the space" actually streams now (2026-09-17):** the dock's follow-up
+  composer was the last honest gap — `convex/streaming.ts` was complete and
+  unreachable (`createAskStream` and `getAskStreamBody` had zero callers), so
+  the public "streams answers over HTTP" claim was true of the code and false
+  of the app. It is now the live ask path. Asking runs `createAskStream`
+  (mints the stream id, drops an empty turn into the `recap` thread, records
+  the question in the new `askStreams` table); the component's own `useStream`
+  hook POSTs the id to `${VITE_CONVEX_SITE_URL}/api/ask-stream`; `streamAsk`
+  looks the question back up and appends the agent's tokens; `finishAsk`
+  patches the finished answer onto the turn. **The persistence half is real,
+  not bypassed:** `driven` is true only for the tab that minted the stream —
+  a reload or a second window reads the same answer reactively out of
+  `getAskStreamBody`, which is verified: two windows, one asked, both watched
+  it type (`.context/ask-stream/check.mjs`, screenshots in `/tmp`).
+  The reveal is paced client-side at the house rate — real tokens land in
+  bursts (a 160-character answer arrived in two frames), and the point of the
+  beat is text that types itself. `recap.ask` stays as the non-streaming
+  fallback for a rate-limited or dead stream, and it is still the only path
+  that cites a widget; the streamed answer doesn't ring the card it read.
+  Measured on prod, crew space: ~3.3s to first token on a warm rag index,
+  ~8.5s cold — the 5s difference is `rag.groundQuestion` awaiting its
+  re-index (`REINDEX_STALE_MS`, 5 min). If the demo needs the dots shorter,
+  schedule that re-index instead of awaiting it.
+
+- **AI Gateway is the provider now (2026-09-17):** every model call in the app
+  goes through Convex's own AI Gateway — `openai/gpt-4o-mini` for chat and
+  `completeJson`, `openai/text-embedding-3-small` (1536 dims) for `rag` and the
+  `widgets.by_embedding` echo index. No API key of ours is in the path:
+  `getServiceToken("ai-gateway")` mints a short-lived deployment credential
+  inside the running action. `convex/ai.ts`'s old header comment said the
+  gateway "isn't enabled on our team's plan (checked 2026-09-09)" — it is
+  enabled as of 2026-09-17, which is why the hand-rolled routing now sits
+  *behind* the platform feature instead of replacing it. Embedding equivalence
+  was proved before the cutover (cosine 1.0000 vs. a direct-OpenAI embedding of
+  the same string; a `text-embedding-3-large` control at 3072 dims), so no
+  stored vector was invalidated and nothing was re-indexed. Verified after
+  deploying to prod: `similar.echoCheck` still matches the crew board's cake
+  poll at 0.711 (band 0.62–0.79, floor 0.55) with an unrelated control at
+  `null`, `digest.composeDigestText` composes a real digest, and
+  `rag.groundQuestion` returns real grounding text.
+  **The escape hatch:** set `AI_GATEWAY_DISABLED` to any non-empty value on the
+  deployment and the two pre-gateway targets take over in their old order
+  (Cloudflare proxy → direct OpenAI), with no deploy needed. `AI_PROXY_URL`,
+  `AI_PROXY_TOKEN` and `OPENAI_API_KEY` are still set on prod for exactly that.
+
+- **Truth sweep over the public files (2026-09-17):** `README.md`,
+  `hackathon.md` and `public/hackathon.json` re-checked line by line against
+  the code. The AI story in all three now reads off `convex/ai.ts`: gateway
+  `openai/gpt-4o-mini` + `openai/text-embedding-3-small` (1536 dims), with the
+  Cloudflare proxy and direct OpenAI named as the config-time fallbacks behind
+  `AI_GATEWAY_DISABLED` (and the proxy called out as chat-only, so embeddings
+  land on `OPENAI_API_KEY` there). Corrected: "rate-limiter guards *every*
+  LLM/mail/paint path" (inbound mail routing has no limiter), "action-cache +
+  action-retrier wrap *every* Firecrawl/AgentMail call", "returns: validators on
+  all 78 functions" (145), and the streaming claim — `/api/ask-stream` exists,
+  streams token by token and persists the answer, but nothing in `src/` calls it
+  yet, so the docs no longer imply it is the UI path. Deleted: "every one
+  verified live against the deployment". `public/hackathon.json` gained an
+  `aiSdkProviderNote` — `@convex-dev/ai-sdk-provider` is an AI SDK provider
+  package (its `convexGateway()` is called in `convex/ai.ts`), not an
+  `app.use`d component, which is why it never appears as `components.<name>`.
+  Also corrected mid-sweep, after the ask-stream work landed a table and three
+  functions: 11 tables/27 indexes/142 functions became 12/29/145 in all three
+  files, and the paint highlight's "50-region vector boards" became the real
+  counts (starry 78, wave 58, scene 50). Budgets held: README 7,896 bytes,
+  manifest 5,965, and the hackathon.md header + Highlights still fit inside the
+  first 5,000 characters.
+
+- **Self-reported numbers now match a repo scan (2026-09-17):** verified the
+  function surface with a TypeScript AST pass over `convex/` (tracked files,
+  `_generated` excluded) rather than grep: 41 queries + 68 mutations + 33
+  actions = 142, every one of the 142 carrying a `returns:` validator, and all
+  142 `returns:` keys sitting directly on a function definition (no nested
+  false positives). The 6 HTTP actions are the only functions without one —
+  `httpAction` takes a bare handler that returns a `Response`, so there is no
+  `returns:` slot — which makes coverage 100% of what can be validated. That
+  arithmetic is now written down in `README.md` (Functions bullet),
+  the `hackathon.md` header and `public/hackathon.json`
+  (`convex.functions.note`) instead of being left implied. Also corrected:
+  hackathon.md said 130 functions / 5 HTTP actions in the header and 78
+  functions / 16 components in the highlights; the commit count said 148 in 7
+  days (262); and the header claimed "no hand-rolled `.vectorIndex()` in our
+  schema" when `convex/schema.ts` declares `widgets.by_embedding`. Components
+  are now stated as 17 components over 18 mounts, naming `authWellKnown` and
+  the two `aggregate` instances. `public/hackathon.json` also moved from
+  `sourceFiles: 50` to 47 with the counting basis spelled out (50 is what a
+  repo-wide path scan reports; only 47 TypeScript modules actually live under
+  `convex/`), and commits 260 -> 262. No code changed.
+  **Watch:** the concurrent AI-provider work adds `convex/aiGatewayProbe.ts`
+  (one `internalAction`, and it does carry a `returns:`). If that file is
+  committed the arithmetic becomes 41 + 68 + 34 = 143 and the three files above
+  need the one-number bump; the "every function that can carry one does" claim
+  stays true either way.
+
 - **Live drag + two-window cursors (2026-09-16):** presence is now keyed per
   TAB (`getPresenceId()`), not per authenticated user. Two windows of one
   browser share the Convex Auth session, so they shared `identity.userId` and
@@ -732,11 +826,11 @@ Backward-looking history lives in `hackathon.md`.
   - **rag** (`convex/rag.ts`): real vector search grounds `recap.ask` —
     needed `OPENAI_API_KEY` as a Convex env var since the shared chat proxy
     has no embeddings route; the proxy stays the chat backend.
-  - **persistent-text-streaming** (`convex/streaming.ts`): real HTTP token
-    streaming for ask answers, verified live via curl — not wired into
-    ActionDock's UI (that has a working fake-reveal animation; real
-    streaming is a genuinely different data flow and wasn't worth the
-    regression risk for a cosmetic change).
+  - **persistent-text-streaming** (`convex/streaming.ts`): the live ask
+    path — the dock's follow-up composer streams the answer token by token
+    over `POST /api/ask-stream` and persists it, so a reload or a second
+    window gets the same answer out of `getAskStreamBody`. (Wired up
+    2026-09-17; see "ask the space actually streams" above.)
   - **presence** (`convex/roomPresence.ts`): "N here" on the space-list
     tooltip (`Rail.tsx`) — deliberately separate from the hand-rolled
     canvas cursor/gesture system in `convex/presence.ts`, which stays

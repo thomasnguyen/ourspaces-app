@@ -195,7 +195,13 @@ must still work if Join is half-broken — that's the rollback.
 > canvas cursor/gesture table — a *second*, component-backed presence system
 > in `convex/roomPresence.ts` tracks room occupancy separately, see
 > `docs/code-map.md`) · **linkRefreshQueue** (batch-worker's stale-linkCard
-> queue). All functions carry `returns:` validators. 16 real Convex
+> queue) · **askStreams** (one row per streamed "ask the space" question —
+> `{ spaceId, streamId, question, messageId }`, indexed `by_stream` /
+> `by_space`. `POST /api/ask-stream` is handed nothing but a streamId, which
+> is all the persistent-text-streaming hook posts, so this is where it looks
+> up what was asked and which `recap` turn to fill in; `by_space` is how a
+> reload or a second viewer finds the stream to subscribe to).
+> All functions carry `returns:` validators. 16 real Convex
 > components are wired with genuine jobs (migrations, aggregate ×2,
 > sharded-counter, rate-limiter, action-retrier, action-cache, workpool,
 > workflow, batch-worker, agent, rag, persistent-text-streaming, presence,
@@ -205,9 +211,10 @@ must still work if Join is half-broken — that's the rollback.
 > broken. See `hackathon.md`'s usage-map table for the full list with hashes.
 > Identity is still **local + claimed** (`src/live/identity.ts` session UUID) —
 > no `authTables` yet. Guest-or-join (this §1) is decided, not wired. The AI
-> layer runs on a Cloudflare `ai-proxy` (gpt-oss-120b) with OpenAI as fallback
-> for chat; `rag`'s embeddings are real-OpenAI-only (`text-embedding-3-small`)
-> since the proxy has no `/v1/embeddings` route.
+> layer runs entirely on the **Convex AI Gateway** (`openai/gpt-4o-mini` for
+> chat, `openai/text-embedding-3-small` for `rag` and the echo index), with the
+> Cloudflare `ai-proxy` and direct OpenAI kept as config-time fallbacks behind
+> `AI_GATEWAY_DISABLED`.
 
 ## 2. Convex tables (backend)
 

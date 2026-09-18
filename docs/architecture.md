@@ -353,18 +353,42 @@ only place models are configured.
 
 | Use | Model | Route |
 |---|---|---|
-| Chat / structured decisions (primary) | `@cf/openai/gpt-oss-120b` | RoomDone's shared Cloudflare Worker proxy, OpenAI-shaped `/v1`, via `AI_PROXY_URL` + `AI_PROXY_TOKEN` |
-| Chat, proxy not configured | `gpt-4o-mini` | OpenAI directly, via `OPENAI_API_KEY` |
-| Embeddings (rag only) | `text-embedding-3-small`, 1536 dims | **OpenAI directly, always** — the proxy has no `/v1/embeddings` route |
+| Chat / structured decisions | `openai/gpt-4o-mini` | **Convex AI Gateway**, `https://ai-gateway.convex.dev/v1` |
+| Embeddings (rag + `widgets.by_embedding`) | `openai/text-embedding-3-small`, 1536 dims | **Convex AI Gateway** |
+| Chat, gateway switched off | `@cf/openai/gpt-oss-120b` | RoomDone's shared Cloudflare Worker proxy, OpenAI-shaped `/v1`, via `AI_PROXY_URL` + `AI_PROXY_TOKEN` |
+| Chat, gateway off and no proxy | `gpt-4o-mini` | OpenAI directly, via `OPENAI_API_KEY` |
+| Embeddings, gateway off | `text-embedding-3-small` | OpenAI directly — the proxy has no `/v1/embeddings` route |
 
-`chatTarget()` picks by which env vars are set — proxy if both
-`AI_PROXY_URL` and `AI_PROXY_TOKEN` are present, OpenAI otherwise. **That is a
-config-time preference, not a runtime failover:** a 500 from the proxy is not
-retried against OpenAI, it returns `null` like any other unusable answer. If
-neither is configured `chatTarget()` returns `null` too, and **every caller
-degrades to canned output rather than erroring**. That discipline is
-load-bearing for
-demos: pull the keys and the app still runs, just less smart.
+**The gateway is the default and needs no configuration.** It authenticates as
+the deployment: `getServiceToken("ai-gateway")` mints a short-lived credential
+*inside the running action*, which is sent as a bearer token and never stored,
+logged or handed to a client. So there is no third-party proxy in the path and
+no API key of ours to carry — which is the point, on a project whose thesis is
+that Convex is the whole platform. The chat model comes from
+`@convex-dev/ai-sdk-provider`'s `convexGateway()`; that package at 0.1.0 ships
+only a chat model, so `ai.ts` builds the embedding model out of the same two
+pieces it uses (an OpenAI-compatible provider whose `fetch` mints the token).
+
+`chatTarget()` returns the gateway unless `AI_GATEWAY_DISABLED` is set to any
+non-empty value — the switch that routes around a gateway incident **without a
+deploy**. With it set, the two pre-gateway targets take over in their old
+order: proxy if both `AI_PROXY_URL` and `AI_PROXY_TOKEN` are present, OpenAI
+otherwise. **That is a config-time preference, not a runtime failover:** a 500
+from the chosen target is not retried against the next one, it returns `null`
+like any other unusable answer. If nothing at all is configured `chatTarget()`
+returns `null`, and **every caller degrades to canned output rather than
+erroring**. That discipline is load-bearing for demos: pull the keys and the
+app still runs, just less smart.
+
+The gateway's `openai/text-embedding-3-small` is bit-for-bit the model the
+vector indexes were built with — measured cosine `1.0000` against a
+direct-OpenAI embedding of the same string on 2026-09-17, with a
+`text-embedding-3-large` control coming back at 3072 dims — so the switch
+invalidated nothing already stored. Verified after the cutover by running
+`similar.echoCheck` against the seeded crew board: a fresh gateway query vector
+matched the OpenAI-era stored vector for the cake poll at `0.711`, inside the
+0.62–0.79 band the 0.55 threshold was measured with, and an unrelated control
+still returned `null`.
 
 ### The one entry point
 
@@ -375,8 +399,8 @@ completeJson({ system, user, temperature }) -> Record<string, unknown> | null
 It posts `messages: [{role:"system", content: <string>}, {role:"user",
 content: <string>}]` and parses JSON out of the reply, with a brace-slicing
 salvage path when the model wraps its JSON in prose. `response_format:
-json_object` is only set on the **direct OpenAI** path — gpt-oss on the proxy
-rejects the extra guided-JSON field, so there it's prompt-only.
+json_object` is set on every path **except** the Cloudflare proxy — gpt-oss
+there rejects the extra guided-JSON field, so on that one it's prompt-only.
 
 **`content` is a plain string.** There is no multimodal parts array anywhere
 in this codebase. That is the single fact that shapes the vision brief below.
@@ -407,10 +431,23 @@ component streams the agent's answer token by token over HTTP and persists it,
 so a reload or a second viewer sees the same answer. It grounds each question
 with rag and the board snapshot in parallel before streaming.
 
-It is **verified but not the default UI path** — `ActionDock` still uses its
-existing fake-reveal animation, because real streaming is a genuinely
-different data flow and swapping it was judged not worth the regression risk
-for a cosmetic change.
+This **is** the live ask path. Asking in the dock's composer runs
+`createAskStream`, which mints a stream id, drops an empty turn into the
+`recap` message thread and records the question; the HTTP endpoint is handed
+only the stream id, looks the question back up, and appends tokens. The client
+hook is the component's own `useStream` (`LiveSpace.tsx`): the tab that minted
+the stream reads the HTTP body, everyone else — a reload, a second window —
+reads the same answer out of `getAskStreamBody`, which is the whole point of
+the component. The last token patches the answer onto the turn, so the thread
+reads the same after a refresh as it did while it was typing.
+
+The reveal is paced client-side at the house rate (`RECAP_STREAM_MS` /
+`RECAP_STREAM_CHARS`, `src/data/recap.ts`): tokens land in bursts — a whole
+sentence can arrive in one frame — and the point is text that types itself, not
+a paragraph that appears. `convex/recap.ts`'s `ask` action is still the
+non-streaming fallback, used when the stream can't be minted (rate limit) or
+dies mid-answer; it is also the path that still cites a widget, which the
+streamed answer does not.
 
 ---
 
@@ -539,8 +576,13 @@ Declared in `convex.config.ts` (`app.env`), set on the deployment with
 
 - `FIRECRAWL_API_KEY` (required), `FIRECRAWL_WEBHOOK_SECRET`
 - `AGENTMAIL_API_KEY` (required), `AGENTMAIL_WEBHOOK_SECRET`
-- `AI_PROXY_URL`, `AI_PROXY_TOKEN` — the Cloudflare chat proxy
-- `OPENAI_API_KEY` — chat fallback *and* the only route to embeddings
+- `AI_GATEWAY_DISABLED` — set to any non-empty value to route around the
+  Convex AI Gateway without a deploy. Unset (the normal state) means every
+  model call goes through the gateway, which needs no key of its own.
+- `AI_PROXY_URL`, `AI_PROXY_TOKEN` — the Cloudflare chat proxy, used only when
+  the gateway is switched off
+- `OPENAI_API_KEY` — chat and embedding fallback, used only when the gateway is
+  switched off
 
 Dev deployment is where everything has been verified. Prod is
 `necessary-cobra-892`; the site origin is
@@ -563,11 +605,10 @@ personalities · reply-in-thread + labels (shipped; the live round trip has
 not been re-verified since the component swap) · the weekly digest delivered
 to a real Gmail · Firecrawl scrape, search and crawl · rag semantic search ·
 the agent thread's memory across follow-ups · token streaming over
-`/ask-stream` (curl-verified) · presence, cursors, gestures · paint sync ·
+`/api/ask-stream` — the live ask path, verified in two browser windows at once
+(the asker reads the HTTP stream, the second window reads the same answer out
+of the database) · presence, cursors, gestures · paint sync ·
 photo upload → storage → live pile.
-
-**Real but not the UI path:** token streaming (ActionDock still animates a
-reveal).
 
 **Staged / fixture:** the crew's six members are seeded strings, not real
 users — one live visitor drives the demo · mock mode fakes link enrichment
@@ -611,12 +652,14 @@ same router as an emailed one.
    Either extend `completeJson` to accept parts, or add a sibling
    `completeVision()`. Extending is cleaner but touches every existing caller's
    type; a sibling is the lower-risk move.
-2. **The primary model can't see.** `@cf/openai/gpt-oss-120b` on the shared
-   proxy is text-only. Vision must go **direct to OpenAI** with
-   `OPENAI_API_KEY` (`gpt-4o-mini` handles images). There is already precedent
-   for exactly this exception — rag's embeddings — so it's a known-good shape,
-   not a new pattern. Consequence: **vision does not work when only the proxy
-   is configured**, so it needs a canned/skip path like everything else.
+2. **The model needs to see.** The default chat model is now the gateway's
+   `openai/gpt-4o-mini`, which is a vision-capable model, so vision should be
+   an ordinary gateway call with no key and no exception route — *should*,
+   because nothing here has sent the gateway an image yet; try one before
+   planning around it. The old caveat survives on the fallback path only: the
+   Cloudflare proxy's `@cf/openai/gpt-oss-120b` is text-only, so **vision does
+   not work when the gateway is switched off and only the proxy is
+   configured**, and it needs a canned/skip path like everything else.
 3. **Emailed photos don't arrive yet.** The webhook only reads
    `message.text`/`preview`, and the component's `inboundMessages` table
    stores text with no attachment field. "Email a receipt photo" therefore

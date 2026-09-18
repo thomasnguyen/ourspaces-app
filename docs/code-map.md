@@ -58,7 +58,10 @@ navigating, including the default `#/` room; `OnlineCountSuffix` shows "· N her
 presence component's `roomPresence.onlineCountForSpace`, mounted by
 `LiveSpace.tsx`'s `RoomPresenceHeartbeat` once a room is entered) ·
 `ActionDock.tsx` (bottom dock + catch-me-up panel:
-briefing, ↻ refresh, follow-up composer; also the room radio chip `DockRadio` —
+briefing, ↻ refresh, follow-up composer — a turn marked `streaming`
+(live mode: text arriving over `/api/ask-stream`) renders as it lands, with the
+thinking dots inside its own bubble until the first characters, and is kept out
+of the canned mock reveal; also the room radio chip `DockRadio` —
 always mounted once the board has a playlist widget with a station, via
 `radioRoomOf(widgets)` from both App.tsx and LiveSpace.tsx. Play key + label:
 idle "tap play", live = dancing bars + track, `is-join` when `data.playing`
@@ -415,10 +418,11 @@ callers see one plain action. Plus `searchTopic` [web search → pile cards],
 wrappers + `crawlComplete` onComplete) ·
 `questions.ts` (`sparkQuestions`: action-cache-wrapped [by title+description]
 OpenAI → 2 conversation starters on a link card, canned fallback) ·
-`ai.ts` (Cloudflare `ai-proxy` first, OpenAI fallback for chat;
-`languageModel()`/`embeddingModel()` wrap the same targets as AI SDK models
-for `agent.ts`/`rag.ts` — embeddings are real-OpenAI-only, the proxy has no
-`/v1/embeddings` route) ·
+`ai.ts` (**Convex AI Gateway** first for chat *and* embeddings — the
+deployment is the credential, via `getServiceToken("ai-gateway")`; Cloudflare
+`ai-proxy` then OpenAI only when `AI_GATEWAY_DISABLED` is set.
+`languageModel()`/`embeddingModel()` wrap whichever target won as AI SDK
+models for `agent.ts`/`rag.ts`/`similar.ts`) ·
 `agent.ts` (`askAgent`: `@convex-dev/agent` thread per space, backs
 `recap.ask`'s conversational memory) ·
 `rag.ts` (`@convex-dev/rag`: indexes a space's widgets + recent chat,
@@ -426,11 +430,18 @@ semantic-searches to ground `recap.ask`; lazy 5min-staleness reindex) ·
 `similar.ts` (the space's own `widgets.by_embedding` vector index — not rag:
 embeds arriving mail and `ctx.vectorSearch`es the board for a near-duplicate,
 so a re-sent link says "already on the board" in the live strip instead of
-landing twice. Cosine floor 0.55, measured; degrades to a no-op with no
-`OPENAI_API_KEY`) ·
-`streaming.ts` (`@convex-dev/persistent-text-streaming`: real HTTP token
-streaming for ask answers at `POST /ask-stream` — not wired into
-`ActionDock`'s UI, which keeps its own fake-reveal animation) ·
+landing twice. Cosine floor 0.55, measured; degrades to a no-op when no
+embedding model is reachable) ·
+`streaming.ts` (`@convex-dev/persistent-text-streaming`: **the live ask
+path**. `createAskStream` mints a stream id, drops an empty turn into the
+`recap` thread and records the question in `askStreams`; `POST /api/ask-stream`
+(`streamAsk`) is handed only that id, looks the question back up, and appends
+the agent's tokens to both the HTTP response and the component's table;
+`finishAsk` patches the finished answer onto the turn. `getAskStreamBody` is
+the persistence half — a reload or a second viewer reads the same answer
+reactively instead of losing it. Client: `useStream` in `LiveSpace.tsx`
+[`@convex-dev/persistent-text-streaming/react`], `driven` = this tab minted
+it) ·
 `recap.ts` (`generate` / `ask` [agent + rag grounded, rate-limited] / daily
 `generateAll` [workpool-bounded, `maxParallelism: 3`]: catch-me-up from a
 board snapshot; follow-up chat on `messages.widgetId === "recap"`) ·
