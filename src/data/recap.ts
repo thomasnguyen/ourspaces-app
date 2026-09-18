@@ -9,8 +9,10 @@
  * It never writes to the canvas. It reports, and points at where things moved.
  * Live mode reads the cached row from convex/recap.ts. ↻ regenerates on
  * demand. The daily cron is paused until closer to the hackathon deadline.
- * Follow-up chat rides the `recap` message thread. Mock mode keeps the
- * scripted lines.
+ * Follow-up chat rides the `recap` message thread, and in live mode the
+ * answer arrives token by token over /api/ask-stream (convex/streaming.ts) —
+ * RECAP_STREAM_MS/CHARS pace both that and the scripted mock reveal, so the
+ * two land at the same speed. Mock mode keeps the scripted lines.
  */
 
 export type RecapLine = {
@@ -32,6 +34,10 @@ export type RecapTurn = {
   fromAvatarUrl?: string;
   text: string;
   isRecap: boolean;
+  /** Live mode: this turn's text is arriving token by token over
+      /api/ask-stream (convex/streaming.ts). The dock shows it as it lands
+      instead of running the canned reveal over a finished answer. */
+  streaming?: boolean;
 };
 
 export const RECAP_SINCE = "since friday";

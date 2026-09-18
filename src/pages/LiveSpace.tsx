@@ -8,6 +8,8 @@ import {
 } from "react";
 import { useAction, useMutation } from "convex/react";
 import { useQuery, usePaginatedQuery } from "convex-helpers/react/cache";
+import { useStream } from "@convex-dev/persistent-text-streaming/react";
+import type { StreamId } from "@convex-dev/persistent-text-streaming";
 import { api } from "../../convex/_generated/api";
 import { Suspense, lazy } from "react";
 const PlayLab = lazy(() =>
@@ -56,7 +58,14 @@ import {
   spaceCustomizationStyle,
   type SpaceCustomization,
 } from "../data/spaceThemes";
-import { cleanRecapText, RECAP_THREAD_ID, type RecapLine, type RecapTurn } from "../data/recap";
+import {
+  cleanRecapText,
+  RECAP_STREAM_CHARS,
+  RECAP_STREAM_MS,
+  RECAP_THREAD_ID,
+  type RecapLine,
+  type RecapTurn,
+} from "../data/recap";
 import { flyWidgetIn } from "../lib/flipLanding";
 import { pileInsideFrame } from "../lib/frameMembership";
 import { relTime, spaceFromLive, toChatMessage } from "../live/adapt";
@@ -97,6 +106,19 @@ import {
 } from "../lib/buildRoomPresentation";
 
 const EMPTY_RECAP_LINES: RecapLine[] = [];
+
+/* "ask the space" streams over HTTP (convex/streaming.ts). Convex serves HTTP
+   actions from the deployment's `.site` origin, and this app mounts its own
+   routes under `/api` (httpPrefix in convex/convex.config.ts) so the static
+   site can keep the root. The second argument keeps this from throwing if the
+   env var is missing — mock mode imports this module but never streams. */
+const ASK_STREAM_URL = new URL(
+  `${
+    String(import.meta.env.VITE_CONVEX_SITE_URL ?? "") ||
+    String(import.meta.env.VITE_CONVEX_URL ?? "").replace(".convex.cloud", ".convex.site")
+  }/api/ask-stream`,
+  window.location.origin,
+);
 
 /** How long the daily question's scribble-wipe reveal runs after you post. */
 const DAILY_REVEAL_MS = 1600;
@@ -1195,7 +1217,81 @@ export function LiveSpacePage({
   const promotable = globalMessages.find((message) => message.promotable);
   const generateRecap = useAction(api.recap.generate);
   const askRecap = useAction(api.recap.ask);
+  const createAskStream = useMutation(api.streaming.createAskStream);
   const latestRecap = useQuery(api.recap.latest, space ? { spaceId: space._id } : "skip");
+  // persistent-text-streaming: the answer to a follow-up question arrives
+  // token by token over /api/ask-stream. The ask row says which stream and
+  // which turn it fills; the turn is empty until the last token lands, so an
+  // empty one means this answer is still being written.
+  const askStream = useQuery(api.streaming.latestAskStream, space ? { spaceId: space._id } : "skip");
+  const [drivenStreamId, setDrivenStreamId] = useState<string | null>(null);
+  const askRow = useMemo(
+    () =>
+      askStream
+        ? (allMessages ?? []).find((message) => message._id === askStream.messageId)
+        : undefined,
+    [askStream, allMessages],
+  );
+  const pendingAskMessageId = askRow && !askRow.text ? askRow._id : null;
+  // Driving = this tab minted the stream, so it reads the HTTP body. Everyone
+  // else (a reload, a second viewer) gets the same text reactively out of
+  // getAskStreamBody instead of missing the answer entirely.
+  const askBody = useStream(
+    api.streaming.getAskStreamBody,
+    ASK_STREAM_URL,
+    Boolean(pendingAskMessageId) && askStream?.streamId === drivenStreamId,
+    pendingAskMessageId && askStream ? (askStream.streamId as StreamId) : undefined,
+  );
+  const askFailed =
+    Boolean(pendingAskMessageId) &&
+    !askBody.text &&
+    (askBody.status === "error" || askBody.status === "timeout");
+  // The answer, from whichever half of the component has it: the live stream
+  // while it runs, the finished turn once the last token has been saved.
+  const askText = askRow?.text || askBody.text;
+  const askTextRef = useRef("");
+  askTextRef.current = askText;
+  /* Tokens land in bursts — a whole sentence can arrive in one frame — so the
+     reveal chases the text at reading pace instead of printing a paragraph at
+     once. Same pace as the mock reveal (data/recap.ts). Only a turn we watched
+     start gets typed: one that was already finished when you opened the panel
+     is simply there. */
+  const [typing, setTyping] = useState<{ messageId: string; shown: number } | null>(null);
+  const [reduceMotion] = useState(
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  useEffect(() => {
+    if (!pendingAskMessageId) return;
+    setTyping((current) =>
+      current?.messageId === pendingAskMessageId
+        ? current
+        : { messageId: pendingAskMessageId, shown: 0 },
+    );
+  }, [pendingAskMessageId]);
+  useEffect(() => {
+    // Reduced motion: no reveal at all — every chunk shows the moment it lands.
+    if (!typing || reduceMotion) return;
+    let timer = 0;
+    const tick = () => {
+      setTyping((current) => {
+        if (!current) return current;
+        const shown = Math.min(askTextRef.current.length, current.shown + RECAP_STREAM_CHARS);
+        return shown === current.shown ? current : { ...current, shown };
+      });
+      timer = window.setTimeout(tick, RECAP_STREAM_MS);
+    };
+    timer = window.setTimeout(tick, RECAP_STREAM_MS);
+    return () => window.clearTimeout(timer);
+  }, [reduceMotion, typing?.messageId]);
+  // Caught up with an answer that has stopped growing: hand the turn back to
+  // the message row it was saved into.
+  const typedOut =
+    Boolean(typing) &&
+    Boolean(askRow?.text) &&
+    (reduceMotion || (typing?.shown ?? 0) >= (askRow?.text.length ?? 0));
+  useEffect(() => {
+    if (typedOut) setTyping(null);
+  }, [typedOut]);
   const recapLines = useMemo<RecapLine[]>(
     () =>
       latestRecap
@@ -1208,16 +1304,25 @@ export function LiveSpacePage({
     () =>
       (allMessages ?? [])
         .filter((message) => message.widgetId === RECAP_THREAD_ID)
+        // A stream that died leaves its turn empty forever — drop it, the
+        // non-streaming fallback below answers the question instead.
+        .filter((message) => !(askFailed && message._id === pendingAskMessageId))
         .map((message) => ({
           id: message._id,
           from: message.authorName,
           fromColor: message.authorColor,
           fromEmoji: message.authorEmoji,
           fromAvatarUrl: message.authorAvatarUrl,
-          text: message.text,
+          text:
+            typing?.messageId === message._id
+              ? reduceMotion
+                ? askText
+                : askText.slice(0, typing.shown)
+              : message.text,
           isRecap: message.userId === "recap",
+          streaming: typing?.messageId === message._id,
         })),
-    [allMessages],
+    [allMessages, askFailed, askText, pendingAskMessageId, reduceMotion, typing],
   );
   const [recapBusy, setRecapBusy] = useState(false);
   const [recapAsking, setRecapAsking] = useState(false);
@@ -1936,11 +2041,12 @@ export function LiveSpacePage({
     setHighlightMessageId(messageId);
     window.setTimeout(() => setHighlightMessageId(""), 2600);
   };
-  const onRecapAsk = (text: string) => {
-    handlers.onSend(RECAP_THREAD_ID, text);
-    if (!space) return;
+  /** The non-streaming path (convex/recap.ts `ask`): one action, one finished
+      answer, and it cites the widget it read. Still the fallback for when the
+      stream can't be minted (rate limit) or dies mid-answer. */
+  const askWithoutStreaming = (spaceId: Id<"spaces">, question: string) => {
     setRecapAsking(true);
-    void askRecap({ spaceId: space._id, question: text })
+    void askRecap({ spaceId, question })
       .then((result) => {
         if (result.widgetId) {
           setRecapCites((current) => [...current, result.widgetId!]);
@@ -1954,6 +2060,33 @@ export function LiveSpacePage({
       .catch(() => {})
       .finally(() => setRecapAsking(false));
   };
+
+  const onRecapAsk = (text: string) => {
+    handlers.onSend(RECAP_THREAD_ID, text);
+    if (!space) return;
+    const spaceId = space._id;
+    setRecapAsking(true);
+    // Mint the stream, then let useStream POST the question's id to
+    // /api/ask-stream and type the answer into the turn this just created.
+    void createAskStream({ spaceId, question: text })
+      .then((streamId) => {
+        setDrivenStreamId(streamId);
+        setRecapAsking(false);
+      })
+      .catch(() => {
+        setRecapAsking(false);
+        askWithoutStreaming(spaceId, text);
+      });
+  };
+
+  // Only the tab that drove the stream retries — a second viewer watching the
+  // same dead turn would otherwise ask the same question all over again.
+  const retryAsk = askFailed && askStream?.streamId === drivenStreamId ? askStream : null;
+  useEffect(() => {
+    if (!retryAsk || !space) return;
+    askWithoutStreaming(space._id, retryAsk.question);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retryAsk?.streamId]);
 
   const selectSpace = (id: string) => {
     if (focusedTarget) leaveFocus(false);

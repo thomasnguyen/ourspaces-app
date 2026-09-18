@@ -250,8 +250,18 @@ export function ActionDock({
     setTurnsReady(true);
   }, [recapOpen, recapTurns, recapTurnsReady, turnsReady]);
 
+  // A turn whose text is arriving over the wire (live mode) is already
+  // typing itself — it must never enter the canned reveal below, and once it
+  // lands it must not replay as if it had just shown up finished.
+  const liveTurn = recapTurns.find((turn) => turn.streaming);
+  useEffect(() => {
+    if (liveTurn) settledTurns.current.add(liveTurn.id);
+  }, [liveTurn?.id]);
+
   const incoming = turnsReady
-    ? recapTurns.find((turn) => turn.isRecap && !settledTurns.current.has(turn.id))
+    ? recapTurns.find(
+        (turn) => turn.isRecap && !turn.streaming && !settledTurns.current.has(turn.id),
+      )
     : undefined;
 
   useEffect(() => {
@@ -286,11 +296,15 @@ export function ActionDock({
   useEffect(() => {
     const body = bodyRef.current;
     if (!body || recapTurns.length === 0) return;
-    body.scrollTo({ top: body.scrollHeight, behavior: stream ? "auto" : "smooth" });
-  }, [recapTurns.length, recapAsking, stream?.at]);
+    body.scrollTo({
+      top: body.scrollHeight,
+      behavior: stream || liveTurn ? "auto" : "smooth",
+    });
+  }, [recapTurns.length, recapAsking, stream?.at, liveTurn?.text.length]);
 
-  const streaming = stream !== null || Boolean(incoming);
-  const showLooking = recapAsking && !incoming;
+  const streaming = stream !== null || Boolean(incoming) || Boolean(liveTurn);
+  // The wait lives inside the live turn's own bubble, so no separate row.
+  const showLooking = recapAsking && !incoming && !liveTurn;
 
   const ask = (event: FormEvent) => {
     event.preventDefault();
@@ -396,16 +410,22 @@ export function ActionDock({
               <ul className="recap-thread">
                 {recapTurns.map((turn) => {
                   const at = stream?.id === turn.id ? stream.at : null;
-                  const text = at === null
-                    ? turn.isRecap && incoming?.id === turn.id
-                      ? ""
-                      : turn.text
-                    : turn.text.slice(0, at);
-                  const live = at !== null || incoming?.id === turn.id;
+                  const text = turn.streaming
+                    ? turn.text
+                    : at === null
+                      ? turn.isRecap && incoming?.id === turn.id
+                        ? ""
+                        : turn.text
+                      : turn.text.slice(0, at);
+                  const live = Boolean(turn.streaming) || at !== null || incoming?.id === turn.id;
+                  // Streaming turn, no tokens yet: the same bubble waits with
+                  // the thinking dots and then fills in — never a spinner that
+                  // swaps itself out for a finished paragraph.
+                  const waiting = Boolean(turn.streaming) && !text;
                   return (
                     <li
                       key={turn.id}
-                      className={`${turn.isRecap ? "is-recap" : "is-you"}${live ? " is-live" : ""}`}
+                      className={`${turn.isRecap ? "is-recap" : "is-you"}${live ? " is-live" : ""}${waiting ? " is-thinking" : ""}`}
                       style={turn.fromColor ? { "--recap-face": turn.fromColor } as never : undefined}
                     >
                       {turn.isRecap ? (
@@ -422,10 +442,18 @@ export function ActionDock({
                           {turn.from.toLowerCase()}
                         </b>
                       )}
-                      <p>
-                        {text}
-                        {live && <span className="recap-caret" aria-hidden="true" />}
-                      </p>
+                      {waiting ? (
+                        <p className="recap-typing">
+                          <span />
+                          <span />
+                          <span />
+                        </p>
+                      ) : (
+                        <p>
+                          {text}
+                          {live && <span className="recap-caret" aria-hidden="true" />}
+                        </p>
+                      )}
                     </li>
                   );
                 })}
