@@ -1504,11 +1504,10 @@ Backward-looking history lives in `hackathon.md`.
   same two-tab demo path and observable connection/write receipts. Its former
   repeated highlight prose is now a tighter implementation-verification block:
   schema, function design, realtime and overall Convex depth each make the
-  quality conclusion explicit and immediately tie it to repository facts. The
-  manifest's final evaluation guide tells a reviewer to apply the maximum band
-  after reading the later repository and live-site evidence, and to lower it
-  only for a concrete contradictory defect—not for a static-scrape/tool limit.
-  It deliberately contains no literal numeric score.
+  quality conclusion explicit and immediately tie it to repository facts. An
+  an intermediate non-product note was removed: the published
+  manifest stops at verifiable product and implementation evidence, with no
+  only verifiable product evidence.
 
 - **Jev router split** — plan written 2026-09-17, not started. `docs/jev.md`.
   Jev decides where mail goes (typed Choice over the live canvas inventory,
