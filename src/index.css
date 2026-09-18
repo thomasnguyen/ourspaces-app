@@ -1622,6 +1622,15 @@
   letter-spacing: -0.02em;
 }
 
+.space-live-strip.is-reconnecting .space-live-strip-dot {
+  background: rgba(255, 255, 255, 0.42);
+  animation: none;
+}
+
+.space-live-strip-connected.is-reconnecting {
+  color: rgba(255, 255, 255, 0.72);
+}
+
 .space-live-strip-dot-sep {
   padding: 0 7px;
   color: rgba(255, 255, 255, 0.28);

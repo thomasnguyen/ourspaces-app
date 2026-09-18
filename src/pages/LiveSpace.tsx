@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useAction, useMutation } from "convex/react";
+import { useAction, useConvexConnectionState, useMutation } from "convex/react";
 import { useQuery, usePaginatedQuery } from "convex-helpers/react/cache";
 import { useStream } from "@convex-dev/persistent-text-streaming/react";
 import type { StreamId } from "@convex-dev/persistent-text-streaming";
@@ -356,6 +356,7 @@ export function LiveSpacePage({
   /** #/play — the director pill that runs the demo's opening take (docs/local/play-lab.md) */
   playLab?: boolean;
 }) {
+  const connectionState = useConvexConnectionState();
   const { space, snapshot, widgets, status, mode } = useLiveSpace(slug);
   const showLoading = useShowAfter(status === "loading");
   const ghostLifecycle = useGhostLifecycle(showLoading, status);
@@ -2362,6 +2363,7 @@ export function LiveSpacePage({
         <SpaceLiveStrip
           spaceName={boardRows?.space?.name}
           boardCount={boardRows?.widgets.length}
+          connected={connectionState.isWebSocketConnected}
           lastChangeAt={lastChangeAt}
           gestures={liveGestures}
           work={spaceWork}
