@@ -23467,7 +23467,7 @@
    instead of running the width of the header. */
 .space-what {
   max-width: 46ch;
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--space-heading-color, var(--color-ink));
   font-family: var(--font-sans);
   font-size: 0.75rem;
@@ -23481,7 +23481,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 /* One chip family: 30px tall, ink tint, black on hover. */
@@ -23665,12 +23665,17 @@
 }
 
 @media (min-width: 801px) {
-  /* Desktop gets the extra half-step; on a phone it stays 12px so three
-     lines of it never crowd the name. */
+  /* Desktop: one line, no wrap. The measure cap is for phones, where the
+     copy folds; here it runs the width of the nameplate and ellipsizes only
+     if the viewport gets tight. */
   .space-what {
-    margin-top: 9px;
+    max-width: 100%;
+    margin-top: 6px;
+    overflow: hidden;
     font-size: 0.8125rem;
-    line-height: 1.45;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .space-header-side {

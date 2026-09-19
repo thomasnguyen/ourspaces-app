@@ -1604,6 +1604,13 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- 2026-09-19: **Space header orienting line is one line on desktop.** The
+  `.space-what` copy under the name was two lines and made the nameplate too
+  tall; it is now a single short sentence (`a live shared board — post, vote
+  or move anything, every open tab updates with you.`), `white-space: nowrap`
+  with ellipsis above 800px, and the gaps to the name and the chips row went
+  8/12px → 6/10px. Phones keep the wrap. Keep the line: crawlers and link
+  previews read it as the page description.
 - 2026-09-16: **Demo-video clips are captured frame-by-frame, not screen-
   recorded.** `.context/web-video/record.mjs` drives headless Chrome over CDP
   with a virtual clock (setTimeout/setInterval/rAF/`performance.now` replaced,

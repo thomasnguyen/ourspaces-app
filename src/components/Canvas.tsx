@@ -768,7 +768,7 @@ export function SpaceHeader({
               room with no orientation otherwise, and a text-only reader (link
               preview, crawler, images off) gets nothing but widget names. */}
           <p className="space-what">
-            this is the live shared board — vote, claim, post, upload or move anything, and every open tab updates with you.
+            a live shared board — post, vote or move anything, every open tab updates with you.
           </p>
           {/* The name's handles: the inbox address first (mail in → widgets
               out is a demo beat), then the pencil. Two quiet chips in the
