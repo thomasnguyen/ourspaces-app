@@ -33,6 +33,9 @@ const app = defineApp({
     AGENTMAIL_API_KEY: v.string(),
     AGENTMAIL_WEBHOOK_SECRET: v.optional(v.string()),
     SITE_URL: v.optional(v.string()),
+    // The only door to the back room (#/admin, convex/admin.ts). Unset =
+    // every admin function refuses, so a fresh clone has no reset button.
+    ADMIN_KEY: v.optional(v.string()),
     // Convex Auth signing keys — see convex/auth.ts + auth.config.ts.
     JWT_PRIVATE_KEY: v.optional(v.string()),
     JWKS: v.optional(v.string()),

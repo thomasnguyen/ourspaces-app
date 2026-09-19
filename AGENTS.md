@@ -6,6 +6,10 @@ Convex hackathon entry; deadline Sep 22 2026. Doc index: `docs/doc-map.md`
 
 ## Rules
 
+- **Replies: ≤3 bullets, ≤15 words each. No preamble, no recap, no
+  explanations unless asked.** Lead with the result. The human is on a phone.
+  **Bold** anything needing input, tagged **(question)**. End with one `Do:`
+  line. Applies to plans, summaries, and commit reports too.
 - **No tests. Ever.** This is a hackathon — no unit tests or any automated
   tests; don't waste time or tokens on them. `npm run build` (typecheck) is the
   check. Visual/live work is verified in the browser.
@@ -63,9 +67,6 @@ Convex hackathon entry; deadline Sep 22 2026. Doc index: `docs/doc-map.md`
 - **LLM copy in-product is plain and direct.**
 - **Commit per working step** with a normal conventional message. Run
   `/hackathon` at the end of a session to update `hackathon.md`.
-- **Replies to the human: ≤3 bullets, no paragraphs, no preamble.** Lead with
-  the result. They're on a phone — only what matters; they'll dive in as
-  needed. **Bold** anything needing their input, tagged **(question)**.
 - **Secrets only in `.env.local` / Convex env vars. Never commit keys** — that
   includes tool config that carries a key in a header (`.mcp.json` is
   gitignored for exactly this reason). The GitHub repo is **public**: before

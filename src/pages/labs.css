@@ -1049,3 +1049,542 @@
   opacity: 0.72;
   white-space: nowrap;
 }
+
+/* —— Coloring lab (#/color) —— */
+
+.color-lab {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 64px;
+  padding: 56px;
+  overflow: hidden;
+  background: var(--color-paper-deep);
+  color: #fff;
+  font-family: var(--font-sans);
+}
+
+.color-lab-device {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  animation: color-lab-in var(--dur-stage) var(--ease-pop) both;
+}
+
+.color-lab-device.is-phone {
+  animation-delay: 140ms;
+}
+
+@keyframes color-lab-in {
+  from {
+    opacity: 0;
+    translate: 0 28px;
+  }
+}
+
+/* Laptop: a dark window with a title bar; the app inside is a real 1280×800. */
+.color-lab-laptop {
+  width: calc(1280px * var(--laptop-s) + 16px);
+  padding: 0 8px 10px;
+  border-radius: 14px;
+  background: #0b0b0e;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 40px 90px rgba(0, 0, 0, 0.55);
+}
+
+.color-lab-laptop-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 6px;
+}
+
+.color-lab-laptop-bar i {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.color-lab-laptop-bar i:nth-child(1) { background: #ff5f57; }
+.color-lab-laptop-bar i:nth-child(2) { background: #febc2e; }
+.color-lab-laptop-bar i:nth-child(3) { background: #28c840; }
+
+.color-lab-laptop-bar span {
+  margin: 0 auto;
+  translate: -22px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.color-lab-screen {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--color-paper-deep);
+}
+
+.color-lab-screen iframe {
+  display: block;
+  border: 0;
+  transform-origin: 0 0;
+}
+
+.is-laptop .color-lab-screen {
+  width: calc(1280px * var(--laptop-s));
+  height: calc(800px * var(--laptop-s));
+}
+
+.is-laptop iframe {
+  transform: scale(var(--laptop-s));
+}
+
+/* Phone: a black bezel with an island; the app inside is a real 390×844. */
+.color-lab-phone {
+  position: relative;
+  width: calc(390px * var(--phone-s) + 22px);
+  padding: 11px;
+  border-radius: calc(54px * var(--phone-s) + 11px);
+  background: #0b0b0e;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 40px 90px rgba(0, 0, 0, 0.55);
+}
+
+.is-phone .color-lab-screen {
+  width: calc(390px * var(--phone-s));
+  height: calc(844px * var(--phone-s));
+  padding-top: calc(54px * var(--phone-s));
+  border-radius: calc(44px * var(--phone-s));
+  background: #0b0b0e;
+}
+
+.is-phone iframe {
+  transform: scale(var(--phone-s));
+}
+
+.color-lab-notch {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: calc(11px + 12px * var(--phone-s));
+  width: calc(122px * var(--phone-s));
+  height: calc(36px * var(--phone-s));
+  translate: -50% 0;
+  border-radius: 999px;
+  background: #0b0b0e;
+}
+
+/* Who's who: a sticker pill in that person's color. */
+.color-lab-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 16px 7px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3);
+  rotate: -1.5deg;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+}
+
+.is-phone .color-lab-tag {
+  rotate: 1.5deg;
+}
+
+.color-lab-tag b {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--who);
+}
+
+.color-lab-tag em {
+  font-family: var(--font-sans);
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.color-lab-bar a {
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.color-lab-bar a:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* —— Back room (#/admin) ——
+   Linked from nowhere. A utility room, so it stays quiet: the near-black
+   base, one cream slab per room, the room's own identity color as the only
+   colour on the row, and lime kept for the one key that does something
+   irreversible. Type is the two tokens, numbers in display. */
+
+.admin-lab {
+  min-height: 100dvh;
+  padding: 48px 28px 96px;
+  background-color: var(--color-paper);
+  background-image: radial-gradient(ellipse 60% 50% at 18% 0%, rgba(255, 255, 255, 0.05), transparent 62%);
+  color: var(--color-card);
+  font-family: var(--font-sans);
+}
+
+.admin-lab.is-locked {
+  display: grid;
+  place-items: center;
+}
+
+.admin-kicker {
+  display: inline-block;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: var(--color-lime);
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-lab h1 {
+  margin: 14px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  line-height: 1;
+}
+
+/* —— the key —— */
+
+.admin-gate {
+  display: grid;
+  width: min(420px, 100%);
+  justify-items: start;
+  gap: 14px;
+}
+
+.admin-gate input {
+  width: 100%;
+  border: 2px solid color-mix(in oklch, var(--color-card) 22%, transparent);
+  border-radius: 14px;
+  background: color-mix(in oklch, var(--color-card) 7%, transparent);
+  color: var(--color-card);
+  padding: 14px 16px;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  transition: border-color var(--dur-quick) var(--ease-glide);
+}
+
+.admin-gate input:focus {
+  border-color: var(--color-lime);
+  outline: none;
+}
+
+.admin-gate button {
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  padding: 11px 26px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform var(--dur-quick) var(--ease-pop);
+}
+
+.admin-gate button:hover {
+  transform: translateY(-2px);
+}
+
+.admin-gate-no {
+  margin: 0;
+  color: var(--color-couple);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+/* —— the list —— */
+
+.admin-head {
+  display: flex;
+  max-width: 900px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto 32px;
+}
+
+.admin-head p {
+  max-width: 54ch;
+  margin: 12px 0 0;
+  color: color-mix(in oklch, var(--color-card) 62%, transparent);
+  font-size: var(--text-caption);
+  line-height: 1.55;
+}
+
+.admin-head b {
+  color: var(--color-lime);
+}
+
+.admin-out {
+  flex: 0 0 auto;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: var(--color-card);
+  padding: 9px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-say {
+  max-width: 900px;
+  margin: 0 auto 20px;
+  border-left: 3px solid color-mix(in oklch, var(--color-card) 30%, transparent);
+  padding: 4px 0 4px 14px;
+  color: color-mix(in oklch, var(--color-card) 70%, transparent);
+  font-size: var(--text-caption);
+}
+
+.admin-say.is-good {
+  border-color: var(--color-lime);
+  color: var(--color-card);
+}
+
+.admin-say.is-bad {
+  border-color: var(--color-couple);
+  color: var(--color-card);
+}
+
+.admin-rooms {
+  display: grid;
+  max-width: 1040px;
+  gap: 10px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+/* One room, one line: who it is, what is on it, what you can do about it.
+   The left edge is the room own colour — the only colour on the row until
+   something drifts. */
+.admin-rooms li {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(0, 1.5fr) auto;
+  align-items: center;
+  gap: 14px 22px;
+  border-radius: 16px;
+  border-left: 5px solid var(--room, var(--color-lime));
+  background: var(--color-card);
+  color: var(--color-ink);
+  padding: 14px 18px;
+}
+
+.admin-room-id {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.admin-room-id b {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.admin-room-id strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.admin-room-id code {
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.admin-room-counts p {
+  margin: 0;
+}
+
+/* Numbers lead, in display type — the count is the fact, the noun is a label. */
+.admin-room-board {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-room-board span {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.admin-room-board i {
+  width: 3px;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklch, var(--color-ink) 30%, transparent);
+}
+
+.admin-room-sub {
+  margin-top: 3px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* The only thing on this page that should catch an eye across the room. */
+.admin-drift {
+  border-radius: var(--radius-pill);
+  background: var(--room, var(--color-lime));
+  color: var(--color-card);
+  padding: 3px 9px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-rooms li.is-drifted {
+  box-shadow: 0 0 0 2px var(--room, var(--color-lime));
+}
+
+.admin-room-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Opens under the row it belongs to, pushing nothing else around. */
+.admin-confirm {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  border-top: 1.5px solid color-mix(in oklch, var(--color-ink) 10%, transparent);
+  padding-top: 13px;
+  animation: admin-confirm-in var(--dur-base) var(--ease-glide);
+}
+
+@keyframes admin-confirm-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.admin-room-actions button,
+.admin-confirm button {
+  border: 2px solid var(--color-sticker);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-ink);
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-quick) var(--ease-glide),
+    color var(--dur-quick) var(--ease-glide),
+    transform var(--dur-quick) var(--ease-pop);
+}
+
+.admin-room-actions button:hover:not(:disabled),
+.admin-confirm button:hover {
+  background: var(--color-sticker);
+  color: var(--color-card);
+  transform: translateY(-1px);
+}
+
+.admin-room-actions button:disabled {
+  border-color: color-mix(in oklch, var(--color-ink) 18%, transparent);
+  color: color-mix(in oklch, var(--color-ink) 35%, transparent);
+  cursor: not-allowed;
+}
+
+.admin-room-actions .is-reset:not(:disabled) {
+  border-color: var(--color-sticker);
+  background: var(--color-sticker);
+  color: var(--color-lime);
+}
+
+.admin-room-actions a {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-room-actions a:hover {
+  color: var(--color-ink);
+}
+
+.admin-confirm span {
+  margin-right: auto;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-confirm .is-go {
+  border-color: var(--color-couple);
+  background: var(--color-couple);
+  color: var(--color-card);
+}
+
+.admin-confirm .is-go:hover {
+  background: var(--color-couple);
+  border-color: var(--color-couple);
+  color: var(--color-card);
+}
+
+@media (max-width: 860px) {
+  .admin-rooms li {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-room-actions {
+    flex-wrap: wrap;
+  }
+
+  .admin-head {
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-confirm {
+    animation: none;
+  }
+
+  .admin-gate button,
+  .admin-room-actions button,
+  .admin-confirm button {
+    transition: none;
+  }
+
+  .admin-gate button:hover,
+  .admin-room-actions button:hover,
+  .admin-confirm button:hover {
+    transform: none;
+  }
+}

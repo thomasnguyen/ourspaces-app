@@ -23,6 +23,30 @@ import {
   type CozyBoard,
 } from "./cozyColorBoards";
 
+/* ── coloring lab (src/pages/ColorLab.tsx, #/color) ──────────────────────
+   Two frames of this same widget, one laptop-sized and one phone-sized,
+   faking two people an ocean apart on one screen. `?sync=<name>` joins a
+   BroadcastChannel so a tap in one frame fills the other and each shows the
+   other's cursor; `?as=<name>` says who you are in that frame; `?room=<id>`
+   opens the room on load. Without the params none of this runs. */
+const LAB_PARAMS = new URLSearchParams(
+  typeof window === "undefined" ? "" : window.location.search,
+);
+const LAB_SYNC = LAB_PARAMS.get("sync");
+const LAB_ROOM = LAB_PARAMS.get("room");
+const LAB_COLORS: Record<string, string> = {
+  holly: "var(--color-couple)",
+  thomas: "var(--color-crew)",
+};
+const LAB_AS = LAB_PARAMS.get("as");
+const LAB_IDENTITY: CozyColorIdentity | undefined = LAB_AS
+  ? { userId: `lab-${LAB_AS}`, name: LAB_AS, color: LAB_COLORS[LAB_AS] ?? "var(--color-couple)" }
+  : undefined;
+type LabMessage =
+  | { kind: "stroke"; stroke: CozyColorStroke }
+  | { kind: "clear"; prefix?: string }
+  | { kind: "cursor"; peer: CozyColorPeer };
+
 export type CozyColorTone = "berry" | "orange" | "blue" | "violet" | "teal" | "lime";
 
 export type CozyColorPoint = { x: number; y: number };
@@ -205,7 +229,7 @@ export function CozyColorWidget({
   widget,
   style,
   strokes,
-  identity,
+  identity: identityProp,
   onStroke,
   onClear,
   peersRef,
@@ -223,7 +247,27 @@ export function CozyColorWidget({
   peersRef?: RefObject<CozyColorPeer[]>;
   onCursor?: (x: number, y: number, zone?: string) => void;
 }) {
-  const [roomOpen, setRoomOpen] = useState(false);
+  const identity = identityProp ?? LAB_IDENTITY;
+  const labChannel = useMemo(
+    () =>
+      LAB_SYNC && typeof BroadcastChannel !== "undefined"
+        ? new BroadcastChannel(`cozy-lab:${LAB_SYNC}`)
+        : null,
+    [],
+  );
+  const labPeersRef = useRef<CozyColorPeer[]>([]);
+  const labCursor = (x: number, y: number, zone?: string): LabMessage => ({
+    kind: "cursor",
+    peer: {
+      userId: identity?.userId ?? "local-you",
+      name: identity?.name ?? "you",
+      color: identity?.color ?? "var(--color-couple)",
+      x,
+      y,
+      zone,
+    },
+  });
+  const [roomOpen, setRoomOpen] = useState(LAB_ROOM === widget.id);
   const [boardId, setBoardId] = useState(COZY_BOARDS[0].id);
   const [activeColor, setActiveColor] = useState(0);
   const [localStrokes, setLocalStrokes] = useState<CozyColorStroke[]>([]);
@@ -289,8 +333,13 @@ export function CozyColorWidget({
   useEffect(() => {
     if (!roomOpen) return;
     onCursor?.(0.5, 0.6, zoneKey);
-    return () => onCursor?.(0, 0, undefined);
-  }, [onCursor, roomOpen, zoneKey]);
+    labChannel?.postMessage(labCursor(0.5, 0.6, zoneKey));
+    return () => {
+      onCursor?.(0, 0, undefined);
+      labChannel?.postMessage(labCursor(0, 0, undefined));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [labChannel, onCursor, roomOpen, zoneKey]);
 
   /* Peers report 0..1 across the postcard; the motion engine works in pixels,
      so it needs the board's real size. A resize rebases the tracks rather
@@ -321,12 +370,14 @@ export function CozyColorWidget({
      this room out of the canvas's render path entirely. */
   const selfId = identity?.userId;
   useEffect(() => {
-    if (!roomOpen || !peersRef || boardSize.w <= 0) return;
+    // in the lab the other frame is the only peer that matters
+    const source = labChannel ? labPeersRef : peersRef;
+    if (!roomOpen || !source || boardSize.w <= 0) return;
     let frame = 0;
     let roster = "";
     const pump = () => {
       frame = window.requestAnimationFrame(pump);
-      const here = (peersRef.current ?? []).filter(
+      const here = (source.current ?? []).filter(
         (peer) => peer.zone === zoneKey && peer.userId !== selfId,
       );
       for (const peer of here) {
@@ -348,7 +399,36 @@ export function CozyColorWidget({
     };
     pump();
     return () => window.cancelAnimationFrame(frame);
-  }, [board.id, boardSize.h, boardSize.w, motion, peersRef, roomOpen, selfId, zoneKey]);
+  }, [board.id, boardSize.h, boardSize.w, labChannel, motion, peersRef, roomOpen, selfId, zoneKey]);
+
+  // the other frame of the coloring lab: its strokes land here, its cursor too
+  useEffect(() => {
+    if (!labChannel) return;
+    const onMessage = (event: MessageEvent<LabMessage>) => {
+      const message = event.data;
+      if (message.kind === "stroke") {
+        setLocalStrokes((existing) =>
+          existing.some((stroke) => stroke.id === message.stroke.id)
+            ? existing
+            : [...existing, message.stroke],
+        );
+      } else if (message.kind === "clear") {
+        const prefix = message.prefix;
+        setLocalStrokes((existing) =>
+          existing.filter((stroke) => {
+            if (!stroke.regionId || stroke.regionId === "__preset__") return true;
+            return prefix ? !stroke.regionId.startsWith(prefix) : stroke.regionId.includes(":");
+          }),
+        );
+      } else if (message.kind === "cursor") {
+        labPeersRef.current = message.peer.zone
+          ? [{ ...message.peer, updatedAt: Date.now() }]
+          : [];
+      }
+    };
+    labChannel.addEventListener("message", onMessage);
+    return () => labChannel.removeEventListener("message", onMessage);
+  }, [labChannel]);
 
   const roomCursors = roomPeers.map((peer) => ({
     peer,
@@ -399,6 +479,7 @@ export function CozyColorWidget({
     };
     setLocalStrokes((existing) => [...existing, next]);
     playSound("place");
+    labChannel?.postMessage({ kind: "stroke", stroke: next } satisfies LabMessage);
     if (onStroke) {
       void Promise.resolve(
         onStroke({
@@ -443,6 +524,7 @@ export function CozyColorWidget({
     };
     setLocalStrokes((existing) => [...existing, next]);
     playSound("tap");
+    labChannel?.postMessage({ kind: "stroke", stroke: next } satisfies LabMessage);
     if (!onStroke) return;
     void Promise.resolve(
       onStroke({
@@ -472,6 +554,7 @@ export function CozyColorWidget({
       }),
     );
     playSound("tap");
+    labChannel?.postMessage({ kind: "clear", prefix } satisfies LabMessage);
     void onClear?.(prefix);
   };
 
@@ -524,13 +607,12 @@ export function CozyColorWidget({
             maxWidth: `calc((100dvh - 210px) * ${(board.w / board.h).toFixed(4)})`,
           }}
           onPointerMove={(event) => {
-            if (!onCursor) return;
+            if (!onCursor && !labChannel) return;
             const rect = event.currentTarget.getBoundingClientRect();
-            onCursor(
-              Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
-              Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)),
-              zoneKey,
-            );
+            const x = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+            const y = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
+            onCursor?.(x, y, zoneKey);
+            labChannel?.postMessage(labCursor(x, y, zoneKey));
           }}
         >
           <ArtBoard

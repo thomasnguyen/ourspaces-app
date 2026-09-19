@@ -122,6 +122,13 @@ the nameplate; `MailArrivalLive` subscribes to `mailArrival.recentInbound`,
 `MailArrivalStage` draws envelopes, flights and the `↩ told holly` tick)
 
 **pages/** — `LiveSpace.tsx` (live canvas) ·
+`Admin.tsx` (`#/admin` — the back room, linked from nowhere: one row per
+space with what is on its board now, when its baseline was frozen, and
+reset / re-freeze / open. Gated server-side on `ADMIN_KEY` (the page holds no
+secret; a working key is remembered in localStorage). Live mode only — App.tsx
+shows a "drop ?mock=1" note otherwise, since main.tsx mounts no Convex
+provider on the mock path. Styles in the BACK ROOM section at the end of
+`pages/labs.css`. Local-only doc: `docs/local/admin-reset.md`) ·
 `Block.tsx` + `LiveBlock.tsx` (retired block views; no route/import from App) ·
 `About.tsx` (`#/about` — a standalone brand page: birthday collage with a
 local interactive cake poll using `PollWidget`, real live totals, three
@@ -329,11 +336,19 @@ generated vector board; kept for history only.
 lists every one) — installed + `app.use()`-wired in `convex.config.ts`, each
 with a real job below, not just mounted.
 
+`admin.ts` (the back room's backend, `#/admin`: `saveBaseline` freezes a
+room's board into the `baselines` table as JSON, `resetToBaseline` wipes what
+is there and replays it, `overview`/`check` feed the page. Every function
+calls `requireAdmin(key)` against `env.ADMIN_KEY`. Restores the space row's
+look + widgets + votes + paint + messages, remapping every id on the way in;
+never touches `members`, the inbox, the slug or `ownerId`; clears recaps,
+ask streams, work, cursors and post-baseline mail. Schedules
+`rag.reindexSpace` + `similar.backfillSpace` after, since every id changed) ·
 `schema.ts` (spaces — carries `inboxId`/`inboxAddress`/`askThreadId`/
 `ragIndexedAt` — plus emailEvents, members, widgets [`data`: typed
 discriminated union, see `widgetData.ts`], messages [+ full-text search
-index], votes, paintMarks, recaps, presence, `linkRefreshQueue`
-[batch-worker queue]; frames are widgets) · `widgetData.ts` (the 12 typed
+index], votes, paintMarks, recaps, presence, `baselines` [one frozen board per slug,
+for `admin.ts`], `linkRefreshQueue` [batch-worker queue]; frames are widgets) · `widgetData.ts` (the 12 typed
 widget-data shapes + permissive record fallback, reverse-engineered from
 every real producer) · `spaces.ts` (CRUD + `memberCounts` aggregate) ·
 `activity.ts` (`touchSpace(ctx, spaceId, now?)` — the ONE way

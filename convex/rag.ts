@@ -84,3 +84,19 @@ export const groundQuestion = internalAction({
     return text;
   },
 });
+
+/** Drop everything this space has in the index, then build it again.
+ *  A reset (#/admin) replaces every widget and message with a fresh id, so
+ *  the old entries would still match a question and cite rows that are gone. */
+export const reindexSpace = internalAction({
+  args: { spaceId: v.id("spaces") },
+  returns: v.number(),
+  handler: async (ctx, { spaceId }): Promise<number> => {
+    const namespace = await rag.getNamespace(ctx, { namespace: spaceId });
+    if (namespace) {
+      const stale = await rag.list(ctx, { namespaceId: namespace.namespaceId, limit: 200 });
+      for (const entry of stale.page) await rag.delete(ctx, { entryId: entry.entryId });
+    }
+    return await ctx.runAction(internal.rag.indexSpace, { spaceId });
+  },
+});

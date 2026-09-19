@@ -43,23 +43,17 @@ export default defineSchema({
     .index("by_owner", ["ownerId"]),
 
   emailEvents: defineTable({
-    spaceId: v.id("spaces"),
+    spaceId: v.id("spaces"), from: v.string(), to: v.string(),
+    subject: v.string(), summary: v.string(), body: v.optional(v.string()),
     direction: v.union(v.literal("in"), v.literal("out")),
-    from: v.string(),
-    to: v.string(),
-    subject: v.string(),
-    summary: v.string(),
-    body: v.optional(v.string()),
     widgetId: v.optional(v.id("widgets")),
     messageId: v.optional(v.string()),
     threadId: v.optional(v.string()),
     // Pre-parsed by Firecrawl: an empty-bodied receipt still files itself
     // off the PDF.
-    attachments: v.optional(
-      v.array(
-        v.object({ filename: v.string(), contentType: v.string(), size: v.number(), text: v.string() }),
-      ),
-    ),
+    attachments: v.optional(v.array(v.object({
+      filename: v.string(), contentType: v.string(), size: v.number(), text: v.string(),
+    }))),
     because: v.optional(v.string()),
     label: v.optional(v.string()),
     readingAt: v.optional(v.number()),
@@ -68,25 +62,16 @@ export default defineSchema({
   }).index("by_space", ["spaceId"]),
 
   work: defineTable({
-    spaceId: v.id("spaces"),
-    runId: v.string(),
+    spaceId: v.id("spaces"), runId: v.string(), step: v.string(), line: v.string(),
     kind: v.union(v.literal("mail"), v.literal("link"), v.literal("search"), v.literal("crawl")),
-    step: v.string(),
     status: v.union(v.literal("running"), v.literal("done"), v.literal("failed")),
-    line: v.string(),
-    subject: v.optional(v.string()),
-    widgetId: v.optional(v.id("widgets")),
+    subject: v.optional(v.string()), widgetId: v.optional(v.id("widgets")),
     createdAt: v.number(),
   }).index("by_space", ["spaceId"]),
 
   members: defineTable({
-    spaceId: v.id("spaces"),
-    userId: v.string(),
-    name: v.string(),
-    color: v.string(),
-    emoji: v.optional(v.string()),
-    avatarUrl: v.optional(v.string()),
-    lastSeen: v.number(),
+    spaceId: v.id("spaces"), userId: v.string(), name: v.string(), color: v.string(),
+    emoji: v.optional(v.string()), avatarUrl: v.optional(v.string()), lastSeen: v.number(),
   })
     .index("by_space", ["spaceId"])
     .index("by_space_user", ["spaceId", "userId"])
@@ -140,24 +125,16 @@ export default defineSchema({
     .index("by_space_widget", ["spaceId", "widgetId"])
     .searchIndex("search_text", { searchField: "text", filterFields: ["spaceId"] }),
 
-  votes: defineTable({
-    widgetId: v.id("widgets"),
-    userId: v.string(),
-    optionId: v.string(),
-  })
+  votes: defineTable({ widgetId: v.id("widgets"), userId: v.string(), optionId: v.string() })
     .index("by_widget", ["widgetId"])
     .index("by_widget_user", ["widgetId", "userId"])
     .index("by_user", ["userId"]),
 
   paintMarks: defineTable({
-    spaceId: v.id("spaces"),
-    widgetId: v.id("widgets"),
-    userId: v.string(),
-    authorName: v.string(),
-    authorColor: v.string(),
+    spaceId: v.id("spaces"), widgetId: v.id("widgets"), userId: v.string(),
+    authorName: v.string(), authorColor: v.string(),
     tone: v.union(v.literal("berry"), v.literal("orange"), v.literal("blue"), v.literal("violet"), v.literal("teal"), v.literal("lime")),
-    size: v.number(),
-    points: v.array(v.object({ x: v.number(), y: v.number() })),
+    size: v.number(), points: v.array(v.object({ x: v.number(), y: v.number() })),
     regionId: v.optional(v.string()),
     preset: v.optional(v.union(v.literal("electric"), v.literal("sunset"))),
     createdAt: v.number(),
@@ -166,12 +143,11 @@ export default defineSchema({
     .index("by_space_and_widget", ["spaceId", "widgetId"]),
 
   recaps: defineTable({
-    spaceId: v.id("spaces"),
+    spaceId: v.id("spaces"), since: v.string(),
     kind: v.union(v.literal("daily"), v.literal("ask")),
-    since: v.string(),
-    lines: v.array(
-      v.object({ text: v.string(), widgetId: v.optional(v.string()), messageId: v.optional(v.string()) }),
-    ),
+    lines: v.array(v.object({
+      text: v.string(), widgetId: v.optional(v.string()), messageId: v.optional(v.string()),
+    })),
     createdAt: v.number(),
   })
     .index("by_space", ["spaceId"])
@@ -179,9 +155,7 @@ export default defineSchema({
 
   // /api/ask-stream is handed only a streamId; it looks the rest up here.
   askStreams: defineTable({
-    spaceId: v.id("spaces"),
-    streamId: v.string(),
-    question: v.string(),
+    spaceId: v.id("spaces"), streamId: v.string(), question: v.string(),
     messageId: v.id("messages"), // the recap turn to fill in when done
   })
     .index("by_stream", ["streamId"])
@@ -202,23 +176,20 @@ export default defineSchema({
     // Also the gesture lock: holding `gesture` for a widget means owning its
     // drag, so "who is moving it" and "who may write it" are the same row
     // (arbitration + TTL sweep in presence.ts).
-    gesture: v.optional(
-      v.object({
-        sessionId: v.string(),
-        widgetId: v.id("widgets"),
-        kind: v.union(v.literal("move"), v.literal("resize")),
-        x: v.number(),
-        y: v.number(),
-        w: v.number(),
-        h: v.number(),
-        z: v.number(),
-        updatedAt: v.number(),
-      }),
-    ),
+    gesture: v.optional(v.object({
+      sessionId: v.string(), widgetId: v.id("widgets"),
+      kind: v.union(v.literal("move"), v.literal("resize")),
+      x: v.number(), y: v.number(), w: v.number(), h: v.number(), z: v.number(),
+      updatedAt: v.number(),
+    })),
   })
     .index("by_space", ["spaceId"])
     .index("by_space_user", ["spaceId", "userId"])
     .index("by_updated", ["updatedAt"]),
+
+  // What #/admin resets a room to — one row per slug (convex/admin.ts).
+  baselines: defineTable({ slug: v.string(), savedAt: v.number(), json: v.string() })
+    .index("by_slug", ["slug"]),
 
   // batch-worker queue: stale linkCards awaiting Firecrawl refresh.
   linkRefreshQueue: defineTable({

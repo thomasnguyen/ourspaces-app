@@ -70,8 +70,11 @@ import { getIdentity } from "./live/identity";
 import { useCanvasSpacePan } from "./lib/canvasSpacePan";
 import {
   buildRoomOverviewScale,
+  keeperNoteSlot,
   withBuildRoomCover,
 } from "./lib/buildRoomPresentation";
+import { flushSync } from "react-dom";
+import { flyWidgetIn } from "./lib/flipLanding";
 import { DEFAULT_SPACE_SLUG, lastSpaceSlug, normalSpaceHash, rememberSpaceSlug } from "./lib/routes";
 import { pileInsideFrame } from "./lib/frameMembership";
 import {
@@ -95,6 +98,12 @@ const WidgetLab = lazy(() =>
 const ArrivalLab = lazy(() =>
   import("./pages/ArrivalLab").then((module) => ({ default: module.ArrivalLab })),
 );
+const ColorLab = lazy(() =>
+  import("./pages/ColorLab").then((module) => ({ default: module.ColorLab })),
+);
+const Admin = lazy(() =>
+  import("./pages/Admin").then((module) => ({ default: module.Admin })),
+);
 const WidgetWall = lazy(() =>
   import("./pages/WidgetWall").then((module) => ({ default: module.WidgetWall })),
 );
@@ -117,7 +126,7 @@ function DeferredRoute({ children }: { children: ReactNode }) {
   );
 }
 
-type Route = "space" | "about" | "cursors" | "widgets" | "arrival" | "wall" | "live" | "join" | "test";
+type Route = "space" | "about" | "cursors" | "widgets" | "arrival" | "color" | "wall" | "live" | "join" | "test" | "admin";
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
 type FrameLayout = Pick<Widget, "x" | "y" | "w" | "h">;
 type CanvasSize = { width: number; height: number };
@@ -228,7 +237,10 @@ function routeFromHash(): Route {
   if (hash === "cursors" || hash.startsWith("cursors/")) return "cursors";
   if (hash === "widgets" || hash.startsWith("widgets/")) return "widgets";
   if (hash === "arrival") return "arrival";
+  if (hash === "color") return "color";
   if (hash === "wall") return "wall";
+  // Linked from nowhere and gated on ADMIN_KEY server-side (convex/admin.ts).
+  if (hash === "admin") return "admin";
   return "space";
 }
 
@@ -1750,12 +1762,28 @@ export default function App() {
     return <DeferredRoute><ArrivalLab /></DeferredRoute>;
   }
 
+  if (route === "color") {
+    return <DeferredRoute><ColorLab /></DeferredRoute>;
+  }
+
   if (route === "wall") {
     return <DeferredRoute><WidgetWall /></DeferredRoute>;
   }
 
   if (route === "about") {
     return <DeferredRoute><AboutPage /></DeferredRoute>;
+  }
+
+  /* The back room reads the real rooms, so it needs the Convex client —
+     and main.tsx only mounts a provider on the live path. */
+  if (route === "admin") {
+    return mockModeRequested() ? (
+      <main className="paper-bg" style={{ display: "grid", placeItems: "center", minHeight: "100dvh" }}>
+        <p style={{ color: "var(--color-card)" }}>The back room reads live rooms — drop <code>?mock=1</code>.</p>
+      </main>
+    ) : (
+      <DeferredRoute><Admin /></DeferredRoute>
+    );
   }
 
   if (route === "live" && !mockModeRequested()) {
@@ -2145,12 +2173,51 @@ export default function App() {
               [linkId]: { ...current[linkId], pinned: !link.pinned },
             }));
           }}
-          onKeep={(linkId) =>
+          onKeep={(linkId) => {
+            const link = mockLinks.find((candidate) => candidate.id === linkId);
+            if (!link || link.keptAt !== undefined) return;
+            /* Same climax as live (pages/LiveSpace.tsx keepTakeaway): a pinned
+               note lands in the keepers frame, flown in from the card it was
+               read on. Measured before the room closes. */
+            const from =
+              document.querySelector(".rr-hero-snap")?.getBoundingClientRect() ?? null;
             setMockLinkState((current) => ({
               ...current,
               [linkId]: { ...current[linkId], keptAt: Date.now() },
-            }))
-          }
+            }));
+            /* After the room's 480ms exit cue plus its 300ms shrink. The note
+               is created and flown in the same tick (flushSync commits it
+               before flyWidgetIn looks), so it never sits at its destination
+               under the closing room. */
+            window.setTimeout(() => {
+              const keepers = visibleWidgets.find(
+                (widget) => widget.type === "frame" && widget.data.title === "keepers",
+              );
+              const slot = visibleWidgets.filter(
+                (widget) => widget.type === "note" && widget.data.pin,
+              ).length;
+              const place = keeperNoteSlot(keepers, slot);
+              let created: Widget | undefined;
+              flushSync(() => {
+                created = addWidgetAt(
+                  "note",
+                  { x: place.x + place.w / 2, y: place.y + place.h / 2 },
+                  {
+                    kicker: link.kind === "docs" ? "reference" : "rule of thumb",
+                    title: link.title,
+                    text: link.whyItMatters || link.description,
+                    author: "you",
+                    tone: "white",
+                    pin: true,
+                    keptLinkId: link.id,
+                  },
+                  { w: place.w, h: place.h },
+                );
+              });
+              setManagedWidgetId("");
+              if (created) void flyWidgetIn(created.id, from);
+            }, 860);
+          }}
           onReply={sendThreadMessage}
           onClose={() => setOpenRoom(null)}
         />

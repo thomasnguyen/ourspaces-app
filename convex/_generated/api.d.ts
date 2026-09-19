@@ -9,6 +9,7 @@
  */
 
 import type * as activity from "../activity.js";
+import type * as admin from "../admin.js";
 import type * as agent from "../agent.js";
 import type * as agentmail from "../agentmail.js";
 import type * as ai from "../ai.js";
@@ -54,6 +55,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   activity: typeof activity;
+  admin: typeof admin;
   agent: typeof agent;
   agentmail: typeof agentmail;
   ai: typeof ai;

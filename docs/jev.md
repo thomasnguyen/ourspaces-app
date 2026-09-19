@@ -344,8 +344,34 @@ green.
 
 ## Open
 
-- **No `JEV_API_KEY` anywhere.** Early access is waitlist-only. Steps 1–4 do
-  not need it; step 5 does.
+- **A route that needs no TypeSafe key (added 2026-09-17).** This bullet used
+  to read "no `JEV_API_KEY` anywhere, early access is waitlist-only". Still
+  true of a direct key, and the AI SDK provider above wants a
+  `TYPESAFE_AI_API_KEY` too. But **OpenRouter** now fronts Jev at
+  `POST https://openrouter.ai/api/alpha/decisions` — same wire format as
+  `/v1/systemone`, model `typesafe/jev-latest`, $0.042/MTok in and free
+  out, an OpenRouter key instead of a waitlist. It is a plain `fetch` from a
+  Convex action, so the hand-rolled client above works against it unchanged:
+  one env var picks the base URL. That makes step 5 doable now.
+- **Verify the Choice cap before step 2.** This doc assumes 255 options,
+  "unreachable in practice". That number is from TypeSafe's launch post; HN
+  users with console access report Choice capped at **10** options. Our option
+  list is the live widget inventory, so if 10 is the real limit the
+  `expenseTarget` / `itinTarget` lists can overflow on a busy board and need
+  the two-stage Score-then-Choose pattern. One playground call settles it.
+- **`state` is attacker-controlled and Jev does not defend it.** TypeSafe's
+  own jaggedness page for `jev-1.13`: "State is data, and `jev-1.13` does
+  not treat it as hostile by default. Content written to adversarially steer
+  the model can move the answer." Our state *is* an inbound email. The
+  confidence gate narrows the blast radius — a steered answer that lands under
+  `UNFILED_FLOOR` falls through to the sealed envelope — but it does not
+  close it, and a confident wrong answer is exactly the case it misses.
+- **Do not trust confidence to catch errors.** No calibration curve, ECE or
+  reliability diagram has been published by TypeSafe or anyone else, and the
+  one independent tester who measured it (on a local proxy) found "confidence
+  does not reliably flag errors". Verify on our own mail before `UNFILED_FLOOR`
+  is anything but a guess. Background, reception and independent evals:
+  `docs/local/jev-research.md`.
 - **`MAIL_VERDICT_FLOOR_MS` is undecided.** The stamp must not beat the
   envelope settling. 900ms keeps the choreography and lands the arrival at
   ~2.5s, but that re-times shots 8–11 of the demo video (0:30–0:56) and

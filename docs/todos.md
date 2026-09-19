@@ -1393,6 +1393,27 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now also working
 
+- **The back room — a reset that puts a room back** (2026-09-19). Rooms are
+  open, so visitors move things, vote and empty threads; there was no way to
+  undo that short of a database restore. Every room now keeps a **baseline**:
+  a frozen copy of its board in the new `baselines` table. `#/admin` (linked
+  from nowhere, gated server-side on the `ADMIN_KEY` env var) lists every room
+  with what is on it now, when it was frozen, and a reset button. All eight
+  rooms were frozen on 2026-09-19.
+  - Restores the space row's look, widgets, votes, paint and messages,
+    remapping thread ids / vote+paint `widgetId`s as it replays them.
+  - **Never touches `members`** — the 535 people who joined are the evidence
+    that anyone came, and wiping them would shrink the public numbers. The
+    inbox, slug and `ownerId` are left alone too, so mail keeps routing.
+  - Clears recaps, ask streams, the work log, cursors, and mail that landed
+    after the baseline (its widget is gone).
+  - Schedules `rag.reindexSpace` + `similar.backfillSpace` afterwards, since
+    every id changed — without the first, "catch me up" cites dead widgets.
+  - Verified on the disposable `play` room and on `league`: a full export
+    diff before/after a reset is **identical** for the space row, widgets,
+    votes and messages (ids and embeddings aside), zero dangling threads, and
+    the sharded counters land back on 71 widgets / 87 messages.
+  - Full notes, including the key: `docs/local/admin-reset.md` (gitignored).
 - **The deployment went over the Free plan limit, and the cursor stream was
   why** (2026-09-12). Five changes, all verified live on `dusty-condor-648`:
   1. **Solo rooms no longer stream cursors.** `usePresence` wrote a presence
