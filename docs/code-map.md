@@ -124,7 +124,8 @@ the nameplate; `MailArrivalLive` subscribes to `mailArrival.recentInbound`,
 **pages/** — `LiveSpace.tsx` (live canvas) ·
 `Admin.tsx` (`#/admin` — the back room, linked from nowhere: one row per
 space with what is on its board now, when its baseline was frozen, and
-reset / re-freeze / open. Gated server-side on `ADMIN_KEY` (the page holds no
+reset / re-freeze / open, under a master strip whose one key resets every
+room at once. Gated server-side on `ADMIN_KEY` (the page holds no
 secret; a working key is remembered in localStorage). Live mode only — App.tsx
 shows a "drop ?mock=1" note otherwise, since main.tsx mounts no Convex
 provider on the mock path. Styles in the BACK ROOM section at the end of
@@ -338,7 +339,8 @@ with a real job below, not just mounted.
 
 `admin.ts` (the back room's backend, `#/admin`: `saveBaseline` freezes a
 room's board into the `baselines` table as JSON, `resetToBaseline` wipes what
-is there and replays it, `overview`/`check` feed the page. Every function
+is there and replays it, `overview`/`check` feed the page, and `resetAll` does every room with a
+baseline in one transaction (the master reset). Every function
 calls `requireAdmin(key)` against `env.ADMIN_KEY`. Restores the space row's
 look + widgets + votes + paint + messages, remapping every id on the way in;
 never touches `members`, the inbox, the slug or `ownerId`; clears recaps,

@@ -89,13 +89,19 @@ async function baselineRow(ctx: QueryCtx, slug: string) {
     .unique();
 }
 
-/** Thread ids are "global" | "<widgetId>" | "<widgetId>::q:<n>" — only the
- *  base segment is an id, so only the base gets translated. */
+/** Thread ids are "global" | "recap" | "<widgetId>" | "<widgetId>::q:<n>" —
+ *  only the base segment is ever an id, so only the base gets translated.
+ *
+ *  A base that isn't in the map travels UNCHANGED. Two kinds of thread land
+ *  here: the named ones ("global", "recap" — convex/recap.ts), and threads
+ *  whose widget was already deleted before the baseline was frozen. Dropping
+ *  those messages instead cost the crew 11 and the book club 3 on the first
+ *  master reset: a message is the one thing on a board a person wrote by
+ *  hand, so it is never collateral for a dangling pointer. */
 function remapThread(thread: string, map: Map<string, string>) {
   const [base, ...suffix] = thread.split("::");
-  if (base === "global") return thread;
   const mapped = map.get(base);
-  return mapped ? [mapped, ...suffix].join("::") : null;
+  return mapped ? [mapped, ...suffix].join("::") : thread;
 }
 
 async function readBoard(ctx: QueryCtx, space: Doc<"spaces">): Promise<Baseline> {
@@ -292,7 +298,6 @@ async function restoreBaseline(ctx: MutationCtx, space: Doc<"spaces">) {
   for (const message of baseline.messages) {
     const { thread, promoted, ...fields } = message;
     const widgetId = remapThread(thread, widgetIds);
-    if (!widgetId) continue;
     const promotedWidgetId = promoted ? widgetIds.get(promoted) : undefined;
     await ctx.db.insert("messages", {
       ...fields,
@@ -302,6 +307,9 @@ async function restoreBaseline(ctx: MutationCtx, space: Doc<"spaces">) {
     });
     await messagesCounter.inc(ctx);
   }
+  // Paint is the only thing that can be dropped here, and only when its
+  // widget is gone from the baseline — a stroke with nothing under it has
+  // nowhere to be drawn.
   for (const mark of baseline.paint) {
     const { widget, ...fields } = mark;
     const widgetId = widgetIds.get(widget);
@@ -413,5 +421,34 @@ export const resetToBaseline = mutation({
     const space = await spaceBySlug(ctx, slug);
     if (!space) throw new Error(`no space with slug "${slug}"`);
     return await restoreBaseline(ctx, space);
+  },
+});
+
+/** The master reset: every room that has a baseline, put back in one go.
+ *  Demo-scale (eight rooms, ~70 widgets, ~90 messages), so a single
+ *  transaction covers it — either every room lands or none of them do. */
+export const resetAll = mutation({
+  args: { key: v.string() },
+  returns: v.object({
+    rooms: v.array(v.object({ slug: v.string(), widgets: v.number(), messages: v.number() })),
+    cleared: v.number(),
+    skipped: v.array(v.string()),
+  }),
+  handler: async (ctx, { key }) => {
+    requireAdmin(key);
+    const rooms = [];
+    const skipped: string[] = [];
+    let cleared = 0;
+    for (const space of await ctx.db.query("spaces").collect()) {
+      if (!space.slug || space.archivedAt) continue;
+      if (!(await baselineRow(ctx, space.slug))) {
+        skipped.push(space.slug);
+        continue;
+      }
+      const out = await restoreBaseline(ctx, space);
+      cleared += out.removed.widgets + out.removed.messages;
+      rooms.push({ slug: out.slug, widgets: out.restored.widgets, messages: out.restored.messages });
+    }
+    return { rooms, cleared, skipped };
   },
 });

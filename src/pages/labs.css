@@ -1588,3 +1588,111 @@
     transform: none;
   }
 }
+
+/* —— The master reset ——
+   One key that puts every room back. It sits above the list because it is
+   the thing you came for; the per-room rows are the exception, not the rule.
+   Loud only when something has actually drifted. */
+
+.admin-master {
+  display: flex;
+  max-width: 1040px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  border: 2px solid color-mix(in oklch, var(--color-card) 16%, transparent);
+  border-radius: 18px;
+  margin: 0 auto 18px;
+  padding: 16px 18px;
+  transition: border-color var(--dur-base) var(--ease-glide);
+}
+
+.admin-master.is-drifted {
+  border-color: var(--color-lime);
+  background: color-mix(in oklch, var(--color-lime) 7%, transparent);
+}
+
+.admin-master strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.admin-master p {
+  margin: 3px 0 0;
+  color: color-mix(in oklch, var(--color-card) 60%, transparent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-master.is-drifted p {
+  color: var(--color-lime);
+}
+
+/* The one irreversible key on the page wears the sticker + the lime. */
+.admin-master-key {
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: var(--color-lime);
+  padding: 12px 22px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform var(--dur-quick) var(--ease-pop),
+    box-shadow var(--dur-quick) var(--ease-glide);
+}
+
+.admin-master-key:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-lime) 40%, transparent);
+  transform: translateY(-2px);
+}
+
+.admin-master-key:disabled {
+  color: color-mix(in oklch, var(--color-card) 35%, transparent);
+  cursor: not-allowed;
+}
+
+.admin-master-confirm {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  animation: admin-confirm-in var(--dur-base) var(--ease-glide);
+}
+
+.admin-master-confirm span {
+  color: var(--color-card);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-master-confirm button {
+  border: 2px solid color-mix(in oklch, var(--color-card) 30%, transparent);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-card);
+  padding: 9px 18px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-master-confirm .is-go {
+  border-color: var(--color-couple);
+  background: var(--color-couple);
+  color: var(--color-card);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-master-confirm {
+    animation: none;
+  }
+
+  .admin-master-key:hover:not(:disabled) {
+    transform: none;
+  }
+}

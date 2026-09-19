@@ -37,7 +37,10 @@ function ago(at: number) {
   return `${Math.round(hours / 24)}d ago`;
 }
 
-type Pending = { slug: string; kind: "reset" | "save" } | null;
+type Pending = { slug: string; kind: "reset" | "save" | "all" } | null;
+
+/** The master reset is not a room, so it needs a slug no room can have. */
+const EVERY_ROOM = "*";
 
 export function Admin() {
   const [keyInput, setKeyInput] = useState(readStoredKey);
@@ -50,6 +53,7 @@ export function Admin() {
   const ok = useQuery(api.admin.check, key ? { key } : "skip");
   const rooms = useQuery(api.admin.overview, ok === true ? { key } : "skip");
   const resetToBaseline = useMutation(api.admin.resetToBaseline);
+  const resetAll = useMutation(api.admin.resetAll);
   const saveBaseline = useMutation(api.admin.saveBaseline);
 
   useEffect(() => {
@@ -65,13 +69,18 @@ export function Admin() {
     }
   }, [ok, key]);
 
-  const run = async (slug: string, kind: "reset" | "save") => {
+  const run = async (slug: string, kind: "reset" | "save" | "all") => {
     setPending(null);
     setBusy(`${kind}:${slug}`);
     setError("");
     setNote("");
     try {
-      if (kind === "reset") {
+      if (kind === "all") {
+        const out = await resetAll({ key });
+        setNote(
+          `Every room is back: ${out.rooms.length} rooms, ${out.rooms.reduce((n, r) => n + r.widgets, 0)} widgets, ${out.rooms.reduce((n, r) => n + r.messages, 0)} messages. Cleared ${out.cleared} things visitors left.${out.skipped.length ? ` Skipped (no baseline): ${out.skipped.join(", ")}.` : ""}`,
+        );
+      } else if (kind === "reset") {
         const out = await resetToBaseline({ key, slug });
         setNote(
           `${slug} is back to ${ago(out.savedAt)}'s board — ${out.restored.widgets} widgets, ${out.restored.messages} messages. Cleared ${out.removed.widgets} widgets and ${out.removed.messages} messages.`,
@@ -86,6 +95,14 @@ export function Admin() {
       setBusy("");
     }
   };
+
+  /* Which rooms no longer match what we froze — the master strip's whole
+     reason to exist, and the per-row badge reads off the same sum. */
+  const drifted = (rooms ?? []).filter(
+    (room) =>
+      room.baseline &&
+      room.live.widgets - room.baseline.widgets + (room.live.messages - room.baseline.messages) !== 0,
+  );
 
   if (ok !== true) {
     return (
@@ -127,6 +144,37 @@ export function Admin() {
         </div>
         <a className="admin-out" href={normalSpaceHash(DEFAULT_SPACE_SLUG)}>← back to the app</a>
       </header>
+
+      {rooms && rooms.length > 0 ? (
+        <section className={drifted.length > 0 ? "admin-master is-drifted" : "admin-master"}>
+          <div>
+            <strong>Put everything back</strong>
+            <p>
+              {drifted.length > 0
+                ? `${drifted.length} of ${rooms.length} rooms have changed since they were frozen.`
+                : `All ${rooms.length} rooms match their baselines right now.`}
+            </p>
+          </div>
+          {pending?.kind === "all" ? (
+            <div className="admin-master-confirm">
+              <span>Reset all {rooms.length} rooms? Everything visitors did goes.</span>
+              <button type="button" className="is-go" onClick={() => run(EVERY_ROOM, "all")}>
+                yes, reset everything
+              </button>
+              <button type="button" onClick={() => setPending(null)}>never mind</button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="admin-master-key"
+              disabled={busy !== ""}
+              onClick={() => setPending({ slug: EVERY_ROOM, kind: "all" })}
+            >
+              {busy === `all:${EVERY_ROOM}` ? "resetting every room…" : "reset every room"}
+            </button>
+          )}
+        </section>
+      ) : null}
 
       {note ? <p className="admin-say is-good">{note}</p> : null}
       {error ? <p className="admin-say is-bad">{error}</p> : null}

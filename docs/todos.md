@@ -1393,6 +1393,27 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now also working
 
+- **One master reset, and the message-loss bug it found** (2026-09-19).
+  `reset every room` sits above the room list on `#/admin` and replays every
+  baseline in a single transaction (`admin:resetAll`); rooms with no baseline
+  come back in `skipped` instead of being touched.
+  - **The first run deleted 14 messages** (crew 11, book club 3).
+    `remapThread` allow-listed only `"global"` and dropped any message whose
+    thread base wasn't a widget in the baseline — which caught `"recap"` (a
+    second named thread, `convex/recap.ts`) and threads whose widget had
+    already been deleted before the baseline was frozen.
+  - Fixed by inverting it: a base that isn't in the map **travels**
+    **unchanged**. A message is never collateral for a dangling pointer.
+    Paint is still dropped when its widget is gone — nothing to draw it on.
+  - The 14 came back by replaying the crew + book-club baselines after the
+    fix (they had held them all along), verified by content against a
+    pre-reset `convex export`: zero missing, totals back to 71 widgets /
+    87 messages.
+  - A second master reset now leaves widgets, messages, votes **and**
+    members byte-identical across it.
+  - **Lesson:** diff a full `convex export`, not the counters, the first time
+    a reset touches a room you care about — the widget total was right both
+    times; only the message total gave the loss away.
 - **The back room — a reset that puts a room back** (2026-09-19). Rooms are
   open, so visitors move things, vote and empty threads; there was no way to
   undo that short of a database restore. Every room now keeps a **baseline**:
