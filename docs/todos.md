@@ -1721,6 +1721,8 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
+- **2026-09-20 README is for the 15 readers.** Hero capture, demo GIF and three screenshots live in `.github/readme/`; prose cut to 7.2k so nothing falls past the reviewer’s 8,000-char truncation. Repo homepage = ourspaces.io, 9 topics set. Social preview image must be uploaded by hand in GitHub Settings → Social preview (`.github/readme/social-preview.png`).
+
 - 2026-09-19: **The three-spaces narration beat is a purpose-built 2.5-second
   insert.** `.context/web-video/spaces-pop.html` opens on the near-black wall,
   then “the crew,” “us two,” and “the house” arrive on the house `pop` curve

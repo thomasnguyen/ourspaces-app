@@ -24,7 +24,8 @@ commit it.
 
 | Need | Open |
 |---|---|
-| Public one-pager | `README.md` |
+| Public one-pager (keep under 7,800 chars — the automated review truncates files at 8,000) | `README.md` |
+| README images, demo GIF and the 1280×640 GitHub social-preview image (tracked; not `public/`, which ships to the live site) | `.github/readme/` |
 | Product / demo pitch deck (light mode, present or print) | `docs/ourspaces-product.html` |
 | What each space is and what it still needs | `docs/spaces-and-widgets.md` |
 
