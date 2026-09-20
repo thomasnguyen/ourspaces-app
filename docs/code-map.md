@@ -176,9 +176,10 @@ wall sections)
 
 **Local demo inserts** — `.context/web-video/spaces-pop.html` is the standalone
 2.5-second three-space pop sequence. It uses only the shipped
-OurSpaces palette, type, and motion curves; `?rec=1` hides its replay control.
+OurSpaces palette, type, cover images, and motion curves; each card shows its
+AgentMail inbox, and `?rec=1` hides the replay control.
 Deterministic 1080p masters live under `docs/local/demo-video-assets/video/`
-with the `spaces-pop-simple` prefix.
+with the `spaces-pop-email` prefix.
 
 **widgets/** — `buildroom.tsx` (the dev guild's four: `linkPile`, `hotLinks`,
 `shipPost`, `roundtable`; also `ShipPreview`, the illustrated demo project
