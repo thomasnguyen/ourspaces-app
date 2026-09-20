@@ -177,7 +177,12 @@ mail reel for the demo video's 2:20 beat: two envelopes fly into the crew's
 address sticker and each leaves a `because:` slip, the reply flies out to her
 thread, "mail, both ways" wipes in; logo lockup top-left. All CSS keyframes on
 absolute `--t-*` delays, no timers, so `.context/web-video/record.mjs --ready
-.reel-title` pins it frame-exact; `?rec=1` hides the lab pill)
+.reel-title` pins it frame-exact; `?rec=1` hides the lab pill) · `Outro.tsx` +
+`outro.css` (`#/outro` — the fifteen-second sign-off end card, 2:44–2:59: logo
+hero, "built by Thomas" / "designed by Holly" pills, the five spaces from `SPACES`
+as a stair of wall-coloured cards, the hackathon pill, "live now · no signup", the
+URL big, two wandering cursors, her "bring cake." sticker; same CSS-keyframe
+recipe, captured from `vite preview` so dev-server hot reloads can't restart it) · `CodexReel.tsx` + `codexReel.css` (`#/codex` — the ten-second Codex reel for 2:27: a board of agent threads, camera moves are post in `.context/web-video/codex-wrap.sh`) · `FirecrawlReel.tsx` + `firecrawlReel.css` (`#/firecrawl` — the ten-second Firecrawl reel for 2:37 on the build room green: four differently-shaped pages fly into a black sticker wearing the official wordmark (`public/assets/firecrawl-wordmark.svg`, flame-only `firecrawl-mark.svg`, both from About.tsx) and come out as the same card onto a pile; the oldest card is dealt out and reread; `readers we wrote · zero` stamp; "read, then reread" title. Same `--t-*` keyframe scheme, `--ready .fc-stage`)
 
 **Local demo inserts** — `.context/web-video/spaces-pop.html` is the standalone
 2.5-second three-space pop sequence. It uses only the shipped

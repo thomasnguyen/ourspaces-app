@@ -104,6 +104,9 @@ const ColorLab = lazy(() =>
 const MailReel = lazy(() =>
   import("./pages/MailReel").then((module) => ({ default: module.MailReel })),
 );
+const Outro = lazy(() =>
+  import("./pages/Outro").then((module) => ({ default: module.Outro })),
+);
 const Admin = lazy(() =>
   import("./pages/Admin").then((module) => ({ default: module.Admin })),
 );
@@ -129,7 +132,7 @@ function DeferredRoute({ children }: { children: ReactNode }) {
   );
 }
 
-type Route = "space" | "about" | "cursors" | "widgets" | "arrival" | "color" | "bothways" | "wall" | "live" | "join" | "test" | "admin";
+type Route = "space" | "about" | "cursors" | "widgets" | "arrival" | "color" | "bothways" | "outro" | "wall" | "live" | "join" | "test" | "admin";
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
 type FrameLayout = Pick<Widget, "x" | "y" | "w" | "h">;
 type CanvasSize = { width: number; height: number };
@@ -242,6 +245,7 @@ function routeFromHash(): Route {
   if (hash === "arrival") return "arrival";
   if (hash === "color") return "color";
   if (hash === "bothways") return "bothways";
+  if (hash === "outro") return "outro";
   if (hash === "wall") return "wall";
   // Linked from nowhere and gated on ADMIN_KEY server-side (convex/admin.ts).
   if (hash === "admin") return "admin";
@@ -1772,6 +1776,10 @@ export default function App() {
 
   if (route === "bothways") {
     return <DeferredRoute><MailReel /></DeferredRoute>;
+  }
+
+  if (route === "outro") {
+    return <DeferredRoute><Outro /></DeferredRoute>;
   }
 
   if (route === "wall") {

@@ -1,0 +1,302 @@
+/* Outro — `#/outro`. Fifteen seconds for the sign-off (2:44–2:59): one end
+   card that builds on the words. Logo lands, "built by Thomas" on his name,
+   "designed by Holly" on hers, the five spaces cascade in on "the whole
+   thing", the hackathon pill, "live now · no signup", the URL big on "go put
+   something on the space", her cake sticker on her line. Pure CSS keyframes
+   on absolute delays so the frame recorder pins it; 1920×1080 stage scaled to
+   the viewport, 1:1 at capture. */
+
+.outro {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--color-paper-deep);
+  color: #fff;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+
+  /* the timeline, ms — each beat sits on its spoken word */
+  --t-logo: 100ms;
+  --t-thomas: 400ms;
+  --t-holly: 2900ms;
+  --t-cards: 3600ms;
+  --t-hack: 7200ms;
+  --t-live: 10000ms;
+  --t-url: 11600ms;
+  --t-cake: 13700ms;
+  --t-cursors: 4500ms;
+}
+
+.outro-stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  flex: none;
+  scale: var(--s, 1);
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.07) 0 1.4px, transparent 1.7px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.025) 0 1.2px, transparent 1.5px);
+  background-position: 0 0, 15px 15px;
+  background-size: 30px 30px;
+}
+
+/* ── the logo, hero ───────────────────────────────────────────────────── */
+.outro-logo {
+  position: absolute;
+  top: 118px;
+  left: 96px;
+  display: inline-flex;
+  align-items: center;
+  gap: 30px;
+  animation: outro-hero var(--dur-hero) var(--ease-snap) var(--t-logo) both;
+}
+
+.outro-logo i {
+  display: grid;
+  width: 132px;
+  height: 132px;
+  place-items: center;
+  border-radius: 36px;
+  background: var(--color-lime);
+  rotate: 5deg;
+  box-shadow: 0 12px 0 rgba(0, 0, 0, 0.35);
+  animation: outro-mark 700ms var(--ease-glide) calc(var(--t-logo) + 140ms) both;
+}
+
+.outro-logo img {
+  display: block;
+  width: 106px;
+  height: 106px;
+  filter: brightness(0);
+}
+
+.outro-logo b {
+  font-family: var(--font-display);
+  font-size: 150px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  clip-path: inset(0 100% 0 0);
+  animation: outro-wipe 640ms var(--ease-glide) calc(var(--t-logo) + 220ms) both;
+}
+
+@keyframes outro-hero {
+  from { opacity: 0; translate: -40px 0; scale: 0.86; }
+}
+
+@keyframes outro-mark {
+  from { scale: 0.5; rotate: 30deg; opacity: 0; }
+}
+
+@keyframes outro-wipe {
+  to { clip-path: inset(0 -6% 0 0); }
+}
+
+/* ── the stickers down the left ───────────────────────────────────────── */
+.outro-pill {
+  position: absolute;
+  left: 96px;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 34px 19px;
+  border-radius: var(--radius-pill);
+  background: var(--bg, var(--color-card));
+  color: var(--fg, var(--color-ink));
+  font-family: var(--font-display);
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.35);
+  rotate: var(--tilt, -2deg);
+  animation: outro-pop var(--dur-arrive) var(--ease-pop) var(--in) both;
+}
+
+.outro-pill small {
+  font-family: var(--font-sans);
+  font-size: 26px;
+  font-weight: 500;
+  opacity: 0.72;
+}
+
+.outro-pill.is-thomas { top: 314px; --bg: var(--color-crew); --fg: #fff; --tilt: -2deg; --in: var(--t-thomas); }
+.outro-pill.is-holly { top: 426px; left: 132px; --bg: var(--color-couple); --fg: #fff; --tilt: 1.5deg; --in: var(--t-holly); }
+.outro-pill.is-live { top: 912px; --tilt: -1deg; --in: var(--t-live); }
+
+.outro-hack {
+  position: absolute;
+  top: 556px;
+  left: 96px;
+  padding: 14px 26px 15px;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.35);
+  rotate: 1deg;
+  animation: outro-snap 460ms var(--ease-snap) var(--t-hack) both;
+}
+
+@keyframes outro-pop {
+  from { opacity: 0; scale: 0.6; translate: 0 26px; }
+}
+
+@keyframes outro-snap {
+  from { opacity: 0; scale: 0.3; rotate: -12deg; }
+}
+
+/* ── the URL ──────────────────────────────────────────────────────────── */
+.outro-url {
+  position: absolute;
+  top: 672px;
+  left: 92px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 176px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+  clip-path: inset(0 100% 0 0);
+  animation: outro-wipe 700ms var(--ease-glide) var(--t-url) both;
+}
+
+.outro-url span {
+  color: var(--color-lime);
+}
+
+/* ── the five spaces, a stair of cards on the right ───────────────────── */
+.outro-card {
+  position: absolute;
+  top: calc(120px + var(--i) * 160px);
+  left: calc(1190px + var(--i) * 40px);
+  z-index: calc(1 + var(--i));
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  width: 484px;
+  height: 196px;
+  padding: 22px 26px 22px 28px;
+  border-radius: 22px;
+  background: var(--c);
+  color: #fff;
+  box-shadow: 0 12px 0 rgba(0, 0, 0, 0.35);
+  rotate: var(--tilt);
+  animation: outro-card-in 420ms var(--ease-pop) calc(var(--t-cards) + var(--i) * 90ms) both;
+}
+
+.outro-card i {
+  font-style: normal;
+  font-size: 44px;
+  line-height: 1;
+}
+
+.outro-card b {
+  font-family: var(--font-display);
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+@keyframes outro-card-in {
+  from { opacity: 0; scale: 0.7; translate: 40px 30px; rotate: calc(var(--tilt) + 8deg); }
+}
+
+/* ── her last word ────────────────────────────────────────────────────── */
+.outro-cake {
+  position: absolute;
+  top: 972px;
+  left: 1400px;
+  z-index: 8;
+  padding: 14px 30px 17px;
+  border-radius: var(--radius-pill);
+  background: var(--color-couple);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.35);
+  rotate: -4deg;
+  animation: outro-snap 460ms var(--ease-snap) var(--t-cake) both;
+}
+
+/* ── two live cursors over the cards ──────────────────────────────────── */
+.outro-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9;
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  pointer-events: none;
+  animation: var(--path) 9500ms linear var(--t-cursors) both;
+}
+
+.outro-cursor svg {
+  width: 34px;
+  height: 34px;
+  fill: var(--c);
+  stroke: #fff;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.4));
+}
+
+.outro-cursor span {
+  margin-top: 22px;
+  padding: 5px 12px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--c);
+  color: #fff;
+  font-size: 19px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* waypoints read as pointer moves: quick out, settle */
+@keyframes outro-cursor-a {
+  0% { opacity: 0; translate: 1250px 420px; animation-timing-function: var(--ease-glide); }
+  4% { opacity: 1; translate: 1262px 414px; animation-timing-function: var(--ease-glide); }
+  21% { translate: 1500px 300px; animation-timing-function: var(--ease-glide); }
+  47% { translate: 1350px 600px; animation-timing-function: var(--ease-glide); }
+  74% { translate: 1650px 820px; animation-timing-function: var(--ease-glide); }
+  100% { translate: 1420px 700px; }
+}
+
+@keyframes outro-cursor-b {
+  0% { opacity: 0; translate: 1700px 250px; animation-timing-function: var(--ease-glide); }
+  5% { opacity: 1; translate: 1690px 258px; animation-timing-function: var(--ease-glide); }
+  26% { translate: 1420px 500px; animation-timing-function: var(--ease-glide); }
+  53% { translate: 1750px 650px; animation-timing-function: var(--ease-glide); }
+  79% { translate: 1300px 880px; animation-timing-function: var(--ease-glide); }
+  95% { translate: 1560px 940px; animation-timing-function: var(--ease-glide); }
+  100% { translate: 1560px 940px; }
+}
+
+/* ── lab pill (hidden under ?rec=1) ───────────────────────────────────── */
+.arrival-lab-bar.outro-lab-bar {
+  left: 50%;
+  translate: -50% 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .outro *,
+  .outro *::before,
+  .outro *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}

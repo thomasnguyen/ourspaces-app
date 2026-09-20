@@ -5,6 +5,13 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Outro end card (2026-09-20):** `#/outro` (src/pages/Outro.tsx + outro.css), 15s for
+  the rewritten sign-off (v5.41: "I'm Thomas. I built this with my wife, Holly. She
+  designed the whole thing." / "It's our entry for the Convex hackathon, and we're
+  really happy with it. It's live, there's no signup, so go put something on the
+  space." / "Bring cake."). Captured as `scene-15-outro`, replaces scenes 13 + 14;
+  words updated in the storyboard, .srt, plan and script. Capture from `vite preview`:
+  another session saving a file hot-reloads the dev-server page and restarts the take.
 - **Mail reel for the 2:20 beat (2026-09-20):** `#/bothways` (src/pages/MailReel.tsx +
   mailReel.css) is a six-second CSS-keyframe cut on the crew's purple: logo lockup,
   two envelopes fly into the address sticker (lime hit, `because:` slips), the reply
