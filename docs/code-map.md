@@ -174,6 +174,12 @@ pill entirely and exposes `window.__wall = { replay, close }` so a frame-by-fram
 recorder can drive it, see `.context/web-video/`) · `MailLabBar.tsx` (the `#/mail` / `#/mail/<slug>` pill — lazy so labs.css stays off the space page; the route itself is the real space with a lab flag, see `mailLabRequested` in App.tsx) · `labs.css` (cursor lab, widget lab, arrival lab, widget
 wall sections)
 
+**Local demo inserts** — `.context/web-video/spaces-pop.html` is the standalone
+2.8-second “three groups · three spaces” pop sequence. It uses only the shipped
+OurSpaces palette, type, and motion curves; `?rec=1` hides its replay control.
+Deterministic 1080p masters live under `docs/local/demo-video-assets/video/`
+with the `spaces-pop` prefix.
+
 **widgets/** — `buildroom.tsx` (the dev guild's four: `linkPile`, `hotLinks`,
 `shipPost`, `roundtable`; also `ShipPreview`, the illustrated demo project
 captures shared with `ShipRoom`; all pure, fed one `BuildRoomFeed` prop threaded
