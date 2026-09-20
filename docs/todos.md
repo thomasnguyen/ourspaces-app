@@ -1646,13 +1646,14 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
-- 2026-09-19: **The three-spaces narration beat is a purpose-built 2.8-second
+- 2026-09-19: **The three-spaces narration beat is a purpose-built 2.5-second
   insert.** `.context/web-video/spaces-pop.html` opens on the near-black wall,
   then “the crew,” “us two,” and “the house” arrive on the house `pop` curve
-  with a 220ms stagger. The final frame holds all three identities plus “3
-  groups · 3 spaces.” Captured deterministically at 1920×1080/60fps; edit
-  master and H.264 live in `docs/local/demo-video-assets/video/` as
-  `spaces-pop_*`. The artifact stays local-only because it is shooting
+  with a 220ms stagger. No framing copy: the final frame holds only the three
+  space names and their simple group marks. Captured deterministically at
+  1920×1080/60fps; edit master and H.264 live in
+  `docs/local/demo-video-assets/video/` as
+  `spaces-pop-simple_*`. The artifact stays local-only because it is shooting
   material, not a product route.
 - 2026-09-19: **Space header orienting line is one line on desktop.** The
   `.space-what` copy under the name was two lines and made the nameplate too

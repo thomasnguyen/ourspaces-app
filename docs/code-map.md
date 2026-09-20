@@ -175,10 +175,10 @@ recorder can drive it, see `.context/web-video/`) · `MailLabBar.tsx` (the `#/ma
 wall sections)
 
 **Local demo inserts** — `.context/web-video/spaces-pop.html` is the standalone
-2.8-second “three groups · three spaces” pop sequence. It uses only the shipped
+2.5-second three-space pop sequence. It uses only the shipped
 OurSpaces palette, type, and motion curves; `?rec=1` hides its replay control.
 Deterministic 1080p masters live under `docs/local/demo-video-assets/video/`
-with the `spaces-pop` prefix.
+with the `spaces-pop-simple` prefix.
 
 **widgets/** — `buildroom.tsx` (the dev guild's four: `linkPile`, `hotLinks`,
 `shipPost`, `roundtable`; also `ShipPreview`, the illustrated demo project
