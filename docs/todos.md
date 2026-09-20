@@ -5,6 +5,11 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Local thumbnail draft (2026-09-20):** exported 1920 × 1080 artwork and checked
+  face/headline at 320 × 180. Generation changed screenshot details, so strict
+  source-pixel preservation remains unresolved. Assets and handoff stay in the
+  local doc map. `npm run build` passed; nothing uploaded.
+
 - **Local group overlay (2026-09-20):** seven generated candid portraits and a
   five-second entrance → compact header stack animation for a video editor.
   Exported a CapCut green-screen clip and transparent backup; artwork, prompt and preview are indexed
