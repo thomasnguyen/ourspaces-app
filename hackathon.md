@@ -858,3 +858,13 @@ passed. Preview files and image assets remain local-only.
 Updated the local gallery to alternate two existing editorial illustrations with
 two app captures, and rebuilt its four-image download bundle. Checked thumbnail
 selection and desktop/mobile rendering in Chrome; `npm run build` passed.
+
+### 2026-09-20 - submission day
+Recounted the Convex facts against the pushed tree after the admin back room
+landed: 13 tables, 30 indexes (27 in `convex/schema.ts` + 3 in the agentMail
+component schema), 45 queries + 72 mutations + 34 actions = 151, 6 HTTP
+actions. README and the facts block above now agree. Linked the demo video from
+README. Scrubbed the pending diff for secrets and the public docs for
+public wording (none found; the admin key is an env var). Deployed,
+then refreshed the Firecrawl cache of the live origin so its scrape matches the
+deployed page. Listing copy lives in the local submission doc.
