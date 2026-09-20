@@ -1,0 +1,390 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap");
+
+/* Codex reel — `#/codex`. A ten-second cut for the 2:27 beat ("Codex wrote
+   every line. But it wasn't one prompt and done…"). A board of agent threads
+   drawn like widgets on a space; the camera moves are post
+   (.context/web-video/codex-wrap.sh). Pure CSS keyframes on absolute delays,
+   so the frame recorder (.context/web-video/record.mjs) pins every frame.
+   Stage is a fixed 1920×1080 scaled to the viewport; at capture it is 1:1. */
+
+.cx {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+
+  --cx-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --cx-add: var(--color-lime);
+  --cx-del: #ff7c9a;
+  --shadow: 0 10px 0 rgba(0, 0, 0, 0.28);
+
+  /* the timeline, ms. The camera (post, codex-wrap.sh) pushes onto A at 1.4s,
+     tilts down as the nags land, pulls out at 5.9s, pushes onto B at 6.8s,
+     pulls out at 8.8s. */
+  --t-kicker: 80ms;
+  --t-pill: 260ms;
+  --t-a: 220ms;
+  --t-b: 420ms;
+  --t-n1: 560ms;
+  --t-n2: 700ms;
+  --t-n3: 840ms;
+  --t-n4: 980ms;
+  --t-a-reply1: 1500ms;
+  --t-b-reply1: 1700ms;
+  --t-a-nag1: 3900ms;
+  --t-a-reply2: 4450ms;
+  --t-a-nag2: 5000ms;
+  --t-a-reply3: 5450ms;
+  --t-b-nag1: 7300ms;
+  --t-b-reply2: 7850ms;
+  --t-b-nag2: 8400ms;
+  --t-b-reply3: 8700ms;
+  --t-stamp: 9450ms;
+}
+
+.cx::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.075) 0 1.4px, transparent 1.7px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.025) 0 1.2px, transparent 1.5px);
+  background-position: 0 0, 15px 15px;
+  background-size: 30px 30px;
+}
+
+.cx-stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  flex: none;
+  scale: var(--s, 1);
+}
+
+/* a 0×0 anchor: whatever sits inside is centred on (--x, --y) */
+.cx-at {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  display: flex;
+  width: 0;
+  height: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.cx-at.is-top {
+  align-items: flex-start;
+}
+
+.cx-at > * {
+  flex: none;
+}
+
+/* ── kicker, top left · pill, top right ───────────────────────────────── */
+.cx-kicker {
+  position: absolute;
+  top: 52px;
+  left: 96px;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 26px 15px 20px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  box-shadow: var(--shadow);
+  rotate: -1.5deg;
+  animation: cx-rise var(--dur-arrive) var(--ease-glide) var(--t-kicker) both;
+}
+
+.cx-kicker i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-lime);
+}
+
+.cx-kicker small {
+  font-family: var(--cx-mono);
+  font-size: 20px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.cx-pill {
+  position: absolute;
+  top: 66px;
+  right: 96px;
+  padding: 12px 22px;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  box-shadow: 0 7px 0 rgba(0, 0, 0, 0.3);
+  rotate: 2deg;
+  animation: cx-pill-in 460ms var(--ease-snap) var(--t-pill) both;
+}
+
+@keyframes cx-rise {
+  from { opacity: 0; translate: 0 22px; }
+}
+
+@keyframes cx-pill-in {
+  from { opacity: 0; scale: 0.3; rotate: -14deg; }
+}
+
+/* ── a thread: one agent, one conversation ────────────────────────────── */
+.cx-thread {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: 560px;
+  gap: 16px;
+  padding: 22px 26px 26px;
+  border-radius: 18px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  box-shadow: var(--shadow);
+  rotate: var(--tilt, 0deg);
+  animation: cx-card-rise 420ms var(--ease-glide) var(--rise) both;
+}
+
+.cx-thread.is-wide {
+  width: 660px;
+}
+
+.cx-thread header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(17, 17, 20, 0.1);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.cx-thread header small {
+  font-family: var(--cx-mono);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+@keyframes cx-card-rise {
+  from { opacity: 0; translate: 0 44px; scale: 0.92; }
+}
+
+/* one turn: avatar + body. Thomas in the display face, Codex on a dark chip. */
+.cx-turn {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 14px;
+  align-items: start;
+  animation: cx-turn-in var(--dur-arrive) var(--ease-pop) var(--in, 0ms) both;
+}
+
+.cx-turn > i {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.cx-turn.is-thomas > i {
+  background: var(--color-couple);
+  color: #fff;
+}
+
+.cx-turn.is-codex > i {
+  border-radius: 10px;
+  background: var(--color-sticker);
+  color: var(--color-lime);
+  font-size: 18px;
+}
+
+.cx-turn > div {
+  min-width: 0;
+}
+
+.cx-turn p {
+  margin: 0;
+}
+
+.cx-turn.is-thomas p {
+  padding-top: 3px;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.cx-turn.is-codex > div {
+  display: grid;
+  gap: 10px;
+  padding: 14px 18px 16px;
+  border-radius: 14px;
+  background: var(--color-sticker);
+  color: #fff;
+}
+
+.cx-turn.is-codex p {
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.cx-turn.is-codex .cx-kept {
+  font-family: var(--cx-mono);
+  font-weight: 600;
+  color: var(--color-lime);
+}
+
+.cx-diff {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-family: var(--cx-mono);
+  font-size: 21px;
+  line-height: 1.25;
+  white-space: pre;
+}
+
+.cx-diff .is-add { color: var(--cx-add); }
+.cx-diff .is-del { color: var(--cx-del); }
+
+@keyframes cx-turn-in {
+  from { opacity: 0; scale: 0.94; translate: 0 -10px; }
+}
+
+/* a turn that arrives later grows the card open, then pops in */
+.cx-grow {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: -16px;
+  animation: cx-grow 360ms var(--ease-glide) var(--in) both;
+}
+
+.cx-grow > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cx-grow .cx-turn {
+  padding-top: 16px;
+  animation-delay: calc(var(--in) + 120ms);
+}
+
+@keyframes cx-grow {
+  from { grid-template-rows: 0fr; }
+  to { grid-template-rows: 1fr; }
+}
+
+/* ── the small ones: real prompts, one-line receipts ──────────────────── */
+.cx-nag {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 420px;
+  gap: 10px;
+  padding: 16px 20px 16px;
+  border-radius: 16px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.24);
+  rotate: var(--tilt, 0deg);
+  animation: cx-card-rise 420ms var(--ease-glide) var(--rise) both;
+}
+
+.cx-nag p,
+.cx-nag small {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.cx-nag p {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.cx-nag small {
+  font-family: var(--cx-mono);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.cx-nag i {
+  display: grid;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-couple);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.cx-nag small i {
+  border-radius: 7px;
+  background: var(--color-sticker);
+  color: var(--color-lime);
+  font-size: 12px;
+}
+
+/* ── the receipt: twenty-six days, N commits ──────────────────────────── */
+.cx-stamp {
+  position: relative;
+  z-index: 4;
+  padding: 18px 36px 20px;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  box-shadow: 0 9px 0 rgba(0, 0, 0, 0.3);
+  rotate: -3deg;
+  animation: cx-stamp-in 420ms var(--ease-snap) var(--t-stamp) both;
+}
+
+.cx-stamp span {
+  margin: 0 14px;
+  color: rgba(17, 17, 20, 0.45);
+}
+
+@keyframes cx-stamp-in {
+  from { opacity: 0; scale: 0.4; rotate: 8deg; }
+}

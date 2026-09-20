@@ -7560,6 +7560,25 @@
   white-space: nowrap;
 }
 
+/* the split landing: rows deal in one at a time, payer first. `pop` because
+   they are arriving, 40ms apart so four reads as a cascade and not a jump.
+   Only rows the card has never seen get this — see ExpenseSplitWidget. */
+.widget-expense li.is-arriving {
+  animation: expense-row-in var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(var(--i, 0) * 40ms * var(--arrival-slow, 1));
+}
+
+@keyframes expense-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* the receipt's dot leader between a name and its amount */
 .expense-dots {
   flex: 1;

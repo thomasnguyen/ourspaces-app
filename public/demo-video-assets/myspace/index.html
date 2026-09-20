@@ -1090,7 +1090,12 @@ html.rec ::-webkit-scrollbar { display: none; width: 0; height: 0; }
     layer.innerHTML = html;
   }
 
-  // ?rec=1 — auto-scroll 0→700 over 6s ease-in-out, hold 1.5s, reset, loop every 8s
+  // ?rec=1 — the opener: 0.3s at the top, 1.2s ease-in-out down until the Top 8 is
+  // vertically centred in the viewport, hold, reset at t=8000ms and loop.
+  // ("top eight friends" lands ~1.5s into the line, so the grid must be centred by then.)
+  // ?rec=1&motion=scroll — the old take: 0.5s, 0→700 over 6s, hold 1.5s, reset at 8000ms.
+  // ?zoom=1.2 — CSS zoom on the page (1.2 fills the 960px half-slot edge to edge).
+  if (q.get("zoom")) document.body.style.zoom = q.get("zoom");
   if (rec) {
     const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
     const scrollTo = (from, to, ms, done) => {
@@ -1098,8 +1103,14 @@ html.rec ::-webkit-scrollbar { display: none; width: 0; height: 0; }
       const step = now => { const p = Math.min(1, (now - t0) / ms); window.scrollTo(0, from + (to - from) * ease(p)); p < 1 ? requestAnimationFrame(step) : done(); };
       requestAnimationFrame(step);
     };
-    const loop = () => scrollTo(0, 700, 6000, () => setTimeout(() => { window.scrollTo(0, 0); setTimeout(loop, 500); }, 1500));
-    setTimeout(loop, 500);
+    if (q.get("motion") === "scroll") {
+      const loop = () => scrollTo(0, 700, 6000, () => setTimeout(() => { window.scrollTo(0, 0); setTimeout(loop, 500); }, 1500));
+      setTimeout(loop, 500);
+    } else {
+      const target = () => { const b = $("top8").getBoundingClientRect(); return Math.max(0, Math.round(b.top + window.scrollY + b.height / 2 - window.innerHeight / 2)); };
+      const loop = () => scrollTo(0, target(), 1200, () => setTimeout(() => { window.scrollTo(0, 0); setTimeout(loop, 300); }, 6500));
+      setTimeout(loop, 300);
+    }
   }
 })();
 </script>

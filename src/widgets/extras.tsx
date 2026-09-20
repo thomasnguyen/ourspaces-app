@@ -1404,6 +1404,38 @@ export function BecauseSlip({
   );
 }
 
+/**
+ * A number that lands instead of swapping. The receipt beat turns one row into
+ * a split in about a second — if the total just blinks from 0 to 84 nobody
+ * reads it as arithmetic happening. Counts on rAF, so the frame recorder's
+ * virtual clock drives it too.
+ */
+function useCountUp(value: number, ms = 520) {
+  const [shown, setShown] = useState(value);
+  const from = useRef(value);
+  useEffect(() => {
+    if (value === from.current) {
+      setShown(value);
+      return;
+    }
+    const start = from.current;
+    const whole = Number.isInteger(value) && Number.isInteger(start);
+    const t0 = performance.now();
+    let raf = 0;
+    const step = (now: number) => {
+      const p = Math.min(1, (now - t0) / ms);
+      const eased = 1 - Math.pow(1 - p, 3); // out-cubic: fast, then settles
+      const at = start + (value - start) * eased;
+      setShown(whole ? Math.round(at) : Math.round(at * 100) / 100);
+      if (p < 1) raf = requestAnimationFrame(step);
+      else from.current = value;
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value, ms]);
+  return shown;
+}
+
 export function ExpenseSplitWidget({ widget, style }: { widget: Widget; style: Style }) {
   const splits = widget.data.splits as {
     name: string;
@@ -1413,6 +1445,28 @@ export function ExpenseSplitWidget({ widget, style }: { widget: Widget; style: S
   // mail just moved money here → the receipt's footer says why, in place of
   // the canned line (the card's clip-path eats anything hung outside it)
   const because = (widget.data.lastEmail as { because?: string } | undefined)?.because;
+  const total = Number(widget.data.total) || 0;
+  const shownTotal = useCountUp(total);
+
+  /* Rows that showed up since the last render — the split landing. Seeded on
+     first mount so a card that was always there doesn't re-deal itself every
+     time the canvas re-renders; only genuinely new names cascade in. */
+  const seen = useRef<string[] | null>(null);
+  const key = splits.map((split) => split.name.toLowerCase()).join("|");
+  // null, not "" — an expense card the mail router just created has no rows
+  // yet, so its first key IS the empty string. Seeding lastKey with "" made
+  // that first render a no-op, and the split that followed then looked like
+  // the mount and animated nothing.
+  const lastKey = useRef<string | null>(null);
+  const arriving = useRef<Set<string>>(new Set());
+  if (key !== lastKey.current) {
+    const names = splits.map((split) => split.name.toLowerCase());
+    if (seen.current === null) arriving.current = new Set();
+    else arriving.current = new Set(names.filter((name) => !seen.current!.includes(name)));
+    seen.current = names;
+    lastKey.current = key;
+  }
+  const firstNew = splits.findIndex((split) => arriving.current.has(split.name.toLowerCase()));
 
   return (
     <div className="widget-shell widget-expense" style={style}>
@@ -1421,23 +1475,30 @@ export function ExpenseSplitWidget({ widget, style }: { widget: Widget; style: S
         <span className="expense-slip">iou slip</span>
       </div>
       <ul>
-        {splits.map((split) => (
-          <li key={split.name}>
-            <MemberFace name={split.name} size="xs" />
-            <span className="expense-name">{split.name.toLowerCase()}</span>
-            <i className="expense-dots" aria-hidden="true" />
-            {split.owes > 0 ? (
-              <span className="expense-owes">owes ${split.owes}</span>
-            ) : (
-              <span className="expense-paid">paid ${split.paid}</span>
-            )}
-          </li>
-        ))}
+        {splits.map((split, index) => {
+          const isNew = arriving.current.has(split.name.toLowerCase());
+          return (
+            <li
+              key={split.name}
+              className={isNew ? "is-arriving" : undefined}
+              style={isNew ? ({ "--i": index - firstNew } as CSSProperties) : undefined}
+            >
+              <MemberFace name={split.name} size="xs" />
+              <span className="expense-name">{split.name.toLowerCase()}</span>
+              <i className="expense-dots" aria-hidden="true" />
+              {split.owes > 0 ? (
+                <span className="expense-owes">owes ${split.owes}</span>
+              ) : (
+                <span className="expense-paid">paid ${split.paid}</span>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <div className="expense-total">
         <span>total</span>
         <i className="expense-dots" aria-hidden="true" />
-        <strong>${String(widget.data.total)}</strong>
+        <strong>${shownTotal}</strong>
       </div>
       {because ? (
         <BecauseSlip because={because} tone="pinned" />

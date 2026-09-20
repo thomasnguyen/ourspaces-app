@@ -127,7 +127,7 @@ const LAB_TARGET: Partial<Record<MailKind, Widget["type"]>> = {
   unfiled: "letter",
 };
 
-function useMailLab(widgets: Widget[]) {
+function useMailLab(widgets: Widget[], hooks: LabHooks) {
   const [events, setEvents] = useState<MailArrivalEvent[]>([]);
   const [slow, setSlow] = useState(false);
   const scale = slow ? 4 : 1;
@@ -149,9 +149,14 @@ function useMailLab(widgets: Widget[]) {
     (kind: MailKind) => {
       lastKind.current = kind;
       const targetType = LAB_TARGET[kind];
-      const target = targetType
-        ? widgets.find((widget) => widget.type === targetType)?.id
-        : undefined;
+      /* The lab can stand a widget up before the flight — the real router
+         creates one when nothing matches, and the receipt beat needs its own
+         card rather than landing in a seeded tracker. It has to exist now,
+         not on impact: FLIP measures the target when the flight starts. */
+      const prepared = hooks.onPrepare?.(kind, scale);
+      const target =
+        prepared ??
+        (targetType ? widgets.find((widget) => widget.type === targetType)?.id : undefined);
       const event = mockMailEvent(kind);
       setEvents((current) => [event, ...current].slice(0, STACK));
       cancels.current.push(
@@ -166,7 +171,7 @@ function useMailLab(widgets: Widget[]) {
         ),
       );
     },
-    [scale, widgets],
+    [scale, widgets, hooks],
   );
 
   const clear = useCallback(() => {
@@ -185,10 +190,21 @@ function useMailLab(widgets: Widget[]) {
 
 /* ── the component ───────────────────────────────────────────────────────── */
 
+/** Lab-only: mock mode has no Convex, so the board has to be moved by hand. */
+export type LabHooks = {
+  /** fired when an envelope is sent — return a widget id to fly at. The id is
+      reserved now; the widget itself only has to exist by the time the
+      envelope flies, which is what lets the card appear on the verdict. */
+  onPrepare?: (kind: MailKind, scale: number) => string | undefined;
+  /** fired when it lands — write whatever the router would have written */
+  onFile?: (kind: MailKind, widgetId?: string) => void;
+};
+
 export function MailArrival({
   spaceId,
   widgets,
   lab = false,
+  hooks,
 }: {
   /** the live space's Convex id — absent in mock mode */
   spaceId?: string;
@@ -196,8 +212,10 @@ export function MailArrival({
   widgets?: Widget[];
   /** #/mail: fixtures + the pill instead of the subscription */
   lab?: boolean;
+  /** #/mail: let the page stand up and fill the widget the fixture files into */
+  hooks?: LabHooks;
 }) {
-  if (lab) return <MailArrivalLab widgets={widgets ?? []} />;
+  if (lab) return <MailArrivalLab widgets={widgets ?? []} hooks={hooks ?? {}} />;
   if (spaceId) return <MailArrivalLive spaceId={spaceId} />;
   return null;
 }
@@ -223,11 +241,11 @@ function MailArrivalLive({ spaceId }: { spaceId: string }) {
 }
 
 /** The lab: fixtures on timers plus the pill. */
-function MailArrivalLab({ widgets }: { widgets: Widget[] }) {
-  const lab = useMailLab(widgets);
+function MailArrivalLab({ widgets, hooks }: { widgets: Widget[]; hooks: LabHooks }) {
+  const lab = useMailLab(widgets, hooks);
   return (
     <>
-      <MailArrivalStage events={lab.events} scale={lab.scale} />
+      <MailArrivalStage events={lab.events} scale={lab.scale} onFile={hooks.onFile} />
       <Suspense fallback={null}>
         <MailLabBar
           slow={lab.slow}
@@ -242,13 +260,28 @@ function MailArrivalLab({ widgets }: { widgets: Widget[] }) {
 }
 
 /** The stage: which envelopes are on it, which have landed, the reply ticks. */
-function MailArrivalStage({ events, scale }: { events: MailArrivalEvent[]; scale: number }) {
+function MailArrivalStage({
+  events,
+  scale,
+  onFile,
+}: {
+  events: MailArrivalEvent[];
+  scale: number;
+  onFile?: LabHooks["onFile"];
+}) {
   /* Envelopes that finished (flew, were tossed, faded) stay finished even
      though the row is still in the subscription for a couple of minutes. */
   const [landed, setLanded] = useState<Record<string, Landed>>({});
-  const markLanded = useCallback((id: string, info: Landed) => {
-    setLanded((current) => ({ ...current, [id]: info }));
-  }, []);
+  const markLanded = useCallback(
+    (id: string, info: Landed) => {
+      setLanded((current) => ({ ...current, [id]: info }));
+      if (info.widgetId) {
+        const landedKind = mailKind(events.find((row) => row.id === id)?.label);
+        if (landedKind) onFile?.(landedKind, info.widgetId);
+      }
+    },
+    [events, onFile],
+  );
 
   const now = useNow(events.length > 0);
   const visible = events

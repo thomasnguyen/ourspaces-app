@@ -96,6 +96,7 @@ import { widgetSupportsThread } from "../lib/widgetThreads";
 import { RSVP_CHOICES, type RsvpStatus } from "../widgets/extras";
 import type { CozyColorStroke } from "../widgets/CozyColorWidget";
 import type { CanvasLayout, LivePeer } from "../live/presenceTypes";
+import { createLabPeerFeed, labPeersRequested } from "../live/labPeers";
 import { DEFAULT_SPACE_SLUG, normalSpaceHash } from "../lib/routes";
 import { useCanvasSpacePan } from "../lib/canvasSpacePan";
 import {
@@ -543,7 +544,6 @@ export function LiveSpacePage({
     wrapperRef,
     canvasScaleLayerRef,
   );
-  const liveCursors = presence.peers;
   /* "who is here" has exactly one source: the presence component's room
      occupancy, keyed by the same room id RoomPresenceHeartbeat registers
      under and read with the same query the rail reads. The header and the
@@ -779,6 +779,21 @@ export function LiveSpacePage({
     });
     return { widgets, rsvpSelections, dailyAnswers, dailyReactions };
   }, [boardWidgets, identity.userId, revealingAnswers]);
+  /* `/?peers=3#/space/house` — the peers lab (src/live/labPeers.ts) on a real
+     space: the fixture's roster gets a cursor each, moving the way people do
+     between the cards the board actually has. Built once the board has
+     loaded; local only, nothing is written to presence. */
+  const boardLoaded = adaptedWidgets.length > 0;
+  const labPeers = useMemo(() => {
+    const wanted = labPeersRequested();
+    if (!wanted || !boardLoaded) return null;
+    return createLabPeerFeed(mockSpace.members, adaptedWidgets, wanted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, boardLoaded]);
+  const liveCursors = useMemo(
+    () => (labPeers ? [...presence.peers, ...labPeers.rows] : presence.peers),
+    [presence.peers, labPeers],
+  );
   /** The stored rows, for the three handlers below — they write what the
       backend has, not the copy the canvas draws with. */
   const rawWidgetsRef = useRef<Widget[]>(widgets);
@@ -913,7 +928,7 @@ export function LiveSpacePage({
       /* Measured before the room closes — the note flies in from the card the
          takeaway was read on. */
       const from =
-        document.querySelector(".rr-cover")?.getBoundingClientRect() ?? null;
+        document.querySelector(".rr-hero-snap")?.getBoundingClientRect() ?? null;
       const created = await handlers.onCreate({
         type: "note",
         ...keeperNoteSlot(keepers, slot),
@@ -1433,7 +1448,8 @@ export function LiveSpacePage({
   /* The header always needs a number to print, so an unloaded count reads as
      quiet rather than falling through to the seeded roster. The strip can
      stay silent until the real one lands, so it gets the raw value. */
-  const headerHereCount = mode === "live" ? hereCount ?? 0 : hereCount;
+  const labCount = labPeers?.rows.length ?? 0;
+  const headerHereCount = mode === "live" ? (hereCount ?? 0) + labCount : hereCount;
   /* The build room composition is wider than the 1640×1080 the row was seeded
      with; the canvas grows to hold it whatever the row says. */
   const canvasWidth = Math.max(
@@ -2453,6 +2469,7 @@ export function LiveSpacePage({
                 spaceId={slug}
                 widgets={adaptedWidgets}
                 cursors={liveCursors}
+                labPeers={labPeers}
                 members={members}
                 selectedWidgetId={
                   focusedTarget?.kind === "widget"

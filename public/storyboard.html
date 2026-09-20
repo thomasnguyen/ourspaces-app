@@ -34,6 +34,22 @@
   .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 24px; margin-top: 26px; padding-top: 22px; border-top: 3px solid var(--ink); font-size: 14px; line-height: 1.4; }
   .legend b { font-family: var(--display); font-size: 15px; }
 
+  /* ── act filter: sticky pill row, click or press 1 / 2 / 3, 0 for all ── */
+  .filter { position: sticky; top: 14px; z-index: 20; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; width: max-content; max-width: 100%; background: var(--card); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 6px 6px 0 var(--ink); padding: 8px 12px 8px 18px; margin: 0 0 6px; }
+  .filter .k { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+  .filter button { font: inherit; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px 6px 6px; border: 2px solid var(--ink); border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
+  .filter button.all { padding-left: 13px; }
+  .filter button .n { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--accent, var(--ink)); color: var(--card); font-weight: 500; }
+  .filter button .c { color: var(--muted); font-size: 11px; }
+  .filter button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+  .filter button[aria-pressed="true"] { background: var(--accent, var(--ink)); color: var(--card); transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+  .filter button[aria-pressed="true"] .n { background: var(--card); color: var(--ink); }
+  .filter button[aria-pressed="true"] .c { color: var(--card); opacity: .75; }
+  .filter .hint { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; color: var(--muted); margin-left: 6px; }
+  #board[data-filter="0"] > :not([data-act="0"]),
+  #board[data-filter="1"] > :not([data-act="1"]),
+  #board[data-filter="2"] > :not([data-act="2"]) { display: none; }
+
   /* ── acts ───────────────────────────────────────────── */
   .act { margin: 48px 0 18px; display: flex; align-items: baseline; gap: 16px; }
   .act h2 { font-family: var(--display); font-weight: 800; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.02em; margin: 0; line-height: 1; }
@@ -149,6 +165,7 @@
     html, body { background: #fff; }
     .page { padding: 0; max-width: none; }
     .top, .beat, .end { box-shadow: none; break-inside: avoid; }
+    .filter { display: none; }
     .beat { page-break-inside: avoid; }
   }
 </style>
@@ -157,13 +174,13 @@
 <div class="page">
 
   <header class="top" style="--accent: var(--lime)">
-    <p class="eyebrow"><span class="dot"></span> OurSpaces · demo video · storyboard · v5.3</p>
+    <p class="eyebrow"><span class="dot"></span> OurSpaces · demo video · storyboard · v5.13</p>
     <h1>The video,<br />on <span class="hl">paper.</span></h1>
     <p class="sub">Every beat: what's on screen, what the shot is, and what gets said. Read it top to bottom and you've watched the video.</p>
     <div class="chips">
-      <span class="chip ink">2:55 · 5s under the cap</span>
-      <span class="chip">3 acts · 24 beats</span>
-      <span class="chip">~400 words · ~155 Holly's</span>
+      <span class="chip ink">2:59 · 1s under the cap</span>
+      <span class="chip">3 acts · 25 beats</span>
+      <span class="chip">~445 words · ~160 Holly's</span>
       <span class="chip pink">one back-and-forth, at the receipt</span>
       <span class="chip">shot mute · voiced later</span>
     </div>
@@ -180,11 +197,17 @@
     </div>
   </header>
 
+  <nav class="filter" id="filter" aria-label="Show one act">
+    <span class="k">show</span>
+    <button type="button" class="all" data-filter="all" aria-pressed="true">all three</button>
+    <span class="hint">keys 1 · 2 · 3, 0 for all</span>
+  </nav>
+
   <div id="board"></div>
 
   <footer class="end">
     <h2>Same cake, start to finish.</h2>
-    <p>Argued about in the chat at 0:06. Voted on at 0:23. Paid for at 0:30. Filed at 0:41. Split four ways at 0:58. Ordered again at 2:50. Recount “twenty-six days” and “seventeen components” on shoot day; let the “fourteen dollars” line follow whatever catch-me-up actually says.</p>
+    <p>Argued about in the chat at 0:06. Voted on at 0:23. Paid for at 0:30. Filed at 0:41. Split four ways at 0:58. Ordered again at 2:51. Recount “twenty-six days” and “seventeen components” on shoot day; let the “fourteen dollars” line follow whatever catch-me-up actually says.</p>
     <span class="file">docs/local/demo-video-script.md · the shooting script this page is drawn from</span>
   </footer>
 </div>
@@ -236,7 +259,7 @@ function screen(spec) {
     [14,24,34,44,54,64,74].forEach(t => { const q = el('div','r'); q.style.top=t+'%'; r.appendChild(q); });
     const w = el('div','w','components · 17'); w.style.left='58%'; w.style.top='8%'; r.appendChild(w);
   }
-  if (spec.kind === 'url') r.appendChild(el('div','u', spec.text || 'dusty-condor-648.convex.site'));
+  if (spec.kind === 'url') r.appendChild(el('div','u', spec.text || 'ourspaces.io'));
   (spec.widgets || []).forEach(([txt,l,t]) => { const w = el('div','w',txt); w.style.left=l+'%'; w.style.top=t+'%'; r.appendChild(w); });
   (spec.cursors || []).forEach(([l,t]) => { const c = el('div','cursor'); c.style.left=l+'%'; c.style.top=t+'%'; r.appendChild(c); });
   return r;
@@ -281,9 +304,9 @@ function frame(f) {
 // ── the beats ───────────────────────────────────────────────────────────
 const crewWidgets = [['⏳ 12 days',8,14],['cake? ▮▮▮▯',52,10],['potluck',14,52],['🎡',66,46],['photos',40,70]];
 const acts = [
-  { n: '1', title: 'The crew', range: '0:00–1:09', accent: 'var(--mail)', job: 'Hook, problem, reveal, proof, the trick. One cake.' },
-  { n: '2', title: 'The rooms', range: '1:13–2:03', accent: 'var(--fire)', job: 'Every group got one. Firecrawl, OpenAI and AgentMail again.' },
-  { n: '3', title: 'Under the hood', range: '2:03–2:55', accent: 'var(--teal)', job: 'What did I miss, Convex named with specifics, the URL, then the two of you.' },
+  { n: '1', title: 'The crew', range: '0:00–1:14', accent: 'var(--mail)', job: 'Hook, problem, reveal, proof, the trick. One cake.' },
+  { n: '2', title: 'The rooms', range: '1:15–1:59', accent: 'var(--fire)', job: 'Every group got one, and who’s in it. Firecrawl, OpenAI and AgentMail again.' },
+  { n: '3', title: 'Under the hood', range: '1:59–2:59', accent: 'var(--teal)', job: 'What did I miss, then the round: Convex, AgentMail, Codex, Firecrawl, seven seconds each. The URL, then the two of you.' },
 ];
 const beats = [
   // ── act one
@@ -324,96 +347,91 @@ const beats = [
     frame: { type: 'camera', camera: { label: 'wide · Holly + Thomas at desks', holly: true, thomas: true }, desktop: 'cake?<br>● matcha ✓<br>○ choc', stamp: 'ALL SET', pills: ['CONVEX'] },
     see: ['Wide desk shot: Holly and Thomas each at their computer. Name tag: Thomas. Cut to Holly’s desktop: she picks matcha. Cut to his screen: the bar moves.', 'She grabs the last potluck slot. The ALL SET stamp slams.'],
     cue: 'Shot mute. Nobody speaks on cue. The stamp is the sound. Convex is named here, where its work is the picture: her desktop moves his.',
-    lines: [{ who: 'thomas', t: '0:26', say: 'Everyone sees it. That’s the Convex part.' }] },
-  { act: 0, t: '0:30', dur: '9s', shot: 'Desktop · the bakery email → forward',
+    lines: [{ who: 'thomas', t: '0:26', say: 'Everyone sees it. Nobody refreshed. Convex pushes it to every screen.' }] },
+  { act: 0, t: '0:30', dur: '11s', shot: 'Desktop · the bakery email → forward',
     frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--mail)', label: 'her monitor · the sticker', widgets: [['✉ crew@agentmail.to',6,14]] }, desktop: '<b>Mail</b>from: the bakery<br>your order · $84<br>Fwd → to: the crew<br><u>Send</u>' },
     see: ['On Holly’s desktop: the bakery’s confirmation email, “your order · $84”. She taps Forward. To: autocompletes to “the crew”, the same address as the sticker on her monitor. No body. Send.'],
-    cue: 'The setup: the receipt is already an email, and the chat is where receipts go to die. Her block, recorded alone; the desktop actions filmed separately.',
-    lines: [{ who: 'holly', t: '0:30', say: 'I paid for the cake. Drop the receipt in the chat and nobody pays you back.' }, { who: 'holly', t: '0:35', say: 'But the space has its own email. So I forward it.' }, { who: 'holly', t: '0:38', say: 'That’s it.' }] },
-  { act: 0, t: '0:39', dur: '4s', shot: 'Laptop recording · the row',
+    cue: 'The setup: the receipt is already an email, and the chat is where receipts go to die. Her block is recorded (wording locked). The bridge at 0:30 is a separate two-second line, recorded on its own and cut in front of the take. Desktop actions filmed separately.',
+    lines: [{ who: 'holly', t: '0:30', say: 'Okay, here’s a real one.' }, { who: 'holly', t: '0:32', say: 'I paid for the cake. Drop the receipt in the chat and nobody pays you back.' }, { who: 'holly', t: '0:37', say: 'But the space has its own email. So I forward it.' }, { who: 'holly', t: '0:40', say: 'That’s it.' }] },
+  { act: 0, t: '0:41', dur: '4s', shot: 'Laptop recording · the row',
     frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--mail)', label: 'the cake card', widgets: [['cake · $84',8,12],['holly · paid $84',8,28],['maya · owes $21',8,44],['jules, sam, kenji · owes $21',8,60],['because: a receipt for the cake',8,76]] } },
     see: ['Two seconds of nothing on Thomas’s screen. Then a cake card lands: holly · paid $84, and a row per person fills in under it, owes $21 each. The because-slip unfolds on the flap.'],
     cue: 'Nothing is said until the row is on screen. The re-hook is her surprise.',
-    lines: [{ who: 'holly', t: '0:41', say: 'Wait. How did it know that was a receipt?' }] },
-  { act: 0, t: '0:43', dur: '13s', shot: 'Split · the slip left, Thomas at his desk right',
+    lines: [{ who: 'holly', t: '0:43', say: 'Wait. How did it know that was a receipt?' }] },
+  { act: 0, t: '0:45', dur: '13s', shot: 'Split · the slip left, Thomas at his desk right',
     frame: { type: 'split', top: { kind: 'space', bg: 'var(--mail)', label: 'the slip, close', widgets: [['because: a receipt for the cake',6,30],['holly · paid $84',6,58]] }, bottom: { label: 'Thomas · desk', close: true }, pills: ['AGENTMAIL','OPENAI'] },
     see: ['Left: the because-slip, close. Right: Thomas at his desk, the address sticker on his monitor. On “the sticker”, cut in on the display. On “OpenAI reads”, cut in on the slip as it plays: reading it → RECEIPT → filing it → expenses.', 'Pills pop as the names land: AGENTMAIL at 0:44, OPENAI at 0:50.'],
     cue: 'The only back-and-forth in the video. He says it to her, not to the lens, and the answer starts with the answer. Nobody recites a pipeline. Both voices still recorded separately.',
-    lines: [{ who: 'thomas', t: '0:43', say: 'It read it. AgentMail is email for apps, so every space gets its own address. That’s what’s on the sticker.' }, { who: 'thomas', t: '0:49', say: 'Send it anything. OpenAI reads whatever lands there and works out what it is, then the space files it.' }] },
-  { act: 0, t: '0:56', dur: '6s', shot: 'Desktop close-up',
+    lines: [{ who: 'thomas', t: '0:45', say: 'It read it. AgentMail is email for apps, so every space gets its own address. That’s what’s on the sticker.' }, { who: 'thomas', t: '0:51', say: 'Send it anything. OpenAI reads whatever lands there and works out what it is, then the space files it.' }] },
+  { act: 0, t: '0:58', dur: '6s', shot: 'Desktop close-up',
     frame: { type: 'camera', camera: { label: 'Holly · reads the reply', holly: true }, desktop: '<b>reply · same thread</b>Logged $84 from Holly for the cake. Split four ways, $21 each.' },
     see: ['Holly, unimpressed by the how; the four owes rows on the monitor behind her. Then the space’s reply lands in the same email thread, from the crew’s address, with the split. She reads it at her desk.'],
     cue: 'Her question is the one she actually has. The reply is real and answers it with a number and her name. She ends on his line from 0:26.',
-    lines: [{ who: 'holly', t: '0:56', say: 'Okay. But who’s paying me back?' }, { who: 'holly', t: '0:58', say: 'It wrote back. Twenty-one dollars each. And everyone sees it.' }] },
-  { act: 0, t: '1:02', dur: '3s', shot: 'Laptop · canvas zoom-out',
+    lines: [{ who: 'holly', t: '0:58', say: 'Okay. But who’s paying me back?' }, { who: 'holly', t: '1:00', say: 'It wrote back. Twenty-one dollars each. And everyone sees it.' }] },
+  { act: 0, t: '1:04', dur: '3s', shot: 'Laptop · canvas zoom-out',
     frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--mail)', label: 'the whole crew space', widgets: [['birthday',8,12],['photos',30,14],['jokes',54,12],['✉ letter',76,14],['poll',10,40],['potluck',34,42],['expenses',58,40],['countdown',80,44],['daily q',12,70],['wall',40,72],['radio',66,72]] } },
     see: ['Pull back over the whole crew space, three seconds: the birthday frame, the photo wall, the jokes, the letter.'],
     cue: 'The accumulation shot. Everything lives here.',
-    lines: [{ who: 'thomas', t: '1:02', say: 'Every group we’re in got one.' }] },
-  { act: 0, t: '1:05', dur: '8s', shot: 'Laptop · us two + desktop insert',
+    lines: [{ who: 'thomas', t: '1:04', say: 'Every group we’re in got one.' }] },
+  { act: 0, t: '1:07', dur: '8s', shot: 'Laptop · us two + desktop insert',
     frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--pink)', label: 'us two', widgets: [['🕐 6:40 pm',8,12],['🕒 9:40 am',30,12],['postcard · half colored',12,42],['playlist',62,14]] }, desktop: '<b>postcard</b>tap a region → fills on both' },
     see: ['Hard cut to the magenta of us two: two clocks, the postcard half colored. Holly fills a patch from her desktop; Thomas’s screen fills with it. Then his patches land on hers while she watches. Eight seconds. Music.'],
-    cue: 'Minute one ends on the coloring, the thing the wall line promised at 0:19, with her line. Then the tease, over the last patches, into the cut.',
-    lines: [{ who: 'holly', t: '1:05', say: 'This one’s ours. Same picture, two screens, and I get to watch him color.' }, { who: 'thomas', t: '1:10', say: 'And the one for my dev group is kind of nuts.' }] },
+    cue: 'Minute one ends on the coloring, the thing the wall line promised at 0:19, with her line. Three seconds of patches and music, then the letter lands on the same space.',
+    lines: [{ who: 'holly', t: '1:07', say: 'This one’s ours. Same picture, two screens, and I get to watch him color.' }] },
 
   // ── act two
-  { act: 1, t: '1:13', dur: '4s', shot: 'Laptop · the build room',
-    frame: { type: 'screen', screen: { kind: 'pile', label: 'the build room · the pile' } },
-    see: ['Hard cut: the build room, orange. Forty-seven link covers fanned in a pile.'],
-    cue: 'The volume story: links live in a pile, not all over the space.',
-    lines: [{ who: 'thomas', t: '1:13', say: 'Forty-seven links this month. They live in a pile so they don’t take over the space.' }] },
-  { act: 1, t: '1:17', dur: '6s', shot: 'Laptop · reading room',
-    frame: { type: 'screen', screen: { kind: 'arrival', label: 'paste a link' } },
-    see: ['Paste a link. A grey placeholder, then the card fills in: title, blurb, cover image.'],
-    cue: 'Firecrawl’s first job. Pick a link with a cover image.',
-    lines: [{ who: 'thomas', t: '1:17', say: 'Paste a link. Firecrawl reads the page and makes the card.' }] },
-  { act: 1, t: '1:23', dur: '10s', shot: 'Laptop · crawl strip + second desktop',
-    frame: { type: 'screen', screen: { kind: 'crawl', label: 'crawl a site · pages arriving' }, desktop: '<b>same space</b>new pages<br>arriving…' },
-    see: ['Type a site, hit crawl. Pages appear in the strip as Firecrawl finds them, the counter climbing. Cut to Holly’s desktop: the same pages arriving.'],
-    cue: 'A crawl with two people watching it. Pick a small site — it costs credits.',
-    lines: [{ who: 'thomas', t: '1:24', say: 'Or give it a whole site. Pages show up as Firecrawl finds them, on every screen in the room.' }] },
-  { act: 1, t: '1:33', dur: '6s', shot: 'Laptop · keep takeaway',
-    frame: { type: 'screen', screen: { kind: 'takeaway', label: 'keep takeaway' } },
-    see: ['Open the reading room, hit keep takeaway. The note flies out of the room and lands on the space with a squash.'],
-    cue: 'The physical moment in act two. Let the animation finish before the cut.',
-    lines: [{ who: 'thomas', t: '1:34', say: 'And the one line worth keeping goes up on the space.' }] },
-  { act: 1, t: '1:39', dur: '6s', shot: 'Laptop · reading circle',
-    frame: { type: 'screen', screen: { kind: 'circle', label: 'reading circle' } },
-    see: ['The reading circle under an article: two questions, a reply thread.'],
-    cue: 'OpenAI’s second job, and it’s a decider, not a chatbot.',
-    lines: [{ who: 'thomas', t: '1:39', say: 'OpenAI reads each article and leaves two questions, so the link actually gets talked about.' }] },
-  { act: 1, t: '1:45', dur: '10s', shot: 'Split · us two left, Holly right',
+  { act: 1, t: '1:15', dur: '12s', shot: 'Split · us two left, Holly right',
     frame: { type: 'split', top: { kind: 'space', bg: 'var(--pink)', label: 'us two · a letter lands' }, bottom: { label: 'Holly', holly: true }, envelope: true },
-    see: ['Split again, side by side: us two on the left, Holly at her desk on the right. A kraft envelope lands on the space with a thud. She taps it; it unfolds into a note. Cut in to the note.'],
-    cue: 'Thomas emailed ustwo@… from the laptop, off-screen, a minute earlier. Her block; one line.',
-    lines: [{ who: 'holly', t: '1:48', say: 'He emailed me a letter. From across the room. It’s different, apparently.' }] },
-  { act: 1, t: '1:55', dur: '8s', shot: 'Laptop · two rooms, 4s each',
-    frame: { type: 'halves', left: { kind: 'space', bg: 'var(--sun)', label: 'the house', widgets: [['🎡 chores',14,30],['rent split',14,60]] }, right: { kind: 'space', bg: 'var(--teal)', label: 'game day', widgets: [['⚽ 2 – 1  LIVE',12,30],['trash talk',12,60]] } },
-    see: ['The house, yellow: the chore wheel spins and lands. Game day, teal: a live score, the trash-talk wall. Four seconds each.'],
-    cue: 'Set dressing. Don’t click in.',
-    lines: [{ who: 'thomas', t: '1:55', say: 'Roommates get a chore wheel and a rent split. The rec league gets a live score and somewhere to talk trash.' }] },
+    see: ['Split again, side by side: us two on the left, Holly at her desk on the right. A kraft envelope lands on the space with a thud. She taps it; it unfolds into a note. Cut in to the note. The tease goes over her reading it, into the cut.'],
+    cue: 'The couple’s space was just introduced, so its second trick stays in its room. His block now: the second email example, told as what he did; “anything” is the flexibility. Holly opens it on camera, silent. Thud on “letter”.',
+    lines: [{ who: 'thomas', t: '1:15', say: 'It’s got an address too, and you can email it anything. I sent it a letter from across the room. It landed as an envelope, and she opened it.' }, { who: 'thomas', t: '1:24', say: 'And the one for my dev group is kind of nuts.' }] },
+  { act: 1, t: '1:27', dur: '14s', shot: 'Laptop · the build room, wide',
+    frame: { type: 'screen', screen: { kind: 'pile', label: 'the build room · the pile' } },
+    see: ['Hard cut: the build room, bottle green. Forty-seven link covers fanned in a pile. Hold the wide for all fourteen seconds; the pile is the picture for both lines.'],
+    cue: 'Who’s in it, what it’s for, what the group chat lost. The two feature lines after this are the answers. Ten seconds for the first line, four for the count.',
+    lines: [{ who: 'thomas', t: '1:27', say: 'It’s seven of us, all engineers, a tight-knit group where we swap Hacker News threads and blog posts to keep learning, but every link in the group chat was gone after twenty-four hours.' }, { who: 'thomas', t: '1:37', say: 'Forty-seven this month, in a pile so they don’t take over the space.' }] },
+  { act: 1, t: '1:41', dur: '12s', shot: 'Laptop · one link, how it works',
+    frame: { type: 'screen', screen: { kind: 'arrival', label: 'one link · card, summary, two questions' } },
+    see: ['A link drops in: grey placeholder, then the card fills in: title, blurb, cover image. Open it: “why it matters” is already written, the two questions are under it, and the thread has a few replies already.'],
+    cue: 'How it works, with a person as the subject (someone drops a link in), never an imperative step list. Firecrawl is named as the card fills, OpenAI as the two questions appear. Arrival lab for the fill, the reading room in mock for the rest, with two or three replies seeded. Pick a link with a cover image.',
+    lines: [{ who: 'thomas', t: '1:41', say: 'So we built this to keep track. Someone drops a link in. Firecrawl fetches the whole article and boils it down to a summary. Then OpenAI leaves two questions under it, so we actually talk about it.' }] },
+  { act: 1, t: '1:53', dur: '6s', shot: 'Laptop · keep takeaway, then the wide',
+    frame: { type: 'screen', screen: { kind: 'takeaway', label: 'keep takeaway' } },
+    see: ['Hit keep takeaway. The note flies out of the room and lands on the keepers board with a squash. Then ease out to the wide: the whole build room, the new note on the board, the pile reading 5 kept.'],
+    cue: 'The physical moment in act two, and the wrap of the build room. Click on the cut, line over the flight, ease out to the wide on “and that one stays”, then hard cut to act three (“Okay, but what did I miss this week?”). Answers “gone after twenty-four hours”.',
+    lines: [{ who: 'thomas', t: '1:53', say: 'When we’re done arguing, the one line worth keeping gets pinned on the space, and that one stays.' }] },
 
   // ── act three
-  { act: 2, t: '2:03', dur: '12s', shot: 'Laptop · crew + desktop insert',
+  { act: 2, t: '1:59', dur: '11s', shot: 'Laptop · crew + desktop insert',
     frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--mail)', label: 'the crew · catch me up', widgets: [['cake: matcha, 5–1',8,16],['potluck: all set',8,32],['you owe Sam $14',8,48],['▍streaming…',8,64]] }, desktop: '<b>catch me up</b>▶ click' },
     see: ['Back to the crew, on her screen. She hits catch me up; lines stream in: the cake result, the potluck, who owes who.'],
     cue: 'Live model call on camera. Record several takes; her second line follows whatever the recap actually says.',
-    lines: [{ who: 'holly', t: '2:03', say: 'Okay, but what did I miss this week? … I owe Sam fourteen dollars?' }, { who: 'thomas', t: '2:11', say: 'It reads the whole space and tells you. Even that.' }] },
-  { act: 2, t: '2:15', dur: '16s', shot: 'Laptop · the Convex dashboard',
-    frame: { type: 'screen', screen: { kind: 'dash', label: 'Convex dashboard' }, pills: ['PRESENCE','WORKFLOW','CRONS','FILE STORAGE','STATIC HOSTING'] },
-    see: ['The Convex dashboard: the components list, the tables, the crons. Fast. Pills pop as he names them.'],
-    cue: 'The transcript beat for the Convex reviewers and the automated review. Plain, fast, spoken once.',
-    lines: [{ who: 'thomas', t: '2:15', say: 'This is the nerd part. It’s all Convex. Every patch she colors in is a write, and it’s on his screen while she’s still going. Seventeen components, every one doing a job: presence for the cursors, a workflow for the Friday email, a cron that sweeps the room, file storage for the photos.' }] },
-  { act: 2, t: '2:34', dur: '18s', shot: 'Split camera · both at desks',
-    frame: { type: 'camera', camera: { label: 'Holly + Thomas · desks', close: 'both' }, lower: 'dusty-condor-648.convex.site · built by Thomas · designed by Holly' },
-    see: ['Split camera on both of you at your desks. Lower-third: the live URL, built by Thomas, designed by Holly.'],
-    cue: 'The introduction lives here, where the cut to your faces motivates the names. Her one on-camera cue after the opener; the last word is hers.',
-    lines: [{ who: 'thomas', t: '2:34', say: 'I’m Thomas. That’s Holly, my wife. She designed it, I built it, in twenty-six days, and I never typed a line of code. I typed a lot of English. It’s live, no signup. Open it and put something on the space.' }, { who: 'holly', t: '2:50', say: 'Bring cake.' }] },
-  { act: 2, t: '2:52', dur: '3s', shot: 'URL card · hold',
-    frame: { type: 'screen', screen: { kind: 'url', text: 'dusty-condor-648.convex.site' } },
-    see: ['Hold on the URL. Music out.'],
-    cue: 'End at 2:48.',
-    lines: [{ who: 'silent', t: '2:55', say: 'no line — end' }] },
+    lines: [{ who: 'holly', t: '1:59', say: 'Okay, but what did I miss this week? … I owe Sam fourteen dollars?' }, { who: 'thomas', t: '2:06', say: 'It just reads the whole space and tells you, even that.' }] },
+  { act: 2, t: '2:10', dur: '10s', shot: 'Laptop · the write, then the Convex dashboard',
+    frame: { type: 'screen', screen: { kind: 'dash', label: 'Convex dashboard' }, pills: ['CONVEX'] },
+    see: ['Her phone coloring, his screen filling in behind it (2s). Then the real dashboard, the components list scrolling (3s). Then the roll: seventeen names as type, the counter ticking to 17.'],
+    cue: 'The round starts here: four names, seven seconds each, each on the second its work is on screen. Convex gets three extra. No jargon: Convex is the reason it is instant across two devices, said as cause and effect; “built from” tells a non-engineer what a component is. He no longer reads the component names; the roll shows them.',
+    lines: [{ who: 'thomas', t: '2:10', say: 'And the nerd part: it all runs on Convex. That’s why she can color on her phone and I see it on my laptop the same second. It’s built from seventeen of their components.' }] },
+  { act: 2, t: '2:20', dur: '7s', shot: 'Callbacks · the sticker, the envelope, the reply',
+    frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--mail)', label: 'the crew · mail, both ways', widgets: [['✉ crew@agentmail.to',6,14],['because: a receipt',6,36],['reply · $21 each',6,58]] }, pills: ['AGENTMAIL'] },
+    see: ['Three fast callbacks: the receipt landing on the crew (0:41), the envelope on ours (1:15), the reply in her thread (1:00). Pill pops on the name.'],
+    cue: 'Nothing new to shoot; all three are already in the cut. The new fact is that the mail goes both ways.',
+    lines: [{ who: 'thomas', t: '2:20', say: 'The receipt and the letter both came in through AgentMail, and the reply went back out the same way.' }] },
+  { act: 2, t: '2:27', dur: '10s', shot: 'Built · a board of Codex threads',
+    frame: { type: 'screen', screen: { kind: 'space', label: 'Codex · the repo', widgets: [['› make the envelope land on the sticker',6,14],['› softer',6,26],['› it should land, not drop',6,34],['+ src/components/MailArrival.tsx',6,48],['26 days · 289 commits',6,66]] }, pills: ['OPENAI · CODEX'] },
+    see: ['A board of Codex threads drawn like widgets (#/codex). The camera pushes onto one: a prompt, the diff, then softer, slower landing under it. Out, then onto the next: the envelope should land, not drop, then yes. that. Out to the wide, and the stamp: 26 days · 289 commits.'],
+    cue: 'Built for the beat, not a screen grab: codex-threads-zoom (2026-09-20). Two threads carry the scripted nags; the four small cards are real prompts from this repo’s Codex sessions, verbatim. The picture is the hand-holding.',
+    lines: [{ who: 'thomas', t: '2:27', say: 'Codex wrote every line. But it wasn’t one prompt and done. It was twenty-six days of the two of us going ‘softer,’ ‘slower,’ ‘the envelope should land, not drop,’ until it all felt right.' }] },
+  { act: 2, t: '2:37', dur: '7s', shot: 'Callback · the build room, a card filling',
+    frame: { type: 'screen', screen: { kind: 'arrival', label: 'the build room · a link becomes a card' }, pills: ['FIRECRAWL'] },
+    see: ['Callback: the card filling in (1:41), then the pile reading 47 this month, then one old card quietly refreshing itself.'],
+    cue: 'Reuse the arrival capture from 1:41, the card-fill seconds only. “Forty-seven” is whatever the pile says on shoot day.',
+    lines: [{ who: 'thomas', t: '2:37', say: 'Every one of those forty-seven links went through Firecrawl, and a queue rereads the old ones so the cards don’t rot.' }] },
+  { act: 2, t: '2:44', dur: '15s', shot: 'Outro · one end card (#/outro)',
+    frame: { type: 'screen', screen: { kind: 'space', bg: 'var(--ink)', label: 'ourspaces · the sign-off', widgets: [['built by Thomas',6,12],['designed by Holly',6,30],['our entry · Convex All Gas hackathon',6,48],['ourspaces.io · live now · no signup',6,66],['bring cake.',58,80]] }, pills: ['THE FIVE SPACES'] },
+    see: ['One end card that builds on the words: the logo lands, "built by Thomas" pops on his name, "designed by Holly" on hers, the five spaces cascade in on "the whole thing", the hackathon pill on "hackathon", "live now · no signup", then the URL big on "go put something on the space". Two cursors wander the cards. Her pink "bring cake." sticker pops on her line. Hold on it, music out at 2:59.'],
+    cue: 'No camera needed: the card is the sign-off (scene-15-outro, 15s). If the desk shot gets made, cut it in over the first five seconds and let the card take over from "our entry". The last word is still hers.',
+    lines: [{ who: 'thomas', t: '2:44', say: 'I’m Thomas. I built this with my wife, Holly. She designed the whole thing.' }, { who: 'thomas', t: '2:49', say: 'It’s our entry for the Convex hackathon, and we’re really happy with it. It’s live, there’s no signup, so go put something on the space.' }, { who: 'holly', t: '2:56', say: 'Bring cake.' }, { who: 'silent', t: '2:59', say: 'no line — end' }] },
 ];
 
 // ── render ──────────────────────────────────────────────────────────────
@@ -422,12 +440,12 @@ let lastAct = -1;
 beats.forEach((b) => {
   if (b.act !== lastAct) {
     lastAct = b.act; const a = acts[b.act];
-    const h = el('div','act'); h.style.setProperty('--accent', a.accent);
+    const h = el('div','act'); h.style.setProperty('--accent', a.accent); h.dataset.act = b.act;
     h.innerHTML = `<h2><span class="num">${a.n}</span>${a.title}</h2><span class="range">${a.range}</span><span class="job">${a.job}</span>`;
     board.appendChild(h);
   }
   const a = acts[b.act];
-  const row = el('article','beat'); row.style.setProperty('--accent', a.accent);
+  const row = el('article','beat'); row.style.setProperty('--accent', a.accent); row.dataset.act = b.act;
   const left = el('div');
   left.innerHTML = `<p class="tc"><b>${b.t}</b><span>${b.dur}</span></p>`;
   if (b.pages) { const a = el('a','frame-link'); a.href = b.pages[0][1]; a.target = '_blank'; a.title = 'open ' + b.pages[0][0] + ' (1200×1120, scrolls itself)'; a.appendChild(frame(b.frame)); left.appendChild(a); }
@@ -452,6 +470,33 @@ beats.forEach((b) => {
   row.append(left, see, say);
   board.appendChild(row);
 });
+
+// ── act filter ──────────────────────────────────────────────────────────
+const filterBar = document.getElementById('filter');
+const hint = filterBar.querySelector('.hint');
+acts.forEach((a, i) => {
+  const n = beats.filter(b => b.act === i).length;
+  const btn = el('button', null, `<span class="n">${a.n}</span>${a.title}<span class="c">${n} beats</span>`);
+  btn.type = 'button'; btn.dataset.filter = String(i); btn.setAttribute('aria-pressed', 'false');
+  btn.style.setProperty('--accent', a.accent);
+  filterBar.insertBefore(btn, hint);
+});
+function setFilter(which, { scroll = true } = {}) {
+  if (which === 'all') board.removeAttribute('data-filter'); else board.dataset.filter = which;
+  filterBar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.filter === which)));
+  const hash = which === 'all' ? '' : '#act-' + acts[+which].n;
+  history.replaceState(null, '', location.pathname + location.search + hash);
+  // the bar is sticky, so its own offsetTop moves; anchor on the board, which doesn't
+  if (scroll) window.scrollTo({ top: board.getBoundingClientRect().top + window.scrollY - filterBar.offsetHeight - 20 });
+}
+filterBar.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setFilter(b.dataset.filter); });
+document.addEventListener('keydown', (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const i = acts.findIndex(a => a.n === e.key);
+  if (i >= 0) setFilter(String(i));
+  else if (e.key === '0' || e.key === 'Escape') setFilter('all');
+});
+{ const m = location.hash.match(/^#act-(\d)$/); const i = m ? acts.findIndex(a => a.n === m[1]) : -1; if (i >= 0) setFilter(String(i), { scroll: false }); }
 </script>
 </body>
 </html>

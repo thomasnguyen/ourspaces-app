@@ -371,7 +371,7 @@ export const applyExpense = internalMutation({
     label: v.string(),
     because: v.optional(v.string()),
   },
-  returns: v.null(),
+  returns: v.union(v.object({ heads: v.number(), each: v.number() }), v.null()),
   handler: async (ctx, { eventId, widgetId, title, who, amount, label, because }) => {
     const event = await ctx.db.get(eventId);
     if (!event) return null;
@@ -411,6 +411,39 @@ export const applyExpense = internalMutation({
     } else {
       splits.push({ name: who, owes: 0, paid: rounded });
     }
+
+    /* The split. One person paying is a logged row, not help — spread what
+       they paid across everybody else so the card answers "who is paying me
+       back" without anyone typing a number. Whole dollars: nobody venmos
+       $20.98, and the leftover cents ride with the payer.
+
+       Who counts: the space's cast, not its footfall. These demo spaces are
+       public and every anonymous visitor writes a members row — the crew has
+       six seeded friends and ~100 drive-by juno/wren rows behind them. Split
+       across all of them and the answer is 81 cents each. So: if a space has
+       a seeded cast, that IS the group; a real user's space has none and
+       splits across everyone on it. */
+    const roster = await ctx.db
+      .query("members")
+      .withIndex("by_space", (q) => q.eq("spaceId", event.spaceId))
+      .collect();
+    const cast = roster.some((m) => m.userId.startsWith("seed:"))
+      ? roster.filter((m) => m.userId.startsWith("seed:"))
+      : roster;
+    const owing = cast.filter((m) => m.name.toLowerCase() !== who.toLowerCase());
+    let share: { heads: number; each: number } | null = null;
+    if (owing.length > 0) {
+      const each = Math.max(1, Math.round(rounded / owing.length));
+      share = { heads: owing.length, each };
+      for (const member of owing) {
+        const existing = splits.find(
+          (entry) => entry.name.toLowerCase() === member.name.toLowerCase(),
+        );
+        if (existing) existing.owes = Math.round((existing.owes + each) * 100) / 100;
+        else splits.push({ name: member.name, owes: each, paid: 0 });
+      }
+    }
+
     const total = Math.round(((Number(data.total) || 0) + rounded) * 100) / 100;
     await ctx.db.patch(target._id, {
       data: {
@@ -423,7 +456,7 @@ export const applyExpense = internalMutation({
     // verdict + destination + reason in one tick, so the stamp has a word
     await ctx.db.patch(eventId, { widgetId: target._id, because, label: "receipt" });
     await touchSpace(ctx, event.spaceId);
-    return null;
+    return share;
   },
 });
 

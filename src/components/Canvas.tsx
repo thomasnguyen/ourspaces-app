@@ -10,6 +10,7 @@ import type { BackendCount } from "../lib/backendCounts";
 import type { SpaceMember, SpaceMeta, Widget } from "../data/types";
 import { useSpaceEntrance, wavefrontDelays } from "../lib/entrance";
 import { isPointing } from "../live/presenceTypes";
+import type { LabPeerFeed } from "../live/labPeers";
 import type {
   CanvasGestureKind,
   CanvasLayout,
@@ -110,6 +111,7 @@ export function Canvas({
   entrance = true,
   widgets: widgetsProp,
   cursors: cursorsProp,
+  labPeers = null,
   onClaim,
   claimantId,
   onWheelSpin,
@@ -179,6 +181,8 @@ export function Canvas({
   entrance?: boolean;
   widgets?: Widget[];
   cursors?: CanvasCursor[];
+  /** `?peers=N` on a mock space: hands that aren't anyone (src/live/labPeers.ts) */
+  labPeers?: LabPeerFeed | null;
   members?: SpaceMember[];
   spaceName?: string;
   hereCount?: number;
@@ -228,8 +232,11 @@ export function Canvas({
     ],
   );
   const cursors: CanvasCursor[] =
-    cursorsProp ?? SPACE_CURSORS[spaceId] ?? [];
+    cursorsProp ?? labPeers?.rows ?? SPACE_CURSORS[spaceId] ?? [];
   const motion = usePeerMotion();
+  /* The peers lab drives its hands through the same engine a real peer's
+     samples go through, so they move exactly like people do on this board. */
+  useEffect(() => labPeers?.attach(motion, spaceId), [labPeers, motion, spaceId]);
   /* No x/y/updatedAt in here on purpose. Those move 20x a second, and if they
      were part of what React compares, every widget on the board would
      re-render on every frame of somebody else's drag. The moving parts go to

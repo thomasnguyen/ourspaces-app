@@ -29,6 +29,11 @@ export function senderName(from: string): string {
   return from.split("@")[0].replace(/[._-]+/g, " ").trim() || "someone";
 }
 
+/** "Split four ways" is a person talking; "Split 4 ways" is a receipt. */
+function countWord(n: number): string {
+  return ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"][n] ?? String(n);
+}
+
 export function hashJitter(seed: string, span: number): number {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
@@ -305,7 +310,7 @@ export async function routeSmart(
     const who = String(expense.who ?? senderName(event.from)).slice(0, 24);
     const label = String(expense.label ?? event.subject).slice(0, 48);
     if (Number.isFinite(amount) && amount > 0) {
-      await ctx.runMutation(internal.inbox.applyExpense, {
+      const share = await ctx.runMutation(internal.inbox.applyExpense, {
         eventId: event._id,
         widgetId: action === "expense" ? String(decision?.widgetId ?? "") : "",
         title: String(decision?.title ?? label),
@@ -314,9 +319,14 @@ export async function routeSmart(
         label,
         because,
       });
+      const logged = `Logged ${amount} from ${who}${label ? ` for ${label}` : ""}`;
       return {
         label: "receipt",
-        reply: `Logged $${amount} from ${who}${label ? ` for ${label}` : ""} on the expense tracker.${read}`,
+        // The split is the whole point of the reply — it is the answer to "who
+        // is paying me back", and it lands in the thread she forwarded from.
+        reply: share
+          ? `${logged}. Split ${countWord(share.heads)} ways, ${share.each} each.${read}`
+          : `${logged} on the expense tracker.${read}`,
       };
     }
   }

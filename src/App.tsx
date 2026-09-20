@@ -33,7 +33,15 @@ import {
 } from "./data/chat";
 import { RECAP_LINES, type RecapTurn } from "./data/recap";
 import { DECISION_WIDGET, canvasSizeFor, getSpace, getWidgets } from "./data/spaces";
-import { MailArrival } from "./components/MailArrival";
+import { createLabPeerFeed, labPeersRequested } from "./live/labPeers";
+import {
+  MAIL_LAB_CAKE_ID,
+  MAIL_LAB_HIDDEN,
+  mailLabCakeCard,
+  mailLabCakeSplit,
+} from "./lib/mailLabCake";
+import { MailArrival, type LabHooks } from "./components/MailArrival";
+import { MOCK_MAIL_DECIDE_MS } from "./lib/mailArrival";
 import { getStickerDefinition } from "./data/stickers";
 import {
   defaultSpaceCustomization,
@@ -104,6 +112,12 @@ const ColorLab = lazy(() =>
 const MailReel = lazy(() =>
   import("./pages/MailReel").then((module) => ({ default: module.MailReel })),
 );
+const CodexReel = lazy(() =>
+  import("./pages/CodexReel").then((module) => ({ default: module.CodexReel })),
+);
+const FirecrawlReel = lazy(() =>
+  import("./pages/FirecrawlReel").then((module) => ({ default: module.FirecrawlReel })),
+);
 const Outro = lazy(() =>
   import("./pages/Outro").then((module) => ({ default: module.Outro })),
 );
@@ -132,7 +146,7 @@ function DeferredRoute({ children }: { children: ReactNode }) {
   );
 }
 
-type Route = "space" | "about" | "cursors" | "widgets" | "arrival" | "color" | "bothways" | "outro" | "wall" | "live" | "join" | "test" | "admin";
+type Route = "space" | "about" | "cursors" | "widgets" | "arrival" | "color" | "bothways" | "outro" | "codex" | "firecrawl" | "wall" | "live" | "join" | "test" | "admin";
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
 type FrameLayout = Pick<Widget, "x" | "y" | "w" | "h">;
 type CanvasSize = { width: number; height: number };
@@ -246,6 +260,8 @@ function routeFromHash(): Route {
   if (hash === "color") return "color";
   if (hash === "bothways") return "bothways";
   if (hash === "outro") return "outro";
+  if (hash === "codex") return "codex";
+  if (hash === "firecrawl") return "firecrawl";
   if (hash === "wall") return "wall";
   // Linked from nowhere and gated on ADMIN_KEY server-side (convex/admin.ts).
   if (hash === "admin") return "admin";
@@ -315,6 +331,14 @@ export default function App() {
   const [route, setRoute] = useState<Route>(routeFromHash);
   const [spaceId, setSpaceId] = useState(spaceFromHash);
   const demoMode = demoModeRequested();
+  /* `?peers=4` — the peers lab (src/live/labPeers.ts): the roster's online
+     members get a cursor each and move like people do, for the demo video's
+     "always live" beat. Mock only; nothing is written anywhere. */
+  const labPeers = useMemo(() => {
+    const wanted = labPeersRequested();
+    if (!wanted || !mockModeRequested()) return null;
+    return createLabPeerFeed(getSpace(spaceId).members, getWidgets(spaceId), wanted);
+  }, [spaceId]);
   const [pickerOpen, setPickerOpen] = useState(false);
   // Whatever you picked off the tray, riding the cursor until you click it down.
   const [placing, setPlacing] = useState<PlacingItem | null>(null);
@@ -1782,6 +1806,14 @@ export default function App() {
     return <DeferredRoute><Outro /></DeferredRoute>;
   }
 
+  if (route === "codex") {
+    return <DeferredRoute><CodexReel /></DeferredRoute>;
+  }
+
+  if (route === "firecrawl") {
+    return <DeferredRoute><FirecrawlReel /></DeferredRoute>;
+  }
+
   if (route === "wall") {
     return <DeferredRoute><WidgetWall /></DeferredRoute>;
   }
@@ -1839,6 +1871,52 @@ export default function App() {
       data: widgetDataOverrides[spaceId]?.[widget.id] ?? widget.data,
     }));
   visibleWidgetsRef.current = visibleWidgets;
+
+  /* #/mail, mock mode: no backend to do the filing, so the lab does it. The
+     receipt stands its own empty "cake" card up before the envelope flies —
+     FLIP measures the target at take-off, so it cannot appear on impact —
+     and the split lands when it does. Both halves mirror applyExpense. */
+  const mailLabHooks = useMemo<LabHooks>(
+    () => ({
+      onPrepare: (kind, scale) => {
+        if (kind !== "receipt") return undefined;
+        setWidgetDataOverrides((current) => {
+          const here = { ...(current[spaceId] ?? {}) };
+          delete here[MAIL_LAB_CAKE_ID];
+          return { ...current, [spaceId]: here };
+        });
+        setDeletedWidgetIds((current) => {
+          const here = current[spaceId] ?? [];
+          const missing = MAIL_LAB_HIDDEN.filter((id) => !here.includes(id));
+          return missing.length === 0
+            ? current
+            : { ...current, [spaceId]: [...here, ...missing] };
+        });
+        /* The card lands with the verdict, not with the envelope — the real
+           router only creates a tracker once it has decided the mail is a
+           receipt. It just has to exist before the flight measures it. */
+        window.setTimeout(() => {
+          setAddedWidgets((current) => {
+            const here = current[spaceId] ?? [];
+            if (here.some((widget) => widget.id === MAIL_LAB_CAKE_ID)) return current;
+            return { ...current, [spaceId]: [...here, mailLabCakeCard()] };
+          });
+        }, (MOCK_MAIL_DECIDE_MS + 250) * scale);
+        return MAIL_LAB_CAKE_ID;
+      },
+      onFile: (kind) => {
+        if (kind !== "receipt") return;
+        setWidgetDataOverrides((current) => ({
+          ...current,
+          [spaceId]: {
+            ...(current[spaceId] ?? {}),
+            [MAIL_LAB_CAKE_ID]: mailLabCakeSplit(spaceId),
+          },
+        }));
+      },
+    }),
+    [spaceId],
+  );
   const editingWidget = editingWidgetId
     ? visibleWidgets.find((widget) => widget.id === editingWidgetId) ?? null
     : null;
@@ -1961,8 +2039,11 @@ export default function App() {
         visitorCount={spaceId === "buildclub" ? buildClubVisitors : undefined}
       />
       {/* Mock mode has no inbox to watch; the #/mail lab fires fixtures at
-          the same envelope the live page mounts. */}
-      {mailLabRequested() && <MailArrival widgets={getWidgets(spaceId)} lab />}
+          the same envelope the live page mounts, and plays the router's hand
+          on the board (stand the card up, fill it on impact). */}
+      {mailLabRequested() && (
+        <MailArrival widgets={visibleWidgets} lab hooks={mailLabHooks} />
+      )}
       {focusedTarget && (
         <nav className="canvas-focus-hud" aria-label="Focused canvas item">
           <button
@@ -2147,6 +2228,7 @@ export default function App() {
               visitorCount={
                 spaceId === "buildclub" ? buildClubVisitors : undefined
               }
+              labPeers={labPeers}
             />
           </div>
         </div>

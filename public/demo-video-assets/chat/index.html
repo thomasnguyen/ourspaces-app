@@ -8,6 +8,8 @@
 /* ───────────────────────────────────────────────────────────────
    The group chat — a generic desktop chat to screen-record for 0:05.
    ?rec=1   flick through the backlog fast, typing bubble, last message lands, hold, loop
+   ?thread=receipt  the other thread (0:30): her receipt photo gets buried by three
+            messages, none of them about money. Same people, same chrome.
    ?blur=1  blur names + avatars (the "real screen record" look)
    ?title=  override the group name (default "the crew")
    Record at 1200×1120. No network, no brand, no real people.
@@ -73,6 +75,7 @@ b{font-weight:600}
 .m.me+.reacts{align-self:flex-end;margin-left:0;margin-right:0}
 .react{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:1px 7px;font-size:12px;color:var(--gray);box-shadow:0 1px 0 rgba(0,0,0,.04)}
 .react span{font-size:13px}
+.seen{align-self:flex-end;font-size:11px;color:var(--faint);margin:-2px 2px 4px}
 .typing .bub{padding:10px 12px;display:flex;gap:4px;align-items:center}
 .typing .bub .name{margin:0 6px 0 0}
 .dot{width:7px;height:7px;border-radius:50%;background:#b0bac2;animation:bounce 1s infinite}
@@ -111,6 +114,7 @@ html.rec .msgs::-webkit-scrollbar{display:none;width:0;height:0}
   if (REC) root.classList.add("rec");
   if (q.get("blur") === "1") root.classList.add("blur");
   const TITLE = q.get("title") || "the crew";
+  const THREAD = q.get("thread") === "receipt" ? "receipt" : "cake";
   const $ = id => document.getElementById(id);
 
   /* ── icons ── */
@@ -138,13 +142,14 @@ html.rec .msgs::-webkit-scrollbar{display:none;width:0;height:0}
   /* ── cake photos (inline SVG, 240×176) ── */
   const plate = `<ellipse cx="120" cy="140" rx="86" ry="14" fill="#fff"/><ellipse cx="120" cy="140" rx="86" ry="14" fill="none" stroke="#e6e0d8"/>`;
   const photo = {
+    receipt: `<svg viewBox="0 0 240 176" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="wd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9a7550"/><stop offset="1" stop-color="#7a5a3c"/></linearGradient><linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><rect width="240" height="176" fill="url(#wd)"/><g opacity=".3" stroke="#4a3520" stroke-width="1.6"><path d="M0 30h240M0 80h240M0 132h240"/></g><g opacity=".1" stroke="#f2ddc4" stroke-width="1"><path d="M0 32h240M0 82h240M0 134h240"/></g><g stroke="#5b4028" fill="none" stroke-linecap="round"><path d="M182.7 44.1q37.55 0.7 75.1 0" opacity="0.171" stroke-width="0.66"/><path d="M10.6 64.6q13.1 0.1 26.2 0" opacity="0.178" stroke-width="1.77"/><path d="M109.6 79.9q37.25 -0.2 74.5 0" opacity="0.151" stroke-width="1.54"/><path d="M170.4 83.7q26.3 0.5 52.6 0" opacity="0.113" stroke-width="0.71"/><path d="M71.6 144.1q18.05 -0.1 36.1 0" opacity="0.178" stroke-width="0.75"/><path d="M21.6 80.7q15.15 -0.8 30.3 0" opacity="0.131" stroke-width="1.53"/><path d="M185.3 105.7q21.95 -0.4 43.9 0" opacity="0.127" stroke-width="1.02"/><path d="M142.3 90.1q23.95 0.3 47.9 0" opacity="0.071" stroke-width="1.65"/><path d="M199.3 67.7q31.8 0.8 63.6 0" opacity="0.073" stroke-width="0.90"/><path d="M98.6 102.8q17.85 -1.0 35.7 0" opacity="0.106" stroke-width="0.81"/><path d="M152.0 120.2q16.5 0.8 33.0 0" opacity="0.121" stroke-width="1.49"/><path d="M81.3 66.4q38.75 -0.0 77.5 0" opacity="0.158" stroke-width="1.20"/><path d="M191.4 136.0q24.6 -0.4 49.2 0" opacity="0.165" stroke-width="0.85"/><path d="M143.0 163.5q19.4 0.7 38.8 0" opacity="0.057" stroke-width="0.95"/><path d="M42.1 131.7q32.9 -0.3 65.8 0" opacity="0.148" stroke-width="1.10"/><path d="M41.1 63.2q49.2 0.4 98.4 0" opacity="0.077" stroke-width="1.41"/><path d="M53.7 78.0q33.55 -0.2 67.1 0" opacity="0.094" stroke-width="0.72"/><path d="M150.1 82.3q48.75 0.4 97.5 0" opacity="0.151" stroke-width="0.88"/><path d="M15.2 102.3q43.4 0.7 86.8 0" opacity="0.157" stroke-width="1.28"/><path d="M149.4 13.6q29.6 -0.6 59.2 0" opacity="0.179" stroke-width="1.69"/><path d="M169.5 51.4q46.55 -0.9 93.1 0" opacity="0.178" stroke-width="1.74"/><path d="M47.7 152.5q54.15 0.7 108.3 0" opacity="0.081" stroke-width="1.71"/><path d="M112.5 112.8q26.75 -1.0 53.5 0" opacity="0.074" stroke-width="0.63"/><path d="M152.9 26.7q13.95 1.0 27.9 0" opacity="0.098" stroke-width="1.19"/><path d="M110.7 35.8q32.8 -0.9 65.6 0" opacity="0.103" stroke-width="1.25"/><path d="M46.9 117.7q29.9 0.5 59.8 0" opacity="0.073" stroke-width="1.50"/></g><g stroke="#c39b6a" fill="none" stroke-linecap="round"><path d="M22.2 76.5h81.8" opacity="0.058" stroke-width="0.8"/><path d="M29.0 102.6h77.2" opacity="0.087" stroke-width="0.8"/><path d="M87.9 111.4h36.8" opacity="0.084" stroke-width="0.8"/><path d="M57.6 118.6h19.0" opacity="0.129" stroke-width="0.8"/><path d="M114.1 98.4h71.4" opacity="0.103" stroke-width="0.8"/><path d="M38.9 52.4h84.8" opacity="0.129" stroke-width="0.8"/><path d="M61.8 8.7h54.3" opacity="0.056" stroke-width="0.8"/><path d="M172.9 92.1h47.9" opacity="0.142" stroke-width="0.8"/><path d="M188.0 5.3h35.2" opacity="0.093" stroke-width="0.8"/><path d="M46.8 161.3h27.5" opacity="0.144" stroke-width="0.8"/><path d="M63.0 27.1h20.3" opacity="0.104" stroke-width="0.8"/><path d="M129.5 34.3h82.7" opacity="0.094" stroke-width="0.8"/><path d="M165.5 13.9h49.7" opacity="0.052" stroke-width="0.8"/><path d="M141.4 90.4h38.3" opacity="0.090" stroke-width="0.8"/></g><ellipse cx="60" cy="118" rx="13" ry="6" fill="none" stroke="#5b4028" stroke-width="1.1" opacity=".16"/><ellipse cx="60" cy="118" rx="6" ry="2.6" fill="none" stroke="#5b4028" stroke-width="1" opacity=".13"/><g transform="rotate(-5 120 88)"><rect x="78" y="6" width="86" height="168" rx="2" fill="#0d0a07" opacity=".26" transform="translate(4 6)"/><rect x="78" y="6" width="86" height="168" rx="2" fill="#fbf9f4"/><path d="M78 6h86v5l-7-3-7 3-7-3-7 3-7-3-7 3-7-3-7 3-7-3-7 3-7-3-7 3z" fill="#f1ece2"/><rect x="92" y="18" width="58" height="7" rx="1.5" fill="#3b332a"/><rect x="99" y="30" width="44" height="3.4" rx="1.7" fill="#b9b1a4"/><g fill="#cfc7ba"><rect x="88" y="44" width="42" height="3.2" rx="1.6"/><rect x="138" y="44" width="16" height="3.2" rx="1.6"/><rect x="88" y="54" width="36" height="3.2" rx="1.6"/><rect x="142" y="54" width="12" height="3.2" rx="1.6"/><rect x="88" y="64" width="46" height="3.2" rx="1.6"/><rect x="140" y="64" width="14" height="3.2" rx="1.6"/><rect x="88" y="74" width="30" height="3.2" rx="1.6"/><rect x="144" y="74" width="10" height="3.2" rx="1.6"/></g><path d="M86 88h70" stroke="#ddd5c8" stroke-width="1.4" stroke-dasharray="3 3"/><g fill="#cfc7ba"><rect x="88" y="96" width="34" height="3.2" rx="1.6"/><rect x="140" y="96" width="14" height="3.2" rx="1.6"/><rect x="88" y="106" width="26" height="3.2" rx="1.6"/><rect x="144" y="106" width="10" height="3.2" rx="1.6"/></g><path d="M86 118h70" stroke="#c9c0b1" stroke-width="1.6"/><rect x="88" y="126" width="26" height="6.5" rx="2" fill="#3b332a"/><rect x="128" y="125" width="26" height="8" rx="2" fill="#3b332a"/><g fill="#d8d0c3"><rect x="88" y="144" width="66" height="2.6" rx="1.3"/><rect x="88" y="151" width="48" height="2.6" rx="1.3"/></g><g fill="#3b332a"><rect x="92" y="161" width="2" height="8"/><rect x="96" y="161" width="1" height="8"/><rect x="99" y="161" width="3" height="8"/><rect x="104" y="161" width="1" height="8"/><rect x="107" y="161" width="2" height="8"/><rect x="112" y="161" width="3" height="8"/><rect x="117" y="161" width="1" height="8"/><rect x="120" y="161" width="2" height="8"/><rect x="125" y="161" width="1" height="8"/><rect x="128" y="161" width="3" height="8"/><rect x="133" y="161" width="1" height="8"/><rect x="136" y="161" width="2" height="8"/><rect x="141" y="161" width="3" height="8"/><rect x="146" y="161" width="1" height="8"/><rect x="149" y="161" width="2" height="8"/></g></g><rect width="240" height="176" fill="url(#gl)"/></svg>`,
     choc: `<svg viewBox="0 0 240 176" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="176" fill="#f1e9df"/><rect y="118" width="240" height="58" fill="#d8c3a5"/>${plate}<rect x="56" y="88" width="128" height="46" rx="4" fill="#4a2c1a"/><rect x="56" y="88" width="128" height="8" fill="#6b3f24"/><rect x="70" y="52" width="100" height="38" rx="4" fill="#4a2c1a"/><rect x="70" y="52" width="100" height="8" fill="#6b3f24"/><path d="M70 60c8 0 8 14 16 14s8-14 16-14 8 12 16 12 8-12 16-12 8 10 16 10 8-10 20-10" fill="none" stroke="#2c1608" stroke-width="5" stroke-linecap="round"/><path d="M56 96c8 0 8 16 16 16s8-16 16-16 8 14 16 14 8-14 16-14 8 12 16 12 8-12 16-12 8 10 16 10" fill="none" stroke="#2c1608" stroke-width="5" stroke-linecap="round"/><g fill="#2c1608"><path d="M96 52l10-14 6 14z"/><path d="M128 52l-6-16 14 8z"/><path d="M112 50l4-10 6 10z" fill="#3a2010"/></g><circle cx="150" cy="44" r="6" fill="#c0392b"/></svg>`,
     matcha: `<svg viewBox="0 0 240 176" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="176" fill="#f4f1ea"/><rect y="118" width="240" height="58" fill="#cfc4b0"/>${plate}<rect x="54" y="84" width="132" height="50" rx="4" fill="#a9c98d"/><rect x="54" y="106" width="132" height="8" fill="#fff8ea"/><rect x="66" y="48" width="108" height="38" rx="4" fill="#a9c98d"/><rect x="66" y="66" width="108" height="6" fill="#fff8ea"/><path d="M60 88c10-10 20 0 30-8s20 2 30-6 20 4 30-4 20 2 30-4" fill="none" stroke="#fff8ea" stroke-width="8" stroke-linecap="round"/><path d="M72 52c8-8 16 0 24-6s16 2 24-4 16 2 24-4" fill="none" stroke="#fff8ea" stroke-width="7" stroke-linecap="round"/><g fill="#fff8ea"><circle cx="86" cy="40" r="7"/><circle cx="120" cy="36" r="8"/><circle cx="154" cy="40" r="7"/></g><g fill="#6f9a52" opacity=".8"><circle cx="90" cy="60" r="1.4"/><circle cx="104" cy="56" r="1.4"/><circle cx="130" cy="58" r="1.4"/><circle cx="150" cy="55" r="1.4"/><circle cx="76" cy="96" r="1.4"/><circle cx="110" cy="94" r="1.4"/><circle cx="166" cy="98" r="1.4"/></g><path d="M118 30c0-8 6-12 12-12-1 7-5 11-12 12z" fill="#6f9a52"/></svg>`,
     straw: `<svg viewBox="0 0 240 176" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="176" fill="#f6ece8"/><rect y="118" width="240" height="58" fill="#d9bdb0"/>${plate}<rect x="56" y="86" width="128" height="48" rx="4" fill="#f7b6c8"/><rect x="56" y="108" width="128" height="7" fill="#fff"/><rect x="68" y="52" width="104" height="36" rx="4" fill="#f7b6c8"/><rect x="68" y="70" width="104" height="6" fill="#fff"/><path d="M60 90c10-8 20 0 30-6s20 2 30-4 20 4 30-2 20 0 28-4" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/><path d="M74 56c8-6 16 0 24-4s16 2 24-2 16 2 22-4" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/><g><ellipse cx="88" cy="42" rx="7" ry="9" fill="#e0304a"/><ellipse cx="120" cy="38" rx="8" ry="10" fill="#e0304a"/><ellipse cx="152" cy="42" rx="7" ry="9" fill="#e0304a"/><path d="M82 34l6-6 6 6M114 29l6-6 6 6M146 34l6-6 6 6" stroke="#4e9a3a" stroke-width="3" fill="none" stroke-linecap="round"/><g fill="#ffd9de"><circle cx="86" cy="40" r=".9"/><circle cx="90" cy="45" r=".9"/><circle cx="118" cy="36" r=".9"/><circle cx="122" cy="42" r=".9"/><circle cx="150" cy="40" r=".9"/><circle cx="154" cy="45" r=".9"/></g></g></svg>`,
   };
 
   /* ── the thread: yesterday's cake argument, today's re-asking ── */
-  const T = [
+  const T_CAKE = [
     { day: "Yesterday" },
     ["Maya", "ok cake for saturday 🎂 matcha or chocolate?", "9:12 AM"],
     ["Sam", "choc", "9:12 AM"],
@@ -206,7 +211,49 @@ html.rec .msgs::-webkit-scrollbar{display:none;width:0;height:0}
     ["Jules", "chips ash", "8:19 AM"],
     ["Ash", "right", "8:20 AM"],
   ];
-  const LAST = ["Rio", "wait what time again??", "8:24 AM"]; // arrives live in rec mode
+  const LAST_CAKE = ["Rio", "wait what time again??", "8:24 AM"]; // arrives live in rec mode
+
+  /* ── the other thread (0:30): she pays, posts the receipt, and it gets buried ── */
+  const T_RCPT = [
+    { day: "Yesterday" },
+    ["Maya", "ok cake for saturday 🎂 matcha or chocolate?", "9:12 AM"],
+    ["Sam", "choc", "9:12 AM"],
+    ["Jules", "matcha", "9:13 AM"],
+    ["Rio", "choc", "9:13 AM"],
+    ["Kenji", "matcha obviously", "9:14 AM"],
+    ["Ash", "is there a third option", "9:15 AM"],
+    ["Maya", "no", "9:15 AM"],
+    ["Jules", "this one", "9:18 AM", { photo: "matcha", react: [["😂", 3], ["🍵", 1]] }],
+    ["Sam", "can we do half half", "9:52 AM"],
+    ["Maya", "they don't do half half", "9:52 AM"],
+    ["Rio", "the place on 5th does", "9:53 AM"],
+    ["Kenji", "that's a bakery??", "9:54 AM"],
+    ["Maya", "cake is ordered!! matcha, picking up saturday 2pm", "4:02 PM", { react: [["🎉", 5]] }],
+    ["Jules", "finally", "4:02 PM"],
+    ["Sam", "rip chocolate", "4:03 PM"],
+    ["Kenji", "🫡", "4:03 PM"],
+    { day: "Today" },
+    ["Maya", "ok who is actually picking it up", "8:47 AM"],
+    ["Rio", "not me im at work til 3", "8:48 AM"],
+    ["Ash", "same", "8:48 AM"],
+    ["you", "i can get it", "8:49 AM"],
+    ["Maya", "🙏🙏", "8:49 AM"],
+    ["Jules", "queen", "8:50 AM"],
+    ["you", "got it 🎂 they charged me for the whole thing", "9:44 AM", { photo: "receipt", react: [["👍", 1]], seen: "Seen by 5" }],
+    ["Maya", "AAAA it's so cute", "9:45 AM"],
+    ["Jules", "the piping 😭", "9:45 AM"],
+    ["Kenji", "she ate", "9:46 AM"],
+  ];
+  // land live, ~550ms apart. None of them is about money. That is the joke.
+  const ARRIVE = [
+    ["Rio", "🎂🎂🎂", "9:47 AM"],
+    ["Ash", "wait can i bring someone btw, my cousin is in town and she loves a cake", "9:47 AM"],
+    ["Maya", "yes!! bring two", "9:48 AM"],
+    ["Jules", "saturday saturday saturday", "9:48 AM"],
+  ];
+
+  const T = THREAD === "receipt" ? T_RCPT : T_CAKE;
+  const LAST = THREAD === "receipt" ? ARRIVE[ARRIVE.length - 1] : LAST_CAKE;
 
   /* ── sidebar ── */
   const CHATS = [
@@ -240,7 +287,8 @@ html.rec .msgs::-webkit-scrollbar{display:none;width:0;height:0}
     const pic = o.photo ? `<span class="photo">${photo[o.photo]}</span>` : "";
     const lead = first && !me ? av(who, 28) : `<span class="sp"></span>`;
     return `<div class="m${me ? " me" : ""}${first ? " first" : " run"}">${me ? "" : lead}<div class="bub">${name}${pic}<span class="txt">${text}</span><span class="time">${time}</span></div></div>` +
-      (o.react ? `<div class="reacts${me ? " me" : ""}">${o.react.map(([e, n]) => `<span class="react"><span>${e}</span> ${n}</span>`).join("")}</div>` : "");
+      (o.react ? `<div class="reacts${me ? " me" : ""}">${o.react.map(([e, n]) => `<span class="react"><span>${e}</span> ${n}</span>`).join("")}</div>` : "") +
+      (o.seen ? `<div class="seen">${o.seen}</div>` : "");
   };
   let prev = null, html = "";
   for (const item of T) {
@@ -256,7 +304,46 @@ html.rec .msgs::-webkit-scrollbar{display:none;width:0;height:0}
   const crew = $("crew");
   const preview = (p, t) => { crew.querySelector(".p").textContent = p; crew.querySelector(".t").textContent = t; };
 
-  if (!REC) { msgs.append(last); preview(`${LAST[0]}: ${LAST[1]}`, LAST[2]); bottom(); return; }
+  if (!REC) {
+    if (THREAD === "receipt") { for (const a of ARRIVE) msgs.append(el(bubble(...a))); }
+    else msgs.append(last);
+    preview(`${LAST[0]}: ${LAST[1]}`, LAST[2]); bottom(); return;
+  }
+
+  /* ── receipt loop: the photo starts at the bottom, just posted. Four replies
+     land and it climbs. The pane is 994px and only ~300px of message arrives,
+     so it cannot leave the frame — it ends in the top third with three people
+     talking about anything but money. 0.3s hold → 3.2s climb → 2.4s hold. ── */
+  if (THREAD === "receipt") {
+    const rcpt = [...msgs.querySelectorAll(".photo")].pop().closest(".m"); // the receipt, not yesterday's cake
+    const arrivals = ARRIVE.map(a => el(bubble(...a)));
+    const AT = [700, 1250, 1800, 2300], DUR = 3200, HOLD = 2400;
+    const ease = x => (x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
+    const run = () => {
+      for (const a of arrivals) { a.remove(); a.classList.remove("pop"); }
+      const seen = rcpt.nextElementSibling; // the reacts row, then the seen row
+      const foot = seen && seen.nextElementSibling ? seen.nextElementSibling : seen;
+      const bottomOfPost = (foot || rcpt).offsetTop - msgs.offsetTop + (foot || rcpt).offsetHeight;
+      const start = Math.max(0, Math.round(bottomOfPost - msgs.clientHeight + 14));
+      msgs.scrollTop = start;
+      preview("Kenji: she ate", "9:46 AM");
+      const t0 = performance.now();
+      let n = 0;
+      const step = now => {
+        const e = now - t0;
+        while (n < arrivals.length && e >= AT[n]) {
+          arrivals[n].classList.add("pop"); msgs.append(arrivals[n]);
+          preview(`${ARRIVE[n][0]}: ${ARRIVE[n][1]}`, ARRIVE[n][2]); n++;
+        }
+        const max = msgs.scrollHeight - msgs.clientHeight;
+        msgs.scrollTop = Math.round(start + (max - start) * ease(Math.min(1, e / DUR)));
+        if (e < DUR + HOLD) requestAnimationFrame(step); else run();
+      };
+      requestAnimationFrame(step);
+    };
+    setTimeout(run, 300);
+    return;
+  }
 
   /* ── rec loop: 300ms hold → flick 0→bottom over 4s (linear, a thumb) → typing 900ms → last message lands → hold 2.5s → reset ── */
   const D = 4000;

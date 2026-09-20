@@ -30,10 +30,15 @@ On the laptop:
    scan line across the envelope. Past 7s: `slow one — still reading`.
 3. **It decides.** The verdict stamps down like the link kind does —
    `RECEIPT` — and the slip prints the reason: the router's `because`
-   sentence, e.g. `it's the receipt for maya's cake, $84 from holly`.
+   sentence, e.g. `it's the receipt for the cake, $126 from holly`.
 4. **It files.** `filing it → expenses`. The envelope flies to the expense
-   sheet (the takeaway-note flight), the sheet takes a lime wash, the new row
-   prints in and the because-slip unfolds on the flap. `place`.
+   sheet (the takeaway-note flight), the sheet takes a lime wash, the new rows
+   print in and the because-slip unfolds on the flap. `place`.
+   **It also splits it.** One person paying is a logged row, not help, so the
+   amount spreads across everyone else on the space as `owes`, whole dollars —
+   the rows cascade in 40ms apart and the total counts up. The reply then says
+   the number: `Logged $126 from Holly for the cake. Split six ways, $21
+   each.` `applyExpense` in `convex/inbox.ts`.
 5. **It writes back.** When the reply has gone out, a small tick on the
    sheet's slip: `↩ told holly`. Fades after a few seconds. On her phone,
    the real reply lands in the same thread.

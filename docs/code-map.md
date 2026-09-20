@@ -235,6 +235,21 @@ coloring-room cursors. Owns the transform of anything it drives; do not also
 set one in CSS or JSX. The returned handle is memoised because every consumer
 holds it in effect deps. Tuning constants are measured, not guessed — see
 `.context/live-perf/`) ·
+`labPeers.ts` (**the peers lab** — `?peers=N` on a mock space, e.g.
+`/?mock=1&demo=1&peers=4#/space/crew`, `seed=` for another take: the roster's
+online members get a cursor each and move like people do — minimum-jerk reach
+onto a card, a hair of overshoot and correction, a slow loop while they read,
+a rest, never two hands on one card, never in step. Fed every frame into
+Canvas's peerMotion engine (the same lead and settle a remote hand gets; at
+the real 20Hz cadence the recorder shows a faint 3-frame sawtooth); all
+timing off the rAF clock, so the frame-by-frame recorder gets a
+deterministic take. Built for the demo's "always live" beat. Writes
+nothing; `Canvas` takes it as `labPeers`. App builds it once per mock
+space; `LiveSpace` builds it too for a real space
+(`/?peers=3#/space/house` — search param, not in the hash) once the board
+has loaded, using the fixture's roster and the live widgets as rects; the
+hands are merged into `liveCursors` so the header chips show them and the
+"here now" count adds them) ·
 `useSpaceWork.ts` (what the space is DOING right now, for the live strip —
 subscribes to `work.recent` with a 30s-quantized `since` so the query args
 are stable between buckets, takes the newest row, and expires it: a `done`

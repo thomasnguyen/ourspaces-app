@@ -15,7 +15,7 @@ integration checkbox and becomes the app's front door for the outside world.
 
 | Space | Address | What mail becomes |
 |---|---|---|
-| the crew | `ourspaces@agentmail.to` | **AI-filed**: receipts → expense rows, bookings → itinerary days, else unfiled envelope |
+| the crew | `ourspaces@agentmail.to` | **AI-filed**: receipts → an expense row **split across the group**, bookings → itinerary days, else unfiled envelope |
 | us two | `ustwo@agentmail.to` | a sealed kraft **letter** on the canvas — click to unfold |
 | the build room | `buildroom@agentmail.to` | URLs drop into **the pile**, Firecrawl-enriched |
 

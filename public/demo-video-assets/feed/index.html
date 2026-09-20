@@ -11,6 +11,7 @@
 /* ───────────────────────────────────────────────────────────────
    The feed — a generic modern feed to screen-record for 0:04.
    ?v=photos (default) | ?v=timeline    ?rec=1 (doomscroll loop)    ?theme=dark
+   ?ads=1 (three Sponsored posts first — the full-screen cut)    ?max=px ?hold=ms ?dur=ms (rec scroll tuning)
    Record at 1200×1120. No network, no brand, no real people.
    Feed column is 400px (Thomas: "make the posts smaller", twice); rail 320px; the pair is centered.
    ─────────────────────────────────────────────────────────────── */
@@ -151,6 +152,12 @@ html.rec ::-webkit-scrollbar{display:none;width:0;height:0}
   const q = new URLSearchParams(location.search);
   const V = q.get("v") === "timeline" ? "timeline" : "photos";
   const REC = q.get("rec") === "1";
+  // ?ads=1 — the full-screen cut: three Sponsored posts back to back before anything else.
+  const ADS = q.get("ads") === "1";
+  // ?max=1800 (px) ?hold=0 (ms at the end) ?dur=<ms> — tune the rec scroll without editing the page.
+  const SCROLL_MAX = Number(q.get("max")) || 1800;
+  const SCROLL_HOLD = Number(q.get("hold")) || 0;
+  const SCROLL_DUR = Number(q.get("dur")) || Math.round(SCROLL_MAX / 327 * 1000);
   const root = document.documentElement;
   if (REC) root.classList.add("rec");
   if (q.get("theme") === "dark") root.classList.add("dark");
@@ -256,12 +263,10 @@ html.rec ::-webkit-scrollbar{display:none;width:0;height:0}
   const photosFeed = () => {
     const out = [stories(["Your story", "kai.travels", "fitwithmarco", "nuvo.official", "dailydoseofdogs", "sleepcloud", "wanderlust_jen", "coinly", "homehacks"])];
     // pass 1 — the shot lives here
-    out.push(photoPost(P.nuvo));
-    out.push(photoPost(P.kai));
-    out.push(photoPost(P.sleep));
-    out.push(module("Suggested for you", ["wanderlust_jen", "dailydoseofdogs", "marco.lifts", "homehacks"], "Follow", "Followed by 0 people you know"));
-    out.push(reelPost({ name: "fitwithmarco", image: "fitness", views: "1.2M", caption: "day 47. no excuses. 💪", time: "5 hours ago", comments: 3310 }));
-    out.push(photoPost(P.coin));
+    const sugMod = module("Suggested for you", ["wanderlust_jen", "dailydoseofdogs", "marco.lifts", "homehacks"], "Follow", "Followed by 0 people you know");
+    const reel1 = reelPost({ name: "fitwithmarco", image: "fitness", views: "1.2M", caption: "day 47. no excuses. 💪", time: "5 hours ago", comments: 3310 });
+    if (ADS) out.push(photoPost(P.nuvo), photoPost(P.sleep), photoPost(P.coin), sugMod, photoPost(P.kai), reel1);
+    else out.push(photoPost(P.nuvo), photoPost(P.kai), photoPost(P.sleep), sugMod, reel1, photoPost(P.coin));
     // far down: the one friend
     out.push(photoPost(P.friend));
     // pass 2+ — names shuffled so the loop never runs out
@@ -330,13 +335,15 @@ html.rec ::-webkit-scrollbar{display:none;width:0;height:0}
 
   // ?rec=1 — doomscroll: 0→1800px over 5.5s, linear (a thumb, not an ease), hard reset, loop. Starts 300ms after load.
   if (REC) {
-    const D = 5500, MAX = 1800;
+    const D = SCROLL_DUR, MAX = SCROLL_MAX, HOLD = SCROLL_HOLD;
     const run = () => {
       const t0 = performance.now();
       const step = now => {
         const p = Math.min(1, (now - t0) / D);
         window.scrollTo(0, Math.round(MAX * p));
-        if (p < 1) requestAnimationFrame(step); else { window.scrollTo(0, 0); requestAnimationFrame(run); }
+        if (p < 1) requestAnimationFrame(step);
+        else if (now - t0 < D + HOLD) requestAnimationFrame(step);
+        else { window.scrollTo(0, 0); requestAnimationFrame(run); }
       };
       requestAnimationFrame(step);
     };

@@ -99,8 +99,8 @@ const MOCK_MAIL: Record<
 > = {
   receipt: {
     from: "Holly <holly@example.com>",
-    subject: "Fwd: your order from flour & co",
-    because: "it's the receipt for maya's cake, $84 from holly",
+    subject: "Fwd: Your order is confirmed — #4417",
+    because: "it's the receipt for the cake, $126 from holly",
     hasDocument: true,
     replies: true,
   },
