@@ -5,6 +5,11 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Local image preview (2026-09-20):** refreshed an existing private gallery with four
+  preserved app captures, thumbnail navigation, enlargement and a download bundle.
+  Asset choices and handoff stay in the local doc map. Chrome desktop/mobile
+  rendering checked; `npm run build` passed.
+
 - **Local social artwork (2026-09-20):** LinkedIn mockup defaults to the real app screenshot as its main attachment; All four puts it first, followed by three generated options. Individual previews and downloads remain. Comment attachments preserved. Prompts and assets stay private; see local doc map. No publishing performed.
 
 - **Local presentation preview (2026-09-20):** refreshed the private draft viewer with

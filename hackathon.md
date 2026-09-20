@@ -13,7 +13,7 @@
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** `openai/gpt-4o-mini` for structured decisions and conversation; `openai/text-embedding-3-small` (1536 dimensions) for RAG and related-widget search, both through the Convex AI Gateway
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-18T15:33:12Z
+- **Last updated:** 2026-09-20T16:40:56Z
 
 ## Live demo path
 
@@ -839,3 +839,8 @@ successfully. Artwork, prompts and mockup remain local-only; nothing published.
 Restored the actual app screenshot as the default main social-post attachment.
 The four-image preview leads with that screenshot and keeps the three generated
 alternatives underneath; existing comment images remain unchanged.
+
+### 2026-09-20 - working tree
+Refreshed the local image gallery with four existing app captures and a download
+bundle. Verified desktop and mobile rendering in Chrome; `npm run build`
+passed. Preview files and image assets remain local-only.
