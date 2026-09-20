@@ -834,3 +834,8 @@ Prepared three generated promotional thumbnails for the local social-post mockup
 with an attachment selector and image downloads. Preserved all 14 existing
 comment images; checked the mockup in the browser and ran `npm run build`
 successfully. Artwork, prompts and mockup remain local-only; nothing published.
+
+### 2026-09-20 - working tree
+Restored the actual app screenshot as the default main social-post attachment.
+The four-image preview leads with that screenshot and keeps the three generated
+alternatives underneath; existing comment images remain unchanged.
