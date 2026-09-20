@@ -5,6 +5,11 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Local presentation preview (2026-09-20):** refreshed the private draft viewer with
+  playable existing clips, poster frames, and copy/download controls. Handoff and
+  previous version are indexed in `docs/local/doc-map.local.md`; assets stay ignored.
+  `npm run build` passed.
+
 - **Outro end card (2026-09-20):** `#/outro` (src/pages/Outro.tsx + outro.css), 15s for
   the rewritten sign-off (v5.41: "I'm Thomas. I built this with my wife, Holly. She
   designed the whole thing." / "It's our entry for the Convex hackathon, and we're
