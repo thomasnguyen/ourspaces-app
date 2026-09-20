@@ -9,11 +9,11 @@
 - **Convex deployment:** https://necessary-cobra-892.convex.cloud
 - **Components:** static-hosting, agentMail, firecrawl, migrations, aggregate, sharded-counter, rate-limiter, action-retrier, action-cache, workpool, workflow, batch-worker, agent, rag, persistent-text-streaming, presence, authWellKnown
   - 17 components across 18 mounts; `aggregate` is mounted separately for poll tallies and member counts. Each component's product job is mapped below.
-- **Convex features:** 12 tables, 29 indexes, full-text and vector search, 145 validated queries/mutations/actions, 6 HTTP actions, reactive subscriptions, pagination, auth, file storage, scheduled functions, 4 crons, streaming, agent threads and semantic retrieval.
+- **Convex features:** 13 tables, 30 indexes, full-text and vector search, 151 validated queries/mutations/actions, 6 HTTP actions, reactive subscriptions, pagination, auth, file storage, scheduled functions, 4 crons, streaming, agent threads and semantic retrieval.
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** `openai/gpt-4o-mini` for structured decisions and conversation; `openai/text-embedding-3-small` (1536 dimensions) for RAG and related-widget search, both through the Convex AI Gateway
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-20T16:44:09Z
+- **Last updated:** 2026-09-20T16:46:10Z
 
 ## Live demo path
 
@@ -45,8 +45,8 @@ It works without an account.
   space-filtered 1536-dimensional vector index and a 33-arm `widgets.data`
   discriminated union cover search, semantic retrieval and 32 specifically
   validated widget types (`convex/schema.ts`, `convex/widgetData.ts`).
-- The backend keeps strict query, mutation and action boundaries across 43
-  queries, 69 mutations and 33 actions; all 145 declare argument and return
+- The backend keeps strict query, mutation and action boundaries across 45
+  queries, 72 mutations and 34 actions; all 151 declare argument and return
   validators. Named indexes and cursor pagination serve reactive reads such as
   `spaces.getSpaceWithWidgets` and `messages.listBySpace`;
   transactional writes enforce space scope; vote mutations update their source
@@ -828,6 +828,15 @@ the named query/mutation/action boundaries and reactive data flows
 (`hackathon.md`). Tightened the same evidence with code-backed descriptions of
 high-churn table isolation, atomic aggregate maintenance, gesture arbitration
 and component orchestration.
+
+### 2026-09-20 - 29c5830
+Built a camera-ready 2.5-second insert that introduces three different friend
+groups as three lived-in spaces. The standalone local HTML uses the product’s
+flat identity colors, existing cover images and staggered `pop` motion, then
+holds the three space names with one AgentMail inbox each. Captured
+deterministically at 1920×1080 and 60fps
+for the demo edit (`docs/code-map.md`, `docs/todos.md`; local shooting assets
+stay ignored).
 
 ### 2026-09-20 - working tree
 Prepared three generated promotional thumbnails for the local social-post mockup,

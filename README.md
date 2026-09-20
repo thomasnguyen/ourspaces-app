@@ -8,7 +8,7 @@ remembers for everyone — live.
 Built for the [Convex All Gas Hackathon](https://www.convex.dev/hackathons/all-gas)
 by Thomas Nguyen (build) and Holly (design).
 
-**Build log:** `hackathon.md`
+**Build log:** `hackathon.md` · **Demo video:** https://www.youtube.com/watch?v=0VVFWbfX1QQ
 
 ## Stack
 
@@ -43,9 +43,9 @@ React + TypeScript · Tailwind v4 · AgentMail · Firecrawl
   component), `authWellKnown` (ours, mounted for its OIDC routes). A fourth,
   `@convex-dev/ai-sdk-provider`, is an AI SDK provider rather than a component —
   no `convex.config` to mount; `convex/ai.ts` imports `convexGateway` from it.
-- **Schema & data:** 12 tables, 29 indexes, 1 full-text search index, 1 vector
+- **Schema & data:** 13 tables, 30 indexes, 1 full-text search index, 1 vector
   index — spaces, members, widgets, messages, votes, collaborative paint marks,
-  recaps, presence, ask streams, email events. The vector index
+  recaps, presence, ask streams, email events, saved room baselines. The vector index
   `widgets.by_embedding` powers "already on the board" (`convex/similar.ts`):
   arriving mail is embedded and `ctx.vectorSearch` asks if the room has it.
 - **Realtime:** every in-space surface is a Convex subscription — no refetch,
@@ -108,7 +108,7 @@ React + TypeScript · Tailwind v4 · AgentMail · Firecrawl
   - `staticHosting.getCurrentDeployment` → publishing a build patches the
     component's deployment row, which invalidates this subscription, and every
     open tab is offered a refresh before its lazy chunks 404.
-- **Functions:** 43 queries + 69 mutations + 33 actions = 145, every one carrying
+- **Functions:** 45 queries + 72 mutations + 34 actions = 151, every one carrying
   a `returns:` validator. The other 6 are HTTP actions (svix-verified inbound
   mail, `/api/ask-stream`): `httpAction` takes a bare handler returning a
   `Response`, so there is no `returns:` slot to fill.

@@ -11,12 +11,49 @@ Backward-looking history lives in `hackathon.md`.
   Asset choices and handoff stay in the local doc map. Chrome desktop/mobile
   rendering checked; `npm run build` passed.
 
-- **Local social artwork (2026-09-20):** LinkedIn mockup defaults to the real app screenshot as its main attachment; All four puts it first, followed by three generated options. Individual previews and downloads remain. Comment attachments preserved. Prompts and assets stay private; see local doc map. No publishing performed.
-
 - **Local presentation preview (2026-09-20):** refreshed the private draft viewer with
   playable existing clips, poster frames, and copy/download controls. Handoff and
   previous version are indexed in `docs/local/doc-map.local.md`; assets stay ignored.
   `npm run build` passed.
+
+- **Local social artwork (2026-09-20):** LinkedIn mockup defaults to the real app screenshot as its main attachment; All four puts it first, followed by three generated options. Individual previews and downloads remain. Comment attachments preserved. Prompts and assets stay private; see local doc map. No publishing performed.
+
+- **Vibeapps submission package (2026-09-20):** `docs/local/submission-copy.md` top section is
+  paste-ready: form fields (app URL stays the bare `.convex.site` origin), 88-char tagline,
+  five bold-lead paragraphs (~150 words) for the readers and the submission packet
+  (45 + 72 + 34 = 151 stated outright, matching README + `hackathon.md`), YouTube URL
+  `https://www.youtube.com/watch?v=0VVFWbfX1QQ`, title + description + chapters, pre-submit order.
+  `submission-preview.html` mirrors it. LinkedIn post = `.private/linkedin-mockup.html`
+  hook B / Light. Still needed: the LinkedIn post URL for the social field, Holly's email
+  for the team row, then the actual paste into VibeApps (needs Thomas signed in).
+
+- **Peers lab on a real space (2026-09-20):** `/?peers=3#/space/house` (search param
+  before the hash; `#/space/house?peers=3` breaks the slug) puts three of the house
+  fixture's roster (noor, gigi, theo) on the live board, moving like people between the
+  real widgets. Built in LiveSpace once the board loads; merged into `liveCursors` so
+  the header chips + "here now" count include them. Local only — nothing written to
+  presence, so it doesn't inflate the public "here now" the way #/play does.
+- **Peers lab + the "always live" clip (2026-09-20):** `/?mock=1&demo=1&peers=4#/space/crew`
+  (src/live/labPeers.ts, `labPeers` prop on Canvas, built in App per space) puts the
+  crew's four online members' cursors on the mock board and moves them like people:
+  minimum-jerk reach, small overshoot + correction, a slow loop while reading, rests,
+  a rare damped jiggle; no two hands on one card, nobody in step. Feeds the real
+  peerMotion engine every frame (20Hz, the real cadence, showed a faint 3-frame
+  sawtooth under the recorder); seeded + rAF-timed so the recorder gets the same take twice. Captured 7s at 4K (record-split) as
+  `crew-live-cursors_*`, scene `12a-always-live` (docs/local/demo-video-assets/video,
+  scenes tab). Line picked: "Nothing here refreshes. It's always live. You can see
+  who's on the space right now, and their cursors moving." — not yet placed in the srt
+  (0:26 next to "nobody refreshed", or 2:10 opening the nerd part).
+
+- **Firecrawl reel for the 2:37 beat (2026-09-20):** `#/firecrawl` (src/pages/FirecrawlReel.tsx +
+  firecrawlReel.css), ten seconds on the build room green: four web pages drawn as
+  four different shapes (news + cookie banner, dark docs, comment thread, repo) fly
+  into a black sticker wearing the real Firecrawl wordmark (orange flash + ring on
+  each hit) and come out as the same card onto a pile; at 5.6s a lime `readers we
+  wrote · zero` stamp; at 6s the oldest card is dealt out, `rereading…` (orange, flame)
+  → `fresh · just now` (lime); "read, then reread" wipes in at 8.9s. Captured at 4K
+  as `firecrawl-reel_*` (docs/local/demo-video-assets/video), scene `12d-firecrawl`.
+  The 2:37 line itself is still being picked (three alternates in chat).
 
 - **Outro end card (2026-09-20):** `#/outro` (src/pages/Outro.tsx + outro.css), 15s for
   the rewritten sign-off (v5.41: "I'm Thomas. I built this with my wife, Holly. She
