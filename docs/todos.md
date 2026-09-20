@@ -5,6 +5,14 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Mail reel for the 2:20 beat (2026-09-20):** `#/bothways` (src/pages/MailReel.tsx +
+  mailReel.css) is a six-second CSS-keyframe cut on the crew's purple: logo lockup,
+  two envelopes fly into the address sticker (lime hit, `because:` slips), the reply
+  flies out to her thread, "mail, both ways" wipes in. Captured frame-exact at 4K
+  as `scene-12b-mail-both-ways` (docs/local/demo-video-assets/video, scenes tab).
+  Recorder got `--ready <selector>` for lazy React routes (React reveals Suspense on
+  a setTimeout the clock shim owns; the wait steps virtual time, then rebases to 0).
+
 - **One person, one cursor (2026-09-17):** a peer moving a card showed up
   twice on everyone else's board — the grab hand saying "juno is moving this",
   plus a second arrow with the same name and face parked on a widget near the

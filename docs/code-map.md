@@ -172,7 +172,12 @@ past first paint; lab pill: replay · pause · roll call · name tags · tilt ·
 size S/M/L · ½/1/2× — pill and cursor hide after 2s idle; `?rec=1` drops the
 pill entirely and exposes `window.__wall = { replay, close }` so a frame-by-frame
 recorder can drive it, see `.context/web-video/`) · `MailLabBar.tsx` (the `#/mail` / `#/mail/<slug>` pill — lazy so labs.css stays off the space page; the route itself is the real space with a lab flag, see `mailLabRequested` in App.tsx) · `labs.css` (cursor lab, widget lab, arrival lab, widget
-wall sections)
+wall sections) · `MailReel.tsx` + `mailReel.css` (`#/bothways` — the six-second
+mail reel for the demo video's 2:20 beat: two envelopes fly into the crew's
+address sticker and each leaves a `because:` slip, the reply flies out to her
+thread, "mail, both ways" wipes in; logo lockup top-left. All CSS keyframes on
+absolute `--t-*` delays, no timers, so `.context/web-video/record.mjs --ready
+.reel-title` pins it frame-exact; `?rec=1` hides the lab pill)
 
 **Local demo inserts** — `.context/web-video/spaces-pop.html` is the standalone
 2.5-second three-space pop sequence. It uses only the shipped
