@@ -5,6 +5,11 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Local group overlay (2026-09-20):** seven generated candid portraits and a
+  five-second entrance → compact header stack animation for a video editor.
+  Exported a CapCut green-screen clip and transparent backup; artwork, prompt and preview are indexed
+  in the local doc map. No app presence changes. `npm run build` passed.
+
 - **Local image preview (2026-09-20):** refreshed an existing private gallery with four
   images: two editorial pieces and two preserved app captures, with thumbnail
   navigation, enlargement and a download bundle.

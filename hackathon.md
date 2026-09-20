@@ -13,7 +13,7 @@
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** `openai/gpt-4o-mini` for structured decisions and conversation; `openai/text-embedding-3-small` (1536 dimensions) for RAG and related-widget search, both through the Convex AI Gateway
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-20T16:46:10Z
+- **Last updated:** 2026-09-20T16:52:28Z
 
 ## Live demo path
 
@@ -868,3 +868,10 @@ README. Scrubbed the pending diff for secrets and the public docs for
 public wording (none found; the admin key is an env var). Deployed,
 then refreshed the Firecrawl cache of the live origin so its scrape matches the
 deployed page. Listing copy lives in the local submission doc.
+
+### 2026-09-20 - working tree
+Created a local five-second group illustration for the video edit: seven
+generated candid portraits arrive, hold, and gather into a compact avatar stack.
+Exported a 1080p green-screen MP4, transparent ProRes backup, and screenshot
+preview. Captured in Chrome and inspected key frames; `npm run build` passed.
+Artwork and prompts stay local-only. App presence and backend are unchanged.
