@@ -1,5 +1,3 @@
-<p align="center"><img src=".github/readme/hero.jpg" width="900" alt="the crew — a live shared board for one friend group"></p>
-
 # OurSpaces
 
 > Group chats forget. Spaces remember.
