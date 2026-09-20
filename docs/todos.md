@@ -5,6 +5,8 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Local social artwork (2026-09-20):** LinkedIn mockup now has three generated post image attachments, individual previews and downloads. Comment attachments preserved. Prompts and assets stay private; see local doc map. No publishing performed.
+
 - **Local presentation preview (2026-09-20):** refreshed the private draft viewer with
   playable existing clips, poster frames, and copy/download controls. Handoff and
   previous version are indexed in `docs/local/doc-map.local.md`; assets stay ignored.

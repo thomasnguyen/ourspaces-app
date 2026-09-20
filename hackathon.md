@@ -828,3 +828,9 @@ the named query/mutation/action boundaries and reactive data flows
 (`hackathon.md`). Tightened the same evidence with code-backed descriptions of
 high-churn table isolation, atomic aggregate maintenance, gesture arbitration
 and component orchestration.
+
+### 2026-09-20 - working tree
+Prepared three generated promotional thumbnails for the local social-post mockup,
+with an attachment selector and image downloads. Preserved all 14 existing
+comment images; checked the mockup in the browser and ran `npm run build`
+successfully. Artwork, prompts and mockup remain local-only; nothing published.
