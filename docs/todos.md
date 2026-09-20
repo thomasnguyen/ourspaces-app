@@ -6,7 +6,8 @@ Backward-looking history lives in `hackathon.md`.
 ## Now working
 
 - **Local image preview (2026-09-20):** refreshed an existing private gallery with four
-  preserved app captures, thumbnail navigation, enlargement and a download bundle.
+  images: two editorial pieces and two preserved app captures, with thumbnail
+  navigation, enlargement and a download bundle.
   Asset choices and handoff stay in the local doc map. Chrome desktop/mobile
   rendering checked; `npm run build` passed.
 

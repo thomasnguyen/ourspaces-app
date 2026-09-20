@@ -13,7 +13,7 @@
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** `openai/gpt-4o-mini` for structured decisions and conversation; `openai/text-embedding-3-small` (1536 dimensions) for RAG and related-widget search, both through the Convex AI Gateway
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-20T16:40:56Z
+- **Last updated:** 2026-09-20T16:44:09Z
 
 ## Live demo path
 
@@ -844,3 +844,8 @@ alternatives underneath; existing comment images remain unchanged.
 Refreshed the local image gallery with four existing app captures and a download
 bundle. Verified desktop and mobile rendering in Chrome; `npm run build`
 passed. Preview files and image assets remain local-only.
+
+### 2026-09-20 - working tree
+Updated the local gallery to alternate two existing editorial illustrations with
+two app captures, and rebuilt its four-image download bundle. Checked thumbnail
+selection and desktop/mobile rendering in Chrome; `npm run build` passed.
