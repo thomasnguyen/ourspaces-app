@@ -16,6 +16,7 @@ import type { CanvasPoint } from "./components/FirstRunSticky";
 import { GlobalChatPanel } from "./components/GlobalChatPanel";
 import { Rail } from "./components/Rail";
 import { SettingsSheet } from "./components/SettingsSheet";
+import { MePage } from "./pages/Me";
 import { useIdentity as useTabIdentity } from "./live/identity";
 import { blobToDataUrl } from "./lib/avatarPhoto";
 import { SpaceEditorPanel } from "./components/SpaceEditorPanel";
@@ -149,7 +150,7 @@ function DeferredRoute({ children }: { children: ReactNode }) {
   );
 }
 
-type Route = "space" | "about" | "cursors" | "widgets" | "arrival" | "color" | "bothways" | "outro" | "codex" | "firecrawl" | "wall" | "live" | "join" | "test" | "admin";
+type Route = "space" | "me" | "about" | "cursors" | "widgets" | "arrival" | "color" | "bothways" | "outro" | "codex" | "firecrawl" | "wall" | "live" | "join" | "test" | "admin";
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
 type FrameLayout = Pick<Widget, "x" | "y" | "w" | "h">;
 type CanvasSize = { width: number; height: number };
@@ -255,6 +256,7 @@ function routeFromHash(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "test") return "test";
   if (hash === "about" || hash.startsWith("about/")) return "about";
+  if (hash === "me") return "me";
   if (hash === "join" || hash.startsWith("join/")) return "join";
   if (hash === "live" || hash.startsWith("live/")) return "live";
   if (hash === "cursors" || hash.startsWith("cursors/")) return "cursors";
@@ -1825,6 +1827,9 @@ export default function App() {
 
   if (route === "about") {
     return <DeferredRoute><AboutPage /></DeferredRoute>;
+  }
+  if (route === "me") {
+    return <MePage />;
   }
 
   /* The back room reads the real rooms, so it needs the Convex client —

@@ -25896,6 +25896,206 @@
   color: white;
 }
 
+/* Gate, joined: your saved look, the eight behind one link. */
+.claim-return {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 0 6px;
+}
+
+.claim-return-face {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: scale var(--dur-quick) var(--ease-glide);
+}
+
+.claim-return-face .member-face {
+  width: 64px;
+  height: 64px;
+  box-shadow:
+    0 0 0 2.5px var(--color-sticker),
+    0 0 0 5.5px var(--color-lime);
+  animation: claim-look-pop var(--dur-arrive) var(--ease-pop) both;
+}
+
+.claim-return-face .member-face-img {
+  object-fit: cover;
+}
+
+.claim-return-face:hover {
+  scale: 1.06;
+}
+
+.claim-return-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.claim-return-change {
+  padding: 0;
+  text-align: left;
+}
+
+.claim-join-links {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+
+.claim-card.is-popover .claim-join-links {
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.claim-joined-note .claim-signout-link {
+  display: inline;
+  padding: 0;
+}
+
+.settings-me-link {
+  align-self: flex-end;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color var(--dur-quick) var(--ease-glide);
+}
+
+.settings-me-link:hover {
+  color: var(--color-lime);
+}
+
+/* #/me — your page */
+.me-page {
+  min-height: 100dvh;
+  overflow: auto;
+  padding: 28px 24px 60px;
+}
+
+.me-back {
+  position: fixed;
+  top: 22px;
+  left: 24px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: white;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: translate var(--dur-quick) var(--ease-glide);
+}
+
+.me-back:hover {
+  translate: -2px 0;
+}
+
+.me-wrap {
+  display: flex;
+  width: min(100%, 420px);
+  flex-direction: column;
+  gap: 22px;
+  margin: 48px auto 0;
+  animation: settings-sheet-in var(--dur-stage) var(--ease-pop) both;
+}
+
+.me-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-radius: 28px;
+  background: var(--color-sticker);
+  box-shadow: 0 10px 0 rgba(45, 22, 31, 0.26), 0 40px 80px -30px rgba(0, 0, 0, 0.55);
+  color: white;
+  padding: 24px;
+  rotate: -0.6deg;
+}
+
+.me-card .settings-heading strong {
+  font-size: 26px;
+}
+
+.me-card .claim-look-row {
+  padding-bottom: 4px;
+}
+
+.me-spaces {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 6px;
+}
+
+.me-spaces .claim-picker-label {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.me-spaces-empty {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.me-space-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.me-space {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 18px;
+  color: white;
+  padding: 14px;
+  text-decoration: none;
+  box-shadow: 0 6px 0 rgba(45, 22, 31, 0.22);
+  transition: translate var(--dur-quick) var(--ease-glide), box-shadow var(--dur-quick) var(--ease-glide);
+}
+
+.me-space:hover {
+  translate: 0 -3px;
+  box-shadow: 0 9px 0 rgba(45, 22, 31, 0.22);
+}
+
+.me-space-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.me-space strong {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.me-space small {
+  align-self: flex-start;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
 @media (max-width: 800px) {
   .settings-sheet {
     top: auto;

@@ -14,7 +14,7 @@ import type { GenericMutationCtx, AnyDataModel } from "convex/server";
 import { Anonymous } from "@convex-dev/auth/providers/Anonymous";
 import { EmailOtp, OTP_PROVIDER_ID } from "./otp";
 import type { DataModel, Id } from "./_generated/dataModel";
-import { query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -163,6 +163,11 @@ export const currentUser = query({
       // Set once a guest registers. The UI reads this to tell "you're juno"
       // from "you're juno, and we'll remember you".
       email: v.optional(v.string()),
+      // The profile that follows a joined person (docs/accounts.md): the
+      // client hydrates its tab identity from these, and mirrors edits back.
+      color: v.optional(v.string()),
+      emoji: v.optional(v.string()),
+      image: v.optional(v.string()),
     }),
     v.null(),
   ),
@@ -179,6 +184,32 @@ export const currentUser = query({
       name: typeof user?.name === "string" && user.name ? user.name : undefined,
       email:
         typeof user?.email === "string" && user.email ? user.email : undefined,
+      color: user?.color || undefined,
+      emoji: user?.emoji || undefined,
+      image: user?.image || undefined,
     };
+  },
+});
+
+/**
+ * Your profile, on your row. Joined people only: a guest's name and look
+ * stay in the tab (§1 — guest is complete without ever writing here), so
+ * there is nothing to carry to a second device until they join.
+ */
+export const updateProfile = mutation({
+  args: {
+    name: v.optional(v.string()),
+    color: v.optional(v.string()),
+    emoji: v.optional(v.string()),
+    image: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return null;
+    const user = await ctx.db.get(userId);
+    if (!user || user.isAnonymous === true) return null;
+    await ctx.db.patch(userId, args);
+    return null;
   },
 });

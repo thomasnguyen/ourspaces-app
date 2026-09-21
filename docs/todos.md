@@ -5,16 +5,14 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
-- **Settings sheet — UI shipped 2026-09-21 (step 3 of `docs/accounts.md`, built
-  first so it can be seen).** A "you" tile at the foot of the left rail (your
-  face + lime gear badge) opens `SettingsSheet`: name, big face, the eight
-  looks plus a dashed **my photo** tile, and an account row. Photo → centre
-  crop 256px → Convex storage (live) or a tab data url (mock) → identity
-  avatarUrl, so cursors, header and rail all wear it at once. Guest sees the
-  join form inline; joined sees "saved to email ✓" + sign out (signOut +
-  reload as a fresh guest). Not yet: the profile does not persist to the
-  `users` row (accounts.md step 0), so a photo lasts this tab only.
-  Verified mock + live read-only at 1280; `npm run build` passed.
+- **Accounts — shipped end to end 2026-09-21** (`docs/accounts.md`). A joined
+  person's name, colour, emoji and photo live on the `users` row and come back
+  on any device (hydrate once per sign-in, mirror edits up, account wins).
+  Surfaces: the rail's "you" tile → settings sheet; the identity popover and
+  `#/me` carry the same body with a "my photo" tile (Convex storage, 256px
+  square); the gate grows "been here before? sign in" and a "you're back"
+  return state with sign out. Convex functions deployed; verified on prod with
+  a real code + a fresh browser context. `npm run build` passed.
 
 - **Welcome avatar picker (2026-09-20):** selected look now has a consistent lime
   ring and a checkmarked “you” badge. Four-column layout makes faces easier to see.

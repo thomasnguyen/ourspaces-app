@@ -1,6 +1,6 @@
 # Accounts — a persistent you
 
-Plan written 2026-09-21, not started. Companion to `docs/data-model-plan.md` §1
+Plan written 2026-09-21; **built end to end the same day** (status per step below). Companion to `docs/data-model-plan.md` §1
 (guest or join, never a wall). That rule stands: everything below sits *behind*
 the door, never in front of it.
 
@@ -82,13 +82,21 @@ with an old persona in sessionStorage): **account wins**, always.
 
 Build in this order. Each step ships on its own.
 
-### 0. Persistence (the guts) — do first
+### 0. Persistence (the guts) — **shipped 2026-09-21**
+
+`users` grew `color` + `emoji` (schema now 7,966 chars); `auth.updateProfile`
++ richer `currentUser`; `live/useAuthIdentity.ts` hydrates down once per
+joined user (account wins when it has a name; a fresh join has none, so the
+tab's identity stands and is mirrored up) and mirrors edits up, debounced
+400ms, only when the row would change. Verified on prod: signed in with a
+code, copied the `__convexAuth*` localStorage keys into a fresh context, and
+the gate came up "you're back, ziggy" with the saved look.
 
 Everything above under Data + Client rules. Visible result: sign in on your
 phone, arrive as yourself. `npm run build`, then check with two browser
 profiles (the read-only harness can't do this one — it needs the OTP write).
 
-### 1. A — your face is the button (popover grows a photo tile)
+### 1. A — your face is the button — **shipped 2026-09-21** (popover + sheet + `#/me`; the gate deliberately stays persona-only so the door stays short)
 
 The header self-chip already opens the identity popover. Add to the look row
 a ninth tile: a dashed circle with a small camera glyph, label **use my
@@ -101,7 +109,7 @@ photo with the lime selected ring; the persona looks stay one tap away.
 
 Copy in the popover heading once joined: *"you're ziggy · saved to you@…"*.
 
-### 2. The door knows you (gate copy + return state)
+### 2. The door knows you — **shipped 2026-09-21** ("been here before? sign in" beside the keep link; joined = "you're back", your face + *change look*, saved-to line + *not you? sign out*)
 
 - Beside "keep this on your other devices" add **been here before? sign in**.
   Same `JoinForm`, reason line *"type the email you joined with."*
@@ -127,7 +135,7 @@ The sheet is the one place all of it lives together; the popover keeps its
 job as the fast "who am I right now" card and links to the sheet with
 *"more →"*.
 
-### 4. C — `#/me`
+### 4. C — `#/me` — **shipped 2026-09-21** (`pages/Me.tsx`; the sheet links to it as "your page ↗")
 
 A page, not a sheet: `src/pages/Me.tsx`, hash route `#/me`, added to
 `routeFromHash` in `App.tsx`. Same four rows as the sheet, plus **your

@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react";
 import {
@@ -16,6 +17,10 @@ import { MemberFace } from "./MemberFace";
 import { LookRow } from "./LookRow";
 import { JoinForm } from "./JoinForm";
 import { useAccount } from "../live/useJoin";
+import { useAvatarUpload } from "../live/useAvatarUpload";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { PhotoInput } from "./PhotoInput";
+import { resetIdentity } from "../live/identity";
 import { canFollowPointer, type GatePointRef } from "./GateCursor";
 
 /** The room named at the top of the gate: where you are, who lives here, who's in. */
@@ -57,7 +62,14 @@ export function ClaimCard({
 }) {
   const identity = useIdentity();
   const account = useAccount();
-  const [joining, setJoining] = useState(false);
+  /* Which door into the join form: "keep this" (a guest saving what they
+     have) or "sign in" (someone who joined before, on a new browser). Same
+     form, different first line. */
+  const [joining, setJoining] = useState<"keep" | "signin" | null>(null);
+  const [changingLook, setChangingLook] = useState(false);
+  const uploadPhoto = useAvatarUpload();
+  const { signOut } = useAuthActions();
+  const photoRef = useRef<HTMLInputElement | null>(null);
   const [draftName, setDraftName] = useState(identity.name);
   const fallbackName = useRef(identity.name);
   const cardRef = useRef<HTMLFormElement | null>(null);
@@ -144,13 +156,27 @@ export function ClaimCard({
         aria-label="Keep this identity"
       >
         <JoinForm
-          reason="your name, your colour, the spaces you're in — kept, so you're the same person on your phone."
-          onJoined={() => setJoining(false)}
-          onCancel={() => setJoining(false)}
+          title={joining === "signin" ? "sign in" : "keep this"}
+          reason={
+            joining === "signin"
+              ? "type the email you joined with — your name and look come back with it."
+              : "your name, your look, the spaces you're in — kept, so you're the same person on your phone."
+          }
+          onJoined={() => setJoining(null)}
+          onCancel={() => setJoining(null)}
         />
       </section>
     );
   }
+
+  /* Sign out = become a fresh guest. The token swap needs a reload (see
+     JoinForm), and the tab's remembered persona goes with it. */
+  const leaveAccount = () => {
+    void signOut().finally(() => {
+      resetIdentity();
+      window.location.reload();
+    });
+  };
 
   const isGate = variant === "gate";
   const here = room?.presenceCount ?? 0;
@@ -232,7 +258,9 @@ export function ClaimCard({
           and there is no wall. Say so before the fields start. */}
       {isGate && (
         <p className="claim-gate-note">
-          no account needed — your name is just what the room sees
+          {account.joined
+            ? "you're back — this is the name and look you saved"
+            : "no account needed — your name is just what the room sees"}
         </p>
       )}
 
@@ -251,10 +279,38 @@ export function ClaimCard({
         />
       </label>
 
-      <div className="claim-picker-section">
-        <span className="claim-picker-label">pick a look</span>
-        <LookRow name={identity.name} avatarUrl={identity.avatarUrl} onPick={pickLook} />
-      </div>
+      {/* A joined person on the gate already has a look: show it, and keep
+          the eight behind one link. Everyone else picks. */}
+      {isGate && account.joined && !changingLook ? (
+        <div className="claim-return">
+          <button
+            type="button"
+            className="claim-return-face"
+            style={{ "--look": identity.color } as CSSProperties}
+            onClick={() => photoRef.current?.click()}
+            title="use a photo of you"
+          >
+            <MemberFace name={identity.name} avatarUrl={identity.avatarUrl} size="lg" />
+          </button>
+          <div className="claim-return-copy">
+            <span className="claim-picker-label">your look</span>
+            <button type="button" className="claim-join-link claim-return-change" onClick={() => setChangingLook(true)}>
+              change look
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="claim-picker-section">
+          <span className="claim-picker-label">{isGate ? "pick a look" : "your look"}</span>
+          <LookRow
+            name={identity.name}
+            avatarUrl={identity.avatarUrl}
+            onPick={pickLook}
+            onPhoto={isGate ? undefined : () => photoRef.current?.click()}
+          />
+        </div>
+      )}
+      <PhotoInput ref={photoRef} upload={uploadPhoto} />
 
       <button type="submit" className="claim-done">
         {isGate ? (
@@ -271,15 +327,28 @@ export function ClaimCard({
       {account.joined ? (
         <span className="claim-joined-note" title={account.email}>
           saved to {account.email} ✓
+          {" · "}
+          <button type="button" className="claim-join-link claim-signout-link" onClick={leaveAccount}>
+            not you? sign out
+          </button>
         </span>
       ) : (
-        <button
-          type="button"
-          className="claim-join-link"
-          onClick={() => setJoining(true)}
-        >
-          keep this on your other devices
-        </button>
+        <span className="claim-join-links">
+          <button
+            type="button"
+            className="claim-join-link"
+            onClick={() => setJoining("keep")}
+          >
+            keep this on your other devices
+          </button>
+          <button
+            type="button"
+            className="claim-join-link"
+            onClick={() => setJoining("signin")}
+          >
+            been here before? sign in
+          </button>
+        </span>
       )}
     </form>
   );

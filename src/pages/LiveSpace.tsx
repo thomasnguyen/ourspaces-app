@@ -27,6 +27,7 @@ import { JoinForm } from "../components/JoinForm";
 import { useAccount } from "../live/useJoin";
 import { resetIdentity } from "../live/identity";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useAvatarUpload } from "../live/useAvatarUpload";
 import { GateCursor, type GatePoint } from "../components/GateCursor";
 import { MemberFace } from "../components/MemberFace";
 import { PhotoWallGallery } from "../components/PhotoWallGallery";
@@ -410,18 +411,7 @@ export function LiveSpacePage({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const account = useAccount();
   const { signOut } = useAuthActions();
-  const generateUploadUrl = useMutation(api.photos.generateUploadUrl);
-  const storageUrl = useMutation(api.photos.storageUrl);
-  /* Your photo goes straight to Convex storage; the url it hands back is
-     what rides the identity (presence, members, cursors). */
-  const uploadAvatar = useCallback(async (photo: Blob) => {
-    const uploadUrl = await generateUploadUrl({});
-    const response = await fetch(uploadUrl, { method: "POST", headers: { "Content-Type": photo.type }, body: photo });
-    const { storageId } = (await response.json()) as { storageId: Id<"_storage"> };
-    const url = await storageUrl({ storageId });
-    if (!url) throw new Error("no url for upload");
-    return url;
-  }, [generateUploadUrl, storageUrl]);
+  const uploadAvatar = useAvatarUpload();
   /* Sign out = become a fresh guest. The token swap needs a reload (see
      JoinForm), and the tab's remembered persona goes with it. */
   const leaveAccount = useCallback(() => {

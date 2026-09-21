@@ -12,11 +12,14 @@ import { CodeSlots } from "./CodeSlots";
  */
 export function JoinForm({
   reason,
+  title = "keep this",
   onJoined,
   onCancel,
 }: {
   /** One line saying why this is worth doing, in the voice of the moment. */
   reason: string;
+  /** The kicker over the email step: "keep this" for a guest, "sign in" for a return. */
+  title?: string;
   onJoined?: () => void;
   onCancel?: () => void;
 }) {
@@ -67,7 +70,7 @@ export function JoinForm({
       }}
     >
       <span className="claim-card-kicker">
-        {onCode ? "check your email" : "keep this"}
+        {onCode ? "check your email" : title}
       </span>
       <p className="join-form-reason">
         {onCode ? `six numbers, on their way to ${email}.` : reason}

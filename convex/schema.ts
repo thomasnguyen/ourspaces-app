@@ -4,16 +4,18 @@ import { authTables } from "@convex-dev/auth/server";
 import { widgetDataValidator } from "./widgetData";
 import { EMBEDDING_DIMENSIONS } from "./ai";
 
-/**
- * OurSpaces data model. Everything live flows through these reactive tables;
- * presence is ephemeral and TTL'd, and a "frame" is just a widget with
- * type: "frame". Why each table, index and copied field is shaped this way:
- * docs/data-model-plan.md §11.
- */
+// Shape rationale: docs/data-model-plan.md §11.
 export default defineSchema({
-  // Convex Auth owns users/authSessions/authAccounts/… (convex/auth.ts);
-  // members.userId is v.string() so seeded crew ("seed:maya") coexist.
+  // Convex Auth's tables (convex/auth.ts). users grows the profile that
+  // follows a joined person across devices (docs/accounts.md).
   ...authTables,
+  users: defineTable({
+    ...authTables.users.validator.fields,
+    color: v.optional(v.string()),
+    emoji: v.optional(v.string()),
+  })
+    .index("email", ["email"])
+    .index("phone", ["phone"]),
 
   spaces: defineTable({
     name: v.string(),
