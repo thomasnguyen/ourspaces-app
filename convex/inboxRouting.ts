@@ -71,9 +71,48 @@ export function routableText(event: Doc<"emailEvents">): string {
   return parts.filter(Boolean).join("\n");
 }
 
+/**
+ * Mail clients rewrite links on the way out: Gmail wraps every href in
+ * `google.com/url?q=…`, Outlook in a safelinks hop. Left alone, the pile
+ * scrapes the wrapper and the card comes back titled "Redirect Notice" with
+ * google.com as its domain — measured on a real Gmail send, 2026-09-20. Hop
+ * back to the URL the sender actually meant before anything fetches it.
+ */
+function unwrapRedirect(url: string): string {
+  let current = url;
+  for (let hop = 0; hop < 3; hop++) {
+    let parsed: URL;
+    try {
+      parsed = new URL(current);
+    } catch {
+      return current;
+    }
+    const host = parsed.hostname.replace(/^www\./, "");
+    const keys = host === "google.com" || host.startsWith("google.")
+      ? ["q", "url"]
+      : host.endsWith("safelinks.protection.outlook.com")
+        ? ["url"]
+        : host.endsWith("facebook.com")
+          ? ["u"]
+          : host === "out.reddit.com" || host === "away.vk.com"
+            ? ["url"]
+            : [];
+    const hopped = keys
+      .map((key) => parsed.searchParams.get(key) ?? "")
+      .find((value) => /^https?:\/\//i.test(value));
+    if (!hopped) return current;
+    current = hopped;
+  }
+  return current;
+}
+
 export function extractUrls(text: string): string[] {
   const found = text.match(/https?:\/\/[^\s<>"')\]]+/g) ?? [];
-  const cleaned = found.map((url) => url.replace(/[.,;:!?]+$/, ""));
+  const cleaned = found.map((url) =>
+    // &amp; survives an HTML-bodied email; a wrapper's query string needs it
+    // back as & before the real URL can be read out of it.
+    unwrapRedirect(url.replace(/&amp;/g, "&").replace(/[.,;:!?]+$/, "")),
+  );
   return [...new Set(cleaned)].slice(0, 10);
 }
 
