@@ -2,12 +2,10 @@ import {
   useEffect,
   useRef,
   useState,
-  type CSSProperties,
   type FormEvent,
 } from "react";
 import {
   isPersonaName,
-  PERSONAS,
   updateIdentity,
   useIdentity,
   type Persona,
@@ -15,6 +13,7 @@ import {
 import { LiveCursor } from "../cursors";
 import { playSound } from "../lib/sounds";
 import { MemberFace } from "./MemberFace";
+import { LookRow } from "./LookRow";
 import { JoinForm } from "./JoinForm";
 import { useAccount } from "../live/useJoin";
 import { canFollowPointer, type GatePointRef } from "./GateCursor";
@@ -254,32 +253,7 @@ export function ClaimCard({
 
       <div className="claim-picker-section">
         <span className="claim-picker-label">pick a look</span>
-        <div className="claim-look-row">
-          {PERSONAS.map((persona) => {
-            const selected = identity.avatarUrl === persona.avatarUrl;
-            return (
-              <button
-                key={persona.name}
-                type="button"
-                className={`claim-look${selected ? " is-selected" : ""}`}
-                style={{ "--look": persona.color } as CSSProperties}
-                onClick={() => pickLook(persona)}
-                title={persona.name}
-                aria-pressed={selected}
-              >
-                <MemberFace name={persona.name} avatarUrl={persona.avatarUrl} size="md" />
-                {selected && (
-                  <span className="claim-look-selected">
-                    <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
-                      <path d="m2 6 2.5 2.5L10 3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    you
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <LookRow name={identity.name} avatarUrl={identity.avatarUrl} onPick={pickLook} />
       </div>
 
       <button type="submit" className="claim-done">

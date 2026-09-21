@@ -50,7 +50,7 @@ art (`CatalogPreview` for the expanded illustrated gallery) and local catalog
 descriptions live here; styles in index.css “Add tray” and “Browse all”) ·
 `WidgetThreadDock.tsx` ·
 `GlobalChatPanel.tsx` · `ThreadContent.tsx` (messages + composer + promote) ·
-`Rail.tsx` (space rail; the brand mark opens `#/about`, and a sibling fixed
+`Rail.tsx` (space rail; a "you" tile at its foot wears your face + a gear badge and toggles `SettingsSheet.tsx`; the brand mark opens `#/about`, and a sibling fixed
 `about ↗` link sits bottom-right on both room paths. Room tiles handle all
 space navigation; the all-spaces grid button is retired. Both About links
 remember the current room before
@@ -69,7 +69,7 @@ is true but you're not tuned; the label pans the canvas to the card with
 `scrollIntoView` on `[data-widget-id]`; playing from the dock goes through the
 same tune handler as the widget so `playedBy`/`playing` sync) ·
 `CanvasNavigator.tsx` (minimap) · `CanvasEdgePan.tsx` · `SpaceEditorPanel.tsx`
-(theme editor) · `ClaimCard.tsx` (the entry gate + identity popover: room name/faces/live count, the loud name field, eight fictional 3D looks in a four-column picker, lime ring + checkmarked “you” badge on the selected look, Enter submits; on `leaving` the card WAAPI-collapses into the cursor tip) · `GateCursor.tsx` (your own LiveCursor riding the real pointer while the gate is up, `canFollowPointer` = hover + fine pointer; writes the tip position for the collapse to aim at; also mounted while the identity popover is open, with `initialPoint` = the self-face click) · `FirstRunSticky.tsx` ·
+(theme editor) · `SettingsSheet.tsx` (slides out beside the rail: name, your face, `LookRow` with a ninth "my photo" tile, account row = join form or saved-email + sign out; live wiring — storage upload, `JoinForm`, `signOut` — comes in through props so the mock page shows it too; plan in `docs/accounts.md`) · `LookRow.tsx` (the eight persona looks + optional own-photo tile, shared by the gate, popover and sheet; `isPersonaLook`) · `ClaimCard.tsx` (the entry gate + identity popover: room name/faces/live count, the loud name field, eight fictional 3D looks in a four-column picker, lime ring + checkmarked “you” badge on the selected look, Enter submits; on `leaving` the card WAAPI-collapses into the cursor tip) · `GateCursor.tsx` (your own LiveCursor riding the real pointer while the gate is up, `canFollowPointer` = hover + fine pointer; writes the tip position for the collapse to aim at; also mounted while the identity popover is open, with `initialPoint` = the self-face click) · `FirstRunSticky.tsx` ·
 `PlacementGhost.tsx` (pick it up, put it down — a sticker or widget chosen in
 the tray rides the cursor at its real footprint and lands where you click;
 shift-click keeps it in hand, esc/right-click drops it. Rendered inside
@@ -278,7 +278,7 @@ without it a new space renders as the group chat).
 
 **lib/** — `routes.ts` (hash + invite URLs) · `widgetDefaults.ts`
 (`WIDGET_BLUEPRINTS`) · `widgetLabels.ts` · `widgetThreads.ts` · `blockZoom.ts` ·
-`entrance.ts` · `onboarding.ts` · `sounds.ts` · `radio.ts` (SomaFM singleton) ·
+`entrance.ts` · `onboarding.ts` · `avatarPhoto.ts` (centre-square 256px JPEG for your own avatar; data-url fallback for mock) · `sounds.ts` · `radio.ts` (SomaFM singleton) ·
 `backendCounts.ts` · `canvasSpacePan.ts` (hold-Space + drag pans
 `.space-scroll`, Figma-style; used by App.tsx + LiveSpace.tsx) ·
 `linkRanking.ts` (Hot Now's `pinned → voteCount×3 + replyCount×2 → newest`,

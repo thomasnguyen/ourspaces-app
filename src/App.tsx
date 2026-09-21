@@ -15,6 +15,9 @@ import { CanvasEdgePan } from "./components/CanvasEdgePan";
 import type { CanvasPoint } from "./components/FirstRunSticky";
 import { GlobalChatPanel } from "./components/GlobalChatPanel";
 import { Rail } from "./components/Rail";
+import { SettingsSheet } from "./components/SettingsSheet";
+import { useIdentity as useTabIdentity } from "./live/identity";
+import { blobToDataUrl } from "./lib/avatarPhoto";
 import { SpaceEditorPanel } from "./components/SpaceEditorPanel";
 import {
   WidgetThreadDock,
@@ -340,6 +343,8 @@ export default function App() {
     return createLabPeerFeed(getSpace(spaceId).members, getWidgets(spaceId), wanted);
   }, [spaceId]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const tabIdentity = useTabIdentity();
   // Whatever you picked off the tray, riding the cursor until you click it down.
   const [placing, setPlacing] = useState<PlacingItem | null>(null);
   const [placingOrigin, setPlacingOrigin] = useState<
@@ -2026,6 +2031,15 @@ export default function App() {
         }}
         onSelectSpace={selectSpace}
         onCreateClick={openPicker}
+        self={tabIdentity}
+        settingsOpen={settingsOpen}
+        onSettingsClick={() => setSettingsOpen((open) => !open)}
+      />
+      {/* Mock page: the same sheet, photo kept in this tab, no account. */}
+      <SettingsSheet
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        uploadPhoto={blobToDataUrl}
       />
       <SpaceHeader
         // Keyed on the space so switching replays the entrance choreography.

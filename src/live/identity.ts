@@ -145,6 +145,12 @@ export function updateIdentity(
   for (const listener of listeners) listener();
 }
 
+/** Sign out: forget who this tab was. The next load mints a fresh guest. */
+export function resetIdentity() {
+  window.sessionStorage.removeItem(SESSION_KEY);
+  current = null;
+}
+
 export function useIdentity() {
   return useSyncExternalStore(
     (listener) => {

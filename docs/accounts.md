@@ -112,7 +112,7 @@ Copy in the popover heading once joined: *"you're ziggy · saved to you@…"*.
   in sessionStorage for one tick; the hydrate rule overwrites it. No copy
   needed for that.
 
-### 3. B — settings sheet behind a gear
+### 3. B — settings sheet behind a gear — **UI built 2026-09-21** (rail "you" tile, `SettingsSheet.tsx`, `LookRow.tsx`, `lib/avatarPhoto.ts`; photo upload + sign out wired; persistence still step 0)
 
 A small round gear button in the header, right of the self-chip (same black
 sticker material as the invite button). Opens a sheet (`SettingsSheet.tsx`,

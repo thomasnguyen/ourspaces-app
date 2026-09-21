@@ -6,6 +6,7 @@ import { getDataMode } from "../live/dataMode";
 import { getPresenceId } from "../live/identity";
 import { SPACES, SPACES_BY_ID } from "../data/spaces";
 import type { SpaceMeta } from "../data/types";
+import { MemberFace } from "./MemberFace";
 
 /** presence component: "· N here" in the tooltip, separate from the
  * hand-rolled canvas presence system — see convex/roomPresence.ts. Its own
@@ -128,11 +129,18 @@ export function Rail({
   activeSpaceOverride,
   onSelectSpace,
   onCreateClick,
+  self,
+  onSettingsClick,
+  settingsOpen = false,
 }: {
   activeId?: string;
   activeSpaceOverride?: Partial<SpaceMeta>;
   onSelectSpace?: (id: string) => void;
   onCreateClick?: () => void;
+  /** You, at the foot of the rail: the settings button wears your face. */
+  self?: { name: string; color: string; emoji: string; avatarUrl?: string };
+  onSettingsClick?: () => void;
+  settingsOpen?: boolean;
 }) {
   const rememberCurrentSpace = () => {
     if (activeId) rememberSpaceSlug(activeId);
@@ -225,6 +233,29 @@ export function Rail({
           <span className="space-tooltip">new space</span>
         </div>
       </div>
+
+      {self && (
+        <div
+          className="space-link-wrap rail-you-wrap"
+          style={{ "--i": SPACES.length + 2 } as CSSProperties}
+        >
+          <button
+            type="button"
+            className={`rail-you ${settingsOpen ? "is-open" : ""}`}
+            style={{ "--look": self.color } as CSSProperties}
+            aria-label="Settings"
+            onClick={onSettingsClick}
+          >
+            <MemberFace name={self.name} emoji={self.emoji} color={self.color} avatarUrl={self.avatarUrl} size="sm" />
+            <span className="rail-you-gear" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="10" height="10">
+                <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8.4 3.5-.1-1.5 2-1.6-2-3.4-2.4.9a8 8 0 0 0-2.6-1.5L14.9 2H9.1l-.4 2.6a8 8 0 0 0-2.6 1.5l-2.4-.9-2 3.4 2 1.6a8 8 0 0 0 0 3l-2 1.6 2 3.4 2.4-.9a8 8 0 0 0 2.6 1.5l.4 2.6h5.8l.4-2.6a8 8 0 0 0 2.6-1.5l2.4.9 2-3.4-2-1.6.1-1.5Z" fill="currentColor" />
+              </svg>
+            </span>
+          </button>
+          <span className="space-tooltip">you · settings</span>
+        </div>
+      )}
     </aside>
     <a className="app-about-link" href="#/about" onClick={rememberCurrentSpace}>about <span>↗</span></a>
     </>

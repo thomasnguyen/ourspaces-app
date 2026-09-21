@@ -25632,6 +25632,282 @@
   }
 }
 
+/* The ninth look: a photo of you. Dashed until there is one. */
+.claim-look-photo:not(.has-photo) .claim-look-photo-slot {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
+  color: var(--color-lime);
+  transition:
+    border-color var(--dur-quick) var(--ease-glide),
+    background var(--dur-quick) var(--ease-glide),
+    color var(--dur-quick) var(--ease-glide);
+}
+
+.claim-look-photo-slot small {
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.claim-look-photo:hover .claim-look-photo-slot {
+  border-color: transparent;
+  background: var(--color-lime);
+  color: var(--color-sticker);
+}
+
+.claim-look-photo .member-face-img {
+  object-fit: cover;
+}
+
+/* ---- The "you" tile at the foot of the rail + the settings sheet ---- */
+.rail-you-wrap {
+  margin-top: auto;
+  padding-top: 18px;
+}
+
+.rail-you {
+  position: relative;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition:
+    translate var(--dur-quick) var(--ease-glide),
+    background var(--dur-quick) var(--ease-glide),
+    box-shadow var(--dur-quick) var(--ease-glide);
+}
+
+.rail-you .member-face {
+  width: 30px;
+  height: 30px;
+  box-shadow: 0 0 0 2px var(--look);
+}
+
+.rail-you:hover {
+  translate: 0 -3px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.rail-you.is-open {
+  background: var(--color-lime);
+  box-shadow: 0 6px 0 rgba(201, 255, 61, 0.22);
+}
+
+.rail-you-gear {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 2px solid var(--color-rail);
+  border-radius: 50%;
+  background: var(--color-lime);
+  color: var(--color-sticker);
+  transition: rotate var(--dur-base) var(--ease-pop);
+}
+
+.rail-you:hover .rail-you-gear,
+.rail-you.is-open .rail-you-gear {
+  rotate: 90deg;
+}
+
+.rail-you.is-open .rail-you-gear {
+  background: var(--color-sticker);
+  color: var(--color-lime);
+}
+
+.settings-scrim {
+  position: fixed;
+  z-index: 59;
+  inset: 0;
+}
+
+.settings-sheet {
+  position: fixed;
+  z-index: 60;
+  top: 20px;
+  left: 112px;
+  display: flex;
+  width: 296px;
+  max-height: calc(100dvh - 40px);
+  flex-direction: column;
+  gap: 16px;
+  overflow: auto;
+  border-radius: 24px;
+  background: var(--color-sticker);
+  box-shadow: 0 8px 0 rgba(45, 22, 31, 0.26), 0 30px 60px -24px rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 18px;
+  rotate: 0.6deg;
+  transform-origin: bottom left;
+  animation: settings-sheet-in var(--dur-arrive) var(--ease-pop) both;
+}
+
+@keyframes settings-sheet-in {
+  from {
+    opacity: 0;
+    translate: -18px 10px;
+    scale: 0.96;
+  }
+}
+
+.settings-heading strong {
+  color: white;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.settings-you {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.settings-face {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: scale var(--dur-quick) var(--ease-glide);
+}
+
+.settings-face .member-face {
+  width: 64px;
+  height: 64px;
+  box-shadow:
+    0 0 0 2.5px var(--color-sticker),
+    0 0 0 5px var(--look);
+}
+
+.settings-face .member-face-img {
+  object-fit: cover;
+}
+
+.settings-face:hover {
+  scale: 1.06;
+}
+
+.settings-face.is-busy {
+  opacity: 0.6;
+}
+
+.settings-face-hint {
+  position: absolute;
+  right: -4px;
+  bottom: -2px;
+  border: 2px solid var(--color-sticker);
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-sticker);
+  padding: 2px 6px;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.settings-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.settings-name .claim-name-input {
+  min-height: 44px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.settings-sheet .claim-look-row {
+  padding-bottom: 4px;
+}
+
+.settings-account {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 14px;
+}
+
+.settings-account-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-account-email {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.settings-account-email strong {
+  color: white;
+}
+
+.settings-keep {
+  align-self: flex-start;
+}
+
+.settings-signout {
+  align-self: flex-start;
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    border-color var(--dur-quick) var(--ease-glide),
+    color var(--dur-quick) var(--ease-glide);
+}
+
+.settings-signout:hover {
+  border-color: white;
+  color: white;
+}
+
+@media (max-width: 800px) {
+  .settings-sheet {
+    top: auto;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    rotate: 0deg;
+    transform-origin: bottom center;
+  }
+}
+
 .claim-card.is-gate .claim-done {
   min-height: 50px;
   font-size: 15px;

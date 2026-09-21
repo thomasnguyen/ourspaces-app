@@ -22,6 +22,11 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock, radioRoomOf } from "../components/ActionDock";
 import { Canvas, SpaceHeader } from "../components/Canvas";
 import { ClaimCard, type RoomContext } from "../components/ClaimCard";
+import { SettingsSheet } from "../components/SettingsSheet";
+import { JoinForm } from "../components/JoinForm";
+import { useAccount } from "../live/useJoin";
+import { resetIdentity } from "../live/identity";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { GateCursor, type GatePoint } from "../components/GateCursor";
 import { MemberFace } from "../components/MemberFace";
 import { PhotoWallGallery } from "../components/PhotoWallGallery";
@@ -402,6 +407,29 @@ export function LiveSpacePage({
   // The rail's "+" opens the space maker; the dock's add opens the widget
   // picker.
   const [spacePickerOpen, setSpacePickerOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const account = useAccount();
+  const { signOut } = useAuthActions();
+  const generateUploadUrl = useMutation(api.photos.generateUploadUrl);
+  const storageUrl = useMutation(api.photos.storageUrl);
+  /* Your photo goes straight to Convex storage; the url it hands back is
+     what rides the identity (presence, members, cursors). */
+  const uploadAvatar = useCallback(async (photo: Blob) => {
+    const uploadUrl = await generateUploadUrl({});
+    const response = await fetch(uploadUrl, { method: "POST", headers: { "Content-Type": photo.type }, body: photo });
+    const { storageId } = (await response.json()) as { storageId: Id<"_storage"> };
+    const url = await storageUrl({ storageId });
+    if (!url) throw new Error("no url for upload");
+    return url;
+  }, [generateUploadUrl, storageUrl]);
+  /* Sign out = become a fresh guest. The token swap needs a reload (see
+     JoinForm), and the tab's remembered persona goes with it. */
+  const leaveAccount = useCallback(() => {
+    void signOut().finally(() => {
+      resetIdentity();
+      window.location.reload();
+    });
+  }, [signOut]);
   const [canvasAwayFromHome, setCanvasAwayFromHome] = useState(false);
   const [customization, setCustomization] = useState<SpaceCustomization>(() =>
     defaultSpaceCustomization(getSpace(slug)),
@@ -2342,7 +2370,28 @@ export function LiveSpacePage({
 
   return (
     <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${gateLeaving ? "is-gate-leaving" : ""} ${claimOpen ? "has-claim-popover" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""} ${spacePan.panning ? "is-canvas-panning" : ""} ${spacePan.spaceHeld ? "is-space-panning" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
-      <Rail activeId={slug} onSelectSpace={selectSpace} onCreateClick={openSpacePicker} />
+      <Rail
+        activeId={slug}
+        onSelectSpace={selectSpace}
+        onCreateClick={openSpacePicker}
+        self={identity}
+        settingsOpen={settingsOpen}
+        onSettingsClick={() => setSettingsOpen((open) => !open)}
+      />
+      <SettingsSheet
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        uploadPhoto={uploadAvatar}
+        account={account}
+        onSignOut={leaveAccount}
+        joinForm={(done) => (
+          <JoinForm
+            reason="your name, your look, the spaces you're in — kept, so you're the same person on your phone."
+            onJoined={done}
+            onCancel={done}
+          />
+        )}
+      />
       {roomEntered && space?.slug && (
         <RoomPresenceHeartbeat roomId={space.slug} userId={presenceId} />
       )}
