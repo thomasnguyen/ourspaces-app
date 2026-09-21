@@ -13,7 +13,7 @@ https://www.youtube.com/watch?v=0VVFWbfX1QQ · **Build log:** [`hackathon.md`](h
 Built for the [Convex All Gas Hackathon](https://www.convex.dev/hackathons/all-gas)
 by Thomas Nguyen (build) and Holly Tran (design). Vibe coded with Codex in 26 days.
 
-<p align="center"><img src=".github/readme/demo.gif" width="900" alt="the crew: pan the board, open a thread, then over to us two and add a widget"></p>
+<p align="center"><img src=".github/readme/demo.gif" width="900" alt="the crew: pan the board, open a thread on the saved links"></p>
 
 ## Try it in a minute
 
