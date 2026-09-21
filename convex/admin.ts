@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { env, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { env, internalMutation, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { messagesCounter, widgetsCounter } from "./stats";
 import { pollTallies } from "./votes";
@@ -29,6 +29,12 @@ import { pollTallies } from "./votes";
 const BASELINE_VERSION = 1;
 /** A Convex document caps at 1 MiB; the whole database is ~65 KB of board. */
 const MAX_BASELINE_CHARS = 900_000;
+
+const resetAllReturns = v.object({
+  rooms: v.array(v.object({ slug: v.string(), widgets: v.number(), messages: v.number() })),
+  cleared: v.number(),
+  skipped: v.array(v.string()),
+});
 
 function requireAdmin(key: string) {
   const expected = env.ADMIN_KEY?.trim();
@@ -427,28 +433,46 @@ export const resetToBaseline = mutation({
 /** The master reset: every room that has a baseline, put back in one go.
  *  Demo-scale (eight rooms, ~70 widgets, ~90 messages), so a single
  *  transaction covers it — either every room lands or none of them do. */
+async function restoreEveryRoom(ctx: MutationCtx) {
+  const rooms = [];
+  const skipped: string[] = [];
+  let cleared = 0;
+  for (const space of await ctx.db.query("spaces").collect()) {
+    if (!space.slug || space.archivedAt) continue;
+    if (!(await baselineRow(ctx, space.slug))) {
+      skipped.push(space.slug);
+      continue;
+    }
+    const out = await restoreBaseline(ctx, space);
+    cleared += out.removed.widgets + out.removed.messages;
+    rooms.push({ slug: out.slug, widgets: out.restored.widgets, messages: out.restored.messages });
+  }
+  return { rooms, cleared, skipped };
+}
+
 export const resetAll = mutation({
   args: { key: v.string() },
-  returns: v.object({
-    rooms: v.array(v.object({ slug: v.string(), widgets: v.number(), messages: v.number() })),
-    cleared: v.number(),
-    skipped: v.array(v.string()),
-  }),
+  returns: resetAllReturns,
   handler: async (ctx, { key }) => {
     requireAdmin(key);
-    const rooms = [];
-    const skipped: string[] = [];
-    let cleared = 0;
-    for (const space of await ctx.db.query("spaces").collect()) {
-      if (!space.slug || space.archivedAt) continue;
-      if (!(await baselineRow(ctx, space.slug))) {
-        skipped.push(space.slug);
-        continue;
-      }
-      const out = await restoreBaseline(ctx, space);
-      cleared += out.removed.widgets + out.removed.messages;
-      rooms.push({ slug: out.slug, widgets: out.restored.widgets, messages: out.restored.messages });
-    }
-    return { rooms, cleared, skipped };
+    return await restoreEveryRoom(ctx);
+  },
+});
+
+/** The same master reset, on a timer (`convex/crons.ts`, midnight Pacific).
+ *  Rooms are public and unlocked, so a day of visitors leaves drag-scribble
+ *  and spam on the board; every morning it is the room we meant to show.
+ *  No key: crons call internal functions directly, and nothing on the public
+ *  API surface reaches this. */
+export const nightlyReset = internalMutation({
+  args: {},
+  returns: resetAllReturns,
+  handler: async (ctx) => {
+    const out = await restoreEveryRoom(ctx);
+    console.log(
+      `nightly reset: ${out.rooms.length} rooms back to baseline, ${out.cleared} rows cleared` +
+        (out.skipped.length ? `, skipped (no baseline): ${out.skipped.join(", ")}` : ""),
+    );
+    return out;
   },
 });
