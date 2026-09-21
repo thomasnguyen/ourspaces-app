@@ -49,6 +49,7 @@ Product spec and positioning are **local-only** — see the bottom table.
 | Every subsystem explained: mail brain, Firecrawl, AI layer, components | `docs/architecture.md` |
 | The decision model: Jev decides / OpenAI writes, the router split, voice later | `docs/jev.md` |
 | Schema, auth (guest or join), Convex-as-state | `docs/data-model-plan.md` |
+| Accounts: persistent profile, own photo, sign in / out, settings sheet, `#/me` (plan) | `docs/accounts.md` |
 | Email → canvas: the 3 mail cases, router, digest, status, open goals | `docs/mail.md` |
 | Mail arrival — the envelope that narrates the filing (spec + build decisions: stages, state, motion, `#/mail` lab, take reset) | `docs/mail-arrival.md` |
 | Next OpenAI / Firecrawl work (visible filing, recap strip, meal train) | `docs/todos.md` § Next up + `docs/mail.md` goals |

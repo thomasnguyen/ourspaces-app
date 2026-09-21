@@ -1619,6 +1619,13 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Next up
 
+- **Accounts — plan written 2026-09-21, not started.** `docs/accounts.md`.
+  Joined people keep name/colour/look on the `users` row and get it back on
+  any device; own photo via Convex storage; gate grows "been here before?
+  sign in"; gear → settings sheet; `#/me` page with your spaces. Build order
+  0→1→2→3→4, each ships alone. Schema is 8 chars under the 8,000 cap — trim
+  the header comment first.
+
 - **Live connection receipt — shipped 2026-09-17.** The room now explains the
   actions that update for everyone, the crew cake poll has a real vote, and the
   bottom pulse says `live sync · connected for everyone` from the Convex
