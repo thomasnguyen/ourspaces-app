@@ -271,7 +271,7 @@ contains color, symbol and starting widgets. Guests do email + code inline and t
 opens the space) · `components/JoinForm.tsx` (email → six digits →
 "you're in the book" on the claim card; see `docs/data-model-plan.md` §1) ·
 `components/CodeSlots.tsx` (six painted boxes over one real input) ·
-`live/useJoin.ts` (`useJoin` two-step sign-in, `useAccount` guest-vs-joined) · `live/useAuthIdentity.ts` (guest sign-in + adopts the auth id; for a joined person hydrates the tab from the `users` profile once and mirrors edits back — `docs/accounts.md`) · `live/useAvatarUpload.ts` (photo → Convex storage → url) · `pages/Me.tsx` (`#/me`: the settings body + your spaces via `spaces.listMine`) ·
+`live/useJoin.ts` (`useJoin` two-step sign-in + `google()` redirect, `useAccount` guest-vs-joined) · `live/useAuthIdentity.ts` (guest sign-in + adopts the auth id; for a joined person hydrates the tab from the `users` profile once and mirrors edits back — `docs/accounts.md`) · `live/useAvatarUpload.ts` (photo → Convex storage → url) · `pages/Me.tsx` (`#/me`: the settings body + your spaces via `spaces.listMine`) ·
 `live/useCreateSpace.ts` (template → space + its starting widgets) ·
 `live/adapt.ts` `spaceFromLive` (live row → the shape the canvas chrome reads;
 without it a new space renders as the group chat).

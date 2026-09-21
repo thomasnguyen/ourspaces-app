@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { env, httpAction } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import { streamAsk } from "./streaming";
+import { auth } from "./auth";
 
 const http = httpRouter();
 
@@ -237,12 +238,22 @@ http.route({
   }),
 });
 
-// Convex Auth needs no routes here. Sign-in for the Anonymous provider runs
-// through the generated `auth:signIn` action over the Convex client, and the
-// OIDC discovery documents Convex fetches to validate the resulting tokens are
-// served at the root by the authWellKnown component (convex.config.ts) —
-// this router is under httpPrefix "/api", which is the wrong place for them.
-// Only OAuth callbacks and magic links would need more, and we have neither
-// (§1: no email+password, ever).
+// Convex Auth's HTTP routes, minus the two OIDC discovery documents. Those
+// must live at the root and this router is under httpPrefix "/api", so the
+// authWellKnown component serves them (convex.config.ts). The OAuth start +
+// callback routes the library registers as "/api/auth/…" are re-homed here
+// as "/auth/…", which the prefix then serves at exactly the "/api/auth/…"
+// URLs the library redirects to. Guest + email code never touch these.
+const authRoutes = httpRouter();
+auth.addHttpRoutes(authRoutes);
+for (const [path, method, handler] of authRoutes.getRoutes()) {
+  if (!path.startsWith("/api/auth/")) continue;
+  const local = path.slice("/api".length);
+  if (local.endsWith("*")) {
+    http.route({ pathPrefix: local.slice(0, -1), method, handler });
+  } else {
+    http.route({ path: local, method, handler });
+  }
+}
 
 export default http;

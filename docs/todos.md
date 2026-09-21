@@ -5,6 +5,13 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Google sign-in — code shipped 2026-09-21, keys pending.** "continue with
+  Google" on the join form (gate, popover, sheet, `#/me`) once
+  `AUTH_GOOGLE_ID` + `AUTH_GOOGLE_SECRET` are set on the deployment; setup
+  steps in `docs/accounts.md` § Google. Until then nothing changes. Untested
+  end to end (needs the keys); the routes answer at
+  `/api/auth/signin/google`.
+
 - **Accounts — shipped end to end 2026-09-21** (`docs/accounts.md`). A joined
   person's name, colour, emoji and photo live on the `users` row and come back
   on any device (hydrate once per sign-in, mirror edits up, account wins).

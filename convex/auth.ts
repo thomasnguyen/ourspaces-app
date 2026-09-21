@@ -12,9 +12,10 @@
 import { convexAuth, getAuthUserId } from "@convex-dev/auth/server";
 import type { GenericMutationCtx, AnyDataModel } from "convex/server";
 import { Anonymous } from "@convex-dev/auth/providers/Anonymous";
+import Google from "@auth/core/providers/google";
 import { EmailOtp, OTP_PROVIDER_ID } from "./otp";
 import type { DataModel, Id } from "./_generated/dataModel";
-import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { env, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -46,6 +47,41 @@ async function createOrUpdateUser(
 ): Promise<Id<"users">> {
   const ctx = rawCtx as unknown as { db: GenericMutationCtx<DataModel>["db"] };
   const db = ctx.db;
+
+  // Google. The callback runs from the OAuth redirect, so there is no caller
+  // identity to upgrade — the client keeps the person continuous instead
+  // (useAuthIdentity mirrors the tab's name/look up when the row has none).
+  // Link by verified email so someone who joined by code and now taps
+  // Google lands on the same row; seed name + photo from Google only when
+  // the row has no name yet, so a saved profile is never overwritten.
+  if (provider.id === "google") {
+    const email = typeof profile.email === "string" ? profile.email.toLowerCase() : undefined;
+    const now = Date.now();
+    let userId = existingUserId;
+    if (userId === null && email) {
+      const match = await db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", email))
+        .filter((q) => q.neq(q.field("emailVerificationTime"), undefined))
+        .first();
+      userId = match?._id ?? null;
+    }
+    const seed = {
+      name: firstName(profile.name),
+      image: typeof profile.image === "string" ? profile.image : undefined,
+    };
+    if (userId !== null) {
+      const row = await db.get(userId);
+      await db.patch(userId, {
+        email,
+        emailVerificationTime: now,
+        isAnonymous: undefined,
+        ...(row?.name ? {} : seed),
+      });
+      return userId;
+    }
+    return await db.insert("users", { email, emailVerificationTime: now, ...seed });
+  }
 
   // Guest sign-in and anything else: stock behaviour. The whole product walks
   // through here on every first visit.
@@ -111,11 +147,46 @@ async function createOrUpdateUser(
   });
 }
 
+/** "Thomas Nguyen" → "thomas": the room calls people by one lowercase name. */
+function firstName(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  const first = value.trim().split(/\s+/)[0]?.toLowerCase().slice(0, 14);
+  return first || undefined;
+}
+
+/* Google only joins the provider list once its keys are set, so an unset
+   deployment keeps guest + code working and simply never shows the button. */
+const googleReady = Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
+
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   // Anonymous is the guest path; EmailOtp is "join". No email+password,
   // ever (§1 hard rules) — the emailed code is not a password.
-  providers: [Anonymous<DataModel>(), EmailOtp],
-  callbacks: { createOrUpdateUser },
+  providers: [
+    Anonymous<DataModel>(),
+    EmailOtp,
+    ...(googleReady
+      ? [Google({ clientId: env.AUTH_GOOGLE_ID, clientSecret: env.AUTH_GOOGLE_SECRET })]
+      : []),
+  ],
+  callbacks: {
+    createOrUpdateUser,
+    // Where Google sends people back. The client passes its own full URL so
+    // a dev server on localhost round-trips too; anything else falls back
+    // to the site.
+    redirect: async ({ redirectTo }) => {
+      const site = env.SITE_URL ?? "";
+      if (redirectTo.startsWith("/") || redirectTo.startsWith("?")) return `${site}${redirectTo}`;
+      if (redirectTo.startsWith(site) || /^http:\/\/localhost:\d+\//.test(redirectTo)) return redirectTo;
+      return site;
+    },
+  },
+});
+
+/** Which ways in exist on this deployment, so the UI only offers real ones. */
+export const signInOptions = query({
+  args: {},
+  returns: v.object({ google: v.boolean() }),
+  handler: async () => ({ google: googleReady }),
 });
 
 /**

@@ -9728,7 +9728,36 @@
   justify-content: space-between;
 }
 
-.space-maker-keep .join-form-back {
+.space-maker-keep /* Google: one white pill above "send me a code". The four-colour G is the
+   only non-token colour on the card, and it's Google's, not ours. */
+.join-google {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: white;
+  color: var(--color-sticker);
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  transition: translate var(--dur-quick) var(--ease-glide), box-shadow var(--dur-quick) var(--ease-glide);
+}
+
+.join-google:hover {
+  translate: 0 -2px;
+  box-shadow: 0 4px 0 rgba(255, 255, 255, 0.22);
+}
+
+.join-google:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.join-form-back {
   display: inline-flex;
   align-items: center;
   gap: 5px;

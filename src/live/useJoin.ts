@@ -86,7 +86,22 @@ export function useJoin() {
     setError(null);
   }, []);
 
-  return { stage, email, busy, error, sendCode, verify, restart };
+  /* Google: a redirect round-trip. The page leaves, Google asks, the page
+     comes back with ?code= and ConvexAuthProvider finishes the sign-in. We
+     hand it our own full URL so the room (and a localhost dev server) is
+     where you land. */
+  const google = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await signIn("google", { redirectTo: window.location.href });
+    } catch {
+      setError("google didn't answer. try the code instead?");
+      setBusy(false);
+    }
+  }, [signIn]);
+
+  return { stage, email, busy, error, sendCode, verify, restart, google };
 }
 
 /**

@@ -144,6 +144,41 @@ index), as room cards that link to `#/space/<slug>`. Guests get the join form
 and a line saying what the page will show once they're in. The gear (step 3)
 on phones can open this page instead of a sheet if the sheet gets fiddly.
 
+## Google sign-in — code shipped 2026-09-21, keys pending
+
+Convex Auth + Auth.js `Google`. The provider only joins the list when both
+keys are set (`convex/auth.ts` `googleReady`), and `auth.signInOptions`
+tells the UI whether to show the button — so an unset deployment is
+unchanged: guest + code, no button.
+
+**Routes.** The library registers `/api/auth/signin/*` and
+`/api/auth/callback/*`; this app's router is under `httpPrefix: "/api"`, so
+`convex/http.ts` copies those routes off a scratch router and re-homes them
+as `/auth/…`, which the prefix serves at exactly the library's URLs. The two
+`.well-known` documents stay with the authWellKnown component.
+
+**Linking.** The OAuth callback has no caller identity, so there is no
+guest→Google row upgrade; continuity is the client's job (the bridge mirrors
+the tab's name/look up when the row has no name). A row with the same
+verified email (someone who joined by code) is reused. Name + photo are
+seeded from Google only when the row has no name yet.
+
+**Return trip.** The client passes its own full URL as `redirectTo`; the
+`redirect` callback allows the site and `http://localhost:<port>/` so a dev
+server round-trips. `ConvexAuthProvider` consumes `?code=` on load and keeps
+the hash, so you land back in the room, on the gate, as yourself.
+
+**To turn it on (one-time, Google Cloud console):**
+
+1. APIs & Services → OAuth consent screen → External → fill name/support
+   email → **Publish** (in "Testing" only listed test users can sign in —
+   reviewers would be locked out).
+2. Credentials → Create OAuth client ID → Web application. Authorized
+   redirect URI: `https://necessary-cobra-892.convex.site/api/auth/callback/google`.
+3. `npx convex env set AUTH_GOOGLE_ID <client id>` and
+   `npx convex env set AUTH_GOOGLE_SECRET <secret>`. No redeploy needed; the
+   button appears on the next load.
+
 ## Design notes
 
 - Tokens only. Selected ring = `--color-lime`, chrome = black sticker pills,

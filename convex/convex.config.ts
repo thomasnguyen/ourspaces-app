@@ -33,6 +33,9 @@ const app = defineApp({
     AGENTMAIL_API_KEY: v.string(),
     AGENTMAIL_WEBHOOK_SECRET: v.optional(v.string()),
     SITE_URL: v.optional(v.string()),
+    // Google sign-in (docs/accounts.md). Unset = the button never shows.
+    AUTH_GOOGLE_ID: v.optional(v.string()),
+    AUTH_GOOGLE_SECRET: v.optional(v.string()),
     // The only door to the back room (#/admin, convex/admin.ts). Unset =
     // every admin function refuses, so a fresh clone has no reset button.
     ADMIN_KEY: v.optional(v.string()),
