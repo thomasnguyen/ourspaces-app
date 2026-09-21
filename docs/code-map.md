@@ -69,7 +69,7 @@ is true but you're not tuned; the label pans the canvas to the card with
 `scrollIntoView` on `[data-widget-id]`; playing from the dock goes through the
 same tune handler as the widget so `playedBy`/`playing` sync) ·
 `CanvasNavigator.tsx` (minimap) · `CanvasEdgePan.tsx` · `SpaceEditorPanel.tsx`
-(theme editor) · `ClaimCard.tsx` (the entry gate + identity popover: room name/faces/live count, the loud name field, eight one-tap looks, Enter submits; on `leaving` the card WAAPI-collapses into the cursor tip) · `GateCursor.tsx` (your own LiveCursor riding the real pointer while the gate is up, `canFollowPointer` = hover + fine pointer; writes the tip position for the collapse to aim at; also mounted while the identity popover is open, with `initialPoint` = the self-face click) · `FirstRunSticky.tsx` ·
+(theme editor) · `ClaimCard.tsx` (the entry gate + identity popover: room name/faces/live count, the loud name field, eight fictional 3D looks in a four-column picker, lime ring + checkmarked “you” badge on the selected look, Enter submits; on `leaving` the card WAAPI-collapses into the cursor tip) · `GateCursor.tsx` (your own LiveCursor riding the real pointer while the gate is up, `canFollowPointer` = hover + fine pointer; writes the tip position for the collapse to aim at; also mounted while the identity popover is open, with `initialPoint` = the self-face click) · `FirstRunSticky.tsx` ·
 `PlacementGhost.tsx` (pick it up, put it down — a sticker or widget chosen in
 the tray rides the cursor at its real footprint and lands where you click;
 shift-click keeps it in hand, esc/right-click drops it. Rendered inside
@@ -312,6 +312,10 @@ couple, house, league) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes
 character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
 
 ## public/
+
+**avatars/{juno,momo,pico,wren,ziggy,clover,pepper,kiwi}.png** — eight generated
+fictional 3D visitor characters (clover is a red panda), optimized to 256px.
+Existing URLs are preserved so selected looks carry into cursors and saved identities.
 
 **assets/email/signin-header.png** — generated violet masthead (OurSpaces
 wordmark + paper envelope), used by `convex/emails/signIn.ts`. The credential

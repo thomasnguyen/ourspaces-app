@@ -268,6 +268,14 @@ export function ClaimCard({
                 aria-pressed={selected}
               >
                 <MemberFace name={persona.name} avatarUrl={persona.avatarUrl} size="md" />
+                {selected && (
+                  <span className="claim-look-selected">
+                    <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+                      <path d="m2 6 2.5 2.5L10 3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    you
+                  </span>
+                )}
               </button>
             );
           })}

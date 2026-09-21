@@ -13,7 +13,7 @@
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
 - **AI models:** `openai/gpt-4o-mini` for structured decisions and conversation; `openai/text-embedding-3-small` (1536 dimensions) for RAG and related-widget search, both through the Convex AI Gateway
 - **Started:** 2026-08-27T05:09:13Z
-- **Last updated:** 2026-09-20T16:52:28Z
+- **Last updated:** 2026-09-21T03:12:32Z
 
 ## Live demo path
 
@@ -875,3 +875,10 @@ generated candid portraits arrive, hold, and gather into a compact avatar stack.
 Exported a 1080p green-screen MP4, transparent ProRes backup, and screenshot
 preview. Captured in Chrome and inspected key frames; `npm run build` passed.
 Artwork and prompts stay local-only. App presence and backend are unchanged.
+
+### 2026-09-21 - working tree
+Updated the welcome picker with eight fictional 3D avatars, a four-column layout,
+and a consistent lime ring plus checkmarked “you” badge on the selected look.
+Existing image URLs preserve saved identities. Verified desktop and phone rendering,
+look switching, custom-name preservation, and entry dismissal in-browser;
+`npm run build` passed. Local frontend change; not deployed.

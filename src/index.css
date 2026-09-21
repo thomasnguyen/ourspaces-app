@@ -25553,12 +25553,17 @@
 /* Looks: one tap sets colour + face (+ the placeholder name). */
 .claim-look-row {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  justify-items: center;
+  gap: 22px 12px;
+  padding: 5px 0 17px;
 }
 
 .claim-look {
+  position: relative;
   display: grid;
+  width: 100%;
+  max-width: 58px;
   min-width: 0;
   aspect-ratio: 1;
   place-items: center;
@@ -25575,7 +25580,7 @@
 .claim-look .member-face {
   width: 100%;
   height: 100%;
-  box-shadow: 0 0 0 2.5px var(--look);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-card) 22%, transparent);
   transition: box-shadow var(--dur-quick) var(--ease-glide);
 }
 
@@ -25584,18 +25589,38 @@
 }
 
 .claim-look.is-selected {
+  z-index: 1;
   scale: 1.14;
 }
 
 .claim-look.is-selected .member-face {
   box-shadow:
     0 0 0 2.5px var(--color-sticker),
-    0 0 0 5.5px var(--look);
+    0 0 0 5.5px var(--color-lime);
   animation: claim-look-pop var(--dur-arrive) var(--ease-pop) both;
 }
 
 .claim-card:has(.claim-look.is-selected) .claim-look:not(.is-selected):not(:hover) {
-  opacity: 0.72;
+  opacity: 0.64;
+}
+
+.claim-look-selected {
+  position: absolute;
+  bottom: -11px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  transform: translateX(-50%);
+  border: 2px solid var(--color-sticker);
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-sticker);
+  padding: 2px 5px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 @keyframes claim-look-pop {
@@ -25679,7 +25704,7 @@
     font-size: 22px;
   }
   .claim-look-row {
-    gap: 5px;
+    gap: 22px 10px;
   }
 }
 

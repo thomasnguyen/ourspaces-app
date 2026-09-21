@@ -5,6 +5,13 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Welcome avatar picker (2026-09-20):** selected look now has a consistent lime
+  ring and a checkmarked “you” badge. Four-column layout makes faces easier to see.
+  Eight fictional 3D visitor portraits replace the photo-style looks (including a red panda).
+  Existing avatar URLs stay stable for saved identities and cursors. Desktop and 390px phone
+  checked in-browser: selection moves, custom names survive look changes, and Enter opens
+  the room. `npm run build` passed. Local implementation; not deployed.
+
 - **Local thumbnail draft (2026-09-20):** exported 1920 × 1080 artwork and checked
   face/headline at 320 × 180. Generation changed screenshot details, so strict
   source-pixel preservation remains unresolved. Assets and handoff stay in the
