@@ -6,10 +6,9 @@ Convex hackathon entry; deadline Sep 22 2026. Doc index: `docs/doc-map.md`
 
 ## Rules
 
-- **Replies: ≤3 bullets, ≤15 words each. No preamble, no recap, no
-  explanations unless asked.** Lead with the result. The human is on a phone.
-  **Bold** anything needing input, tagged **(question)**. End with one `Do:`
-  line. Applies to plans, summaries, and commit reports too.
+- **Match response depth to the request.** Keep routine updates phone-friendly,
+  but explain strategy, product decisions, and tradeoffs fully when asked.
+  **Bold** anything needing input and tag it **(question)**.
 - **No tests. Ever.** This is a hackathon — no unit tests or any automated
   tests; don't waste time or tokens on them. `npm run build` (typecheck) is the
   check. Visual/live work is verified in the browser.
