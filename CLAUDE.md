@@ -1,5 +1,3 @@
-**Replies: ≤3 bullets, ≤15 words each. No preamble, no recap. End with one `Do:` line.**
-
 **Read `AGENTS.md` first** — it has the project rules (hackathon mode, no
 tests, reply style, design constraints).
 
