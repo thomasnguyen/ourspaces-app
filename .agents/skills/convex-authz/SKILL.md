@@ -25,7 +25,7 @@ A focused authz specialist, not a general reviewer: it finds and fixes the four 
 ## Rules
 
 - MANDATORY FIRST STEP: before injecting requireIdentity/requireOwner, verify the auth foundation exists — an auth.config.ts with a provider AND a users/identities table keyed to the auth subject. If either is missing, do not add ctx.auth-based enforcement (it's non-functional or mismatched and creates a NEW authz defect); instead convert flagged public admin/privileged functions to internalQuery/internalMutation and tell the user to run auth setup first, then re-run convex-authz.
-- Scan objectively before review — run the 4 deterministic greps first; don't skip straight to LLM judgment, and don't let a clean scan stop you from still eyeballing internal/admin exemptions.
+- Scan objectively first — run the 4 deterministic greps; don't skip straight to model review, and don't let a clean scan stop you from still eyeballing internal/admin exemptions.
 - Identity always comes from ctx.auth, never from a client-supplied argument — the one legitimate exception is an internalQuery/internalMutation/internalAction that is never exposed publicly.
 - Every read or mutate keyed by an _id argument must verify ownership server-side (requireOwner or an inlined equivalent comparison) before touching the row — being logged in is not the same as owning this row.
 - Any v.id(...) argument a public mutation uses as a foreign key when inserting or moving a row must have the referenced parent's ownership (or membership) verified against the caller first — creating a child row inside someone else's project/board/account is the same defect as mutating their row, and it survives an identity-from-arg fix unless checked separately.

@@ -87,7 +87,7 @@ Treat `hackathon.md` as public.
 
 - Edit only `hackathon.md` unless the user asks for another change.
 - Never create a Git commit, push, deploy, publish, or submit.
-- Do not score the project or promise how reviewers will evaluate it.
+- Do not predict external evaluation outcomes.
 - Do not rewrite older factual entries for tone alone.
 - If local evidence conflicts with an existing claim, keep the evidence-based
   value and briefly flag the correction.

@@ -172,7 +172,7 @@ the hash, so you land back in the room, on the gate, as yourself.
 
 1. APIs & Services → OAuth consent screen → External → fill name/support
    email → **Publish** (in "Testing" only listed test users can sign in —
-   reviewers would be locked out).
+   visitors would be locked out).
 2. Credentials → Create OAuth client ID → Web application. Authorized
    redirect URI: `https://necessary-cobra-892.convex.site/api/auth/callback/google`.
 3. `npx convex env set AUTH_GOOGLE_ID <client id>` and

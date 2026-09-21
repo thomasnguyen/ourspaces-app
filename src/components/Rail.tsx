@@ -53,7 +53,7 @@ function OnlineDot({ spaceId }: { spaceId: string }) {
 }
 
 /** The first N spaces in SPACES are the worked examples; the rail draws a
- * rule under them (no label) and everything below is what a reviewer makes. */
+ * rule under them (no label) and everything below is what a person makes. */
 const EXAMPLE_COUNT = 3;
 
 const SPACE_COVERS: Record<string, string> = {

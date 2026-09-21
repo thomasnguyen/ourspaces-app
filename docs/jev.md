@@ -84,7 +84,7 @@ does this sound like "I paid for" / "we stayed at", or like "I booked" /
 
 The dates themselves stay where they already are: `today` is computed in
 `routeSmart` and OpenAI pulls the day label in phase B. Code compares them.
-Deterministic code finds the values, Jev reviewers the meaning — that is
+Deterministic code finds the values, Jev interprets the meaning — that is
 TypeSafe's own documented extraction pattern, not a workaround.
 
 ### Building the option lists
@@ -320,7 +320,7 @@ code; Jev only answers "which edge, given this mess?" — as a Choice built
 from the *current* state's outgoing edges, so an illegal transition is
 unrepresentable rather than merely unlikely. Jev is single-turn and has no
 memory, so it can never run the machine. One hop per call. TypeSafe's own
-framing: `state → code → Jev reviewers → code → action`, and "questions
+framing: `state → code → Jev interprets → code → action`, and "questions
 describe judgments; code owns composition, thresholds, and side effects."
 
 ```

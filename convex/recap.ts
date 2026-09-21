@@ -286,7 +286,7 @@ async function askOpenAi(
       .filter((line): line is RecapLine => Boolean(line))
       .slice(0, 4);
     if (lines.length === 0) return null;
-    // `since` is a clock read, not a interpretation call — the model used to be
+    // `since` is a clock read, not an interpretation call — the model used to be
     // asked for it and would copy the example verbatim, so the panel said
     // "since friday" on a Wednesday.
     return { since: weekdaySince(), kind: "daily", lines };

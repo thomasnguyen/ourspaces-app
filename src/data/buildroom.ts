@@ -347,7 +347,7 @@ const RAW: Raw[] = [
     title: "local-first software",
     desc: "Seven ideals for software that keeps working offline.",
     kind: "article", batch: 4, votes: 5,
-    why: "The seven ideals are a evaluation framework — we hit about four, and the missing three are the ones users feel.",
+    why: "The seven ideals are a useful yardstick — we hit about four, and the missing three are the ones users feel.",
     qs: ["which ideal do we fail worst?", "does offline matter for us?"],
   },
   {

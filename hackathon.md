@@ -11,7 +11,7 @@
   - 17 components across 18 mounts; `aggregate` is mounted separately for poll tallies and member counts. Each component's product job is mapped below.
 - **Convex features:** 13 tables, 30 indexes, full-text and vector search, 151 validated queries/mutations/actions, 6 HTTP actions, reactive subscriptions, pagination, auth, file storage, scheduled functions, 4 crons, streaming, agent threads and semantic retrieval.
 - **Auth:** Convex Auth (`@convex-dev/auth`) — anonymous guest sessions, plus join with an emailed six-digit code
-- **AI models:** `openai/gpt-4o-mini` for structured decisions and conversation; `openai/text-embedding-3-small` (1536 dimensions) for RAG and related-widget search, both through the Convex AI Gateway
+- **AI models:** `openai/gpt-4o-mini` for structured decisions and conversation; `openai/text-embedding-3-small` (1536 dimensions) for RAG and related-widget search — both served through the Convex AI Gateway
 - **Started:** 2026-08-27T05:09:13Z
 - **Last updated:** 2026-09-21T03:12:32Z
 
@@ -868,8 +868,8 @@ Recounted the Convex facts against the pushed tree after the admin back room
 landed: 13 tables, 30 indexes (27 in `convex/schema.ts` + 3 in the agentMail
 component schema), 45 queries + 72 mutations + 34 actions = 151, 6 HTTP
 actions. README and the facts block above now agree. Linked the demo video from
-README. Scrubbed the pending diff for secrets and the public docs for
-public wording (none found; the admin key is an env var). Deployed,
+README. Scrubbed the pending diff for secrets and checked the public docs for
+accuracy and private material (the admin key is an env var). Deployed,
 then refreshed the Firecrawl cache of the live origin so its scrape matches the
 deployed page. Listing copy lives in the local submission doc.
 
@@ -886,3 +886,8 @@ and a consistent lime ring plus checkmarked “you” badge on the selected look
 Existing image URLs preserve saved identities. Verified desktop and phone rendering,
 look switching, custom-name preservation, and entry dismissal in-browser;
 `npm run build` passed. Local frontend change; not deployed.
+
+### 2026-09-21 - working tree
+Simplified internal wording across public handoff docs and source comments without
+changing application behavior. Verified the tracked tree contains no audience-specific
+evaluation language. Local documentation cleanup; not deployed.

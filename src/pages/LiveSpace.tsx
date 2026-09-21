@@ -2060,7 +2060,7 @@ export function LiveSpacePage({
       });
   };
   // Opening on a board with no briefing makes one — the empty state was a
-  // dead instruction ("tap ↻") and the first thing a reviewer read.
+  // dead instruction ("tap ↻") and the first thing a newcomer read.
   useEffect(() => {
     if (!recapOpen || latestRecap !== null || recapBusy || recapGenerating.current) return;
     refreshRecap();

@@ -12,7 +12,7 @@ Backward-looking history lives in `hackathon.md`.
   receipt explaining what changed. Keep Convex as shared memory/execution,
   AgentMail as the inbox, and Firecrawl as the web reader. Use the same repo,
   preserve the Convex submission with a tag, and begin the model/backend
-  switch after current review. Nothing implemented or deployed yet.
+  switch after the current submission is complete. Nothing implemented or deployed yet.
 
 - **Google sign-in — code shipped 2026-09-21, keys pending.** "continue with
   Google" on the join form (gate, popover, sheet, `#/me`) once
@@ -62,10 +62,10 @@ Backward-looking history lives in `hackathon.md`.
 
 - **Vibeapps submission package (2026-09-20):** `docs/local/submission-copy.md` top section is
   paste-ready: form fields (app URL stays the bare `.convex.site` origin), 88-char tagline,
-  five bold-lead paragraphs (~150 words) for the readers and the submission packet
+  five bold-lead paragraphs (~150 words)
   (45 + 72 + 34 = 151 stated outright, matching README + `hackathon.md`), YouTube URL
   `https://www.youtube.com/watch?v=0VVFWbfX1QQ`, title + description + chapters, pre-submit order.
-  `submission-preview.html` mirrors it. LinkedIn post = `.private/linkedin-mockup.html`
+  The local submission preview mirrors it. LinkedIn post = `.private/linkedin-mockup.html`
   hook B / Light. Still needed: the LinkedIn post URL for the social field, Holly's email
   for the team row, then the actual paste into VibeApps (needs Thomas signed in).
 
@@ -908,7 +908,7 @@ Backward-looking history lives in `hackathon.md`.
   gone — the rail is the same object in every space. The first three
   spaces (`EXAMPLE_COUNT` in `Rail.tsx`: build room, crew, us two) are the
   examples; a 2px rule (no label — the user cut it) separates them from the
-  spaces a reviewer makes (house, game day) and the `+`. Mobile turns the rule
+  spaces a person makes (house, game day) and the `+`. Mobile turns the rule
   vertical.
 - **App-wide reading pass (2026-09-12):** the user
   clarified that body-text readability applies throughout the app. Messages,
@@ -1672,10 +1672,7 @@ Backward-looking history lives in `hackathon.md`.
   same two-tab demo path and observable connection/write receipts. Its former
   repeated highlight prose is now a tighter implementation-verification block:
   schema, function design, realtime and overall Convex depth each make the
-  quality conclusion explicit and immediately tie it to repository facts. An
-  an intermediate non-product note was removed: the published
-  manifest stops at verifiable product and implementation evidence, with no
-  only verifiable product evidence.
+  quality conclusion explicit and immediately tie it to repository facts.
 
 - **Jev router split** — plan written 2026-09-17, not started. `docs/jev.md`.
   Jev decides where mail goes (typed Choice over the live canvas inventory,
@@ -1772,7 +1769,7 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Decisions
 
-- **2026-09-20 README is for the 15 readers.** Hero capture, demo GIF and three screenshots live in `.github/readme/`; prose cut to 7.2k so nothing falls past the reviewer’s 8,000-char truncation. Repo homepage = ourspaces.io, 9 topics set. Social preview image must be uploaded by hand in GitHub Settings → Social preview (`.github/readme/social-preview.jpg`).
+- **2026-09-20 README launch refresh.** Hero capture, demo GIF and three screenshots live in `.github/readme/`; prose is 7.2k. Repo homepage = ourspaces.io, 9 topics set. Social preview image must be uploaded by hand in GitHub Settings → Social preview (`.github/readme/social-preview.jpg`).
 
 - 2026-09-19: **The three-spaces narration beat is a purpose-built 2.5-second
   insert.** `.context/web-video/spaces-pop.html` opens on the near-black wall,
