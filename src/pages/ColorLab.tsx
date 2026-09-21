@@ -21,18 +21,25 @@ const COLORS: Record<string, string> = {
   holly: "var(--color-couple)",
 };
 
-function frameUrl(as: string) {
+/* `?door=1`: the laptop starts on the space with the door widget in view, so a
+   take can show the click that opens the room; the phone is already inside. */
+function frameUrl(as: string, atDoor = false) {
   const { origin, pathname } = window.location;
-  return `${origin}${pathname}?mock=1&sync=color&as=${encodeURIComponent(as)}&room=us-color#/space/couple`;
+  const room = atDoor ? "" : "&room=us-color";
+  return `${origin}${pathname}?mock=1&sync=color&as=${encodeURIComponent(as)}${room}#/space/couple`;
 }
 
 export function ColorLab() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const rec = params.get("rec") === "1";
+  const door = params.get("door") === "1";
   const [left, setLeft] = useState(params.get("left") ?? "thomas");
   const [right, setRight] = useState(params.get("right") ?? "holly");
   const [generation, setGeneration] = useState(0);
   const [fit, setFit] = useState({ laptop: 0.8, phone: 0.9 });
+  // both frames have fired load — the recorder waits on `.color-lab[data-ready]`
+  const [loaded, setLoaded] = useState(0);
+  const onFrameLoad = () => setLoaded((value) => value + 1);
 
   /* Both devices are rendered at their real CSS size and scaled to the
      window, so the app inside lays out exactly as it would on that device. */
@@ -66,6 +73,7 @@ export function ColorLab() {
   return (
     <main
       className="color-lab"
+      data-ready={loaded >= 2 ? "" : undefined}
       style={{ "--laptop-s": fit.laptop, "--phone-s": fit.phone } as CSSProperties}
     >
       <section className="color-lab-device is-laptop" style={{ "--who": COLORS[left] } as CSSProperties}>
@@ -77,7 +85,8 @@ export function ColorLab() {
           <div className="color-lab-screen">
             <iframe
               key={`${left}-${generation}`}
-              src={frameUrl(left)}
+              src={frameUrl(left, door)}
+              onLoad={onFrameLoad}
               title={left}
               width={LAPTOP.w}
               height={LAPTOP.h}
@@ -94,6 +103,7 @@ export function ColorLab() {
             <iframe
               key={`${right}-${generation}`}
               src={frameUrl(right)}
+              onLoad={onFrameLoad}
               title={right}
               width={PHONE.w}
               height={PHONE.h - PHONE_STATUS_BAR}
