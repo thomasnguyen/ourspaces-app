@@ -176,8 +176,13 @@ the hash, so you land back in the room, on the gate, as yourself.
 2. Credentials → Create OAuth client ID → Web application. Authorized
    redirect URI: `https://necessary-cobra-892.convex.site/api/auth/callback/google`.
 3. `npx convex env set AUTH_GOOGLE_ID <client id>` and
-   `npx convex env set AUTH_GOOGLE_SECRET <secret>`. No redeploy needed; the
-   button appears on the next load.
+   `npx convex env set AUTH_GOOGLE_SECRET <secret>`.
+4. **Redeploy** (`npx convex deploy`). The library only registers the
+   `/api/auth/…` routes when an OAuth provider is in the list, and the route
+   table is built at push time — verified 2026-09-21: with the keys unset,
+   `npx convex function-spec` lists no auth routes. After the push, check the
+   spec shows `GET /auth/signin/*` and the callback, then load the app: the
+   button is on the join form.
 
 ## Design notes
 
