@@ -24,14 +24,11 @@ import type { LanguageModelV4 } from "@ai-sdk/provider";
  */
 
 const GATEWAY_BASE_URL = "https://ai-gateway.convex.dev/v1";
-/** Gateway model ids are `provider/model`. */
-const GATEWAY_CHAT_MODEL = "openai/gpt-4o-mini";
+/** Gateway model ids are `provider/model`; chat ids are inlined at the
+ * call sites in chatTarget() below. */
 const GATEWAY_EMBEDDING_MODEL = "openai/text-embedding-3-small";
 /** The gateway rejects an embeddings batch larger than this. */
 const GATEWAY_MAX_EMBEDDINGS_PER_CALL = 512;
-/** RoomDone's shared Cloudflare Worker — OpenAI-shaped /v1 in front of Workers AI. */
-const PROXY_CHAT_MODEL = "@cf/openai/gpt-oss-120b";
-const OPENAI_CHAT_MODEL = "gpt-4o-mini";
 // The shared proxy is chat-only (no /v1/embeddings) — on that path rag needs
 // real OpenAI. The gateway has both, and routes this id to the same model.
 export const EMBEDDING_MODEL = "text-embedding-3-small";
@@ -70,7 +67,7 @@ export function chatTarget(): ChatTarget | null {
     return {
       kind: "gateway",
       url: `${GATEWAY_BASE_URL}/chat/completions`,
-      model: GATEWAY_CHAT_MODEL,
+      model: "openai/gpt-4o-mini",
     };
   }
   const proxyUrl = env.AI_PROXY_URL?.trim().replace(/\/$/, "");
@@ -80,7 +77,7 @@ export function chatTarget(): ChatTarget | null {
       kind: "proxy",
       url: `${proxyUrl}/chat/completions`,
       token: proxyToken,
-      model: PROXY_CHAT_MODEL,
+      model: "@cf/openai/gpt-oss-120b",
     };
   }
   const openai = env.OPENAI_API_KEY?.trim();
@@ -89,7 +86,7 @@ export function chatTarget(): ChatTarget | null {
       kind: "openai",
       url: "https://api.openai.com/v1/chat/completions",
       token: openai,
-      model: OPENAI_CHAT_MODEL,
+      model: "gpt-4o-mini",
     };
   }
   return null;
@@ -118,7 +115,7 @@ export function languageModel(): LanguageModelV4 {
     name: target?.kind === "proxy" ? "ourspaces-proxy" : "openai",
     apiKey: target?.token ?? "unconfigured",
   });
-  return provider(target?.model ?? OPENAI_CHAT_MODEL);
+  return provider(target?.model ?? "gpt-4o-mini");
 }
 
 /** rag's and similar's embedding model. The gateway's
