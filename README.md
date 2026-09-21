@@ -63,7 +63,10 @@ AgentMail · Firecrawl · OpenAI
 - **Schema:** 13 tables, 30 indexes, 1 full-text search index, 1 vector index —
   spaces, members, widgets (a 33-arm `data` union validating 32 widget types),
   messages, votes, paint marks, recaps, presence, ask streams, email events,
-  saved room baselines. `widgets.by_embedding` powers "already on the board"
+  saved room baselines. Every field carries a `v.` validator and every
+  relation is a typed `v.id()` link (widgets, members, messages → spaces;
+  votes → widgets); each index is a single or compound key matched to one
+  access pattern. `widgets.by_embedding` powers "already on the board"
   (`convex/similar.ts`): arriving mail is embedded and `ctx.vectorSearch` asks
   if the room has it.
 - **Realtime:** every in-space surface is a Convex subscription — no refetch,
@@ -94,6 +97,10 @@ AgentMail · Firecrawl · OpenAI
 - **Functions:** 45 queries + 72 mutations + 34 actions = 151, every one with
   a `returns:` validator. Plus 6 HTTP actions (svix-verified inbound mail,
   `/api/ask-stream`), which return a `Response` and so have no `returns:` slot.
+  All use the object syntax with `args` + `returns`. Every database read goes
+  through `withIndex`, a search index or `ctx.vectorSearch`; there is no
+  `.filter()` on a query anywhere in `convex/`. Queries only read, mutations
+  only write, actions own every network call.
 - **Scheduling:** 4 crons (stale-presence sweep every 5 min, daily recap via
   workpool, Friday digest via a durable workflow, Friday stale-link refresh) +
   scheduled functions. **File storage:** photo-wall uploads become prints.

@@ -390,7 +390,7 @@ export const latest = query({
   handler: async (ctx, { spaceId }) => {
     return await ctx.db
       .query("recaps")
-      .withIndex("by_space_created", (q) => q.eq("spaceId", spaceId))
+      .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
       .order("desc")
       .first();
   },
@@ -413,9 +413,8 @@ export const listSpacesDueForRecap = internalQuery({
       // too, and letting that count would silence the next morning's recap.
       const lastDaily = await ctx.db
         .query("recaps")
-        .withIndex("by_space_created", (q) => q.eq("spaceId", space._id))
+        .withIndex("by_space_kind_created", (q) => q.eq("spaceId", space._id).eq("kind", "daily"))
         .order("desc")
-        .filter((q) => q.eq(q.field("kind"), "daily"))
         .first();
       if (!lastDaily || space.lastActivityAt > lastDaily.createdAt) {
         due.push(space._id);

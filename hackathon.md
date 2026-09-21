@@ -41,13 +41,17 @@ It works without an account.
   and compound access-pattern indexes cover space, widget, user, status and
   time. High-churn presence is isolated from stable member rows; deliberate
   hot-path denormalization keeps author identity on messages; a commit-order
-  cursor backs the batch queue. One space-filtered full-text index, one
+  cursor backs the batch queue. Every field carries a validator and every
+  relation is a typed `v.id()` link; each index is a single or compound key
+  matched to one access pattern. One space-filtered full-text index, one
   space-filtered 1536-dimensional vector index and a 33-arm `widgets.data`
   discriminated union cover search, semantic retrieval and 32 specifically
   validated widget types (`convex/schema.ts`, `convex/widgetData.ts`).
 - The backend keeps strict query, mutation and action boundaries across 45
-  queries, 72 mutations and 34 actions; all 151 declare argument and return
-  validators. Named indexes and cursor pagination serve reactive reads such as
+  queries, 72 mutations and 34 actions; all 151 use the object function syntax
+  and declare argument and return validators. Every database read is served by
+  `withIndex`, a search index or `ctx.vectorSearch`, with zero `.filter()` on
+  database queries. Named indexes and cursor pagination serve reactive reads such as
   `spaces.getSpaceWithWidgets` and `messages.listBySpace`;
   transactional writes enforce space scope; vote mutations update their source
   rows and aggregate mirror atomically; actions such as

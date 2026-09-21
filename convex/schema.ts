@@ -151,9 +151,9 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_space", ["spaceId"])
-    .index("by_space_created", ["spaceId", "createdAt"]),
+    .index("by_space_kind_created", ["spaceId", "kind", "createdAt"]),
 
-  // /api/ask-stream is handed only a streamId; it looks the rest up here.
+  // /api/ask-stream gets a streamId only; the rest lives here.
   askStreams: defineTable({
     spaceId: v.id("spaces"), streamId: v.string(), question: v.string(),
     messageId: v.id("messages"), // the recap turn to fill in when done
