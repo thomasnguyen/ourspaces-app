@@ -1491,6 +1491,18 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now also working
 
+- **Catch me up is a briefing, not a chat box (Sep 21).** Display title +
+  `since friday` pill (the `cached` debug pill is gone), lime numerals, a
+  sticker chip per line that pans the board to the card *beside* the panel
+  (it used to center the card behind itself), starter questions for the
+  first tap, answers wearing chips for the cards they name. Opening on a
+  board with no briefing generates one (the nightly reset wipes `recaps`, the
+  8am cron only refills rooms with activity) with a `reading the board` pill
+  and the ring hopping card to card. Phone: canvas stacking pinned so cited
+  cards no longer paint over the panel. Shots: `.context/shot-recap.mjs`
+  (mock, + hover + 390px) and `.context/shot-recap-live.mjs` (read-only
+  live, the reading state).
+
 - **One master reset, and the message-loss bug it found** (2026-09-19).
   `reset every room` sits above the room list on `#/admin` and replays every
   baseline in a single transaction (`admin:resetAll`); rooms with no baseline

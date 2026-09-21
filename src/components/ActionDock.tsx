@@ -11,6 +11,7 @@ import {
   type RecapLine,
   type RecapTurn,
 } from "../data/recap";
+import { citesIn, type RecapTarget } from "../lib/recapBoard";
 import {
   DEFAULT_STATION_ID,
   getRadioSnapshot,
@@ -20,6 +21,9 @@ import {
   subscribeRadio,
 } from "../lib/radio";
 import { playSound } from "../lib/sounds";
+
+/** First-tap questions — shown until the thread has a turn. */
+const RECAP_STARTERS = ["what's still undecided?", "who hasn't answered?", "what did I miss in chat?"];
 
 export type DockRadioRoom = {
   widgetId: string;
@@ -152,6 +156,8 @@ export function ActionDock({
   recapTurnsReady = true,
   onRecapRefresh,
   onRecapAsk,
+  recapTargets = [],
+  onRecapJumpWidget,
   radioRoom,
   onRadioTune,
 }: {
@@ -177,6 +183,9 @@ export function ActionDock({
   recapTurnsReady?: boolean;
   onRecapRefresh?: () => void;
   onRecapAsk?: (text: string) => void;
+  /** The board's cards, for the chips under lines and answers. */
+  recapTargets?: RecapTarget[];
+  onRecapJumpWidget?: (widgetId: string) => void;
   radioRoom?: DockRadioRoom;
   onRadioTune?: (widgetId: string, tune: { stationId: string; playing: boolean }) => void;
 }) {
@@ -306,15 +315,20 @@ export function ActionDock({
   // The wait lives inside the live turn's own bubble, so no separate row.
   const showLooking = recapAsking && !incoming && !liveTurn;
 
-  const ask = (event: FormEvent) => {
-    event.preventDefault();
-    const text = draft.trim();
+  const askText = (raw: string) => {
+    const text = raw.trim();
     if (!text || recapAsking || recapLoading || streaming) return;
     onRecapAsk?.(text);
     setDraft("");
   };
-
+  const ask = (event: FormEvent) => {
+    event.preventDefault();
+    askText(draft);
+  };
   const thinking = recapLoading;
+  const landed = recapLines.length === 0 || revealed >= recapLines.length;
+  const showStarters =
+    Boolean(onRecapAsk) && !thinking && landed && recapTurns.length === 0 && !showLooking;
 
   return (
     <nav className="action-dock" aria-label="Space actions">
@@ -330,7 +344,15 @@ export function ActionDock({
               <span className="recap-badge" aria-hidden="true">
                 ✦
               </span>
-              <span className="recap-since">{recapSince}</span>
+              <span className="recap-title">what moved</span>
+              {thinking ? (
+                <span className="recap-since is-reading">
+                  <i aria-hidden="true" />
+                  reading the board
+                </span>
+              ) : recapSince ? (
+                <span className="recap-since">{recapSince}</span>
+              ) : null}
             </span>
             <span className="recap-panel-actions">
               <button
@@ -375,35 +397,70 @@ export function ActionDock({
               <p className="recap-empty">
                 {recapCached
                   ? "nothing moved — the board looks like you left it"
-                  : "no briefing yet — tap ↻ to make one"}
+                  : "nothing to report yet — tap ↻ to look again"}
               </p>
             ) : (
-              <ul className="recap-list" onMouseLeave={() => onRecapHover(null)}>
-                <li className="recap-kicker" aria-hidden="true">
-                  what moved
-                </li>
-                {recapLines.slice(0, revealed).map((line) => (
-                  <li
-                    key={line.text}
-                    className={line.messageId ? "is-unrescued" : ""}
-                    onMouseEnter={() => onRecapHover(line.widgetId ?? null)}
+              <ol className="recap-list" onMouseLeave={() => onRecapHover(null)}>
+                {recapLines.slice(0, revealed).map((line, index) => {
+                  const target = line.widgetId
+                    ? recapTargets.find((row) => row.id === line.widgetId)
+                    : undefined;
+                  return (
+                    <li
+                      key={line.text}
+                      className={line.messageId ? "is-unrescued" : ""}
+                      onMouseEnter={() => onRecapHover(line.widgetId ?? null)}
+                    >
+                      <span className="recap-num" aria-hidden="true">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <div className="recap-line">
+                        <p>{line.text}</p>
+                        {(target || line.messageId) && (
+                          <span className="recap-chips">
+                            {target && (
+                              <button
+                                type="button"
+                                className="recap-chip"
+                                onClick={() => onRecapJumpWidget?.(target.id)}
+                              >
+                                {target.label}
+                                <i aria-hidden="true">↗</i>
+                              </button>
+                            )}
+                            {line.messageId && (
+                              <button
+                                type="button"
+                                className="recap-chip is-chat"
+                                onClick={() => onRecapJump(line.messageId!)}
+                              >
+                                still in chat
+                                <i aria-hidden="true">→</i>
+                              </button>
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+
+            {showStarters && (
+              <div className="recap-starters">
+                {RECAP_STARTERS.map((question, index) => (
+                  <button
+                    type="button"
+                    key={question}
+                    className="recap-starter"
+                    style={{ "--i": index } as never}
+                    onClick={() => askText(question)}
                   >
-                    <span className="recap-dot" aria-hidden="true" />
-                    {line.messageId ? (
-                      <button
-                        type="button"
-                        className="recap-jump"
-                        onClick={() => onRecapJump(line.messageId!)}
-                      >
-                        {line.text}
-                        <span className="recap-jump-hint">go find it →</span>
-                      </button>
-                    ) : (
-                      <p>{line.text}</p>
-                    )}
-                  </li>
+                    {question}
+                  </button>
                 ))}
-              </ul>
+              </div>
             )}
 
             {!thinking && (recapTurns.length > 0 || showLooking) && (
@@ -422,6 +479,7 @@ export function ActionDock({
                   // the thinking dots and then fills in — never a spinner that
                   // swaps itself out for a finished paragraph.
                   const waiting = Boolean(turn.streaming) && !text;
+                  const cites = turn.isRecap && !live ? citesIn(text, recapTargets) : [];
                   return (
                     <li
                       key={turn.id}
@@ -453,6 +511,23 @@ export function ActionDock({
                           {text}
                           {live && <span className="recap-caret" aria-hidden="true" />}
                         </p>
+                      )}
+                      {cites.length > 0 && (
+                        <span className="recap-chips">
+                          {cites.map((cite) => (
+                            <button
+                              type="button"
+                              key={cite.id}
+                              className="recap-chip"
+                              onMouseEnter={() => onRecapHover(cite.id)}
+                              onMouseLeave={() => onRecapHover(null)}
+                              onClick={() => onRecapJumpWidget?.(cite.id)}
+                            >
+                              {cite.label}
+                              <i aria-hidden="true">↗</i>
+                            </button>
+                          ))}
+                        </span>
                       )}
                     </li>
                   );

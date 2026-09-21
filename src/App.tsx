@@ -68,6 +68,7 @@ import {
   incrementBuildClubVisitorCount,
 } from "./lib/onboarding";
 import { widgetLabel } from "./lib/widgetLabels";
+import { panToWidget, recapTargetsOf } from "./lib/recapBoard";
 import {
   freshWidgetData,
   getWidgetBlueprint,
@@ -1651,13 +1652,7 @@ export default function App() {
     setRecapCites((current) => [...current, widgetId]);
     playSound("place");
 
-    if (count === 1) {
-      requestAnimationFrame(() => {
-        document
-          .querySelector(`[data-widget-id="${widgetId}"]`)
-          ?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-      });
-    }
+    if (count === 1) requestAnimationFrame(() => panToWidget(widgetId));
   }, []);
 
   const mockRecapReply = (text: string) => {
@@ -2447,6 +2442,12 @@ export default function App() {
           setRecapRunId((id) => id + 1);
         }}
         onRecapAsk={onMockRecapAsk}
+        recapTargets={recapTargetsOf(visibleWidgets)}
+        onRecapJumpWidget={(widgetId) => {
+          playSound("tap");
+          setRecapCites([widgetId]);
+          panToWidget(widgetId);
+        }}
         onRecapReveal={revealRecap}
         onRecapClose={closeRecap}
         onRecapHover={setRecapHover}

@@ -26242,3 +26242,263 @@
     animation: none;
   }
 }
+
+/* ── CATCH ME UP — BRIEFING PASS (Sep 21) ───────────────────────────────────
+   The panel read as a generic chat box: grey kicker, three same-weight
+   bullets, a "cached" debug pill, and it panned the cited card to dead
+   center — right behind itself. Now it's a briefing: display title, lime
+   numerals, a white sticker chip per line that pans the board to the card
+   (clear of the panel, src/lib/recapBoard.ts), starter questions for the
+   first tap, and answers wearing chips for the cards they name. While the
+   board is being read the ring hops card to card (`.is-recap-scan`). */
+
+.recap-panel {
+  width: 420px;
+}
+
+.recap-head-id {
+  min-width: 0;
+  gap: 8px;
+}
+
+.recap-title {
+  color: white;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* the clock read — quiet; the badge keeps the lime */
+.recap-since {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 5px 10px;
+  white-space: nowrap;
+  animation: recap-turn-in var(--dur-base) var(--ease-pop) both;
+}
+
+.recap-since.is-reading {
+  color: var(--color-lime);
+}
+
+.recap-since.is-reading i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-lime);
+  animation: recap-think 900ms ease-in-out infinite;
+}
+
+/* lines — numeral, sentence, chip */
+.recap-list {
+  gap: 2px;
+  padding: 2px 0 0;
+}
+
+.recap-list li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: start;
+  gap: 0 8px;
+  border-radius: 14px;
+  padding: 9px 10px 10px 8px;
+}
+
+.recap-num {
+  color: var(--color-lime);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 22px;
+  animation: recap-num-in 520ms var(--ease-pop) both;
+}
+
+@keyframes recap-num-in {
+  from {
+    scale: 0;
+    rotate: -20deg;
+  }
+}
+
+.recap-list li.is-unrescued .recap-num {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.recap-line {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.recap-list .recap-line p {
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.4;
+}
+
+/* sticker chips — white slab, black ink, a tilt that straightens on hover */
+.recap-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.action-dock .recap-chip {
+  display: inline-flex;
+  min-height: 0;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+  color: var(--color-sticker);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  padding: 4px 9px 4px 10px;
+  rotate: -1.5deg;
+  transition:
+    rotate var(--dur-quick) var(--ease-glide),
+    translate var(--dur-quick) var(--ease-glide),
+    background var(--dur-quick) ease-out,
+    box-shadow var(--dur-instant) ease-out;
+  animation: recap-chip-in 420ms var(--ease-pop) 120ms both;
+}
+
+.action-dock .recap-chip i {
+  font-size: 11px;
+  font-style: normal;
+  transition: translate var(--dur-quick) var(--ease-glide);
+}
+
+.action-dock .recap-chip:hover {
+  translate: 0 -1px;
+  rotate: 0deg;
+  background: var(--color-lime);
+}
+
+.action-dock .recap-chip:hover i {
+  translate: 2px -1px;
+}
+
+.action-dock .recap-chip:active {
+  translate: 0 1px;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0.5);
+}
+
+.action-dock .recap-chip.is-chat {
+  background: var(--color-lime);
+  rotate: 1.5deg;
+}
+
+.action-dock .recap-chip.is-chat:hover {
+  background: white;
+}
+
+@keyframes recap-chip-in {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+/* first-tap questions — gone once the thread exists */
+.recap-starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 2px 2px;
+}
+
+.action-dock .recap-starter {
+  min-height: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 11px;
+  transition:
+    background var(--dur-quick) ease-out,
+    color var(--dur-quick) ease-out,
+    translate var(--dur-quick) var(--ease-glide);
+  animation: recap-turn-in var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(200ms + var(--i, 0) * 60ms);
+}
+
+.action-dock .recap-starter:hover {
+  translate: 0 -1px;
+  background: white;
+  color: var(--color-sticker);
+}
+
+/* an answer that names a card wears the card's chip */
+.recap-thread li .recap-chips {
+  padding: 1px 0 0 2px;
+}
+
+.recap-thread li .recap-chips .recap-chip {
+  animation-delay: 0ms;
+}
+
+/* while the board is being read: the ring hops card to card */
+.widget-group.is-recap-scan .widget-group-body {
+  border-radius: 20px;
+  outline: 3px solid var(--color-lime);
+  outline-offset: 6px;
+  animation: recap-scan 560ms var(--ease-glide) both;
+}
+
+@keyframes recap-scan {
+  0% {
+    outline-color: rgba(201, 255, 61, 0);
+    outline-offset: 18px;
+  }
+  35% {
+    outline-color: rgba(201, 255, 61, 1);
+    outline-offset: 6px;
+  }
+  100% {
+    outline-color: rgba(201, 255, 61, 0);
+    outline-offset: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recap-num,
+  .recap-since,
+  .action-dock .recap-chip,
+  .action-dock .recap-starter,
+  .widget-group.is-recap-scan .widget-group-body {
+    animation: none;
+  }
+}
+
+/* Phone: the scale layer is flattened there, so the cited card's z-index
+   (99998) escaped the canvas and painted over the panel. Pin a stacking
+   context on the canvas itself; on desktop the layer's transform is one. */
+@media (max-width: 800px) {
+  .space-canvas {
+    isolation: isolate;
+  }
+}
+
+@media (max-width: 480px) {
+  .recap-panel {
+    width: calc(100vw - 20px);
+    left: calc(50% - 50vw + 10px);
+  }
+}

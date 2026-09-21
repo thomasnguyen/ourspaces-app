@@ -57,8 +57,14 @@ remember the current room before
 navigating, including the default `#/` room; `OnlineCountSuffix` shows "· N here" per space via the
 presence component's `roomPresence.onlineCountForSpace`, mounted by
 `LiveSpace.tsx`'s `RoomPresenceHeartbeat` once a room is entered) ·
-`ActionDock.tsx` (bottom dock + catch-me-up panel:
-briefing, ↻ refresh, follow-up composer — a turn marked `streaming`
+`ActionDock.tsx` (bottom dock + catch-me-up panel — a briefing, not a
+chat box: display title `what moved` + quiet `since friday` pill (or
+`reading the board` while generating), lime numerals, a white sticker chip
+per line naming the card (`recapTargets`, click = `onRecapJumpWidget` pans
+the board clear of the panel via `lib/recapBoard.ts`), a lime `still in
+chat →` chip for the unrescued line, three starter questions until the
+thread has a turn, answers wearing chips for the cards they name
+(`citesIn`); ↻ refresh, follow-up composer — a turn marked `streaming`
 (live mode: text arriving over `/api/ask-stream`) renders as it lands, with the
 thinking dots inside its own bubble until the first characters, and is kept out
 of the canned mock reveal; also the room radio chip `DockRadio` —
@@ -277,7 +283,12 @@ opens the space) · `components/JoinForm.tsx` (email → six digits →
 without it a new space renders as the group chat).
 
 **lib/** — `routes.ts` (hash + invite URLs) · `widgetDefaults.ts`
-(`WIDGET_BLUEPRINTS`) · `widgetLabels.ts` · `widgetThreads.ts` · `blockZoom.ts` ·
+(`WIDGET_BLUEPRINTS`) · `widgetLabels.ts` · `recapBoard.ts` (catch-me-up ↔
+board: `recapTargetsOf` card labels, `citesIn` title/type-word matching for
+answer chips, `panToWidget` scrolls the cited card into whichever side of
+the viewport the panel leaves clear, `startBoardScan` hops `.is-recap-scan`
+across cards in reading order while the model reads; LiveSpace auto-runs
+`recap.generate` when the panel opens on a board with no briefing) · `widgetThreads.ts` · `blockZoom.ts` ·
 `entrance.ts` · `onboarding.ts` · `avatarPhoto.ts` (centre-square 256px JPEG for your own avatar; data-url fallback for mock) · `sounds.ts` · `radio.ts` (SomaFM singleton) ·
 `backendCounts.ts` · `canvasSpacePan.ts` (hold-Space + drag pans
 `.space-scroll`, Figma-style; used by App.tsx + LiveSpace.tsx) ·

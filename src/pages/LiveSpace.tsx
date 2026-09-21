@@ -98,6 +98,7 @@ import useRoomPresence from "@convex-dev/presence/react";
 import { useShowAfter } from "../lib/entrance";
 import { freshWidgetData, getWidgetBlueprint } from "../lib/widgetDefaults";
 import { widgetLabel } from "../lib/widgetLabels";
+import { panToWidget, recapTargetsOf, startBoardScan } from "../lib/recapBoard";
 import { widgetSupportsThread } from "../lib/widgetThreads";
 import { RSVP_CHOICES, type RsvpStatus } from "../widgets/extras";
 import type { CozyColorStroke } from "../widgets/CozyColorWidget";
@@ -1332,7 +1333,8 @@ export function LiveSpacePage({
         : EMPTY_RECAP_LINES,
     [latestRecap],
   );
-  const recapSince = latestRecap?.since ?? "cached";
+  const recapSince = latestRecap?.since ?? "";
+  const recapTargets = useMemo(() => recapTargetsOf(adaptedWidgets), [adaptedWidgets]);
   const recapTurns = useMemo<RecapTurn[]>(
     () =>
       (allMessages ?? [])
@@ -2057,16 +2059,32 @@ export function LiveSpacePage({
         setRecapBusy(false);
       });
   };
+  // Opening on a board with no briefing makes one — the empty state was a
+  // dead instruction ("tap ↻") and the first thing a reviewer read.
+  useEffect(() => {
+    if (!recapOpen || latestRecap !== null || recapBusy || recapGenerating.current) return;
+    refreshRecap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recapOpen, latestRecap]);
+  // While it reads, the ring hops card to card — the reporter's eyes.
+  useEffect(() => {
+    if (!recapOpen || !recapBusy) return;
+    return startBoardScan(
+      adaptedWidgets.filter((widget) => widget.type !== "frame" && widget.type !== "sticker"),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recapOpen, recapBusy]);
   const revealRecap = (count: number) => {
     const widgetId = recapLines[count - 1]?.widgetId;
     if (!widgetId) return;
     setRecapCites((current) => [...current, widgetId]);
     playSound("place");
-    if (count === 1) {
-      requestAnimationFrame(() => {
-        document.querySelector(`[data-widget-id="${widgetId}"]`)?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-      });
-    }
+    if (count === 1) requestAnimationFrame(() => panToWidget(widgetId));
+  };
+  const jumpToRecapWidget = (widgetId: string) => {
+    playSound("tap");
+    setRecapCites([widgetId]);
+    panToWidget(widgetId);
   };
   const jumpToRecapMessage = (messageId: string) => {
     playSound("tap");
@@ -2084,11 +2102,7 @@ export function LiveSpacePage({
       .then((result) => {
         if (result.widgetId) {
           setRecapCites((current) => [...current, result.widgetId!]);
-          requestAnimationFrame(() => {
-            document
-              .querySelector(`[data-widget-id="${result.widgetId}"]`)
-              ?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-          });
+          requestAnimationFrame(() => panToWidget(result.widgetId!));
         }
       })
       .catch(() => {})
@@ -2842,6 +2856,8 @@ export function LiveSpacePage({
         recapTurnsReady={allMessages !== undefined}
         onRecapRefresh={refreshRecap}
         onRecapAsk={onRecapAsk}
+        recapTargets={recapTargets}
+        onRecapJumpWidget={jumpToRecapWidget}
         onRecapReveal={revealRecap}
         onRecapClose={closeRecap}
         onRecapHover={setRecapHover}
