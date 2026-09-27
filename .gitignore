@@ -44,11 +44,12 @@ docs/vibeapps-listing.md
 
 # Local-only agent skills. Everything under .claude/skills/ stays local unless
 # it is explicitly allowed back in below — the tracked ones are the Convex
-# skills plus the two that document this repo.
+# skills plus the ones that document this repo.
 .claude/skills/*/
 !.claude/skills/convex*/
 !.claude/skills/ourspaces-docs/
 !.claude/skills/run-ourspaces/
+!.claude/skills/ourspaces-slides/
 .agents/skills/ourspaces-hackathon/
 .impeccable/
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>OurSpaces — the product</title>
+<title>OurSpaces — new deck</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -371,7 +371,12 @@
   }
 </style>
 <style>
-  /* ── product-deck additions on top of the shared deck styles ───── */
+  /* ── optional components, from docs/ourspaces-product.html ──────
+     Copy the ones a deck uses into its second <style> block; delete the
+     rest. The first <style> block above stays byte-identical across decks. */
+
+  /* --color-buildroom in @theme: the build room's bottle-green wall */
+  :root { --buildroom: oklch(0.42 0.09 160); }
 
   /* room cards — three spaces, three personalities */
   .rooms { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2.2vmin, 26px); }
@@ -475,12 +480,12 @@
 
 <div class="deck" id="deck">
 
-  <!-- 1 ─────────────────────────────────────────────── -->
+  <!-- 1 · title ─────────────────────────────────────── -->
   <section class="slide" style="--accent: var(--lime)">
     <div class="body">
       <p class="eyebrow" data-step><span class="dot"></span> OurSpaces</p>
-      <h1 data-step>Group chats forget.<br /><span class="hl">Spaces remember.</span></h1>
-      <p class="sub" data-step>Turn your group chat into a place. Forward it an email, drop it a link, and it remembers — for everyone, live.</p>
+      <h1 data-step>The deck title,<br /><span class="hl">said in one breath.</span></h1>
+      <p class="sub" data-step>One sentence under the title that says what this deck is for. Two lines at most.</p>
     </div>
     <div class="foot">
       <span>Thomas Nguyen · design, Holly</span>
@@ -488,12 +493,27 @@
     </div>
   </section>
 
-  <!-- 2 ─────────────────────────────────────────────── -->
+  <!-- 2 · statement ─────────────────────────────────── -->
   <section class="slide">
     <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> The thing we're up against</p>
-      <h2 data-step>Your group chat<br />works fine.</h2>
-      <p class="lede" data-step>It's just text. Everything you decide together scrolls away about an hour later, and the only way to find it again is to scroll back up.</p>
+      <p class="eyebrow" data-step><span class="dot"></span> Layout · statement</p>
+      <h2 data-step>One idea per slide.<br />Said plainly.</h2>
+      <p class="lede" data-step>The headline is a full sentence broken over two lines. The lede says it again with more words, for anyone who looked away.</p>
+      <ul class="points" style="margin-top: 22px">
+        <li data-step>Every bullet <strong>opens with a bold phrase</strong>, so the slide reads from the bold alone.</li>
+        <li data-step>Three or four bullets. A fifth means <strong>it's two slides</strong>.</li>
+        <li data-step><span class="hl">One lime highlight per slide</span>, on the line you want remembered.</li>
+      </ul>
+    </div>
+    <div class="foot"><span>Statement</span><span>02</span></div>
+  </section>
+
+  <!-- 3 · compare ───────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--pink)">
+    <div class="body">
+      <p class="eyebrow" data-step><span class="dot"></span> Layout · compare</p>
+      <h2 data-step>The way it works now,<br />next to ours.</h2>
+      <p class="lede" data-step>Two cards the same size, with the same number of words in each. The comparison does the arguing.</p>
       <div class="vs" style="margin-top: 26px">
         <div class="stat" data-step style="--accent: var(--muted)">
           <h3 style="margin-top:0">Twelve messages</h3>
@@ -506,235 +526,167 @@
         </div>
       </div>
     </div>
-    <div class="foot"><span>The chat is the foil, not the villain</span><span>02</span></div>
+    <div class="foot"><span>Compare</span><span>03</span></div>
   </section>
 
-  <!-- 3 ─────────────────────────────────────────────── -->
-  <section class="slide" style="--accent: var(--pink)">
-    <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> Where the idea comes from</p>
-      <h2 data-step>2005. A page you made,<br />with your top eight on it.</h2>
-      <p class="lede" data-step>People used to own a corner of the internet that looked like them — bad fonts, autoplaying song, friends ranked in public. Then everything became a feed somebody else arranges.</p>
-      <p class="lede" data-step style="margin-top: 18px"><span class="hl">We wanted that back, except shared, and except alive.</span></p>
-    </div>
-    <div class="foot"><span>The 2005 feeling</span><span>03</span></div>
-  </section>
-
-  <!-- 4 ─────────────────────────────────────────────── -->
-  <section class="slide" style="--accent: var(--lime)">
-    <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> What it is</p>
-      <h2 data-step>A space is one board<br />your group shares.</h2>
-      <p class="lede" data-step>You drop things onto it. Everyone sees them, in the same place, at the same moment — and they're still there tomorrow.</p>
-      <ul class="points" style="margin-top: 22px">
-        <li data-step>You <strong>put things on it</strong> — a poll, a countdown, a photo, a question, a list of who's bringing what.</li>
-        <li data-step>Everyone else <strong>sees it happen</strong>, live, with no refresh and no notification to tap.</li>
-        <li data-step>It <strong>accumulates</strong>. A space three months old looks like three months of a friendship.</li>
-      </ul>
-    </div>
-    <div class="foot"><span>The product, in one line</span><span>04</span></div>
-  </section>
-
-  <!-- 5 ─────────────────────────────────────────────── -->
+  <!-- 4 · numbered section ──────────────────────────── -->
   <section class="slide" style="--accent: var(--fire)">
     <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> The toybox</p>
-      <h2 data-step>About thirty things<br />you can drop in.</h2>
-      <p class="sub" data-step>Open the picker, pick one, it lands with a sound. That's the whole interaction.</p>
-      <div class="toys" data-step>
-        <span>poll</span><span>countdown</span><span>potluck sheet</span><span>spin wheel</span>
-        <span>coloring page</span><span>photo wall</span><span>joke registry</span><span>message wall</span>
-        <span>daily question</span><span>chat thread</span><span>room radio</span><span>weather</span>
-        <span>link shelf</span><span>expense split</span><span>itinerary</span><span>availability</span>
-        <span>RSVP</span><span>sticker</span><span>quote</span><span>media poster</span>
-        <span>note</span><span>frame</span><span>letter</span><span>link pile</span>
-        <span>roundtable</span><span>ship post</span><span class="more">…and more</span>
+      <p class="eyebrow" data-step><span class="dot"></span> Section · 1 of 3</p>
+      <h2 data-step><span class="num">01</span>Feature name</h2>
+      <p class="sub" data-step>What it does, in five words.</p>
+      <div class="cols tight">
+        <div>
+          <div class="see" data-step>
+            <span class="k">What you see</span>
+            <p>The moment a person notices it, told as a scene: what they did, and what showed up on the board.</p>
+          </div>
+          <span class="file" data-step>convex/file.ts · functionName</span>
+        </div>
+        <ul class="points">
+          <li data-step><strong>The number chip counts through a section.</strong> The eyebrow says where you are in it.</li>
+          <li data-step><strong>File chips are for decks about code.</strong> Leave them off product decks.</li>
+          <li data-step><strong>Every slide in a section keeps one accent</strong>, and its footer carries the section tag.</li>
+        </ul>
       </div>
-      <p class="lede" data-step style="margin-top: 24px">Nothing here is a dashboard widget. They're objects on a wall, and they can be dragged anywhere, including somewhere stupid.</p>
     </div>
-    <div class="foot"><span class="tag">The toybox</span><span>05</span></div>
+    <div class="foot"><span class="tag">Section</span><span>04</span></div>
   </section>
 
-  <!-- 6 ─────────────────────────────────────────────── -->
-  <section class="slide" style="--accent: var(--teal)">
-    <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> The part you have to see to believe</p>
-      <h2 data-step>Two people,<br />one board.</h2>
-      <p class="lede" data-step>She votes on her phone from the couch. The bar moves on the laptop across the room. Nobody pressed refresh and nobody got a notification.</p>
-      <ul class="points" style="margin-top: 20px">
-        <li data-step>You can <strong>see each other's cursors</strong> moving around the board.</li>
-        <li data-step>Someone claims the last potluck slot and the <strong>ALL SET stamp slams down</strong> on both screens.</li>
-        <li data-step>Two people can <strong>colour the same postcard</strong> at the same time, from different cities.</li>
-      </ul>
-      <p class="lede" data-step style="margin-top: 22px"><span class="hl">This is the demo beat. It only reads with two screens in frame.</span></p>
-    </div>
-    <div class="foot"><span>Liveness</span><span>06</span></div>
-  </section>
-
-  <!-- 7 ─────────────────────────────────────────────── -->
+  <!-- 5 · big numbers ───────────────────────────────── -->
   <section class="slide">
     <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> Three rooms in the demo</p>
-      <h2 data-step style="margin-bottom: 22px">Every group you're in<br />gets a different one.</h2>
+      <p class="eyebrow" data-step><span class="dot"></span> Layout · big numbers</p>
+      <div class="cols">
+        <div class="stat" style="--accent: var(--fire)" data-step>
+          <span class="n">5<small>things counted</small></span>
+          <h3>First thing</h3>
+          <p>One sentence on what this number is made of.</p>
+        </div>
+        <div class="stat" style="--accent: var(--mail)" data-step>
+          <span class="n">7<small>things counted</small></span>
+          <h3>Second thing</h3>
+          <p>Same shape as the card next to it, so they read as a pair.</p>
+        </div>
+      </div>
+      <p class="lede" data-step style="margin-top: 26px">Then <strong>one line underneath</strong> that says why the two numbers matter together.</p>
+    </div>
+    <div class="foot"><span>Big numbers</span><span>05</span></div>
+  </section>
+
+  <!-- 6 · scoreboard ────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--mail)">
+    <div class="body">
+      <p class="eyebrow" data-step><span class="dot"></span> Section · wrap-up</p>
+      <h2 data-step>Scoreboard</h2>
+      <div data-step style="margin-top: 14px">
+        <table>
+          <thead><tr><th>Thing</th><th>Us</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>Shipped</td><td class="mark yes">✓</td><td>done rows go first</td></tr>
+            <tr><td>Also shipped</td><td class="mark yes">✓</td><td>a short note, not a sentence</td></tr>
+            <tr class="is-star"><td><strong>The headline one</strong></td><td class="mark yes">✓</td><td><strong>one lime row for the thing to remember</strong></td></tr>
+            <tr><td>Half done</td><td class="mark warn">~</td><td>say plainly what's missing</td></tr>
+            <tr><td>Not built</td><td class="mark no">✕</td><td>say whether we chose not to, or ran out of time</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="foot"><span class="tag on-dark">Scoreboard</span><span>06</span></div>
+  </section>
+
+  <!-- 7 · flow ──────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--lime)">
+    <div class="body">
+      <p class="eyebrow" data-step><span class="dot"></span> Layout · flow</p>
+      <h2 data-step>One thing goes in,<br />a few things happen.</h2>
+      <div style="margin-top: 20px">
+        <p class="eyebrow" data-step style="margin-bottom: 8px">A · the main path</p>
+        <div class="flow" data-step>
+          <div class="row"><span class="pill mail">an email arrives</span><span class="arrow">→</span><span class="pill">we read it</span><span class="arrow">→</span><span class="pill fire">the web fills it in</span><span class="arrow">→</span><span class="pill lime">everyone sees it</span></div>
+        </div>
+
+        <p class="eyebrow" data-step style="margin: 20px 0 8px">B · a second path</p>
+        <div class="flow" data-step>
+          <div class="row"><span class="pill">type your address</span><span class="arrow">→</span><span class="pill mail">six digits go out</span><span class="arrow">→</span><span class="pill lime">you're in, nothing lost</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>Flow</span><span>07</span></div>
+  </section>
+
+  <!-- 8 · timeline + quote ──────────────────────────── -->
+  <section class="slide" style="--accent: var(--lime)">
+    <div class="body">
+      <p class="eyebrow" data-step><span class="dot"></span> Layout · timeline</p>
+      <h2 data-step>The first ten seconds.</h2>
+      <div class="beats" data-step style="margin-top: 18px">
+        <div class="beat"><span class="t">+0s</span><span class="w">She forwards the receipt from her phone.</span></div>
+        <div class="beat"><span class="t">+2s</span><span class="w">Two seconds of nothing on the laptop.</span></div>
+        <div class="beat is-peak"><span class="t">+4s</span><span class="w">The expense sheet grows a row. The peak beat is lime.</span></div>
+        <div class="beat"><span class="t">+11s</span><span class="w">Her phone buzzes. The space has written back.</span></div>
+      </div>
+      <p class="quote" data-step style="margin-top: 26px">“Wait. How did it know that was a receipt?”<span class="attrib">the line someone actually said</span></p>
+    </div>
+    <div class="foot"><span>Timeline</span><span>08</span></div>
+  </section>
+
+  <!-- 9 · cards ─────────────────────────────────────── -->
+  <section class="slide">
+    <div class="body">
+      <p class="eyebrow" data-step><span class="dot"></span> Layout · cards</p>
+      <h2 data-step style="margin-bottom: 22px">Three of something,<br />each in its own colour.</h2>
       <div class="rooms">
-        <div class="room" data-step style="--room: #7853ff; --room-ink: #fffaf7">
+        <div class="room" data-step style="--room: var(--mail); --room-ink: var(--card)">
           <span class="who">friend group</span>
           <h3>the crew</h3>
-          <p>Birthday coming up. Cake poll, countdown, who's bringing what, the photo wall, the running jokes.</p>
+          <p>Birthday coming up. Cake poll, countdown, who's bringing what.</p>
           <span class="addr">ourspaces@agentmail.to</span>
         </div>
-        <div class="room" data-step style="--room: #e9369d; --room-ink: #fffaf7">
+        <div class="room" data-step style="--room: var(--pink); --room-ink: var(--card)">
           <span class="who">long distance, two people</span>
           <h3>us two</h3>
-          <p>Two clocks in different cities. A postcard you colour together. Sealed letters that unfold when you click them.</p>
+          <p>Two clocks in different cities. A postcard you colour together.</p>
           <span class="addr">ustwo@agentmail.to</span>
         </div>
-        <div class="room" data-step style="--room: #1f3d5c; --room-ink: #fffaf7">
+        <div class="room" data-step style="--room: var(--buildroom); --room-ink: var(--card)">
           <span class="who">dev guild</span>
           <h3>the build room</h3>
-          <p>Links get dropped, argued about, and kept. The good ones get promoted onto the wall as takeaways.</p>
+          <p>Links get dropped, argued about, and kept.</p>
           <span class="addr">buildroom@agentmail.to</span>
         </div>
       </div>
-      <p class="lede" data-step style="margin-top: 24px">Same product. The room takes on the personality of the group in it.</p>
+      <p class="lede" data-step style="margin-top: 24px">Same card, three colours. Each card uses a room colour, never a new hex.</p>
     </div>
-    <div class="foot"><span>The rooms</span><span>07</span></div>
+    <div class="foot"><span>Cards</span><span>09</span></div>
   </section>
 
-  <!-- 8 ─────────────────────────────────────────────── -->
-  <section class="slide" style="--accent: var(--mail)">
+  <!-- 10 · pills ────────────────────────────────────── -->
+  <section class="slide" style="--accent: var(--fire)">
     <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> Anatomy of a room that feels lived-in</p>
-      <h2 data-step>A space isn't a page.<br />It's five layers.</h2>
-      <table data-step style="margin-top: 16px">
-        <thead><tr><th>Layer</th><th>Its job</th><th>On the crew's wall</th></tr></thead>
-        <tbody>
-          <tr><td><strong>Identity</strong></td><td>“this is <em>us</em>” at a glance</td><td>stickers, a quote, the media poster</td></tr>
-          <tr><td><strong>Memory</strong></td><td>proof there's a history here</td><td>photo wall, joke registry, message wall</td></tr>
-          <tr><td><strong>Now</strong></td><td>the current occasion, grouped</td><td>Maya's bday: countdown, cake poll, RSVP, potluck</td></tr>
-          <tr><td><strong>Talk</strong></td><td>a reason to come back daily</td><td>daily question, chat threads</td></tr>
-          <tr><td><strong>Props</strong></td><td>set dressing the camera pans past</td><td>room radio, weather, link shelf, itinerary</td></tr>
-        </tbody>
-      </table>
-      <p class="lede" data-step style="margin-top: 20px">An empty space is a sad space. The demo rooms are populated first, polished second.</p>
-    </div>
-    <div class="foot"><span>Why it feels real</span><span>08</span></div>
-  </section>
-
-  <!-- 9 ─────────────────────────────────────────────── -->
-  <section class="slide" style="--accent: var(--mail)">
-    <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> The front door</p>
-      <h2 data-step>Every space has<br />its own email address.</h2>
-      <p class="lede" data-step>Not an inbox you check. You send something to the space, and it <strong>becomes an object on the wall</strong>.</p>
-      <div class="flow" data-step style="margin-top: 24px">
-        <div class="row"><span class="pill mail">forward an email</span><span class="arrow">→</span><span class="pill lime">a thing appears on the board</span><span class="arrow">→</span><span class="pill">everyone sees it</span></div>
+      <p class="eyebrow" data-step><span class="dot"></span> Layout · pills</p>
+      <h2 data-step>A long list<br />reads as stickers.</h2>
+      <p class="sub" data-step>Names go in pills, not bullets. Every few pills picks up a colour on its own.</p>
+      <div class="toys" data-step>
+        <span>poll</span><span>countdown</span><span>potluck sheet</span><span>spin wheel</span>
+        <span>photo wall</span><span>message wall</span><span>daily question</span><span>room radio</span>
+        <span>link shelf</span><span>expense split</span><span>itinerary</span><span>RSVP</span>
+        <span>sticker</span><span>letter</span><span class="more">…and more</span>
       </div>
-      <ul class="points" style="margin-top: 24px">
-        <li data-step>Mail <strong>the crew</strong> a receipt and it turns into a row on the expense sheet.</li>
-        <li data-step>Mail <strong>us two</strong> anything and it lands as a sealed letter you click to unfold.</li>
-        <li data-step>Mail <strong>the build room</strong> a link and it drops into the pile with its cover and summary already filled in.</li>
-      </ul>
+      <p class="lede" data-step style="margin-top: 24px">End the list with a dashed <strong>…and more</strong> pill instead of cramming every name in.</p>
     </div>
-    <div class="foot"><span class="tag on-dark">Email in</span><span>09</span></div>
+    <div class="foot"><span class="tag">Pills</span><span>10</span></div>
   </section>
 
-  <!-- 10 ────────────────────────────────────────────── -->
-  <section class="slide" style="--accent: var(--lime)">
-    <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> The moment the demo is built around</p>
-      <h2 data-step>She paid for the cake,<br />so she forwards the receipt.</h2>
-      <p class="sub" data-step>No app to open. No account. No body in the email. She hits forward and puts the phone down.</p>
-      <div class="beats" data-step style="margin-top: 8px">
-        <div class="beat"><span class="t">+0s</span><span class="w">She forwards the receipt from her phone's Mail app.</span></div>
-        <div class="beat"><span class="t">+2s</span><span class="w">Two seconds of nothing on the laptop.</span></div>
-        <div class="beat is-peak"><span class="t">+4s</span><span class="w">The expense sheet grows a row — and a little slip unfolds saying why it landed there.</span></div>
-        <div class="beat"><span class="t">+11s</span><span class="w">Her phone buzzes. The space has written back: “Logged $84 for the cake on the expense tracker.”</span></div>
-      </div>
-      <p class="quote" data-step style="margin-top: 26px">“Wait. How did it know that was a receipt?”<span class="attrib">the actual reaction, on camera</span></p>
-    </div>
-    <div class="foot"><span>The beat</span><span>10</span></div>
-  </section>
-
-  <!-- 11 ────────────────────────────────────────────── -->
-  <section class="slide" style="--accent: var(--mail)">
-    <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> The half nobody expects</p>
-      <h2 data-step>And it writes back.</h2>
-      <p class="lede" data-step>The space isn't a database you put things into. It answers, in the same email thread, in its own voice.</p>
-      <ul class="points" style="margin-top: 22px">
-        <li data-step><strong>Straight away</strong> — it tells you what it did with what you sent, and names the file if you attached one.</li>
-        <li data-step><strong>Every Friday</strong> — it emails around what the week looked like, to everyone who's ever written to it.</li>
-        <li data-step>Writing to a space is how you subscribe to it. <span class="hl">There's no settings page for this.</span></li>
-      </ul>
-    </div>
-    <div class="foot"><span class="tag on-dark">Email out</span><span>11</span></div>
-  </section>
-
-  <!-- 12 ────────────────────────────────────────────── -->
-  <section class="slide" style="--accent: var(--teal)">
-    <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> Getting in</p>
-      <h2 data-step>You just walk in.</h2>
-      <p class="lede" data-step>Open the link and you're already someone — you get a name, a colour and a cursor before you've typed anything. You can vote, draw and claim a slot straight away.</p>
-      <ul class="points" style="margin-top: 22px">
-        <li data-step>No form, no password, <strong>no wall in front of the board</strong>.</li>
-        <li data-step>If you want to keep it, you type your email and get a six-digit code back. That's the whole sign-up.</li>
-        <li data-step>Joining <strong>keeps everything you already did</strong> — your votes, your name, your colour. You're upgraded, not restarted.</li>
-      </ul>
-    </div>
-    <div class="foot"><span>No signup wall</span><span>12</span></div>
-  </section>
-
-  <!-- 13 ────────────────────────────────────────────── -->
-  <section class="slide" style="--accent: var(--pink)">
-    <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> Who this is actually for</p>
-      <h2 data-step>Groups that already exist.</h2>
-      <p class="lede" data-step>We're not asking anyone to start a community or grow an audience. The people are already together in a chat — this gives them somewhere to put things down.</p>
-      <div class="cols" style="margin-top: 24px">
-        <div class="stat" data-step style="--accent: var(--mail)">
-          <h3 style="margin-top:0">The five or six friends</h3>
-          <p>planning a birthday, splitting a cabin, keeping the same joke alive for four years.</p>
-        </div>
-        <div class="stat" data-step style="--accent: var(--pink)">
-          <h3 style="margin-top:0">The two people</h3>
-          <p>in different time zones who want somewhere shared that isn't a message thread.</p>
-        </div>
-      </div>
-    </div>
-    <div class="foot"><span>Audience</span><span>13</span></div>
-  </section>
-
-  <!-- 14 ────────────────────────────────────────────── -->
-  <section class="slide" style="--accent: var(--lime)">
-    <div class="body">
-      <p class="eyebrow" data-step><span class="dot"></span> The demo, timed</p>
-      <h2 data-step>The first minute.</h2>
-      <div class="beats" data-step style="margin-top: 18px">
-        <div class="beat"><span class="t">0:00</span><span class="w">A 2005 profile page, scrolling. “Your top eight friends, on a page you made.”</span></div>
-        <div class="beat"><span class="t">0:05</span><span class="w">Swap to a real group chat, scrolling fast. “Twelve messages to pick a cake.”</span></div>
-        <div class="beat"><span class="t">0:08</span><span class="w">The crew space, already alive. “So I made us a space.”</span></div>
-        <div class="beat"><span class="t">0:10</span><span class="w">Five things dropped from the picker, one sound each.</span></div>
-        <div class="beat is-peak"><span class="t">0:18</span><span class="w">Wide shot — her on the couch with the phone, him at the laptop. She votes. The bar moves. “Wait, is that me?”</span></div>
-        <div class="beat"><span class="t">0:27</span><span class="w">She forwards the cake receipt to the crew's address. “That's it. It's just an email.”</span></div>
-        <div class="beat is-peak"><span class="t">0:33</span><span class="w">The row appears. “Wait. How did it know that was a receipt?”</span></div>
-        <div class="beat"><span class="t">0:44</span><span class="w">Her phone buzzes with the reply. “It wrote back.”</span></div>
-        <div class="beat"><span class="t">0:52</span><span class="w">Hard cut to magenta. “This one's ours.”</span></div>
-      </div>
-    </div>
-    <div class="foot"><span>Under 3:00 total</span><span>14</span></div>
-  </section>
-
-  <!-- 15 ────────────────────────────────────────────── -->
+  <!-- 11 · closer ───────────────────────────────────── -->
   <section class="slide" style="--accent: var(--lime)">
     <div class="body">
       <p class="eyebrow" data-step><span class="dot"></span> OurSpaces</p>
       <h1 data-step>Open the link.<br />You're <span class="hl">already in.</span></h1>
-      <p class="sub" data-step>No signup, nothing to install. Built in 26 days for the Convex All Gas hackathon.</p>
+      <p class="sub" data-step>The last slide says the one thing again and hands over where to go.</p>
       <span class="file" data-step>ourspaces.io</span>
     </div>
-    <div class="foot"><span>Thomas Nguyen · design, Holly</span><span>15</span></div>
+    <div class="foot"><span>Thomas Nguyen · design, Holly</span><span>11</span></div>
   </section>
 
 </div>
@@ -751,6 +703,8 @@
   const rail = document.getElementById('rail');
   let at = 0;
 
+  // Auto-number the stagger for any element that didn't get an explicit --i,
+  // so adding a bullet later still animates in order.
   slides.forEach((slide) => {
     slide.querySelectorAll('[data-step]').forEach((el, i) => {
       if (!el.style.getPropertyValue('--i')) el.style.setProperty('--i', i);
@@ -775,6 +729,7 @@
     else if (e.key === 'p' || e.key === 'P') print();
   });
 
+  // Click the right or left half of the deck to advance or go back.
   document.getElementById('deck').addEventListener('click', (e) => {
     if (e.target.closest('button, a')) return;
     show(e.clientX > innerWidth / 2 ? at + 1 : at - 1);
