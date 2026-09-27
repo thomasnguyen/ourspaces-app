@@ -27,6 +27,7 @@ commit it.
 | Public one-pager | `README.md` |
 | README images, demo GIF and the 1280×640 GitHub social-preview image (tracked; not `public/`, which ships to the live site) | `.github/readme/` |
 | Product / demo pitch deck (light mode, present or print) | `docs/ourspaces-product.html` |
+| Making a new deck or slide in that house style (template + screenshot check) | `.claude/skills/ourspaces-slides/SKILL.md` |
 | What each space is and what it still needs | `docs/spaces-and-widgets.md` |
 
 Product spec and positioning are **local-only** — see the bottom table.
