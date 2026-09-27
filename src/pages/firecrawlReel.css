@@ -1,0 +1,749 @@
+/* Firecrawl reel — `#/firecrawl`. A ten-second cut for the 2:37 beat (the
+   pile went through Firecrawl; every website is built different and we didn't
+   want to write a reader for each one; it rereads the old ones so the cards
+   don't rot). Four differently-shaped pages fly into the Firecrawl sticker and
+   come out as the same card, onto the pile; the oldest card is dealt out and
+   reread. Pure CSS keyframes on absolute delays, so the frame recorder
+   (.context/web-video/record.mjs) pins every frame exactly. Stage is a fixed
+   1920×1080 scaled to the viewport; at capture it is 1:1. */
+
+.fc {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--color-buildroom);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+
+  /* Firecrawl's orange, from their own wordmark */
+  --fc: #fa5d19;
+  --shadow: 0 12px 0 rgba(0, 0, 0, 0.28);
+  --fly: 700ms;
+
+  /* the timeline, ms. p = page rises, f = page flies, l = page lands in the
+     sticker, c = card leaves the sticker, k = card lands on the pile. */
+  --t-kicker: 80ms;
+  --t-sticker: 240ms;
+  --t-lane-in: 620ms;
+  --t-p1: 700ms;  --t-f1: 1100ms; --t-l1: 1800ms; --t-c1: 1900ms; --t-k1: 2600ms;
+  --t-p2: 1500ms; --t-f2: 1900ms; --t-l2: 2600ms; --t-c2: 2700ms; --t-k2: 3400ms;
+  --t-p3: 2300ms; --t-f3: 2700ms; --t-l3: 3400ms; --t-c3: 3500ms; --t-k3: 4200ms;
+  --t-p4: 3100ms; --t-f4: 3500ms; --t-l4: 4200ms; --t-c4: 4300ms; --t-k4: 5000ms;
+  --t-lane-out: 2300ms;
+  --t-deal: 6000ms;
+  --t-reread: 7200ms;
+  --t-fresh: 7900ms;
+  --t-title: 8900ms;
+  --t-stamp: 5600ms;
+}
+
+.fc::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.075) 0 1.4px, transparent 1.7px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.025) 0 1.2px, transparent 1.5px);
+  background-position: 0 0, 15px 15px;
+  background-size: 30px 30px;
+}
+
+.fc-stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  flex: none;
+  scale: var(--s, 1);
+}
+
+/* a 0×0 anchor: whatever sits inside is centred on (--x, --y) */
+.fc-at {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  display: flex;
+  width: 0;
+  height: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.fc-at > * {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* ── kicker, top left ─────────────────────────────────────────────────── */
+.fc-kicker {
+  position: absolute;
+  top: 52px;
+  left: 96px;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 26px 15px 20px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  box-shadow: var(--shadow);
+  rotate: -1.5deg;
+  animation: fc-rise var(--dur-arrive) var(--ease-glide) var(--t-kicker) both;
+}
+
+.fc-kicker i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-lime);
+}
+
+.fc-kicker small {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@keyframes fc-rise {
+  from { opacity: 0; translate: 0 22px; }
+}
+
+/* ── the reader: a black sticker wearing the Firecrawl wordmark ───────── */
+.fc-sticker {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 42px 66px 46px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  box-shadow: var(--shadow);
+  rotate: -2deg;
+  animation:
+    fc-pop var(--dur-arrive) var(--ease-pop) var(--t-sticker) both,
+    fc-sticker-squash 10000ms linear 0ms both,
+    fc-sticker-flash 10000ms linear 0ms both;
+}
+
+.fc-sticker img {
+  display: block;
+  width: auto;
+  height: 118px;
+}
+
+/* the ring that goes out when a page is taken in */
+.fc-sticker::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border: 8px solid var(--fc);
+  border-radius: inherit;
+  opacity: 0;
+  animation: fc-sticker-ring 10000ms linear 0ms both;
+}
+
+@keyframes fc-pop {
+  from { opacity: 0; scale: 0.6; rotate: -9deg; }
+}
+
+/* the squash on impact (single-shot; from and to are the resting state, so
+   `both` is safe and keeps it in the recorder's list) */
+@keyframes fc-hit {
+  0% { scale: 1; }
+  30% { scale: 1.08 0.92; }
+  100% { scale: 1; }
+}
+
+/* the ring, single-shot: starts invisible so `both` is safe */
+@keyframes fc-ring {
+  0% { opacity: 0; scale: 0.98; }
+  6% { opacity: 0.95; scale: 0.98; }
+  100% { opacity: 0; scale: 1.16; }
+}
+
+/* One ten-second "life" per property instead of four delayed no-fill
+   animations sharing a name: the frame recorder drops finished no-fill
+   animations, and same-name duplicates on one element proved flaky. Every
+   hit (page lands: 1800 · 2600 · 3400 · 4200ms) is baked in at its percentage. */
+@keyframes fc-sticker-squash {
+  0% { scale: 1; }
+  18.00% { scale: 1; animation-timing-function: var(--ease-snap); }
+  19.38% { scale: 1.08 0.92; animation-timing-function: var(--ease-snap); }
+  22.60% { scale: 1; }
+  26.00% { scale: 1; animation-timing-function: var(--ease-snap); }
+  27.38% { scale: 1.08 0.92; animation-timing-function: var(--ease-snap); }
+  30.60% { scale: 1; }
+  34.00% { scale: 1; animation-timing-function: var(--ease-snap); }
+  35.38% { scale: 1.08 0.92; animation-timing-function: var(--ease-snap); }
+  38.60% { scale: 1; }
+  42.00% { scale: 1; animation-timing-function: var(--ease-snap); }
+  43.38% { scale: 1.08 0.92; animation-timing-function: var(--ease-snap); }
+  46.60% { scale: 1; }
+  100% { scale: 1; }
+}
+
+/* orange held for 180ms after each hit, then back to black on glide */
+@keyframes fc-sticker-flash {
+  0% { background: var(--color-sticker); }
+  17.90% { background: var(--color-sticker); }
+  18.00%, 19.80% { background: var(--fc); animation-timing-function: var(--ease-glide); }
+  22.60% { background: var(--color-sticker); }
+  25.90% { background: var(--color-sticker); }
+  26.00%, 27.80% { background: var(--fc); animation-timing-function: var(--ease-glide); }
+  30.60% { background: var(--color-sticker); }
+  33.90% { background: var(--color-sticker); }
+  34.00%, 35.80% { background: var(--fc); animation-timing-function: var(--ease-glide); }
+  38.60% { background: var(--color-sticker); }
+  41.90% { background: var(--color-sticker); }
+  42.00%, 43.80% { background: var(--fc); animation-timing-function: var(--ease-glide); }
+  46.60% { background: var(--color-sticker); }
+  100% { background: var(--color-sticker); }
+}
+
+@keyframes fc-sticker-ring {
+  0% { opacity: 0; scale: 0.98; }
+  17.90% { opacity: 0; scale: 0.98; }
+  18.00% { opacity: 0.95; scale: 0.98; animation-timing-function: var(--ease-glide); }
+  23.60% { opacity: 0; scale: 1.16; }
+  25.90% { opacity: 0; scale: 0.98; }
+  26.00% { opacity: 0.95; scale: 0.98; animation-timing-function: var(--ease-glide); }
+  31.60% { opacity: 0; scale: 1.16; }
+  33.90% { opacity: 0; scale: 0.98; }
+  34.00% { opacity: 0.95; scale: 0.98; animation-timing-function: var(--ease-glide); }
+  39.60% { opacity: 0; scale: 1.16; }
+  41.90% { opacity: 0; scale: 0.98; }
+  42.00% { opacity: 0.95; scale: 0.98; animation-timing-function: var(--ease-glide); }
+  47.60% { opacity: 0; scale: 1.16; }
+  100% { opacity: 0; scale: 1.16; }
+}
+
+/* the oldest card squashes twice: landing on the pile, and the reread */
+@keyframes fc-oldest-squash {
+  0% { scale: 1; }
+  26.00% { scale: 1; animation-timing-function: var(--ease-snap); }
+  27.38% { scale: 1.08 0.92; animation-timing-function: var(--ease-snap); }
+  30.60% { scale: 1; }
+  79.00% { scale: 1; animation-timing-function: var(--ease-snap); }
+  80.38% { scale: 1.08 0.92; animation-timing-function: var(--ease-snap); }
+  83.60% { scale: 1; }
+  100% { scale: 1; }
+}
+
+/* ── lane labels ──────────────────────────────────────────────────────── */
+.fc-lane {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  animation: fc-rise 300ms var(--ease-glide) var(--in) both;
+}
+
+/* ── the pages: four shapes, one doorstep ─────────────────────────────── */
+.fc-page {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.22);
+  font-size: 15px;
+  animation:
+    fc-page-rise 420ms var(--ease-glide) var(--rise) both,
+    fc-page-fly var(--fly) linear var(--go) forwards,
+    fc-page-taken 240ms var(--ease-glide) var(--land) forwards;
+}
+
+.fc-page header,
+.fc-page nav,
+.fc-page ul,
+.fc-page li,
+.fc-page pre,
+.fc-page aside {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fc-bar {
+  display: block;
+  flex: none;
+  width: var(--w);
+  height: var(--h);
+  border-radius: var(--radius-pill);
+  background: rgba(17, 17, 20, 0.18);
+}
+
+.fc-bar.is-ink { background: var(--color-ink); }
+.fc-bar.is-light { background: rgba(255, 255, 255, 0.85); }
+.fc-bar.is-dim { background: rgba(255, 255, 255, 0.28); }
+.fc-bar.is-faint { background: rgba(17, 17, 20, 0.09); }
+.fc-bar.is-lime { background: var(--color-lime); }
+.fc-bar.is-orange { background: var(--fc); }
+
+/* 1 · a news site: dark header, a photo-less column, an ad, a cookie banner */
+.fc-page.is-1 {
+  width: 408px;
+  height: 288px;
+  background: #fff;
+  rotate: -3deg;
+}
+
+.fc-page.is-1 header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 42px;
+  padding: 0 14px;
+  background: var(--color-ink);
+}
+
+.fc-page.is-1 header i:not(.fc-bar) {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-lime);
+}
+
+.fc-news-body {
+  display: grid;
+  grid-template-columns: 1fr 88px;
+  gap: 12px;
+  padding: 14px 14px 0;
+}
+
+.fc-news-body > div {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+}
+
+.fc-news-body > div .fc-bar.is-ink + .fc-bar:not(.is-ink) {
+  margin-top: 6px;
+}
+
+.fc-news-body aside {
+  display: grid;
+  height: 142px;
+  place-items: center;
+  border: 2px dashed rgba(17, 17, 20, 0.3);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgba(17, 17, 20, 0.45);
+}
+
+.fc-cookie {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--color-ink);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.fc-cookie span {
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+/* 2 · a docs site: dark, a sidebar, a code block */
+.fc-page.is-2 {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  width: 432px;
+  height: 276px;
+  background: #1d1d22;
+  rotate: 2.5deg;
+}
+
+.fc-page.is-2 nav {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 16px 14px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fc-page.is-2 > div {
+  display: grid;
+  gap: 9px;
+  align-content: start;
+  padding: 16px;
+}
+
+.fc-page.is-2 pre {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* 3 · a comment thread: orange bar, indents */
+.fc-page.is-3 {
+  width: 384px;
+  height: 312px;
+  background: #f6f6ef;
+  rotate: -1.5deg;
+}
+
+.fc-page.is-3 header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 12px;
+  background: #ff6600;
+}
+
+.fc-page.is-3 header i:not(.fc-bar) {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+}
+
+.fc-page.is-3 header em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.fc-page.is-3 ul {
+  display: grid;
+  gap: 14px;
+  padding: 16px 14px;
+}
+
+.fc-page.is-3 li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: calc(var(--d, 0) * 22px);
+}
+
+.fc-page.is-3 li i:not(.fc-bar) {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: rgba(17, 17, 20, 0.35);
+}
+
+/* 4 · a repo: tabs, a file list, README */
+.fc-page.is-4 {
+  width: 420px;
+  height: 283px;
+  background: #f6f8fa;
+  rotate: 3deg;
+}
+
+.fc-page.is-4 header {
+  display: flex;
+  gap: 18px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(17, 17, 20, 0.14);
+}
+
+.fc-page.is-4 ul {
+  padding: 4px 16px 0;
+}
+
+.fc-page.is-4 li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(17, 17, 20, 0.08);
+}
+
+.fc-page.is-4 li i:not(.fc-bar) {
+  width: 12px;
+  height: 11px;
+  border-radius: 2px;
+  background: #54aeff;
+}
+
+.fc-page.is-4 em {
+  display: block;
+  padding: 12px 16px 0;
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  color: rgba(17, 17, 20, 0.7);
+}
+
+@keyframes fc-page-rise {
+  from { opacity: 0; translate: 0 44px; scale: 0.92; }
+}
+
+/* lift → carry → into the sticker; the flight is linear and each segment
+   carries its own curve. Spawn (300,430) → sticker (900,500): +600 +70. */
+@keyframes fc-page-fly {
+  0% { translate: 0 0; scale: 1; animation-timing-function: cubic-bezier(0.3, 0, 0.5, 1); }
+  22% { translate: -24px -38px; scale: 1.02; animation-timing-function: cubic-bezier(0.35, 0, 0.15, 1); }
+  86% { translate: 552px 46px; scale: 0.5; animation-timing-function: var(--ease-pop); }
+  100% { translate: 600px 70px; scale: 0.4; }
+}
+
+@keyframes fc-page-taken {
+  from { scale: 0.4; opacity: 1; }
+  to { scale: 0.1; opacity: 0; }
+}
+
+/* ── the cards: the same shape every time, onto the pile ──────────────── */
+.fc-card {
+  position: relative;
+  z-index: 1;
+  width: 380px;
+  animation: fc-card-fly var(--fly) linear var(--go) both;
+}
+
+.fc-card-in {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  padding-bottom: 20px;
+  border-radius: 18px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.22);
+  animation: fc-hit 420ms var(--ease-snap) var(--land) both;
+}
+
+.fc-card figure {
+  height: 150px;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 18px 18px 0 0;
+}
+
+.fc-card figure img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fc-card small {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 22px 0;
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.fc-card small span {
+  padding: 3px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fc-card b {
+  padding: 0 22px;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  white-space: normal;
+}
+
+.fc-card p {
+  margin: 0;
+  padding: 0 22px;
+  font-size: 21px;
+  line-height: 1.3;
+  color: rgba(17, 17, 20, 0.78);
+  white-space: normal;
+}
+
+.fc-card footer {
+  display: grid;
+  justify-items: start;
+  padding: 6px 22px 0;
+}
+
+.fc-card footer span {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.fc-read {
+  background: #ebe2d9;
+  color: var(--color-muted);
+}
+
+.fc-rereading {
+  background: var(--fc);
+  color: #fff;
+  opacity: 0;
+  animation:
+    fc-chip-in var(--dur-arrive) var(--ease-pop) var(--t-reread) both,
+    fc-chip-out 200ms var(--ease-glide) var(--t-fresh) forwards;
+}
+
+.fc-rereading img {
+  height: 20px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  animation: fc-breathe 700ms var(--ease-glide) var(--t-reread) infinite alternate;
+}
+
+.fc-fresh {
+  background: var(--color-lime);
+  color: var(--color-ink);
+  animation: fc-chip-in 420ms var(--ease-snap) var(--t-fresh) both;
+}
+
+.fc-card.is-oldest .fc-read {
+  animation: fc-chip-out 200ms var(--ease-glide) var(--t-reread) forwards;
+}
+
+@keyframes fc-chip-in {
+  from { opacity: 0; scale: 0.5; }
+  to { opacity: 1; scale: 1; }
+}
+
+@keyframes fc-chip-out {
+  to { opacity: 0; scale: 0.7; }
+}
+
+@keyframes fc-breathe {
+  from { scale: 0.9; }
+  to { scale: 1.15; }
+}
+
+/* the oldest card is dealt out of the pile to the front, then reread */
+.fc-card.is-oldest {
+  animation:
+    fc-card-fly var(--fly) linear var(--go) both,
+    fc-deal-z 1ms linear var(--t-deal) forwards;
+}
+
+.fc-card.is-oldest .fc-card-in {
+  animation:
+    fc-oldest-squash 10000ms linear 0ms both,
+    fc-deal 640ms var(--ease-pop) var(--t-deal) forwards;
+}
+
+.fc-card.is-oldest .fc-card-in::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border: 8px solid var(--fc);
+  border-radius: 26px;
+  opacity: 0;
+  pointer-events: none;
+  animation: fc-ring 560ms var(--ease-glide) var(--t-fresh) both;
+}
+
+@keyframes fc-deal-z {
+  to { z-index: 6; }
+}
+
+@keyframes fc-deal {
+  to { translate: -60px 224px; rotate: -1deg; }
+}
+
+/* out from behind the sticker, onto the pile. Sticker (900,500) → pile
+   (1500,560): +600 +60, plus each card's own stack offset and tilt. */
+@keyframes fc-card-fly {
+  0% { translate: 0 0; scale: 0.35; opacity: 0; rotate: -4deg; animation-timing-function: cubic-bezier(0.3, 0, 0.5, 1); }
+  18% { translate: 70px -60px; scale: 0.75; opacity: 1; rotate: -8deg; animation-timing-function: cubic-bezier(0.35, 0, 0.15, 1); }
+  86% { translate: calc(560px + var(--sx)) calc(40px + var(--sy)); scale: 1; opacity: 1; rotate: 5deg; animation-timing-function: var(--ease-pop); }
+  100% { translate: calc(600px + var(--sx)) calc(60px + var(--sy)); scale: 1; opacity: 1; rotate: var(--tilt); }
+}
+
+/* ── the receipt, top right ───────────────────────────────────────────── */
+.fc-stamp {
+  position: relative;
+  z-index: 4;
+  padding: 18px 36px 20px;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  box-shadow: 0 9px 0 rgba(0, 0, 0, 0.3);
+  rotate: -3deg;
+  animation: fc-stamp-in 420ms var(--ease-snap) var(--t-stamp) both;
+}
+
+.fc-stamp span {
+  margin: 0 14px;
+  color: rgba(17, 17, 20, 0.45);
+}
+
+@keyframes fc-stamp-in {
+  from { opacity: 0; scale: 0.4; rotate: -8deg; }
+}
+
+/* ── the title ────────────────────────────────────────────────────────── */
+.fc-title {
+  position: absolute;
+  bottom: 72px;
+  left: 96px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 150px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  color: var(--color-card);
+  clip-path: inset(0 100% 0 0);
+  animation: fc-word-in 640ms var(--ease-glide) var(--t-title) both;
+}
+
+.fc-title span {
+  color: var(--color-lime);
+}
+
+@keyframes fc-word-in {
+  to { clip-path: inset(0 -6% 0 0); }
+}
+
+/* ── lab pill (hidden under ?rec=1) ───────────────────────────────────── */
+.arrival-lab-bar.fc-lab-bar {
+  left: 50%;
+  translate: -50% 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc *,
+  .fc *::before,
+  .fc *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}

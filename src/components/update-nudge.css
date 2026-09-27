@@ -1,0 +1,187 @@
+/* ── DEPLOY-UPDATE NUDGE ──────────────────────────────────────────────
+   A black sticker pill that slaps into the bottom-right corner when a new
+   build ships (src/components/UpdateNudge.tsx). Tokens only — the @theme
+   block in src/index.css is the single source for color/motion.
+
+   Two rules it must never break:
+   - it never blocks the canvas: the slot is pointer-events: none, only the
+     pill itself takes clicks, and it sits clear of the bottom-center dock.
+   - it is always dismissible.
+   ────────────────────────────────────────────────────────────────────── */
+
+.update-nudge-slot {
+  position: fixed;
+  z-index: 92;
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.update-nudge {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  box-shadow: 0 7px 0
+    color-mix(in srgb, var(--color-paper-deep) 62%, transparent);
+  color: var(--color-card);
+  padding: 6px 6px 6px 14px;
+  rotate: -1.5deg;
+  transform-origin: 100% 100%;
+  animation: update-nudge-in var(--dur-arrive) var(--ease-pop) both;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1;
+  pointer-events: auto;
+  transition: rotate var(--dur-base) var(--ease-glide);
+}
+
+.update-nudge:hover {
+  rotate: 0deg;
+}
+
+.update-nudge.is-leaving {
+  animation: update-nudge-out var(--dur-quick) var(--ease-glide) both;
+}
+
+/* The one lime pop, 7px of it. */
+.update-nudge-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  animation: update-nudge-blip 2.4s var(--ease-glide) infinite;
+}
+
+.update-nudge-copy {
+  font-weight: 700;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+.update-nudge-go {
+  min-height: 28px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-card);
+  color: var(--color-sticker);
+  padding: 0 13px;
+  transition:
+    background var(--dur-quick) var(--ease-glide),
+    scale var(--dur-quick) var(--ease-pop);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: lowercase;
+  cursor: pointer;
+}
+
+.update-nudge-go:hover {
+  background: var(--color-lime);
+  scale: 1.05;
+}
+
+.update-nudge-go:active {
+  scale: 0.95;
+}
+
+.update-nudge-x {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: color-mix(in srgb, var(--color-card) 52%, transparent);
+  padding: 0;
+  transition:
+    background var(--dur-quick) var(--ease-glide),
+    color var(--dur-quick) var(--ease-glide);
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.update-nudge-x:hover {
+  background: color-mix(in srgb, var(--color-card) 13%, transparent);
+  color: var(--color-card);
+}
+
+.update-nudge-go:focus-visible,
+.update-nudge-x:focus-visible {
+  outline: 2px solid var(--color-lime);
+  outline-offset: 2px;
+}
+
+@keyframes update-nudge-in {
+  from {
+    opacity: 0;
+    scale: 0.84;
+    rotate: -7deg;
+    translate: 0 16px;
+  }
+}
+
+@keyframes update-nudge-out {
+  to {
+    opacity: 0;
+    scale: 0.9;
+    translate: 0 10px;
+  }
+}
+
+@keyframes update-nudge-blip {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-lime) 55%, transparent);
+  }
+
+  62%,
+  100% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-lime) 0%, transparent);
+  }
+}
+
+/* The bottom-center action dock owns the middle on narrow screens, so the
+   nudge steps up and spans the width instead of stacking on top of it. */
+@media (max-width: 560px) {
+  .update-nudge-slot {
+    right: 12px;
+    bottom: 78px;
+    left: 12px;
+  }
+
+  .update-nudge {
+    rotate: -1deg;
+  }
+
+  .update-nudge-copy {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .update-nudge,
+  .update-nudge.is-leaving,
+  .update-nudge-dot {
+    animation: none;
+  }
+
+  .update-nudge,
+  .update-nudge-go,
+  .update-nudge-x {
+    transition: none;
+  }
+
+  .update-nudge-go:hover,
+  .update-nudge-go:active {
+    scale: 1;
+  }
+}

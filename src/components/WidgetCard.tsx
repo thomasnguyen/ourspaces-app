@@ -1,0 +1,1269 @@
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactElement,
+} from "react";
+import type { Widget } from "../data/types";
+import type {
+  CanvasGestureKind,
+  CanvasLayout,
+  LiveGesture,
+} from "../live/presenceTypes";
+import type { PeerMotion } from "../live/peerMotion";
+import type { RefObject } from "react";
+import { getThread } from "../data/chat";
+import { MemberFace } from "./MemberFace";
+import { WIDGET_CATALOG } from "../data/templates";
+import { widgetLabel } from "../lib/widgetLabels";
+import { widgetSupportsThread } from "../lib/widgetThreads";
+import {
+  HotLinksWidget,
+  LinkPileWidget,
+  RoundtableWidget,
+  ShipPostWidget,
+  type BuildRoomFeed,
+  type RoundtableReply,
+} from "../widgets/buildroom";
+import {
+  ChatWidget,
+  CountdownWidget,
+  FrameWidget,
+  MediaWidget,
+  NoteWidget,
+  PollWidget,
+  PotluckWidget,
+  StickerWidget,
+} from "../widgets/core";
+import {
+  AvailabilityWidget,
+  DailyQWidget,
+  DecisionWidget,
+  ExpenseSplitWidget,
+  ItineraryWidget,
+  JokeRegistryWidget,
+  LinkCardWidget,
+  LinkShelfWidget,
+  LetterWidget,
+  MessageWallWidget,
+  PhotoWallWidget,
+  PlaylistWidget,
+  QuoteWidget,
+  RsvpWidget,
+  SportsWidget,
+  WeatherWidget,
+  BackendLiveWidget,
+  DualClockWidget,
+  WheelWidget,
+  type PlaylistTune,
+  type RsvpStatus,
+} from "../widgets/extras";
+import {
+  CozyColorWidget,
+  type CozyColorIdentity,
+  type CozyColorPeer,
+  type CozyColorStroke,
+} from "../widgets/CozyColorWidget";
+
+/* Daily question grows with its answers — seeded height is just the floor. */
+function widgetGrows(widget: Widget) {
+  return (
+    widget.type === "dailyQ" ||
+    widget.type === "availability" ||
+    widget.type === "linkShelf" ||
+    widget.type === "playlist"
+  );
+}
+
+function innerStyle(widget: Widget): CSSProperties {
+  return {
+    width: "100%",
+    height: widgetGrows(widget) ? "auto" : "100%",
+    minHeight: widgetGrows(widget) ? widget.h : undefined,
+    transform: widget.rotate ? `rotate(${widget.rotate}deg)` : undefined,
+  };
+}
+
+/* Deterministic scrapbook tilt — hash the id so every client sees the same
+   slight askew, damped on wide cards so long text stays scannable. Cards with
+   a hand-placed data rotate, frames, and stickers keep their own angle. */
+function widgetTilt(widget: Widget): string | undefined {
+  if (widget.rotate || widget.type === "frame" || widget.type === "sticker") {
+    return undefined;
+  }
+  let hash = 0;
+  for (let i = 0; i < widget.id.length; i++) {
+    hash = (hash * 31 + widget.id.charCodeAt(i)) | 0;
+  }
+  const step = (Math.abs(hash) % 5) - 2; // -2..2
+  if (step === 0) return undefined;
+  const damp = Math.min(1, Math.max(0.4, 240 / widget.w));
+  return `${(step * 1.1 * damp).toFixed(2)}deg`;
+}
+
+function groupStyle(
+  widget: Widget,
+  enterDelay: number,
+  remoteGesture?: LiveGesture,
+): CSSProperties {
+  return {
+    "--enter-delay": `${Math.round(enterDelay)}ms`,
+    "--tilt": widgetTilt(widget),
+    left: widget.x,
+    top: widget.y,
+    width: remoteGesture?.w ?? widget.w,
+    height: widgetGrows(widget)
+      ? undefined
+      : (remoteGesture?.h ?? widget.h),
+    minHeight: widgetGrows(widget)
+      ? (remoteGesture?.h ?? widget.h)
+      : undefined,
+    zIndex: remoteGesture?.z ?? widget.z,
+    /* No transform for a remote gesture. While somebody else is holding this
+       card, peerMotion owns the transform and writes an interpolated one
+       every frame — the same imperative trick `applyPreview` already uses for
+       a drag of our own. Handing React the job too would mean two writers. */
+  } as CSSProperties;
+}
+
+type FrameResizeCorner = "nw" | "ne" | "sw" | "se";
+
+type FrameGesture = {
+  pointerId: number;
+  kind: "move" | "resize";
+  corner?: FrameResizeCorner;
+  clientX: number;
+  clientY: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  scale: number;
+  latest: CanvasLayout;
+};
+
+type GesturePreview = {
+  kind: CanvasGestureKind;
+  origin: CanvasLayout;
+  layout: CanvasLayout;
+};
+
+const MIN_FRAME_WIDTH = 280;
+const MIN_FRAME_HEIGHT = 140;
+const MAX_FRAME_WIDTH = 1200;
+const MAX_FRAME_HEIGHT = 800;
+
+function liveCanvasScale(element: HTMLElement, fallback: number) {
+  const layer = element.closest<HTMLElement>(".canvas-scale-layer");
+  if (!layer) return fallback;
+  const transform = window.getComputedStyle(layer).transform;
+  if (!transform || transform === "none") return fallback;
+  const scale = new DOMMatrix(transform).a;
+  return Number.isFinite(scale) && scale > 0 ? scale : fallback;
+}
+
+function resizedFrame(
+  gesture: FrameGesture,
+  deltaX: number,
+  deltaY: number,
+) {
+  let left = gesture.x;
+  let top = gesture.y;
+  let right = gesture.x + gesture.w;
+  let bottom = gesture.y + gesture.h;
+  const corner = gesture.corner ?? "se";
+
+  if (corner.includes("w")) {
+    left = Math.max(
+      0,
+      Math.min(
+        right - MIN_FRAME_WIDTH,
+        Math.max(right - MAX_FRAME_WIDTH, gesture.x + deltaX),
+      ),
+    );
+  } else {
+    right = Math.min(
+      gesture.x + MAX_FRAME_WIDTH,
+      Math.max(gesture.x + MIN_FRAME_WIDTH, right + deltaX),
+    );
+  }
+
+  if (corner.includes("n")) {
+    top = Math.max(
+      0,
+      Math.min(
+        bottom - MIN_FRAME_HEIGHT,
+        Math.max(bottom - MAX_FRAME_HEIGHT, gesture.y + deltaY),
+      ),
+    );
+  } else {
+    bottom = Math.min(
+      gesture.y + MAX_FRAME_HEIGHT,
+      Math.max(gesture.y + MIN_FRAME_HEIGHT, bottom + deltaY),
+    );
+  }
+
+  return {
+    x: Math.round(left),
+    y: Math.round(top),
+    w: Math.round(right - left),
+    h: Math.round(bottom - top),
+  };
+}
+
+function WidgetCardComponent({
+  widget,
+  spaceId,
+  enterDelay = 0,
+  selected = false,
+  managed = false,
+  frameFocused = false,
+  frameEditing = false,
+  widgetFocused = false,
+  focusSoftened = false,
+  canvasScale = 1,
+  commentCount,
+  commenters: commentersProp,
+  threadRead = false,
+  pollSelection,
+  rsvpSelection,
+  dailyAnswer,
+  dailyReactions,
+  recapCited = false,
+  onSelect,
+  onManage,
+  onMove,
+  onDragStart,
+  onDragEnd,
+  onGestureStart,
+  onGestureChange,
+  onGestureEnd,
+  onLayoutCommit,
+  remoteGesture,
+  remoteLocked = false,
+  motion,
+  onDelete,
+  onEdit,
+  onFrameFocus,
+  onFrameLayoutChange,
+  onFrameLayoutCommit,
+  onPollVote,
+  onRsvp,
+  onDailyAnswer,
+  onDailyReact,
+  onPromote,
+  promoted = false,
+  onClaim,
+  claimantId,
+  onWheelSpin,
+  onPlaylistTune,
+  onLetterOpen,
+  buildRoomFeed,
+  roundtableReplies,
+  paintStrokes,
+  paintIdentity,
+  paintPeersRef,
+  onPaintCursor,
+  onPaintStroke,
+  onPaintClear,
+}: {
+  widget: Widget;
+  spaceId: string;
+  /** Where this widget sits in the space entrance wavefront, in ms. */
+  enterDelay?: number;
+  selected?: boolean;
+  managed?: boolean;
+  frameFocused?: boolean;
+  frameEditing?: boolean;
+  widgetFocused?: boolean;
+  focusSoftened?: boolean;
+  canvasScale?: number;
+  commentCount?: number;
+  commenters?: string[];
+  /** You've opened this thread — its chip collapses to a quiet dot. */
+  threadRead?: boolean;
+  pollSelection?: string;
+  rsvpSelection?: RsvpStatus;
+  dailyAnswer?: string;
+  dailyReactions?: Record<string, string>;
+  /** Ringed because "catch me up" reported a change on this widget. */
+  recapCited?: boolean;
+  onSelect?: (widget: Widget) => void;
+  onManage?: (widgetId: string) => void;
+  onMove?: (widgetId: string, x: number, y: number) => void;
+  onDragStart?: (widgetId: string) => void;
+  onDragEnd?: (widgetId: string) => void;
+  onGestureStart?: (widget: Widget, kind: CanvasGestureKind) => void;
+  onGestureChange?: (widgetId: string, layout: Partial<CanvasLayout>) => void;
+  onGestureEnd?: (widgetId: string, layout: CanvasLayout) => void;
+  onLayoutCommit?: (widget: Widget, layout: CanvasLayout) => void;
+  remoteGesture?: LiveGesture;
+  remoteLocked?: boolean;
+  motion?: PeerMotion;
+  onDelete?: (widgetId: string, label: string) => void;
+  onEdit?: (widgetId: string) => void;
+  onFrameFocus?: (widget: Widget) => void;
+  onFrameLayoutChange?: (
+    widgetId: string,
+    layout: Partial<Pick<Widget, "x" | "y" | "w" | "h">>,
+  ) => void;
+  onFrameLayoutCommit?: (widgetId: string) => void;
+  onPollVote?: (widgetId: string, optionId: string) => void;
+  onRsvp?: (widgetId: string, status: RsvpStatus) => void;
+  onDailyAnswer?: (widgetId: string, text: string) => void;
+  onDailyReact?: (widgetId: string, answerName: string, emoji: string) => void;
+  onPromote?: () => void;
+  promoted?: boolean;
+  onClaim?: (widgetId: string, itemName: string) => void;
+  claimantId?: string;
+  onWheelSpin?: (widgetId: string, spin: { spinNonce: number; resultIndex: number }) => void;
+  onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
+  onLetterOpen?: (widgetId: string, open: boolean) => void;
+  buildRoomFeed?: BuildRoomFeed;
+  roundtableReplies?: RoundtableReply[];
+  paintStrokes?: CozyColorStroke[];
+  paintIdentity?: CozyColorIdentity;
+  onPaintStroke?: (
+    widgetId: string,
+    stroke: Omit<CozyColorStroke, "id" | "createdAt">,
+  ) => Promise<unknown> | void;
+  onPaintClear?: (widgetId: string, regionPrefix?: string) => Promise<unknown> | void;
+  /* A ref, not an array, on purpose. This component is built inside a
+     useMemo that must NOT re-run when somebody waves their cursor — and an
+     array prop in there would either go stale (it did) or re-render every
+     card 20x a second. The coloring room reads the ref on its own rAF. */
+  paintPeersRef?: RefObject<CozyColorPeer[]>;
+  onPaintCursor?: (x: number, y: number, zone?: string) => void;
+}) {
+  const dragState = useRef<{
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    widgetX: number;
+    widgetY: number;
+    scale: number;
+    latest: CanvasLayout;
+  } | null>(null);
+  /* Direct drag from the card body — armed on pointer-down over dead surface,
+     becomes a real drag past a small threshold so clicks stay clicks. */
+  const bodyDrag = useRef<{
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    widgetX: number;
+    widgetY: number;
+    scale: number;
+    started: boolean;
+    latest: CanvasLayout;
+  } | null>(null);
+  const suppressBodyClick = useRef(false);
+  const frameGesture = useRef<FrameGesture | null>(null);
+  const groupRef = useRef<HTMLDivElement | null>(null);
+  const previewFrame = useRef(0);
+  const pendingPreview = useRef<GesturePreview | null>(null);
+  const previewCleanupFrame = useRef(0);
+  const [dragging, setDragging] = useState(false);
+  /* While a peer holds this card, hand the node to the motion engine and let
+     it paint. The cleanup clears the inline transform, so the card settles
+     back onto its committed left/top the moment they let go. */
+  const heldBySession = remoteGesture?.sessionId;
+  /* useLayoutEffect, not useEffect. When a peer lets go, React moves the card
+     onto its committed left/top and clears the gesture in the same commit —
+     and the engine has to re-express its transform against that new origin
+     before the browser paints. A passive effect runs AFTER paint, so the
+     frame showing the new left/top with the old offset still on it reaches
+     the screen: a ~180px flash at the end of every remote drag. */
+  useLayoutEffect(() => {
+    if (!motion || !heldBySession) return;
+    return motion.attach(`widget:${widget.id}`, groupRef.current, true);
+  }, [heldBySession, motion, widget.id]);
+
+  const syncInert = useCallback((node: HTMLDivElement | null) => {
+    groupRef.current = node;
+    if (!node) return;
+    if (focusSoftened) {
+      node.setAttribute("inert", "");
+    } else {
+      node.removeAttribute("inert");
+    }
+  }, [focusSoftened]);
+
+  const applyPreview = useCallback((preview: GesturePreview) => {
+    const node = groupRef.current;
+    if (!node) return;
+
+    if (preview.kind === "resize") {
+      node.style.left = `${preview.layout.x}px`;
+      node.style.top = `${preview.layout.y}px`;
+      node.style.width = `${preview.layout.w}px`;
+      node.style.height = `${preview.layout.h}px`;
+      return;
+    }
+
+    node.style.transform = `translate3d(${preview.layout.x - preview.origin.x}px, ${
+      preview.layout.y - preview.origin.y
+    }px, 0)`;
+  }, []);
+
+  const queuePreview = useCallback((preview: GesturePreview) => {
+    pendingPreview.current = preview;
+    if (previewFrame.current) return;
+    previewFrame.current = window.requestAnimationFrame(() => {
+      previewFrame.current = 0;
+      const next = pendingPreview.current;
+      if (!next) return;
+      applyPreview(next);
+      onGestureChange?.(widget.id, next.layout);
+    });
+  }, [applyPreview, onGestureChange, widget.id]);
+
+  const flushPreview = useCallback((preview: GesturePreview) => {
+    if (previewFrame.current) {
+      window.cancelAnimationFrame(previewFrame.current);
+      previewFrame.current = 0;
+    }
+    pendingPreview.current = preview;
+    applyPreview(preview);
+  }, [applyPreview]);
+
+  const releasePreview = useCallback((kind: CanvasGestureKind) => {
+    if (previewCleanupFrame.current) {
+      window.cancelAnimationFrame(previewCleanupFrame.current);
+    }
+    previewCleanupFrame.current = window.requestAnimationFrame(() => {
+      previewCleanupFrame.current = 0;
+      pendingPreview.current = null;
+      if (kind === "move" && groupRef.current) {
+        groupRef.current.style.transform = "";
+      }
+    });
+  }, []);
+
+  useEffect(() => () => {
+    if (previewFrame.current) window.cancelAnimationFrame(previewFrame.current);
+    if (previewCleanupFrame.current) {
+      window.cancelAnimationFrame(previewCleanupFrame.current);
+    }
+  }, []);
+
+  const beginFrameGesture = (
+    event: PointerEvent<HTMLButtonElement>,
+    kind: FrameGesture["kind"],
+    corner?: FrameResizeCorner,
+  ) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (remoteLocked) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    frameGesture.current = {
+      pointerId: event.pointerId,
+      kind,
+      corner,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      x: widget.x,
+      y: widget.y,
+      w: widget.w,
+      h: widget.h,
+      scale: liveCanvasScale(event.currentTarget, canvasScale),
+      latest: {
+        x: widget.x,
+        y: widget.y,
+        w: widget.w,
+        h: widget.h,
+        z: widget.z,
+      },
+    };
+    setDragging(true);
+    onManage?.(widget.id);
+    onGestureStart?.(widget, kind);
+  };
+
+  const moveFrameGesture = (event: PointerEvent<HTMLButtonElement>) => {
+    const gesture = frameGesture.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+
+    const deltaX = (event.clientX - gesture.clientX) / gesture.scale;
+    const deltaY = (event.clientY - gesture.clientY) / gesture.scale;
+    if (gesture.kind === "move") {
+      const layout: CanvasLayout = {
+        x: Math.max(0, Math.round(gesture.x + deltaX)),
+        y: Math.max(0, Math.round(gesture.y + deltaY)),
+        w: gesture.w,
+        h: gesture.h,
+        z: gesture.latest.z,
+      };
+      gesture.latest = layout;
+      queuePreview({ kind: "move", origin: {
+        x: gesture.x,
+        y: gesture.y,
+        w: gesture.w,
+        h: gesture.h,
+        z: gesture.latest.z,
+      }, layout });
+      return;
+    }
+
+    const layout: CanvasLayout = {
+      ...resizedFrame(gesture, deltaX, deltaY),
+      z: gesture.latest.z,
+    };
+    gesture.latest = layout;
+    queuePreview({ kind: "resize", origin: {
+      x: gesture.x,
+      y: gesture.y,
+      w: gesture.w,
+      h: gesture.h,
+      z: gesture.latest.z,
+    }, layout });
+  };
+
+  const finishFrameGesture = (event: PointerEvent<HTMLButtonElement>) => {
+    const gesture = frameGesture.current;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    frameGesture.current = null;
+    setDragging(false);
+    if (gesture?.pointerId === event.pointerId) {
+      flushPreview({
+        kind: gesture.kind,
+        origin: {
+          x: gesture.x,
+          y: gesture.y,
+          w: gesture.w,
+          h: gesture.h,
+          z: gesture.latest.z,
+        },
+        layout: gesture.latest,
+      });
+      if (onGestureEnd) onGestureEnd(widget.id, gesture.latest);
+      else {
+        onFrameLayoutChange?.(widget.id, gesture.latest);
+        onFrameLayoutCommit?.(widget.id);
+      }
+      releasePreview(gesture.kind);
+    }
+  };
+
+  const moveFrameWithKeyboard = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const distance = event.shiftKey ? 24 : 8;
+    const moves: Partial<Record<string, [number, number]>> = {
+      ArrowLeft: [-distance, 0],
+      ArrowRight: [distance, 0],
+      ArrowUp: [0, -distance],
+      ArrowDown: [0, distance],
+    };
+    const move = moves[event.key];
+    if (!move) return;
+    event.preventDefault();
+    if (remoteLocked) return;
+    const layout: CanvasLayout = {
+      x: Math.max(0, widget.x + move[0]),
+      y: Math.max(0, widget.y + move[1]),
+      w: widget.w,
+      h: widget.h,
+      z: widget.z,
+    };
+    if (onLayoutCommit) onLayoutCommit(widget, layout);
+    else {
+      onFrameLayoutChange?.(widget.id, layout);
+      onFrameLayoutCommit?.(widget.id);
+    }
+  };
+
+  const resizeFrameWithKeyboard = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    corner: FrameResizeCorner,
+  ) => {
+    const distance = event.shiftKey ? 24 : 8;
+    const deltas: Partial<Record<string, [number, number]>> = {
+      ArrowLeft: [-distance, 0],
+      ArrowRight: [distance, 0],
+      ArrowUp: [0, -distance],
+      ArrowDown: [0, distance],
+    };
+    const delta = deltas[event.key];
+    if (!delta) return;
+    event.preventDefault();
+    if (remoteLocked) return;
+    const resized = resizedFrame(
+      {
+        pointerId: 0,
+        kind: "resize",
+        corner,
+        clientX: 0,
+        clientY: 0,
+        x: widget.x,
+        y: widget.y,
+        w: widget.w,
+        h: widget.h,
+        scale: 1,
+        latest: {
+          x: widget.x,
+          y: widget.y,
+          w: widget.w,
+          h: widget.h,
+          z: widget.z,
+        },
+      },
+      delta[0],
+      delta[1],
+    );
+    const layout: CanvasLayout = { ...resized, z: widget.z };
+    if (onLayoutCommit) onLayoutCommit(widget, layout);
+    else {
+      onFrameLayoutChange?.(widget.id, resized);
+      onFrameLayoutCommit?.(widget.id);
+    }
+  };
+
+  const inner = useMemo(() => innerStyle(widget), [widget.h, widget.type]);
+  const voteOnPoll = useCallback(
+    (optionId: string) => onPollVote?.(widget.id, optionId),
+    [onPollVote, widget.id],
+  );
+  let content: ReactElement | null = null;
+
+  switch (widget.type) {
+    case "frame":
+      content = (
+        <FrameWidget
+          widget={widget}
+          style={inner}
+          focused={frameFocused}
+          editing={frameEditing}
+          onFocus={() => onFrameFocus?.(widget)}
+          onMovePointerDown={
+            remoteLocked
+              ? undefined
+              : (event) => beginFrameGesture(event, "move")
+          }
+          onMovePointerMove={remoteLocked ? undefined : moveFrameGesture}
+          onMovePointerUp={remoteLocked ? undefined : finishFrameGesture}
+          onMovePointerCancel={remoteLocked ? undefined : finishFrameGesture}
+          onMoveKeyDown={remoteLocked ? undefined : moveFrameWithKeyboard}
+        />
+      );
+      break;
+    case "sticker":
+      content = <StickerWidget widget={widget} style={inner} />;
+      break;
+    case "countdown":
+      content = <CountdownWidget widget={widget} style={inner} />;
+      break;
+    case "poll":
+      content = (
+        <PollWidget
+          widget={widget}
+          style={inner}
+          selectedOptionId={pollSelection}
+          onVote={voteOnPoll}
+        />
+      );
+      break;
+    case "potluck":
+      content = (
+        <PotluckWidget
+          widget={widget}
+          style={inner}
+          onClaim={onClaim ? (itemName) => onClaim(widget.id, itemName) : undefined}
+          claimantId={claimantId}
+        />
+      );
+      break;
+    case "chat":
+      content = (
+        <ChatWidget
+          widget={widget}
+          style={inner}
+          onPromote={onPromote}
+          promoted={promoted}
+        />
+      );
+      break;
+    case "note":
+      content = <NoteWidget widget={widget} style={inner} />;
+      break;
+    case "media":
+      content = <MediaWidget widget={widget} style={inner} />;
+      break;
+    case "dailyQ":
+      content = (
+        <DailyQWidget
+          widget={widget}
+          style={inner}
+          localAnswer={dailyAnswer}
+          localReactions={dailyReactions}
+          onAnswer={(text) => onDailyAnswer?.(widget.id, text)}
+          onReact={(answerName, emoji) => onDailyReact?.(widget.id, answerName, emoji)}
+        />
+      );
+      break;
+    case "rsvp":
+      content = (
+        <RsvpWidget
+          widget={widget}
+          style={inner}
+          focused={widgetFocused}
+          rsvpSelection={rsvpSelection}
+          onRsvp={onRsvp}
+        />
+      );
+      break;
+    case "decision":
+      content = <DecisionWidget widget={widget} style={inner} />;
+      break;
+    case "availability":
+      content = <AvailabilityWidget widget={widget} style={inner} />;
+      break;
+    case "photoWall":
+      content = <PhotoWallWidget widget={widget} style={inner} />;
+      break;
+    case "linkShelf":
+      content = <LinkShelfWidget widget={widget} style={inner} />;
+      break;
+    case "linkCard":
+      content = <LinkCardWidget widget={widget} style={inner} />;
+      break;
+    case "playlist":
+      content = (
+        <PlaylistWidget
+          widget={widget}
+          style={inner}
+          onTune={onPlaylistTune ? (tune) => onPlaylistTune(widget.id, tune) : undefined}
+        />
+      );
+      break;
+    case "jokeRegistry":
+      content = <JokeRegistryWidget widget={widget} style={inner} />;
+      break;
+    case "expenseSplit":
+      content = <ExpenseSplitWidget widget={widget} style={inner} />;
+      break;
+    case "itinerary":
+      content = <ItineraryWidget widget={widget} style={inner} />;
+      break;
+    case "messageWall":
+      content = <MessageWallWidget widget={widget} style={inner} />;
+      break;
+    case "letter":
+      content = (
+        <LetterWidget
+          widget={widget}
+          style={inner}
+          onOpen={onLetterOpen ? (open) => onLetterOpen(widget.id, open) : undefined}
+        />
+      );
+      break;
+    case "quote":
+      content = <QuoteWidget widget={widget} style={inner} />;
+      break;
+    case "weather":
+      content = <WeatherWidget widget={widget} style={inner} />;
+      break;
+    case "sports":
+      content = <SportsWidget widget={widget} style={inner} />;
+      break;
+    case "backendLive":
+      content = <BackendLiveWidget widget={widget} style={inner} />;
+      break;
+    case "wheel":
+      content = (
+        <WheelWidget
+          widget={widget}
+          style={inner}
+          onSpin={onWheelSpin ? (spin) => onWheelSpin(widget.id, spin) : undefined}
+          disabled={!onWheelSpin && spaceId !== "widget-lab"}
+        />
+      );
+      break;
+    case "dualClock":
+      content = <DualClockWidget widget={widget} style={inner} />;
+      break;
+    case "cozyColor":
+      content = (
+        <CozyColorWidget
+          widget={widget}
+          style={inner}
+          strokes={paintStrokes}
+          identity={paintIdentity}
+          onStroke={onPaintStroke ? (stroke) => onPaintStroke(widget.id, stroke) : undefined}
+          onClear={onPaintClear ? (regionPrefix?: string) => onPaintClear(widget.id, regionPrefix) : undefined}
+          peersRef={paintPeersRef}
+          onCursor={onPaintCursor}
+        />
+      );
+      break;
+    case "linkPile":
+      content = (
+        <LinkPileWidget widget={widget} style={inner} feed={buildRoomFeed} />
+      );
+      break;
+    case "hotLinks":
+      content = (
+        <HotLinksWidget widget={widget} style={inner} feed={buildRoomFeed} />
+      );
+      break;
+    case "shipPost":
+      content = (
+        <ShipPostWidget widget={widget} style={inner} />
+      );
+      break;
+    case "roundtable":
+      content = (
+        <RoundtableWidget
+          widget={widget}
+          style={inner}
+          replies={roundtableReplies}
+          replyCount={commentCount}
+          onOpen={() => onSelect?.(widget)}
+        />
+      );
+      break;
+    default:
+      return null;
+  }
+
+  if (widget.type === "frame") {
+    return (
+      <div
+        className={`widget-group widget-frame-group absolute ${
+          managed ? "is-frame-managed" : ""
+        } ${frameEditing ? "is-frame-editing" : ""} ${
+          dragging ? "is-dragging" : ""
+        } ${remoteGesture ? "is-remote-gesturing" : ""} ${
+          remoteGesture?.kind === "resize" ? "is-remote-resizing" : ""
+        } ${
+          focusSoftened ? "is-focus-softened" : ""
+        }`}
+        ref={syncInert}
+        style={{
+          ...groupStyle(widget, enterDelay, remoteGesture),
+          zIndex: remoteGesture?.z ?? (frameEditing ? 54 : widget.z),
+        }}
+        data-frame-id={widget.id}
+        aria-hidden={focusSoftened || undefined}
+      >
+        {content}
+        {frameEditing &&
+          (["nw", "ne", "sw", "se"] as FrameResizeCorner[]).map(
+            (corner) => (
+              <button
+                type="button"
+                key={corner}
+                className={`frame-resize-handle is-${corner}`}
+                disabled={remoteLocked}
+                onPointerDown={(event) =>
+                  beginFrameGesture(event, "resize", corner)
+                }
+                onPointerMove={moveFrameGesture}
+                onPointerUp={finishFrameGesture}
+                onPointerCancel={finishFrameGesture}
+                onKeyDown={(event) =>
+                  resizeFrameWithKeyboard(event, corner)
+                }
+                aria-label={`Resize ${String(
+                  widget.data.title ?? "frame",
+                )} from the ${corner} corner. Use arrow keys for precise resizing.`}
+              />
+            ),
+          )}
+      </div>
+    );
+  }
+
+  const thread = getThread(spaceId, widget.id);
+  const count = commentCount ?? thread.messages.length;
+  const commenters = commentersProp ?? [...new Set(thread.messages.map((message) => message.from))].slice(-2);
+  const label = widgetLabel(widget);
+  const controlLabel = WIDGET_CATALOG.find((item) => item.type === widget.type)?.label ?? label;
+  const supportsThread = widgetSupportsThread(widget);
+  /* A filled web post zooms on a plain background click, like the photo wall;
+     only its paper clipping / read pill opens the article. */
+  const zoomsOnClick =
+    widget.type === "photoWall" ||
+    widget.type === "shipPost" ||
+    (widget.type === "linkCard" && String(widget.data.url ?? "").trim() !== "");
+
+  const beginWidgetMove = () => {
+    if (onGestureStart) onGestureStart(widget, "move");
+    else onDragStart?.(widget.id);
+  };
+
+  const widgetMoveLayout = (x: number, y: number): CanvasLayout => ({
+    x: Math.max(0, Math.round(x)),
+    y: Math.max(0, Math.round(y)),
+    w: widget.w,
+    h: widget.h,
+    z: widget.z,
+  });
+
+  const previewWidgetMove = (layout: CanvasLayout) => {
+    queuePreview({
+      kind: "move",
+      origin: {
+        x: widget.x,
+        y: widget.y,
+        w: widget.w,
+        h: widget.h,
+        z: widget.z,
+      },
+      layout,
+    });
+  };
+
+  const endWidgetMove = (layout: CanvasLayout) => {
+    flushPreview({
+      kind: "move",
+      origin: {
+        x: widget.x,
+        y: widget.y,
+        w: widget.w,
+        h: widget.h,
+        z: widget.z,
+      },
+      layout,
+    });
+    if (onGestureEnd) onGestureEnd(widget.id, layout);
+    else {
+      onMove?.(widget.id, layout.x, layout.y);
+      onDragEnd?.(widget.id);
+    }
+    releasePreview("move");
+  };
+
+  const finishDrag = (event: PointerEvent<HTMLButtonElement>) => {
+    const drag = dragState.current;
+    let finalLayout = drag?.latest;
+    if (drag && drag.pointerId === event.pointerId) {
+      if (event.type !== "pointercancel") {
+        finalLayout = widgetMoveLayout(
+          drag.widgetX + (event.clientX - drag.clientX) / drag.scale,
+          drag.widgetY + (event.clientY - drag.clientY) / drag.scale,
+        );
+      }
+    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    dragState.current = null;
+    setDragging(false);
+    if (drag?.pointerId === event.pointerId && finalLayout) {
+      endWidgetMove(finalLayout);
+    }
+  };
+
+  return (
+    <div
+      className={`widget-group absolute ${
+        widget.type === "sticker" ? "widget-sticker-group" : ""
+      } ${selected ? "is-thread-selected" : ""} ${
+        widgetFocused ? "is-widget-focused" : ""
+      } ${managed ? "is-managed" : ""} ${dragging ? "is-dragging" : ""} ${
+        remoteGesture ? "is-remote-gesturing" : ""
+      } ${
+        focusSoftened ? "is-focus-softened" : ""
+      } ${recapCited ? "is-recap-cited" : ""}`}
+      style={{
+        ...groupStyle(widget, enterDelay, remoteGesture),
+        // Stickers stay on top of the collage. The card in your hand is
+        // next. Stored widget.z starts at 1000 after a move, so a 55
+        // grab boost used to slip *under* already-moved cards.
+        zIndex:
+          widget.type === "sticker"
+            ? (managed || dragging ? 100001 : 100000)
+            : remoteGesture || managed || dragging || widgetFocused
+              ? 99999
+              : recapCited
+                ? 99998
+                : widget.z,
+      }}
+      ref={syncInert}
+      data-widget-id={widget.id}
+      data-widget-type={widget.type}
+      aria-hidden={focusSoftened || undefined}
+      onPointerDown={(event) => {
+        if ((event.target as HTMLElement).closest(".widget-management")) return;
+        onManage?.(widget.id);
+      }}
+    >
+      <div
+        className="widget-group-body"
+        onClick={(e) => {
+          if ((e.target as HTMLElement).closest("button, input, a")) {
+            /* A click that ends a drag must not press the control under it
+               (for the web post link, that means: don't open the article). */
+            if (suppressBodyClick.current) {
+              suppressBodyClick.current = false;
+              e.preventDefault();
+              e.stopPropagation();
+            }
+            return;
+          }
+          if (suppressBodyClick.current) {
+            suppressBodyClick.current = false;
+            return;
+          }
+          if (zoomsOnClick && !widgetFocused && supportsThread) {
+            onSelect?.(widget);
+            return;
+          }
+          onManage?.(widget.id);
+        }}
+        onDoubleClick={(e) => {
+          if ((e.target as HTMLElement).closest("button, input, a, textarea"))
+            return;
+          if (widgetFocused || !supportsThread) return;
+          onSelect?.(widget);
+        }}
+        onPointerDown={(e) => {
+          if (remoteLocked || widgetFocused || e.button !== 0) return;
+          const interactive = (e.target as HTMLElement).closest(
+            "button, input, a, textarea, select",
+          );
+          /* The web post is one big link — let it arm a body drag anyway.
+             Capture is deferred until real movement so a plain click still
+             opens the article. */
+          if (
+            interactive &&
+            !interactive.classList.contains("link-card-open") &&
+            !interactive.classList.contains("link-card-read")
+          )
+            return;
+          suppressBodyClick.current = false;
+          if (!interactive) e.currentTarget.setPointerCapture(e.pointerId);
+          bodyDrag.current = {
+            pointerId: e.pointerId,
+            clientX: e.clientX,
+            clientY: e.clientY,
+            widgetX: widget.x,
+            widgetY: widget.y,
+            scale: liveCanvasScale(e.currentTarget, canvasScale),
+            started: false,
+            latest: widgetMoveLayout(widget.x, widget.y),
+          };
+        }}
+        onPointerMove={(e) => {
+          const drag = bodyDrag.current;
+          if (!drag || drag.pointerId !== e.pointerId) return;
+          const dx = e.clientX - drag.clientX;
+          const dy = e.clientY - drag.clientY;
+          if (!drag.started) {
+            if (Math.hypot(dx, dy) < 5) return;
+            drag.started = true;
+            suppressBodyClick.current = true;
+            if (!e.currentTarget.hasPointerCapture(e.pointerId)) {
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }
+            setDragging(true);
+            onManage?.(widget.id);
+            beginWidgetMove();
+          }
+          const layout = widgetMoveLayout(
+            drag.widgetX + dx / drag.scale,
+            drag.widgetY + dy / drag.scale,
+          );
+          drag.latest = layout;
+          previewWidgetMove(layout);
+        }}
+        onPointerUp={(e) => {
+          const drag = bodyDrag.current;
+          if (!drag || drag.pointerId !== e.pointerId) return;
+          const dx = e.clientX - drag.clientX;
+          const dy = e.clientY - drag.clientY;
+          if (!drag.started && Math.hypot(dx, dy) >= 5) {
+            drag.started = true;
+            setDragging(true);
+            onManage?.(widget.id);
+            beginWidgetMove();
+          }
+          if (drag.started) {
+            suppressBodyClick.current = true;
+            drag.latest = widgetMoveLayout(
+              drag.widgetX + dx / drag.scale,
+              drag.widgetY + dy / drag.scale,
+            );
+          }
+          if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+          }
+          const moved = drag.started;
+          bodyDrag.current = null;
+          if (moved) {
+            suppressBodyClick.current = true;
+            setDragging(false);
+            endWidgetMove(drag.latest);
+          }
+        }}
+        onPointerCancel={(e) => {
+          const drag = bodyDrag.current;
+          if (!drag || drag.pointerId !== e.pointerId) return;
+          const moved = drag.started;
+          bodyDrag.current = null;
+          if (moved) {
+            suppressBodyClick.current = true;
+            setDragging(false);
+            endWidgetMove(drag.latest);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (zoomsOnClick && !widgetFocused && supportsThread) {
+              onSelect?.(widget);
+            } else {
+              onManage?.(widget.id);
+            }
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={
+          zoomsOnClick && !widgetFocused
+            ? `Open ${label}. Use the drag control to move it.`
+            : `Select ${controlLabel} widget. Drag to move it.`
+        }
+        aria-pressed={managed}
+      >
+        {content}
+      </div>
+      {/* role="group" so the aria-label below is actually exposed — a bare div
+          is role=generic and AT drops its name. Not role="toolbar": the drag
+          handle already owns the arrow keys for nudging the widget. */}
+      {/* These four buttons look empty on purpose: their glyph and verb are CSS
+          generated content (.widget-drag-handle::before/::after et al in
+          index.css) so the visible label is not duplicated as DOM text for
+          scrapers and screen readers. The aria-label is the accessible name. */}
+      <div
+        className="widget-management"
+        role="group"
+        aria-label={`${controlLabel} widget controls`}
+      >
+        <button
+          type="button"
+          className="widget-drag-handle"
+          disabled={remoteLocked}
+          onPointerDown={(event) => {
+            if (remoteLocked) return;
+            event.stopPropagation();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            dragState.current = {
+              pointerId: event.pointerId,
+              clientX: event.clientX,
+              clientY: event.clientY,
+              widgetX: widget.x,
+              widgetY: widget.y,
+              scale: liveCanvasScale(event.currentTarget, canvasScale),
+              latest: widgetMoveLayout(widget.x, widget.y),
+            };
+            setDragging(true);
+            onManage?.(widget.id);
+            beginWidgetMove();
+          }}
+          onPointerMove={(event) => {
+            const drag = dragState.current;
+            if (!drag || drag.pointerId !== event.pointerId) return;
+            const layout = widgetMoveLayout(
+              drag.widgetX + (event.clientX - drag.clientX) / drag.scale,
+              drag.widgetY + (event.clientY - drag.clientY) / drag.scale,
+            );
+            drag.latest = layout;
+            previewWidgetMove(layout);
+          }}
+          onPointerUp={finishDrag}
+          onPointerCancel={finishDrag}
+          onKeyDown={(event) => {
+            const distance = event.shiftKey ? 24 : 8;
+            const moves: Partial<Record<string, [number, number]>> = {
+              ArrowLeft: [-distance, 0],
+              ArrowRight: [distance, 0],
+              ArrowUp: [0, -distance],
+              ArrowDown: [0, distance],
+            };
+            const move = moves[event.key];
+            if (!move) return;
+            event.preventDefault();
+            if (remoteLocked) return;
+            onManage?.(widget.id);
+            const layout: CanvasLayout = {
+              x: Math.max(0, widget.x + move[0]),
+              y: Math.max(0, widget.y + move[1]),
+              w: widget.w,
+              h: widget.h,
+              z: widget.z,
+            };
+            if (onLayoutCommit) onLayoutCommit(widget, layout);
+            else {
+              onDragStart?.(widget.id);
+              onMove?.(widget.id, layout.x, layout.y);
+              onDragEnd?.(widget.id);
+            }
+          }}
+          aria-label={`Drag ${controlLabel}. Use arrow keys to move it.`}
+        ></button>
+        {supportsThread && (
+          <button
+            type="button"
+            className="widget-open-button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onSelect?.(widget);
+            }}
+            aria-label={`Zoom into ${label} and open its thread`}
+            aria-pressed={widgetFocused}
+          ></button>
+        )}
+        {widget.type !== "sticker" && (
+          <button
+            type="button"
+            className="widget-edit-button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit?.(widget.id);
+            }}
+            aria-label={`Edit ${controlLabel}`}
+          ></button>
+        )}
+        <button
+          type="button"
+          className="widget-delete-button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete?.(widget.id, controlLabel);
+          }}
+          aria-label={`Delete ${controlLabel}`}
+        ></button>
+      </div>
+      {supportsThread && (
+        <button
+          type="button"
+          className={`widget-comment-chip ${count > 0 ? "has-comments" : ""} ${
+            count > 0 && (!thread.unread || threadRead) ? "is-dot" : ""
+          }`}
+          onClick={() => onSelect?.(widget)}
+          aria-label={`Open ${count} ${count === 1 ? "comment" : "comments"} on ${label}`}
+          aria-pressed={widgetFocused}
+        >
+          {count > 0 && thread.unread && !threadRead && <span>{count}</span>}
+          {count > 0 && thread.unread && !threadRead && commenters.length > 0 && (
+            <span className="widget-comment-faces" aria-hidden="true">
+              {commenters.map((name) => (
+                <MemberFace key={name} name={name} size="xs" />
+              ))}
+            </span>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+export const WidgetCard = memo(WidgetCardComponent);

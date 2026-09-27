@@ -1,0 +1,79 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.env
+.env.local
+
+.private/
+
+# Conductor workspace scratch (screenshots, local playbooks, eval scripts)
+.context/
+
+# Local drafts and working notes.
+docs/post-skeletons.md
+docs/local/
+docs/*.local.md
+
+# Product and presentation drafts. The public repo shows the product and how
+# it's built; working notes stay local.
+PRODUCT.md
+docs/ourspaces-prd-v0.6.md
+docs/vibeapps-listing.md
+
+# Local-only agent skills. Everything under .claude/skills/ stays local unless
+# it is explicitly allowed back in below — the tracked ones are the Convex
+# skills plus the two that document this repo.
+.claude/skills/*/
+!.claude/skills/convex*/
+!.claude/skills/ourspaces-docs/
+!.claude/skills/run-ourspaces/
+.agents/skills/ourspaces-hackathon/
+.impeccable/
+
+# MCP server config — carries an API key in a header. Never commit.
+.mcp.json
+
+
+# TypeScript incremental build cache — a build artifact, not source.
+*.tsbuildinfo
+
+# The storyboard deck and its stills are BUILT from gitignored docs/local/ by
+# scripts/sync-storyboard.sh, but the built output is tracked on purpose — it is
+# the one video doc we publish. Re-run `npm run sync:storyboard` after editing
+# the source; commit the result.
+#   public/storyboard.html
+#   public/demo-video-assets/
+
+# The three demo-video briefs, copied into public/ by the same script so the
+# storyboard's "brief" links resolve on the live site. These stay out of the
+# repo — they are working notes, not a deck. The repo copy's brief links are
+# dead by design; the live copy's work.
+public/myspace-prototype.md
+public/feed-prototype.md
+public/chat-prototype.md
+
+# The CapCut subtitle tracks, generated next to the deck by the same script.
+# They stay on the live site for Holly to grab, but out of the repo.
+public/demo-video-assets/*.srt

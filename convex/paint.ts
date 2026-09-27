@@ -1,0 +1,163 @@
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import schema from "./schema";
+import type { NoteData } from "./widgetData";
+import { widgetsCounter } from "./stats";
+import { rateLimiter } from "./rateLimits";
+import { touchSpace } from "./activity";
+
+const tone = v.union(
+  v.literal("berry"),
+  v.literal("orange"),
+  v.literal("blue"),
+  v.literal("violet"),
+  v.literal("teal"),
+  v.literal("lime"),
+);
+const preset = v.union(v.literal("electric"), v.literal("sunset"));
+
+export const listBySpace = query({
+  args: { spaceId: v.id("spaces") },
+  returns: v.array(schema.doc("paintMarks")),
+  handler: async (ctx, { spaceId }) => {
+    const recent = await ctx.db
+      .query("paintMarks")
+      .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
+      .order("desc")
+      .take(240);
+    return recent.reverse();
+  },
+});
+
+export const addStroke = mutation({
+  args: {
+    spaceId: v.id("spaces"),
+    widgetId: v.id("widgets"),
+    userId: v.string(),
+    authorName: v.string(),
+    authorColor: v.string(),
+    tone,
+    size: v.number(),
+    points: v.array(v.object({ x: v.number(), y: v.number() })),
+    regionId: v.optional(v.string()),
+    preset: v.optional(preset),
+  },
+  returns: v.union(v.id("paintMarks"), v.null()),
+  handler: async (ctx, args) => {
+    const widget = await ctx.db.get(args.widgetId);
+    if (!widget || widget.spaceId !== args.spaceId || widget.type !== "cozyColor") {
+      return null;
+    }
+    // rate-limiter: per-user quota on the live paint hot path. Drop silently
+    // rather than throw — a paint stroke isn't worth an error toast.
+    const status = await rateLimiter.limit(ctx, "paintStroke", { key: args.userId });
+    if (!status.ok) return null;
+    const now = Date.now();
+    // Throttled to one write per minute per space — this is the hot path, a
+    // stroke lands every few hundred ms while someone is colouring.
+    await touchSpace(ctx, args.spaceId, now);
+    if (args.regionId) {
+      const marks = await ctx.db
+        .query("paintMarks")
+        .withIndex("by_space_and_widget", (q) =>
+          q.eq("spaceId", args.spaceId).eq("widgetId", args.widgetId),
+        )
+        .take(240);
+      const existing = marks.find((mark) => mark.regionId === args.regionId);
+      if (existing) {
+        await ctx.db.patch(existing._id, {
+          userId: args.userId,
+          authorName: args.authorName,
+          authorColor: args.authorColor,
+          tone: args.tone,
+          points: args.points.slice(0, 1),
+          preset: args.preset,
+          createdAt: now,
+        });
+        return existing._id;
+      }
+    }
+    return await ctx.db.insert("paintMarks", {
+      ...args,
+      points: args.points.slice(0, args.regionId ? 1 : 256),
+      size: Math.min(0.08, Math.max(0.015, args.size)),
+      createdAt: now,
+    });
+  },
+});
+
+export const clear = mutation({
+  args: {
+    spaceId: v.id("spaces"),
+    widgetId: v.id("widgets"),
+    /** board scope: "wave:" clears that board, "" clears legacy unprefixed
+     *  scene marks, undefined clears everything (old behavior) */
+    regionPrefix: v.optional(v.string()),
+  },
+  returns: v.number(),
+  handler: async (ctx, { spaceId, widgetId, regionPrefix }) => {
+    const marks = await ctx.db
+      .query("paintMarks")
+      .withIndex("by_space_and_widget", (q) =>
+        q.eq("spaceId", spaceId).eq("widgetId", widgetId),
+      )
+      .take(400);
+    const targets = marks.filter((mark) => {
+      if (regionPrefix === undefined) return true;
+      if (mark.regionId === "__preset__") return false;
+      if (regionPrefix === "") return !mark.regionId || !mark.regionId.includes(":");
+      return mark.regionId?.startsWith(regionPrefix) ?? false;
+    });
+    for (const mark of targets) await ctx.db.delete(mark._id);
+    if (targets.length) await touchSpace(ctx, spaceId);
+    return targets.length;
+  },
+});
+
+/** Adds the demo widget to already-seeded couple rooms without wiping the room. */
+export const ensureCozyColorWidget = mutation({
+  args: {
+    spaceId: v.id("spaces"),
+    createdBy: v.string(),
+  },
+  returns: v.id("widgets"),
+  handler: async (ctx, { spaceId, createdBy }) => {
+    const widgets = await ctx.db
+      .query("widgets")
+      .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
+      .take(100);
+    await ctx.db.patch(spaceId, { canvasW: 1260, canvasH: 980 });
+    for (const widget of widgets) {
+      if (widget.type === "note" && (widget.data as NoteData).text.includes("airport pickup")) {
+        await ctx.db.patch(widget._id, { x: 650, y: 600 });
+      }
+      const fallbackData = widget.data as Record<string, unknown>;
+      if (widget.type === "quote" && String(fallbackData.text ?? "").includes("same moon")) {
+        await ctx.db.patch(widget._id, { x: 956, y: 602, w: 250 });
+      }
+      if (widget.type === "sticker" && fallbackData.stickerId === "double-smile") {
+        await ctx.db.patch(widget._id, { x: 1032, y: 782 });
+      }
+    }
+    const existing = widgets.find((widget) => widget.type === "cozyColor");
+    if (existing) return existing._id;
+
+    const id = await ctx.db.insert("widgets", {
+      spaceId,
+      type: "cozyColor",
+      x: 630,
+      y: 52,
+      w: 560,
+      h: 500,
+      z: 4,
+      data: {
+        title: "same moon, both windows",
+        src: "/assets/cozy-color-same-moon.png",
+      },
+      createdBy,
+      createdAt: Date.now(),
+    });
+    await widgetsCounter.inc(ctx);
+    return id;
+  },
+});
