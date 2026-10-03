@@ -1,8 +1,20 @@
-# Agent instructions — OurSpaces (Convex All Gas hackathon)
+# Agent instructions — OurSpaces
 
 Everyday app for friend groups: a group chat becomes a live shared canvas.
-Convex hackathon entry; deadline Sep 22 2026. Doc index: `docs/doc-map.md`
-(it points at the local-only index for anything not tracked).
+Built Aug–Sep 2026 for the Convex All Gas hackathon (won). **Current focus:
+the Nebius × NVIDIA Global AI Hackathon on Devpost, due Fri Oct 30 2026,
+10:00 PT.** Doc index: `docs/doc-map.md` (it points at the local-only index
+for anything not tracked).
+
+## Hackathon work
+
+- **Start at `nebius/README.md`.** It has the dates, status, open decisions
+  and an index of everything else for the entry. The folder is local-only
+  (gitignored); skip it if a clone doesn't have it.
+- **Update its Status section after each step**, same as `docs/todos.md`.
+- **Models:** new AI work runs on NVIDIA Nemotron via Nebius Token Factory
+  (OpenAI-compatible API), and the existing OpenAI calls in `convex/ai.ts`
+  move over to it. Until then they still call OpenAI.
 
 ## Rules
 
@@ -20,12 +32,12 @@ Convex hackathon entry; deadline Sep 22 2026. Doc index: `docs/doc-map.md`
   the override layer on impeccable and carries the house motion system: the
   three easing curves, the duration scale, stagger, and which moments earn
   cinematic treatment.
-- **Prototype quality is fine.** This is a 4-week build, not a system anyone
+- **Prototype quality is fine.** This is a hackathon build, not a system anyone
   inherits — don't over-optimize for "production". The one exception: keep
   TypeScript types decent, since they make vibe coding work.
 - **This is 100% vibe-coded.** The human never edits code directly. Add or
-  update docs (`AGENTS.md`, `docs/`, `hackathon.md`) whenever it would help the
-  next chat session pick up where you left off.
+  update docs (`AGENTS.md`, `docs/`, `nebius/README.md`) whenever it would
+  help the next chat session pick up where you left off.
 - **Don't ask permission.** For reversible changes, just do it and report after.
   Only stop for destructive/irreversible actions or genuine scope changes.
 - **Run `npm run build` before ending a turn.** It's the only check.
@@ -34,42 +46,40 @@ Convex hackathon entry; deadline Sep 22 2026. Doc index: `docs/doc-map.md`
   Local-only paths stay gitignored — never commit them.
 - **Read `docs/code-map.md` before searching the codebase.** Update it when you
   add, move, or split files or major `App.tsx` sections.
-- **Update `docs/` as you go, not just at the end.** After each working step
+- **Update docs as you go, not just at the end.** After each working step
   that lands a feature, moves files, or changes a decision, update
   `docs/todos.md` (works now / broken / next up / decisions made in chat) and
   whichever doc the map points at — `docs/code-map.md` for structure,
   `docs/spaces-and-widgets.md` for a space or widget. Sessions get cut off
-  mid-build; docs are the handoff. `hackathon.md` stays the backward-looking
-  log (`/hackathon` skill).
+  mid-build; docs are the handoff. `hackathon.md` is the Convex hackathon's
+  build log, finished at the win; leave it alone unless asked.
 - **Splitting `App.tsx` / `index.css` is allowed and encouraged** when a section
   gets hairy — extract to `src/components` or `src/lib`, keep it hacky, update
   the code map.
 - **Convex does the sync.** Widgets, votes, messages, presence are reactive
   queries. Never hand-roll state sync. Use components (presence, workflow,
-  AgentMail, Firecrawl), crons, scheduled functions, HTTP actions, file storage,
-  AI Gateway where they fit — and list each in README under "Convex depth".
-  **Auth:** guest (Anonymous, silent) or join (Passkey). Never a login wall.
-  Spec in `docs/data-model-plan.md` §1. Don't wire it until brain-play B1 is
-  green.
-- **Sponsors do core work:** OpenAI = structured extractor/decider (never a
-  chatbot UI). The space has a brain: mail or a URL in → it files against the
-  live canvas and the reason is visible on the object (letter flap, torn slip,
-  recap strip on the board). AgentMail = the space's inbox. Firecrawl = URL →
-  furniture on the board (recipe → potluck slots, not just a pretty card).
-  Next build: `docs/todos.md` § Next up (B1→B4→B2→B3). Do not add a chatbot,
-  a medical space, or more reading-circle questions.
+  AgentMail, Firecrawl), crons, scheduled functions, HTTP actions and file
+  storage where they fit.
+  **Auth:** guest (silent) or join (email code; Google once its keys are
+  set). Never a login wall. Spec in `docs/accounts.md`.
+- **The space has a brain.** Mail or a URL comes in, it gets filed against the
+  live canvas, and the reason shows on the object (letter flap, torn slip,
+  recap strip). AgentMail = the space's inbox. Firecrawl = URL → furniture on
+  the board (recipe → potluck slots, not just a pretty card). Decision model:
+  `docs/jev.md`. Do not add a chatbot UI, a medical space, or more
+  reading-circle questions.
 - **Design is locked:** tokens in `src/index.css` `@theme`; use them, no hex.
   Near-black base, loud flat identity colors, black sticker pills, lime only as
   a tiny pop, the two type tokens only (`--font-display` Bricolage Grotesque,
   `--font-sans` IBM Plex Sans — `@theme` is the source of truth, not this
   line), punchy motion, reduced-motion respected.
 - **LLM copy in-product is plain and direct.**
-- **Commit per working step** with a normal conventional message. Run
-  `/hackathon` at the end of a session to update `hackathon.md`.
+- **Commit per working step** with a normal conventional message.
 - **Secrets only in `.env.local` / Convex env vars. Never commit keys** — that
   includes tool config that carries a key in a header (`.mcp.json` is
   gitignored for exactly this reason). The GitHub repo is **public**: before
   tracking any new file, ask whether it should be readable by strangers.
+  Plans, pitch and submission notes stay local (`nebius/`, `docs/local/`).
 
 ## Commands
 

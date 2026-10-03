@@ -32,6 +32,7 @@ dist-ssr
 .context/
 
 # Local drafts and working notes.
+/nebius/
 docs/post-skeletons.md
 docs/local/
 docs/*.local.md

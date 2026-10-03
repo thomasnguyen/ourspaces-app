@@ -1,4 +1,5 @@
-**Read `AGENTS.md` first** — it has the project rules (hackathon mode, no
+**Read `AGENTS.md` first** — it has the current focus (the Nebius × NVIDIA
+hackathon; working folder `nebius/`, local-only) and the project rules (no
 tests, reply style, design constraints).
 
 <!-- convex-ai-start -->

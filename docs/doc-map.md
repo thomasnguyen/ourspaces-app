@@ -12,13 +12,13 @@ commit it.
 
 | Need | Open |
 |---|---|
-| Agent rules, reply style, hackathon constraints | `AGENTS.md` |
+| Agent rules, current focus, reply style | `AGENTS.md` |
 | Convex pointer (read `AGENTS.md` first) | `CLAUDE.md` |
 | Which file to read next | this map |
 | Where code lives | `docs/code-map.md` |
 | How the whole system works (readable with no code open) | `docs/architecture.md` |
 | Session handoff (works / broken / next) | `docs/todos.md` |
-| What shipped (backward-looking log) | `hackathon.md` |
+| What shipped in the Convex hackathon (Aug–Sep 2026 build log) | `hackathon.md` |
 
 ## Product & pitch
 
@@ -68,6 +68,7 @@ These are gitignored or excluded. Skip if the file is not on disk.
 | Positioning for design commands (impeccable prints it) | `PRODUCT.md` |
 | Design override layer + house motion system | `.claude/skills/eye-candy/SKILL.md` |
 | Impeccable's config + critique output | `.impeccable/` |
+| Nebius × NVIDIA hackathon working folder — start at its `README.md` | `nebius/` |
 | Conductor scratch (shots, eval scripts) | `.context/` |
 | Sign-in email concepts, implementation previews and generation prompts | `.context/email-concepts/README.md` |
 | Index of the remaining local files | `docs/local/doc-map.local.md` |
@@ -83,6 +84,7 @@ later is easy, un-publishing it is not.
 
 1. Decide public vs local-only **before** writing.
 2. Public → add a row here. Local → put it in `.context/` or `docs/local/`
+   (Nebius hackathon material goes in `nebius/` and its README's table)
    (or add the path to `.gitignore`), then add a row under **Local only** if
    it's build-relevant, or in `docs/local/doc-map.local.md` if it isn't.
 3. Do not also summarize the new doc in `AGENTS.md` — the map is the index.

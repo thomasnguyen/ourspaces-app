@@ -5,14 +5,10 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
-- **Nebius x NVIDIA strategy (2026-09-21):** the retrofit plan is now written
-  in `docs/local/nebius-nvidia-strategy.md`. The recommended product is a
-  Nemotron-powered coordination engine: one messy message or email becomes a
-  small, reviewable plan that updates several live widgets, with an action
-  receipt explaining what changed. Keep Convex as shared memory/execution,
-  AgentMail as the inbox, and Firecrawl as the web reader. Use the same repo,
-  preserve the Convex submission with a tag, and begin the model/backend
-  switch after the current submission is complete. Nothing implemented or deployed yet.
+- **Nebius × NVIDIA hackathon (due Fri Oct 30 2026, 10:00 PT):** the current
+  focus. Everything for the entry lives in the local-only `nebius/` folder;
+  start at `nebius/README.md` (dates, status, open decisions). Nothing built
+  in the app yet: every model call is still OpenAI, and there is no LICENSE.
 
 - **Google sign-in — code shipped 2026-09-21, keys pending.** "continue with
   Google" on the join form (gate, popover, sheet, `#/me`) once
