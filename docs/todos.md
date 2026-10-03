@@ -5,6 +5,11 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Local story preview (2026-10-03):** three social-story drafts with portrait
+  upload preview and 1080 × 1920 exports. Copy, artwork prompt, and handoff are
+  indexed in the local doc map. Browser reviewed; `npm run build` passed.
+  Nothing published.
+
 - **Nebius × NVIDIA hackathon (due Fri Oct 30 2026, 10:00 PT):** the current
   focus. Everything for the entry lives in the local-only `nebius/` folder;
   start at `nebius/README.md` (dates, status, open decisions). Nothing built
