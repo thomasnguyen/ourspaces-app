@@ -18,6 +18,9 @@ There are many markdown files. Do not open them as a set.
    `.context/`, `.private/`, `docs/local/`, `nebius/`, `docs/post-skeletons.md`).
 5. After adding, moving, or retiring a doc, update `docs/doc-map.md` in
    the same change.
+6. A new local HTML page also goes in the shared page menu: add it to
+   `nebius/nav/nav.js`, then run `node nebius/nav/inject.mjs` (local-only;
+   skip if missing).
 
 ## Do not
 

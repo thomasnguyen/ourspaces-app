@@ -84,7 +84,8 @@ later is easy, un-publishing it is not.
 
 1. Decide public vs local-only **before** writing.
 2. Public → add a row here. Local → put it in `.context/` or `docs/local/`
-   (Nebius hackathon material goes in `nebius/` and its README's table)
+   (Nebius hackathon material goes in `nebius/` and its README's table; a
+   local HTML page also goes in the page menu, `nebius/nav/nav.js`)
    (or add the path to `.gitignore`), then add a row under **Local only** if
    it's build-relevant, or in `docs/local/doc-map.local.md` if it isn't.
 3. Do not also summarize the new doc in `AGENTS.md` — the map is the index.

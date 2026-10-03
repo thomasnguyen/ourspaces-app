@@ -49,8 +49,9 @@ cp docs/local/myspace-prototype.md docs/local/feed-prototype.md docs/local/chat-
 
 # Frames are ~660px wide on screen, so 1200px covers retina. The .png -> .jpg
 # rewrite only touches the asset-name string literals; nothing else in the file
-# ends in .png'.
-sed "s/\.png'/.jpg'/g" "$SRC" > public/storyboard.html
+# ends in .png'. The local page menu (a script tag pointing at a local-only
+# file) is dropped so the public copy doesn't request it.
+sed -e "s/\.png'/.jpg'/g" -e '/data-ourspaces-nav/d' "$SRC" > public/storyboard.html
 
 # The CapCut subtitle tracks, regenerated from the same beat data and published
 # next to the page so Holly can grab them without the repo.
