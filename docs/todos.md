@@ -5,12 +5,16 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
-- **Demo notice + waitlist preview (2026-10-03):** app-wide top banner says
+- **Demo notice + email waitlist (2026-10-03):** app-wide top banner says
   this is a demo and opens a styled email form. A first-visit modal now makes
   the test-version status explicit, with Explore the demo and Join the waitlist
-  actions; dismissal lasts for the tab session. Frontend mock only; the submit
-  state explicitly says the email was not saved. No backend integration or
-  deployment. Desktop and 390px phone layouts reviewed; opening, submitting,
+  actions; dismissal lasts for the tab session. Live mode now connects to
+  `waitlist.join`: normalized, deduplicated email storage in `waitlist`, with
+  pending/error states and confirmation only after saving. `?mock=1` retains
+  the no-storage preview. Deployed backend + frontend to `prod:necessary-cobra-892`.
+  Published form verified with a new signup and a case-variant duplicate: exactly
+  one normalized row saved. Verification entry removed afterward.
+  Desktop and 390px phone layouts reviewed; opening, submitting,
   and closing verified in-browser, plus the live entry screen with writes blocked.
   Welcome modal reviewed on desktop/phone; explore, waitlist transition, and
   dismissal across reload verified in-browser.
@@ -19,7 +23,9 @@ Backward-looking history lives in `hackathon.md`.
   Demo version chip reopens the welcome notice. Notice, email form, confirmation,
   back/reopen controls, desktop and 320/390px phone layouts reviewed in-browser;
   live entry checked with writes blocked. Entrance recorded and frames reviewed.
-  `npm run build` passed. Next: connect real email collection after design approval.
+  Emails are managed in the Convex dashboard's `waitlist` table; there is no
+  public read API or automated email sending. `npm run build` and backend
+  typecheck passed; live signup and deduplication verified in-browser/database.
 
 - **Local story preview (2026-10-03):** revised to a quieter photo-first direction;
   three drafts with portrait upload and 1080 × 1920 draft exports. First slide

@@ -8,6 +8,7 @@ import { getDataMode } from "./live/dataMode.ts";
 import { AuthIdentityBridge } from "./live/useAuthIdentity.ts";
 import { UpdateNudge } from "./components/UpdateNudge.tsx";
 import { DemoBanner } from "./components/DemoBanner.tsx";
+import { api } from "../convex/_generated/api";
 import "./index.css";
 
 const url = import.meta.env.VITE_CONVEX_URL as string | undefined;
@@ -35,7 +36,9 @@ function MissingConvexConfig() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <DemoBanner />
+    <DemoBanner onJoinWaitlist={mode === "live" && url
+      ? (email) => convexClient.mutation(api.waitlist.join, { email })
+      : undefined} />
     {mode === "live" && url ? (
       // Guests sign in silently from AuthIdentityBridge once this provider
       // settles; the canvas renders either way (§1).

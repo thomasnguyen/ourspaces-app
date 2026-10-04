@@ -9,6 +9,9 @@ export default defineSchema({
   // Convex Auth's tables (convex/auth.ts). users grows the profile that
   // follows a joined person across devices (docs/accounts.md).
   ...authTables,
+  // Waitlist emails are managed in the Convex dashboard; no public read API.
+  waitlist: defineTable({ email: v.string() }).index("by_email", ["email"]),
+
   users: defineTable({
     ...authTables.users.validator.fields,
     color: v.optional(v.string()),

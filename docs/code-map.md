@@ -33,8 +33,9 @@ The build room remains at `#/space/buildroom`.
 
 `components/DemoBanner.tsx` — app-wide demo notice mounted by `main.tsx` in
 both live and mock modes. A welcome modal explains this is a test version,
-once per tab session, with explore and waitlist actions. The waitlist is a frontend preview only:
-email entry and an honest preview confirmation, with no storage or backend calls.
+once per tab session, with explore and waitlist actions. In live mode, `main.tsx`
+passes a typed `waitlist.join` mutation callback; success only appears after
+the email is saved. Mock mode keeps the explicit no-storage preview.
 The dialog pairs a violet photo/sticker collage with the notice or form; on
 phones the collage becomes a short header. The banner's Demo version chip
 reopens the notice without resetting session storage.
@@ -388,6 +389,12 @@ flood-fill era; no longer rendered (widget `data.src` is ignored).
 generated vector board; kept for history only.
 
 ## convex/
+
+`waitlist.ts` — public `join` mutation saves a trimmed, lowercase email once
+using `waitlist.by_email`. No sign-in, email sending, or public list query.
+Manage entries in the Convex dashboard's `waitlist` table; `_creationTime`
+records signup time. Existing signups receive the same confirmation as new ones.
+An internal-only `remove` mutation supports owner maintenance by entry ID.
 
 15 real components in use (`grep -rE '\bcomponents\.' convex --include='*.ts'`
 lists every one) — installed + `app.use()`-wired in `convex.config.ts`, each

@@ -1,9 +1,27 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
-export function DemoBanner() {
+export function DemoBanner({ onJoinWaitlist }: { onJoinWaitlist?: (email: string) => Promise<null> }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [view, setView] = useState<"notice" | "waitlist">("notice");
   const [submitted, setSubmitted] = useState(false);
+  const [email, setEmail] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function joinWaitlist(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      if (onJoinWaitlist) await onJoinWaitlist(email.trim());
+      setSubmitted(true);
+    } catch {
+      setError("Couldn't save your email. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   useEffect(() => {
     if (!sessionStorage.getItem("ourspaces-demo-notice-seen")) {
@@ -20,6 +38,7 @@ export function DemoBanner() {
   function openWaitlist() {
     setView("waitlist");
     setSubmitted(false);
+    setError("");
     dialog.current?.showModal();
   }
 
@@ -56,7 +75,7 @@ export function DemoBanner() {
             <div className="demo-waitlist-topline">
               {view === "waitlist" && !submitted ? (
                 <button className="demo-waitlist-back" onClick={() => setView("notice")} data-testid="demo-waitlist-back">← The demo</button>
-              ) : <span className="demo-eyebrow"><i /> {view === "notice" ? "A work in progress" : "Waitlist preview"}</span>}
+              ) : <span className="demo-eyebrow"><i /> {view === "notice" ? "A work in progress" : onJoinWaitlist ? "You're on the list" : "Waitlist preview"}</span>}
               <button className="demo-waitlist-close" onClick={() => dialog.current?.close()} data-testid="demo-waitlist-close" aria-label="Close">×</button>
             </div>
 
@@ -73,21 +92,22 @@ export function DemoBanner() {
               </div>
             ) : submitted ? (
               <div className="demo-waitlist-body demo-waitlist-confirmation" key="confirmation">
-                <h2>That's<br /><em>the idea.</em></h2>
-                <p>A little preview of what's next.</p>
-                <p className="demo-notice-detail">The waitlist is still a mock-up. Your email hasn't been saved.</p>
+                <h2>{onJoinWaitlist ? "You're on" : "That's"}<br /><em>{onJoinWaitlist ? "the list." : "the idea."}</em></h2>
+                <p>{onJoinWaitlist ? "Thanks for being here early." : "A little preview of what's next."}</p>
+                <p className="demo-notice-detail">{onJoinWaitlist ? "Your email is saved. We'll let you know when OurSpaces is ready for your group." : "The waitlist is still a mock-up. Your email hasn't been saved."}</p>
                 <button className="demo-waitlist-submit" onClick={() => dialog.current?.close()} data-testid="demo-waitlist-done">Back to exploring <span>↗</span></button>
               </div>
             ) : (
               <div className="demo-waitlist-body" key="waitlist">
                 <h2>Your people.<br /><em>Your space.</em></h2>
                 <p>We're making room for your group. Join the waitlist to hear when it's ready.</p>
-                <form onSubmit={(event) => { event.preventDefault(); setSubmitted(true); }}>
+                <form onSubmit={joinWaitlist}>
                   <label htmlFor="demo-waitlist-email">Your email</label>
-                  <input id="demo-waitlist-email" type="email" placeholder="you@example.com" required data-testid="demo-waitlist-email" />
-                  <button className="demo-waitlist-submit" type="submit" data-testid="demo-waitlist-submit">Keep me in the loop <span>↗</span></button>
+                  <input id="demo-waitlist-email" type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} maxLength={254} autoComplete="email" required disabled={saving} data-testid="demo-waitlist-email" />
+                  {error && <p className="demo-waitlist-error" data-testid="demo-waitlist-error">{error}</p>}
+                  <button className="demo-waitlist-submit" type="submit" disabled={saving} data-testid="demo-waitlist-submit">{saving ? "Saving your spot…" : "Keep me in the loop"} <span>{saving ? "…" : "↗"}</span></button>
                 </form>
-                <small className="demo-waitlist-preview">Just a preview. Emails aren't collected yet.</small>
+                <small className="demo-waitlist-preview">{onJoinWaitlist ? "Just your email, so we can let you know when it's ready." : "Just a preview. Emails aren't collected yet."}</small>
               </div>
             )}
             <div className="demo-waitlist-footnote"><span>Made for the group chat.</span><span>And everything after.</span></div>

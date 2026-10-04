@@ -26634,6 +26634,8 @@ body:has(.demo-banner) .settings-sheet {
 .demo-waitlist input:focus { outline: 2px solid var(--color-crew); outline-offset: 2px; }
 .demo-waitlist input::placeholder { color: var(--color-muted); }
 .demo-waitlist form .demo-waitlist-submit { margin-top: 5px; }
+.demo-waitlist-submit:disabled { cursor: wait; opacity: .65; transform: none; }
+.demo-waitlist p.demo-waitlist-error { margin: 0; font-size: 13px; color: var(--color-muted); }
 .demo-waitlist-preview { display: block; margin-top: 14px; font-size: 11px; text-align: center; color: var(--color-muted); }
 .demo-waitlist[open] .demo-poster-photo { animation: demo-photo-in var(--dur-stage) var(--ease-pop) 80ms backwards; }
 .demo-waitlist[open] .demo-poster-sticker { animation: demo-sticker-in var(--dur-arrive) var(--ease-pop) 200ms backwards; }
