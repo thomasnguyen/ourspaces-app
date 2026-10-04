@@ -5,6 +5,11 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Planning handoff refreshed (2026-10-04):** the local working-folder index
+  now routes to the current product proposal. No app behavior changed.
+  Continue from `nebius/README.md`; implementation remains a separate step.
+  `npm run build` passed.
+
 - **Netlify custom-domain cutover (2026-10-04, current decision):** user asked
   to configure Netlify and supply a Porkbun handoff for another LLM. Restored
   `netlify.toml` and Netlify `npm run deploy`; backend deploy is again
