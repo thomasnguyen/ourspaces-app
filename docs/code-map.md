@@ -334,10 +334,10 @@ character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
 
 ## Frontend hosting
 
-`npm run deploy` — Convex static hosting builds and publishes the frontend
-and backend to `prod:necessary-cobra-892`. The temporary Netlify configuration
-was removed on 2026-10-04 when Convex hosting was restored. Its last published
-snapshot remains available, with local linkage in the gitignored `.netlify/`.
+`netlify.toml` — Netlify build/publish settings, public production Convex URLs,
+`/api/*` proxy to Convex HTTP actions, and SPA fallback. `npm run deploy`
+builds/publishes the frontend; `npm run deploy:convex` deploys the backend and
+retained Convex-hosted frontend. Netlify linkage is local in `.netlify/`.
 
 ## public/
 

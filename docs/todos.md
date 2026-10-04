@@ -5,7 +5,21 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
-- **Return to Convex hosting (2026-10-04):** user chose Convex again and plans
+- **Netlify custom-domain cutover (2026-10-04, current decision):** user asked
+  to configure Netlify and supply a Porkbun handoff for another LLM. Restored
+  `netlify.toml` and Netlify `npm run deploy`; backend deploy is again
+  `npm run deploy:convex`. Published deployment `6ac28fb56b6fc914c9941ee1`;
+  `npm run build` passed. Netlify API confirms primary `ourspaces.io` and alias
+  `www.ourspaces.io`; certificate is not issued yet. Netlify URL and direct
+  HTTP routing with the apex host return 200; API proxy returns radio JSON.
+  **Pending DNS handoff:** Porkbun root ALIAS (blank host) →
+  `apex-loadbalancer.netlify.com`; `www` CNAME → `ourspaces-app.netlify.app`;
+  TTL 600. Replace old root/www A/AAAA/ALIAS/CNAME web records only, preserve
+  MX/TXT and unrelated subdomains, keep Porkbun nameservers. Both hosts must
+  point to Netlify before automatic HTTPS can finish. User/another LLM will
+  make those DNS edits. Convex still supplies all backend data/auth/sync.
+
+- **Return to Convex hosting (2026-10-04, superseded above):** user chose Convex again and plans
   to resubscribe to Starter. Restored `npm run deploy` to Convex static hosting
   and removed `netlify.toml` plus the temporary `deploy:convex` alias.
   Backend/database and DNS were never moved. The temporary Netlify snapshot
