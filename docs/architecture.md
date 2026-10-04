@@ -584,13 +584,20 @@ Declared in `convex.config.ts` (`app.env`), set on the deployment with
 - `OPENAI_API_KEY` — chat and embedding fallback, used only when the gateway is
   switched off
 
-Dev deployment is where everything has been verified. Prod is
-`necessary-cobra-892`; the site origin is
-`https://necessary-cobra-892.convex.site`. **The prod mail cutover is still
-open** — it needs a second AgentMail webhook, keys set with `--prod`, and
-`setSpaceInbox` to bind existing addresses to prod space ids. Do **not**
-create new inboxes (the 3-inbox cap). Steps live in
-`docs/firecrawl-agentmail-setup.md`.
+There is one active backend/database, `prod:necessary-cobra-892`, shared by
+local development and the public frontend. The mail cutover completed on
+2026-09-13 (see `docs/todos.md`). HTTP endpoints remain at
+`https://necessary-cobra-892.convex.site/api/*`.
+
+The frontend moved to `https://ourspaces-app.netlify.app` on 2026-10-04
+after `ourspaces.io` began failing its TLS handshake. Custom-domain DNS
+cutover at Porkbun is pending. `netlify.toml` contains the public backend
+URLs, build settings, API proxy, and SPA fallback. `npm run deploy` builds
+and publishes to Netlify; there is no Git auto-deploy. For backend changes,
+`npm run deploy:convex` retains the previous backend + Convex static-hosting
+deployment; run `npm run deploy` afterward to publish frontend changes.
+The Convex-hosted frontend remains available as a fallback. The refresh
+nudge still observes Convex hosting publishes, not Netlify publishes.
 
 Build/typecheck is `npm run build`. There are no tests, by explicit decision.
 

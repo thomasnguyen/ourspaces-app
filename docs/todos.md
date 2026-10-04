@@ -5,6 +5,20 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Netlify frontend recovery (2026-10-04):** `ourspaces.io` fails its TLS
+  handshake while both Convex origins respond. Published the current app at
+  `https://ourspaces-app.netlify.app` (site `3b6e9f86-2714-4074-b65e-704346455bbf`).
+  Browser verified: demo notice dismisses, crew room loads real data, live sync
+  is connected, no browser errors; `/api/radio/now` proxy returns JSON.
+  `netlify.toml` supplies public Convex build URLs, `/api/*` forwarding, and
+  SPA fallback. `npm run deploy` now builds/publishes the Netlify frontend;
+  `npm run deploy:convex` preserves the old backend + Convex hosting command.
+  Backend/database unchanged. `npm run build` passed.
+  **Pending:** custom-domain cutover at Porkbun and Netlify domain attachment;
+  `ourspaces.io` still points at the old host. No DNS credentials available.
+  Netlify deploys are manual; Git auto-deploy is not configured. The existing
+  refresh nudge still follows Convex static-hosting deployments.
+
 - **Demo notice + email waitlist (2026-10-03):** app-wide top banner says
   this is a demo and opens a styled email form. A first-visit modal now makes
   the test-version status explicit, with Explore the demo and Join the waitlist

@@ -332,6 +332,14 @@ couple, house, league) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes
 `templates.ts` (`WIDGET_CATALOG`) · `stickers.ts` (stable sticker ids → die-cut
 character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
 
+## Frontend hosting
+
+`netlify.toml` — Netlify build/publish settings, public production Convex URLs,
+`/api/*` proxy to Convex HTTP actions, and SPA fallback. `npm run deploy`
+builds and publishes here; `npm run deploy:convex` retains the previous
+backend + Convex-hosted frontend deployment. Netlify site linkage is local
+in the gitignored `.netlify/` directory.
+
 ## public/
 
 **avatars/{juno,momo,pico,wren,ziggy,clover,pepper,kiwi}.png** — eight generated

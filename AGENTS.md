@@ -89,12 +89,14 @@ for anything not tracked).
 ## Commands
 
 `npm run dev` (frontend) · `npm run build` (the check) · `npm run deploy`
-(ships backend + frontend to prod).
+(builds and ships the frontend to Netlify: `https://ourspaces-app.netlify.app`).
+`npm run deploy:convex` ships the backend and the retained Convex-hosted
+frontend; after backend + UI changes, run it before `npm run deploy`.
 
 **One deployment, one database.** `prod:necessary-cobra-892` serves both
 the public site and local `npm run dev` — `.env.local` points at it, so what
 you see locally IS the demo data. There is no separate dev database any more.
-Backend changes go out with `npm run deploy`; **do not run `convex dev`** —
+Backend changes go out with `npm run deploy:convex`; **do not run `convex dev`** —
 it pushes to the retired `dusty-condor-648`, which nothing reads, so your
 changes would silently do nothing.
 
