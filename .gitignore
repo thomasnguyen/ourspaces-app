@@ -50,7 +50,11 @@ docs/vibeapps-listing.md
 !.claude/skills/convex*/
 !.claude/skills/ourspaces-docs/
 !.claude/skills/run-ourspaces/
-.agents/skills/ourspaces-hackathon/
+# Same rule for the Codex copies in .agents/skills/ (entries there may be links
+# into .claude/skills/, hence no trailing slash).
+.agents/skills/*
+!.agents/skills/convex*
+!.agents/skills/ourspaces-docs
 .impeccable/
 
 # MCP server config — carries an API key in a header. Never commit.
