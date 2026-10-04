@@ -31,6 +31,11 @@ The build room remains at `#/space/buildroom`.
 
 ## src/ directories
 
+`components/DemoBanner.tsx` — app-wide demo notice mounted by `main.tsx` in
+both live and mock modes. The waitlist dialog is a frontend preview only:
+email entry and an honest preview confirmation, with no storage or backend calls.
+Styles and reserved banner space live in index.css under DEMO NOTICE + WAITLIST.
+
 **components/** — `Canvas.tsx` (canvas + `SpaceHeader` — the nameplate, the
 same in every room: kicker (kind · tagline), the name big, then a handles
 row of two ink-tinted chips (inbox address, pencil "edit"); on the right ONE

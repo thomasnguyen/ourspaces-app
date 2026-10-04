@@ -5,6 +5,13 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Demo notice + waitlist preview (2026-10-03):** app-wide top banner says
+  this is a demo and opens a styled email form. Frontend mock only; the submit
+  state explicitly says the email was not saved. No backend integration or
+  deployment. Desktop and 390px phone layouts reviewed; opening, submitting,
+  and closing verified in-browser, plus the live entry screen with writes blocked.
+  `npm run build` passed. Next: connect real email collection after design approval.
+
 - **Local story preview (2026-10-03):** revised to a quieter photo-first direction;
   three drafts with portrait upload and 1080 × 1920 draft exports. First slide
   awaits the personal photo. Earlier design preserved. Handoff is indexed in the
