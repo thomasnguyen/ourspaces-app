@@ -589,15 +589,15 @@ local development and the public frontend. The mail cutover completed on
 2026-09-13 (see `docs/todos.md`). HTTP endpoints remain at
 `https://necessary-cobra-892.convex.site/api/*`.
 
-The frontend moved to `https://ourspaces-app.netlify.app` on 2026-10-04
-after `ourspaces.io` began failing its TLS handshake. Custom-domain DNS
-cutover at Porkbun is pending. `netlify.toml` contains the public backend
-URLs, build settings, API proxy, and SPA fallback. `npm run deploy` builds
-and publishes to Netlify; there is no Git auto-deploy. For backend changes,
-`npm run deploy:convex` retains the previous backend + Convex static-hosting
-deployment; run `npm run deploy` afterward to publish frontend changes.
-The Convex-hosted frontend remains available as a fallback. The refresh
-nudge still observes Convex hosting publishes, not Netlify publishes.
+Convex static hosting serves the frontend at
+`https://necessary-cobra-892.convex.site`; `npm run deploy` builds and ships
+both frontend and backend. On 2026-10-04 a temporary Netlify snapshot was
+published after `ourspaces.io` began failing its TLS handshake, then the
+user chose to return to Convex and resubscribe to Starter. DNS was never
+changed. The Netlify snapshot remains available at
+`https://ourspaces-app.netlify.app`, but future deploys go to Convex.
+Custom-domain HTTPS recovery is still pending verification. The refresh
+nudge continues to observe Convex static-hosting publishes.
 
 Build/typecheck is `npm run build`. There are no tests, by explicit decision.
 
