@@ -567,6 +567,7 @@ export function ActionDock({
       <button
         type="button"
         className={`action-dock-ai ${recapOpen ? "is-active" : ""}`}
+        data-testid="dock-recap"
         onClick={onRecapToggle}
         aria-expanded={recapOpen}
       >

@@ -26,8 +26,9 @@ for anything not tracked).
   check. Visual/live work is verified in the browser.
 - **Demo path over edge cases.** Happy path + empty state. No defensive code,
   refactors, a11y audits, i18n, or abstractions "for later."
-- **Design work goes through `/eye-candy`.** Before any `/impeccable` command or
-  freeform UI work, read `.claude/skills/eye-candy/SKILL.md` (local-only, like
+- **Every visible change goes through `/eye-candy`.** UI, motion, the video's
+  cards, the thumbnail: before any of it, or any `/impeccable` command, read
+  `.claude/skills/eye-candy/SKILL.md` (local-only, like
   `PRODUCT.md` — both are gitignored; skip if a clone doesn't have them). It is
   the override layer on impeccable and carries the house motion system: the
   three easing curves, the duration scale, stagger, and which moments earn
@@ -74,7 +75,11 @@ for anything not tracked).
   `--font-sans` IBM Plex Sans — `@theme` is the source of truth, not this
   line), punchy motion, reduced-motion respected.
 - **LLM copy in-product is plain and direct.**
-- **Commit per working step** with a normal conventional message.
+- **Commit and push to `main` per working step** with a normal conventional
+  message. No branches or PRs.
+- **Demo controls carry a `data-testid`.** Anything a demo take clicks or waits
+  for gets `data-testid="kebab-name"`, so capture scripts survive restyles.
+  Never target class names or "the third button".
 - **Secrets only in `.env.local` / Convex env vars. Never commit keys** — that
   includes tool config that carries a key in a header (`.mcp.json` is
   gitignored for exactly this reason). The GitHub repo is **public**: before

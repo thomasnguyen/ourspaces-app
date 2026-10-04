@@ -736,6 +736,7 @@ export function CozyColorWidget({
         <button
           type="button"
           className="cozy-color-door"
+          data-testid="color-door"
           onClick={(event) => {
             event.stopPropagation();
             setRoomOpen(true);

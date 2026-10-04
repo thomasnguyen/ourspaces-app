@@ -224,7 +224,7 @@ export function WheelWidget({
           </g>
         </svg>
       </div>
-      <button type="button" className="wheel-spin-button" onClick={spin} disabled={disabled || isSpinning || !slices.length}>
+      <button type="button" className="wheel-spin-button" data-testid="wheel-spin" onClick={spin} disabled={disabled || isSpinning || !slices.length}>
         {isSpinning ? "landing…" : disabled ? "preview only" : "spin it →"}
       </button>
       <p className="wheel-result" aria-live="polite">
@@ -1567,6 +1567,7 @@ export function LetterWidget({
       <button
         type="button"
         className="letter-envelope"
+        data-testid="letter-envelope"
         onClick={() => {
           playSound("tap");
           setOpen(true);

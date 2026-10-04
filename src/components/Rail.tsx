@@ -95,6 +95,7 @@ function YoursGroupLive({
             <button
               type="button"
               className={`space-link ${active ? "is-active" : ""}`}
+              data-testid={`space-link-${slug}`}
               style={{ backgroundColor: space.color }}
               aria-label={space.name}
               aria-current={active ? "page" : undefined}
@@ -193,6 +194,7 @@ export function Rail({
                       ? `url('${spaceCover}')`
                       : undefined,
                   }}
+                  data-testid={`space-link-${space.id}`}
                   aria-label={displaySpace.name}
                   aria-current={active ? "page" : undefined}
                   onClick={() => hasSpace && onSelectSpace?.(space.id)}
