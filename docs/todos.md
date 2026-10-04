@@ -14,6 +14,11 @@ Backward-looking history lives in `hackathon.md`.
   and closing verified in-browser, plus the live entry screen with writes blocked.
   Welcome modal reviewed on desktop/phone; explore, waitlist transition, and
   dismissal across reload verified in-browser.
+  Visual revision: violet photo-and-sticker panel, larger two-tone headline,
+  slimmer dark banner, and matching waitlist/confirmation states. The banner's
+  Demo version chip reopens the welcome notice. Notice, email form, confirmation,
+  back/reopen controls, desktop and 320/390px phone layouts reviewed in-browser;
+  live entry checked with writes blocked. Entrance recorded and frames reviewed.
   `npm run build` passed. Next: connect real email collection after design approval.
 
 - **Local story preview (2026-10-03):** revised to a quieter photo-first direction;

@@ -35,6 +35,9 @@ The build room remains at `#/space/buildroom`.
 both live and mock modes. A welcome modal explains this is a test version,
 once per tab session, with explore and waitlist actions. The waitlist is a frontend preview only:
 email entry and an honest preview confirmation, with no storage or backend calls.
+The dialog pairs a violet photo/sticker collage with the notice or form; on
+phones the collage becomes a short header. The banner's Demo version chip
+reopens the notice without resetting session storage.
 Styles and reserved banner space live in index.css under DEMO NOTICE + WAITLIST.
 
 **components/** — `Canvas.tsx` (canvas + `SpaceHeader` — the nameplate, the
