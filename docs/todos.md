@@ -6,10 +6,14 @@ Backward-looking history lives in `hackathon.md`.
 ## Now working
 
 - **Demo notice + waitlist preview (2026-10-03):** app-wide top banner says
-  this is a demo and opens a styled email form. Frontend mock only; the submit
+  this is a demo and opens a styled email form. A first-visit modal now makes
+  the test-version status explicit, with Explore the demo and Join the waitlist
+  actions; dismissal lasts for the tab session. Frontend mock only; the submit
   state explicitly says the email was not saved. No backend integration or
   deployment. Desktop and 390px phone layouts reviewed; opening, submitting,
   and closing verified in-browser, plus the live entry screen with writes blocked.
+  Welcome modal reviewed on desktop/phone; explore, waitlist transition, and
+  dismissal across reload verified in-browser.
   `npm run build` passed. Next: connect real email collection after design approval.
 
 - **Local story preview (2026-10-03):** revised to a quieter photo-first direction;

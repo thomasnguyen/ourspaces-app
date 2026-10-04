@@ -26590,6 +26590,8 @@ body:has(.demo-banner) .settings-sheet {
 .demo-waitlist input::placeholder { color: var(--color-muted); }
 .demo-waitlist-submit { width: 100%; margin-top: 4px; padding: 16px 20px; }
 .demo-waitlist-preview { display: block; margin-top: 16px; font-size: 12px; text-align: center; color: var(--color-muted); }
+.demo-notice-waitlist { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 24px; padding-top: 22px; border-top: 1px solid color-mix(in srgb, var(--color-muted) 20%, transparent); font-size: 13px; color: var(--color-muted); }
+.demo-notice-waitlist button { padding: 4px 8px; border: 0; background: transparent; color: var(--color-ink); font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
 @keyframes demo-waitlist-in { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
 @media (max-width: 900px) {
   .demo-banner { gap: 12px; padding-inline: 16px; }

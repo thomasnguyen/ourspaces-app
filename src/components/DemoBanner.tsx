@@ -1,10 +1,18 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function DemoBanner() {
   const dialog = useRef<HTMLDialogElement>(null);
+  const [view, setView] = useState<"notice" | "waitlist">("notice");
   const [submitted, setSubmitted] = useState(false);
 
+  useEffect(() => {
+    if (!sessionStorage.getItem("ourspaces-demo-notice-seen")) {
+      dialog.current?.showModal();
+    }
+  }, []);
+
   function openWaitlist() {
+    setView("waitlist");
     setSubmitted(false);
     dialog.current?.showModal();
   }
@@ -20,14 +28,25 @@ export function DemoBanner() {
       </aside>
 
       <dialog className="demo-waitlist" ref={dialog} data-testid="demo-waitlist-dialog"
+        onClose={() => sessionStorage.setItem("ourspaces-demo-notice-seen", "1")}
         onClick={(event) => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
         <div className="demo-waitlist-content">
           <div className="demo-waitlist-topline">
-            <span className="demo-banner-label">OurSpaces · coming soon</span>
-            <button className="demo-waitlist-close" onClick={() => dialog.current?.close()} data-testid="demo-waitlist-close" aria-label="Close waitlist">×</button>
+            <span className="demo-banner-label">{view === "notice" ? "OurSpaces · demo version" : "OurSpaces · coming soon"}</span>
+            <button className="demo-waitlist-close" onClick={() => dialog.current?.close()} data-testid="demo-waitlist-close" aria-label="Close">×</button>
           </div>
           <span className="demo-waitlist-mark" aria-hidden="true">↗</span>
-          {submitted ? (
+          {view === "notice" ? (
+            <div data-testid="demo-welcome-notice">
+              <h2>You're in<br />the demo.</h2>
+              <p>This is a test version of OurSpaces, built for a hackathon. Have a look around, but it isn't ready for everyday use yet.</p>
+              <button className="demo-waitlist-submit" onClick={() => dialog.current?.close()} data-testid="demo-notice-explore">Explore the demo <span>↗</span></button>
+              <div className="demo-notice-waitlist">
+                <span>Want a space for your own group?</span>
+                <button onClick={openWaitlist} data-testid="demo-notice-waitlist">Join the waitlist ↗</button>
+              </div>
+            </div>
+          ) : submitted ? (
             <>
               <h2>That's the idea.</h2>
               <p>This is a preview of the waitlist. Your email hasn't been saved yet.</p>
