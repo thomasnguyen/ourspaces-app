@@ -304,7 +304,7 @@ answer chips, `panToWidget` scrolls the cited card into whichever side of
 the viewport the panel leaves clear, `startBoardScan` hops `.is-recap-scan`
 across cards in reading order while the model reads; LiveSpace auto-runs
 `recap.generate` when the panel opens on a board with no briefing) · `widgetThreads.ts` · `blockZoom.ts` ·
-`entrance.ts` · `onboarding.ts` · `avatarPhoto.ts` (centre-square 256px JPEG for your own avatar; data-url fallback for mock) · `audioVolume.ts` (the app-wide 40% playback ceiling) · `sounds.ts` · `radio.ts` (SomaFM singleton; capped by `audioVolume.ts`) · `voice.ts` (dock mic level + speech transcript, pause detection, `?voice=` script with `&voicePace=talk`) · `orbShader.ts` (voice orb WebGL) ·
+`entrance.ts` · `onboarding.ts` · `avatarPhoto.ts` (centre-square 256px JPEG for your own avatar; data-url fallback for mock) · `sounds.ts` · `radio.ts` (SomaFM singleton) · `voice.ts` (dock mic level + speech transcript, pause detection, `?voice=` script with `&voicePace=talk`) · `orbShader.ts` (voice orb WebGL) ·
 `backendCounts.ts` · `canvasSpacePan.ts` (hold-Space + drag pans
 `.space-scroll`, Figma-style; used by App.tsx + LiveSpace.tsx) ·
 `linkRanking.ts` (Hot Now's `pinned → voteCount×3 + replyCount×2 → newest`,
