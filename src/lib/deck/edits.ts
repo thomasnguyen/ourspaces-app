@@ -431,8 +431,12 @@ export function editFor(said: string, widgets: W[], selectedId: string | null, c
     // nothing named or selected: the card that holds what the words name ("take ash off")
     const want = p.item ?? p.value;
     const hit = cards.filter((w) => fits(w) && holds(w).some((h) => same(want, h)));
+    // nothing holds it: the words may name the card itself ("move game night to sunday")
+    const titled = hit.length || !p.item ? [] : cards.filter((w) => fits(w) && same(p.item!, titleOf(w).replace(/ · .*$/, "")));
     if (hit.length === 1) [target, how] = [hit[0], `the one card with "${want}" on it`];
     else if (hit.length > 1) offers = hit;
+    else if (titled.length === 1) [target, how] = [titled[0], `named: "${p.item}"`];
+    else if (titled.length > 1) offers = titled;
     else return { kind: "none", text: `nothing here has ${want}` };
   } else {
     return { kind: "none", text: "which card? select it or say its name" };

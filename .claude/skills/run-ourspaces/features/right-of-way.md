@@ -39,6 +39,41 @@ After 30 s it gives up the same way. Asking about a card you hold yourself
 just goes. A closed laptop frees its cards within 3 s. "what this space
 knows" lists it under "what it held back" (`knows-held-back`).
 
+**Choices become a vote (R2).** If a spoken change would override what
+other people chose (a vote for an option, a claimed item, a yes to an rsvp's
+time, a payment into a split, logged check-ins, a date someone set in the
+card's editor), it isn't written. The stage says "that's 3 people's choice ·
+asked them" and goes to the card, where every screen shows an ink ticket off
+its bottom edge: "move game night to sunday?" / "tara asked · 3 people said
+yes to friday" (`row-vote`, `row-vote-ask`, `row-vote-stake`). Only those
+people get `keep it` / `change it` (`row-vote-option`, `data-option`
+keep | c1 | c2) and "waiting on you" (`row-vote-you`); it is also a ticket in
+their "waiting on you" pile (kind `decide`). Everyone sees who has answered
+(`row-vote-tally`); the asker can `row-vote-withdraw`. One person at stake
+is asked directly: "tara wants to take towels off the list · ok / no". If it
+was only the asker's own choice, it just goes. Code closes it: more than half
+→ that; everyone answered without that (a tie) → kept; a day passes → kept;
+withdrawn; everyone changed their own answer by hand → moot, the change just
+goes. A passed change goes back through the door, so a held card makes it
+wait as a ghost. It closes into a cream note on the card (`row-vote-note`):
+"2 of 3 said change it · friday rsvps cleared · 3 people, answer again" (the
+choices that no longer make sense are cleared, never converted), or "kept".
+A second ask on the same choice joins as another option (named by what it
+changes to: keep it / sunday / saturday); a fourth says "one thing at a time".
+Drawer: `dev-context-edit-affected` (who counted and why), `dev-context-edit-vote`.
+"what it held back" lists asks with their outcome. `?asklife=<s>` gives a
+vote a short life (tests).
+
+**Take (four browsers, live):** `.context/r2/run.mjs <tag> [run ids] [--strip]`
+(seats Tara asks, Holly / Sam / Jo at stake; runs core1 core2 keep1 poll1 poll2
+tie expire withdraw one-claim one-split asker-only moot composed second busy
+checkin date; `BASE=http://127.0.0.1:5591` for a lane Vite; `--strip` tiles
+the four screens at asked / first answer / held / after). Safety:
+`.context/r2/safety.mjs <tag>` on the server versions it logged.
+
+**Take (mock):** `drive take right-of-way:askland --real` (the cake poll,
+two scripted voters; you are the third). `?row=ask` holds open.
+
 **Take (two browsers, live):** `.context/r1/core.mjs` via `drive eval` (cfg.json runs: HOLD drag|title|titlekeep|vote|self|kill, CANCEL, STRIP → a two-screen filmstrip). `.context/l3/row.mjs` is the same with `BURST: n` (n two-screen frames right after the let-go) and `?timing=0`.
 
 **Take (mock):** `drive take right-of-way:land --real` (the cake poll, scripted holder).
@@ -53,5 +88,9 @@ rows, `landWaiting`, `expire`, `cancel`, queries `room` and `heldBack`),
 leases `convex/leases.ts` (hold, letGo, one scheduled `settle` per lease),
 your hands `src/live/useHolds.ts`, the halo/ghost
 `src/components/RightOfWay.tsx` + `right-of-way.css`, mock
-`src/lib/rowMock.ts`. Drawer: `dev-context-edit-lease`,
-`dev-context-edit-outcome`. Eval: `nebius/eval/r1-right-of-way.md`.
+`src/lib/rowMock.ts`. Votes: who counts = `applyEdit` in `src/lib/deck/edits.ts`
+(`Choice`), counting = `src/lib/choiceVote.ts` (`tally`, case table), the
+vote = `convex/choiceVotes.ts` (open/join, answer, withdraw, expire, `recheck`
+for moot, `land` through the door, `room`), the ticket and note =
+`src/components/ChoiceVote.tsx`. Drawer: `dev-context-edit-lease`,
+`dev-context-edit-outcome`. Eval: `nebius/eval/r1-right-of-way.md`, `nebius/eval/r2-choices.md`.

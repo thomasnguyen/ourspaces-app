@@ -67,7 +67,7 @@ function Ticket({ host, vote, me, leaving, onAnswer, onWithdraw }: { host: HTMLE
         {questionOf(vote, me)}
       </span>
       <span className="row-vote-stake" data-testid="row-vote-stake">
-        {askers.join(" and ")} asked · {vote.voters.length === 1 && mine ? `you ${vote.voters[0].why}` : vote.stake}
+        {askers.join(" and ")} asked · {vote.voters.length === 1 && mine ? `you ${vote.voters[0].why.replace(/^has /, "have ")}` : vote.stake}
         {vote.scripted ? " · scripted" : ""}
       </span>
       {mine ? (
@@ -148,9 +148,10 @@ export function RowVotes({ host, votes, me, onAnswer, onWithdraw }: { host: HTML
   }, []);
   const open = useMemo(() => votes.filter((v) => v.state === "open").map((v) => ({ ...v, key: v.id })), [votes]);
   const notes = useMemo(
-    () => votes.filter((v) => v.state !== "open" && v.closedAt !== undefined && now - v.closedAt < (v.state === "change" ? NOTE_MS : KEPT_MS) && !votes.some((o) => o.state === "open" && o.widgetId === v.widgetId)).filter((v, i, all) => all.findIndex((o) => o.widgetId === v.widgetId) === i).map((v) => ({ ...v, key: `note:${v.id}` })),
+    () => votes.filter((v) => v.state !== "open" && v.closedAt !== undefined && !v.landed?.startsWith("waiting") && now - v.closedAt < (v.state === "change" ? NOTE_MS : KEPT_MS) && !votes.some((o) => o.state === "open" && o.widgetId === v.widgetId)).filter((v, i, all) => all.findIndex((o) => o.widgetId === v.widgetId) === i).map((v) => ({ ...v, key: `note:${v.id}` })),
     [votes, now],
   );
+  // a passed change waiting on someone's hand: the ghost's ticket says so; the note comes when it lands
   const shownOpen = useLeaving(open);
   const shownNotes = useLeaving(notes);
   return (
