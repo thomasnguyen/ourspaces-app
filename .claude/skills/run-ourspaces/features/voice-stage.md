@@ -177,3 +177,11 @@ stage card is the real `WidgetCard` under CSS `zoom`; it inherits ink from
 the board ring and pauses the slip. The beats readout runs along the top
 edge and takes no taps. The room sends its call 200 ms after
 the words settle; that wait is not slowed by `&slow=`, mockDeal makes it up.
+
+**A linked group (the hero ask).** `cluster` state, `drive take
+voice-stage:cluster --real`: the group takes half the stage width and
+reaches into the gap beside the words (`[data-group]`), labelled "5 cards,
+linked"; the frame and the check-in arrive on one beat, the rest gather; on
+the board the group lands as one thing and each card settles in turn
+(`flyCard`). `?timing=table` is the wide beats table; `?timing=0` hides
+every dev readout.

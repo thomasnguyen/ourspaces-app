@@ -141,3 +141,9 @@ waits for `next →` (27 s cap); a game you're not in moves on by itself.
 Tried and dropped for the reveal: paper slips turning one by one (reads as
 a log) and a row count (reads as a poll); the receipt is what was kept of
 the slips.
+
+**After `next →` (live).** The round moves on when everyone in has pressed
+it; once you have, the key turns into a dashed "waiting on juno"
+(`game-next-waiting`, `NextKey` in `parts.tsx`; the round's `ready` list
+comes with the game). One or two winners: the awards wall goes big and
+centred (`data-few`). Two-browser take: `.context/l3/game.mjs` via `drive eval`.

@@ -1400,7 +1400,8 @@ button.gm-pick:not(:disabled):active .gm-face {
   .gmi {
     top: auto;
     right: 10px;
-    bottom: 138px;
+    /* clear of the orb, which stands taller than the dock's bar */
+    bottom: 158px;
     left: 10px;
     rotate: -0.6deg;
     translate: none;

@@ -49,3 +49,7 @@ standings' own lock (`LOCKS.standings`: open once you've logged today, or at
 the reveal; face down for anyone not in it). No weekly reset cron yet: the
 week is computed from sun 9:00 (UTC-7). A refused start prints one line
 (`game-notice`). Its pills are the only way to start a game by tap.
+
+**Rows fill the card.** `.sb-rows` is a flex column: each row grows up to
+84px into whatever room the card has, so four people leave no empty band and
+eight never cover the start keys.

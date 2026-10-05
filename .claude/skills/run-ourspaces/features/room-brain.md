@@ -96,3 +96,9 @@ it runs); a deterministic take or a direct load of `/knows` never plays it,
 and reduced motion skips it. The page's lines refresh with the brief (cron,
 every 10 min on activity), so a vote cast a minute ago may not be there yet;
 corrections are instant. In mock mode nothing is stored.
+
+**Quiet by default.** "cross out" shows when the pointer is on an object
+(always on touch); take recipes still click `room-knows-forget` directly.
+"what it held back" is a row of paper slips with a stamp each (lime: waited
+and landed · dashed: dropped or waiting · orange: didn't). A place's own
+comma ("lake loop, 5 mi") stays inside its slip.

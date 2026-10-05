@@ -85,3 +85,13 @@ wired in `LiveSpace.tsx` (`verbs:`) and `App.tsx` (mock) · `convex/voiceBuild.t
 `answer`, `decide`.
 
 **Gotchas:** The answer's camera only moves if the card is drawn on this screen.
+
+**The slip (one family).** Everything the space says is one object: a cream
+paper slip with an ink edge, a hard shadow and a tab that names it (lime
+"the space knows" / "done, as you" / "changed" · orange "the space won't" /
+"can't do that" · ink "which one?" · "not yet" for a wait). The first clause
+is the headline, the rest stacks under it, the source carries the room's
+orange pip (`replyTone` in `src/lib/voiceStage.ts`, `.voice-two-reply`). The
+same slip rides the card on the board (`.voice-slip`: ink on the asker's
+colour, wraps at 340px) and sits above the dock (`.voice-reply`). It leaves
+with the stage. Takes: `answer`, `refuse` (seat pinned to Rio), `tie`.
