@@ -5,6 +5,8 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Voice edits + the one door (R0, 2026-10-05, dev lane).** "add ramen to the dinner poll", "take pizza off", "move it to 7:30", "take ash off the cabin split", "make the challenge 10 days"… change the card that's there (`src/lib/deck/edits.ts`, `convex/edits.ts`); refused when it would undo people's choices; undo on the slip; other screens get "tara added ramen". Every AI write passes `convex/rightOfWay.ts` (always go until R1). Also: every poll's votes now repaint on every screen (the board read only the first poll's); a running challenge of the same activity is "already here"; retrieval that cites an rsvp is read by code. Feature file `voice-edits.md`.
+
 - **The orb's verbs, and the room-facts regression fixed (Oct 5, V1, dev lane).** Each ask's prompt
   shows only the 6–8 cards its words could mean (`lib/deck/shortlist.ts`) and the decide runs only when
   the keyword guess is empty or names two cards: room facts 1,302 → 1,063 ms (second browser 1,288),

@@ -45,8 +45,8 @@ the stage shows both as offers to tap, never a guess. "put maya down for
 balloons" / "jules is in" is refused: it only acts as you. "show me the cake
 poll" goes to the card; "take me to the family" opens that room; "open what
 this space knows" flips to the knows page. "let's play most likely to" says
-"games are coming"; "add ramen to the dinner poll" says "can't change cards
-yet". A question code can't place ("who's coming to karaoke night?" with no
+"games are coming"; "add ramen to the dinner poll" changes that card (see
+[voice-edits](voice-edits.md); the mock crew has no dinner poll, so `edit` says so). A question code can't place ("who's coming to karaoke night?" with no
 such card) asks the decide make-or-answer; unsure → both readings as offers.
 
 **Under it:** `src/lib/deck/verbs.ts` (pure): `routeVerb` (0 ms, the words'
@@ -80,6 +80,4 @@ decide / offers / tapped, why, the answer and the facts or snippets
 wired in `LiveSpace.tsx` (`verbs:`) and `App.tsx` (mock) · `convex/voiceBuild.ts`
 `answer`, `decide`.
 
-**Gotchas:** a live vote on any poll but the room's first doesn't repaint on
-other screens (the board subscribes to one poll's votes; your-turn reads all).
-The answer's camera only moves if the card is drawn on this screen.
+**Gotchas:** The answer's camera only moves if the card is drawn on this screen.
