@@ -29,8 +29,8 @@ three starter asks. Finish (or a tap outside) sends it; Escape throws it
 away; Mute stops the mic. The stage then lets go: the orb flies back to the
 dock and the board is in view for the card ([voice-build](voice-build.md)).
 
-**Looks:** `?orb=glass` (default: a clear ball, folded sheets of light
-inside) or `?orb=knot` (glossy ribbons folded into a ball). Both are live
+**Looks:** `?orb=glass` (default: a clear ball, three translucent lobes
+of light inside) or `?orb=knot` (two sets of glossy ribbons passing over and under). Both are live
 shaders driven by the voice level.
 
 **Drive:** `?voice=<sentence>` scripts the ask (one word per 300 ms, fake
@@ -58,7 +58,6 @@ block at the end).
 
 **Gotchas:** headless WebGL runs on Metal; blank orb → `DRIVE_GL=swiftshader`.
 The orb is ONE canvas: never render a second `VoiceOrb`. While the stage is
-up the dock shows its idle layout under the blur. Mute drops what the
-recogniser hears but a browser may replay muted words after unmute. On the
-phone the ball is capped at 76vw: wider and the 160% canvas box grows the
-mobile layout viewport.
+up the dock shows its idle layout under the blur. The ball is about 41% of the frame height (38% on the phone, capped at
+84vw so the loud swell stays on screen). Mute cuts what was heard while
+muted out of the ask (`muteCut` in `voice.ts`).
