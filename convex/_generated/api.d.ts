@@ -25,6 +25,7 @@ import type * as inboxRouting from "../inboxRouting.js";
 import type * as mailArrival from "../mailArrival.js";
 import type * as messages from "../messages.js";
 import type * as migrations from "../migrations.js";
+import type * as nebius from "../nebius.js";
 import type * as otp from "../otp.js";
 import type * as paint from "../paint.js";
 import type * as photos from "../photos.js";
@@ -72,6 +73,7 @@ declare const fullApi: ApiFromModules<{
   mailArrival: typeof mailArrival;
   messages: typeof messages;
   migrations: typeof migrations;
+  nebius: typeof nebius;
   otp: typeof otp;
   paint: typeof paint;
   photos: typeof photos;
