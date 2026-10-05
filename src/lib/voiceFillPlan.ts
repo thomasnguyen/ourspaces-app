@@ -112,7 +112,8 @@ export const FILL_PLANS: FillPlan[] = [
         from: "room",
         tick: true,
         read: (d) => [d.targetDate !== d.startDate && text(d.targetDate) ? days(String(d.startDate), String(d.targetDate)) : null],
-        write: (d, [v]) => (typeof v === "number" ? { ...d, targetDate: plusDays(String(d.startDate), Math.round(v)) } : d),
+        // never 0 on the way up: day 0 is the widget's "today" face, a different layout
+        write: (d, [v]) => (typeof v === "number" ? { ...d, targetDate: plusDays(String(d.startDate), Math.max(1, Math.round(v))) } : d),
       },
     ],
   },

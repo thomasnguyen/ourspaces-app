@@ -683,7 +683,7 @@
 .voice-two-fly::before {
   position: absolute;
   inset: -12px;
-  border: 3px dashed var(--maker, white);
+  border: 3px dashed color-mix(in oklab, var(--maker, white) 72%, white);
   border-radius: 30px;
   content: "";
   pointer-events: none;
@@ -697,7 +697,7 @@
 
 @keyframes voice-ring-breathe {
   to {
-    border-color: color-mix(in oklab, var(--maker, white) 38%, transparent);
+    border-color: color-mix(in oklab, var(--maker, white) 45%, transparent);
   }
 }
 
@@ -763,11 +763,14 @@ body.voice-stage-up .voice-slip {
 .voice-stage-beats {
   position: fixed;
   z-index: 9100;
-  top: 12px;
-  left: 12px;
+  top: 8px;
+  left: 50%;
   display: grid;
-  max-width: 400px;
-  gap: 5px;
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  gap: 4px;
+  translate: -50% 0;
+  pointer-events: none;
   border-radius: 10px;
   background: color-mix(in oklab, var(--color-sticker) 88%, transparent);
   color: rgba(255, 255, 255, 0.72);
@@ -780,8 +783,29 @@ body.voice-stage-up .voice-slip {
   font-weight: 600;
 }
 
-.voice-stage-beats table {
-  border-collapse: collapse;
+.voice-stage-beats table,
+.voice-stage-beats tbody {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.voice-stage-beats thead {
+  display: none;
+}
+
+.voice-stage-beats tr {
+  display: grid;
+}
+
+.voice-stage-beats td:nth-child(2)::before {
+  content: "table ";
+  opacity: 0.6;
+}
+
+.voice-stage-beats td:nth-child(3)::before {
+  content: "run ";
+  opacity: 0.6;
 }
 
 .voice-stage-beats th {
@@ -790,9 +814,8 @@ body.voice-stage-up .voice-slip {
   text-align: left;
 }
 
-.voice-stage-beats td,
-.voice-stage-beats th {
-  padding: 1px 12px 1px 0;
+.voice-stage-beats td {
+  padding: 0;
 }
 
 .voice-stage-beats td:last-child {
@@ -906,11 +929,18 @@ body.voice-stage-up .voice-slip {
   }
 
   .voice-stage-beats {
-    top: auto;
-    bottom: 8px;
-    left: 8px;
-    max-width: calc(100vw - 16px);
-    font-size: 9px;
+    font-size: 8.5px;
+  }
+
+  /* once it is building, the orb gives the card the room */
+  .voice-stage.is-two .voice-stage-orb {
+    transition:
+      width calc(var(--dur-arrive) * var(--slow)) var(--ease-glide),
+      height calc(var(--dur-arrive) * var(--slow)) var(--ease-glide);
+  }
+
+  .voice-stage.is-two:not([data-build="waiting"]) {
+    --stage-ball: min(17vh, 36vw);
   }
 }
 
@@ -929,4 +959,10 @@ body.voice-stage-up .voice-slip {
   .voice-two-fly::before {
     animation: none;
   }
+}
+
+/* on the stage the card is being made, not used: no comment chip, no handles */
+.voice-two-card-body .widget-comment-chip,
+.voice-two-card-body .widget-management {
+  display: none;
 }

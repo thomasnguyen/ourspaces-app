@@ -94,6 +94,6 @@ asks) · mock wiring in `src/App.tsx`.
 driver speeds the animation clock on load and the two drift apart). The
 stage card is the real `WidgetCard` under CSS `zoom`; it inherits ink from
 `.voice-two-card-body`. While the stage is up `body.voice-stage-up` hides
-the board ring and pauses the slip. `&timing=1` on the phone covers the dock
-orb's corner: tap first, or use 1440. The room sends its call 200 ms after
+the board ring and pauses the slip. The beats readout runs along the top
+edge and takes no taps. The room sends its call 200 ms after
 the words settle; that wait is not slowed by `&slow=`, mockDeal makes it up.
