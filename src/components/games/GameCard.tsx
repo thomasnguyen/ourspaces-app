@@ -25,10 +25,24 @@ export function GameCard({ sheet = false }: { sheet?: boolean }) {
   if (!api || !game) return null;
   const round = currentRound(game);
   const playing = isIn(game, api.me.name);
+  /* a phone plays on the sheet; the board's copy steps back to a stub */
+  if (!sheet && api.sheetOpen) {
+    return (
+      <section className="gm widget-shell is-stub" data-testid="game-card" data-phase={game.phase} style={byStyle(game.startedBy)}>
+        <header className="gm-head">
+          <span className="gm-name">
+            <i aria-hidden="true" />
+            {game.name}
+          </span>
+        </header>
+        <p className="gm-kicker">you're playing this one up front</p>
+      </section>
+    );
+  }
   return (
     <section
       className={`gm at-${game.phase} ${sheet ? "is-sheet" : "widget-shell"} ${playing ? "is-playing" : "is-watching"}`}
-      data-testid={sheet ? "game-sheet" : "game-card"}
+      data-testid="game-card"
       data-phase={game.phase}
       data-round={game.round + 1}
       data-cast={game.cast.length}
@@ -161,9 +175,8 @@ function Round({ api, game, round }: { api: GamesApi; game: Game; round: GameRou
         lock={lock}
         facts={facts}
         className="gm-see"
-        testId="game-see"
         cover={
-          <div className="gm-slips">
+          <div className="gm-slips" data-testid="game-see">
             {game.players.map((player, i) => {
               const down = round.answers.some((a) => same(a.by, player.name));
               return (

@@ -45,9 +45,8 @@ export function Scoreboard() {
         lock={LOCK}
         facts={{ mine: api.played, answered: rows.filter((r) => r.played > 0).length, of: rows.length, now: api.now }}
         className="sb-see"
-        testId={api.played ? "scoreboard-open" : "scoreboard-locked"}
         cover={
-          <div className="sb-rows is-down">
+          <div className="sb-rows is-down" data-testid="scoreboard-locked">
             {rows.slice(0, 6).map((row, i) => (
               <SeeSlip key={row.name} down i={i}>
                 <b className="sb-rank">{i + 1}</b>
@@ -60,7 +59,7 @@ export function Scoreboard() {
           </div>
         }
       >
-        <ol className="sb-rows">
+        <ol className="sb-rows" data-testid="scoreboard-open">
           {rows.slice(0, 7).map((row, i) => (
             <li key={row.name} className={`sb-row ${row.name === me.name ? "is-me" : ""}`} style={byStyle(row, { "--i": i })} data-testid="scoreboard-row">
               <b className="sb-rank">{i + 1}</b>

@@ -612,4 +612,6 @@ scale, stagger, FLIP, and which moments earn cinematic treatment. Read it
 before any UI work; skip it if a clone doesn't have it. Token names are
 mirrored publicly in `docs/tokens.md`.
 
+`lib/games/` + `components/games/` + `data/games.ts` — games (mock only so far): the frame every game uses (`types.ts` rows, `engine.ts` pure rules, `useMockGames.tsx` clock + simulated players + `?game=` state URLs + context), the card (`GameCard.tsx`: invite → round → reveal → awards wall; also the phone's play sheet), `Scoreboard.tsx`, `GameInvite.tsx` (the strip, header chip `GameDoor`, sheet, award dots), prompts per room in `data/games.ts`; the shared "answer to see" lock is `lib/answerToSee.ts` + `components/AnswerToSee.tsx`. Widget types `game` and `scoreboard` are injected by `App.tsx` (mock) at `GAME_SPOTS`. Feature files: `features/games.md`, `most-likely-to.md`, `scoreboard.md`.
+
 `lib/yourTurn.ts` + `components/YourTurn.tsx` (+ `yourTurn.css`) — "your turn": what on the board waits on one person, computed from loaded widgets (never stored), shown as a count on the dock ✦ key and a "waiting on you" section at the top of the recap panel (portalled in, no ActionDock edit); mounted once in `App.tsx` (mock, `?as=<name>`) and once in `pages/LiveSpace.tsx`; `Rail` takes an optional `waiting` count. Feature file: `features/your-turn.md`.

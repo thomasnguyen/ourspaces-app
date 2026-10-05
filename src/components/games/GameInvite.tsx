@@ -62,7 +62,7 @@ export function GameSheet() {
   const api = useGames();
   if (!api?.game || !api.sheetOpen) return null;
   return (
-    <div className="gm-sheet">
+    <div className="gm-sheet" data-testid="game-sheet">
       <GameCard sheet />
     </div>
   );

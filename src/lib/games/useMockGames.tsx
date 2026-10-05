@@ -268,6 +268,7 @@ export function useMockGames(o: {
         if (round.endsAt) apply(roomId, (x) => ({ ...x, rounds: x.rounds.map((r) => (r.n === round.n ? { ...r, endsAt: at + 14_000 } : r)) }));
       }
     }
+    if (window.location.hash.endsWith("/knows")) return;
     if (window.matchMedia(PHONE).matches && want !== "late") setSheetOpen(true);
     else if (want !== "late" && roomId === room) window.setTimeout(() => panToWidget(GAME_WIDGET_ID), 350);
     // eslint-disable-next-line react-hooks/exhaustive-deps

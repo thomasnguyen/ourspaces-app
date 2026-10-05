@@ -6,7 +6,7 @@
 import type { Award, Game, GamePerson, GamePrompt, GameRound, ScoreRow } from "./types";
 
 export const ROUND_MS = 14_000;
-export const LOBBY_MS = 9_000;
+export const LOBBY_MS = 7_000;
 export const REVEAL_MS = 7_000;
 
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();

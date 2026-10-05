@@ -32,15 +32,21 @@ const TONE_INK = ["var(--color-ink)", "white", "white", "var(--color-ink)", "var
     the size that rides on an avatar. */
 export function AwardSticker({ award, size = "md", i = 0, land = false }: { award: Pick<Award, "title" | "glyph" | "tone" | "prompt">; size?: "dot" | "md" | "lg"; i?: number; land?: boolean }) {
   const tone = ((award.tone % 6) + 6) % 6;
-  return (
-    <span
-      className={`gm-award gm-award-${size} ${land ? "is-landing" : ""}`}
-      style={{ "--tone": TONES[tone], "--tone-ink": TONE_INK[tone], "--i": i } as CSSProperties}
-      title={award.prompt}
-      data-testid={land ? "game-sticker" : undefined}
-    >
+  const style = { "--tone": TONES[tone], "--tone-ink": TONE_INK[tone], "--i": i } as CSSProperties;
+  const inside = (
+    <>
       <i aria-hidden="true">{award.glyph}</i>
       {size !== "dot" && <b>{award.title}</b>}
+    </>
+  );
+  /* the one that lands at a reveal is the one a take waits for */
+  return land ? (
+    <span className={`gm-award gm-award-${size} is-landing`} style={style} title={award.prompt} data-testid="game-sticker">
+      {inside}
+    </span>
+  ) : (
+    <span className={`gm-award gm-award-${size}`} style={style} title={award.prompt}>
+      {inside}
     </span>
   );
 }

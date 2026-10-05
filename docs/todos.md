@@ -5,6 +5,8 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Games, mock mode (Oct 5, branch `games`, not live).** A game is a card on the board with a life: invite (starter's colour, faces join) → rounds (tap a face, one face-down slip per player) → a reveal for everyone at once (votes land on faces, the card floods with the winner's colour, an award sticker lands, a receipt of who said who) → the awards wall. First game: "most likely to" ("more likely to" for two), prompts hand-written from each mock room's "what this space knows" facts. Others find out by a strip in the starter's colour, a "your turn" ticket, a lime header chip and a mark on the rail tile. A scoreboard card (face down until you play) starts games. Shared "answer to see" lock in `src/lib/answerToSee.ts`. Start: header chip `▶ games` → `play most likely to →`, or `?mock=1&game=start`. **Not built:** Convex tables, the voice ask, prompts written by the model, two real browsers. The family room's standings has its own answer-to-see; unify at merge. Feature files: `features/games.md`, `most-likely-to.md`, `scoreboard.md`.
+
 - **What this space knows, redesigned (Oct 4, dev lane).** Same facts and actions,
   drawn as a wall: the group as face stickers, each noticed line as a paper
   object (tear-off day count, week strip with the usual day ringed, receipt
