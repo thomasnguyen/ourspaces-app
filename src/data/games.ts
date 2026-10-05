@@ -99,10 +99,12 @@ export const ROOM_GAMES: Record<string, RoomGames> = {
 
 export const hasGames = (room: string) => Boolean(ROOM_GAMES[room]);
 
-/** Where the games corner sits on each mock board: the scoreboard, and the
-    game card beside it once someone starts one. */
+/** Where the games corner sits on each mock board: the game card once someone
+    starts one, and the scoreboard to its right. The scoreboard is the outer
+    one on purpose: the board measures its width once, so the card that is
+    always there has to hold the edge. */
 export const GAME_SPOTS: Record<string, { board: { x: number; y: number }; card: { x: number; y: number } }> = {
-  crew: { board: { x: 1660, y: 48 }, card: { x: 1996, y: 48 } },
-  house: { board: { x: 1216, y: 64 }, card: { x: 1552, y: 64 } },
-  couple: { board: { x: 1236, y: 52 }, card: { x: 1572, y: 52 } },
+  crew: { card: { x: 1660, y: 48 }, board: { x: 2096, y: 48 } },
+  house: { card: { x: 1216, y: 64 }, board: { x: 1652, y: 64 } },
+  couple: { card: { x: 1236, y: 52 }, board: { x: 1672, y: 52 } },
 };
