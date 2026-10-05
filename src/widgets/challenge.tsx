@@ -24,6 +24,7 @@ import {
   type CheckInData,
 } from "../lib/challenge";
 import "./challenge.css";
+import type { ThreadLink } from "../components/LinkThreads";
 
 type Style = CSSProperties;
 
@@ -38,6 +39,9 @@ export type BoardLink = {
   onCheckIn?: (widgetId: string, day: number, value: number | null) => void;
   /** Open links (convex/links.ts): target widget id → the card it waits on. */
   waiting?: Record<string, string>;
+  /** Flows' threads (W2), and "call it" on a card another one waits on. */
+  threads?: ThreadLink[];
+  onCallIt?: (widgetId: string) => void;
 };
 
 const titleOf = (w: Widget | undefined) => {
@@ -54,12 +58,19 @@ export function WaitingOn({ widgetId }: { widgetId: string }) {
   const { waiting, widgets } = useContext(BoardLinkContext);
   const from = waiting?.[widgetId];
   if (!from) return null;
+  const source = widgets.find((w) => w.id === from);
+  const see = seeState(LOCKS.link, { mine: false, answered: 0, of: 0, now: Date.now(), resolved: false, waitsOn: WAITS_ON[source?.type ?? ""] ?? titleOf(source) });
   return (
     <span className="card-waiting" data-testid="card-waiting" data-from={from}>
-      waiting on {titleOf(widgets.find((w) => w.id === from))}
+      {[0, 1, 2].map((i) => (
+        <i key={i} style={{ "--i": i } as CSSProperties} aria-hidden />
+      ))}
+      {see.line}
     </span>
   );
 }
+/** What a waiting card names in a few words. */
+const WAITS_ON: Record<string, string> = { poll: "the poll", availability: "the days", rsvp: "who's in", potluck: "the list", checkIn: "the check-in" };
 export const BoardLinkContext = createContext<BoardLink>({ widgets: [] });
 
 /** "beat 40" on the standings opens the check-in's logger at 41. */

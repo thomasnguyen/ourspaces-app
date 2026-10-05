@@ -11,8 +11,14 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import { Thread } from "./LinkThreads";
+import type { Widget } from "../data/types";
 import { guessCard, sentenceHangs } from "../lib/deck";
 import { isBare, SCRIPTED_ASKS } from "../lib/deck/mockDeal";
+import { blankSlot, mapAnswer, missingNeeds, needOffers, needsOf, pinsFor, settingsFromWords } from "../lib/deck/needs";
+import { checkRecipe, flowFor, getRecipe } from "../lib/deck/recipes";
+import { getCard } from "../lib/deck/catalog";
+import { checkSettings, type Need, type Schema } from "../lib/deck/schema";
 import { orbLook } from "../lib/orbShader";
 import { playSound } from "../lib/sounds";
 import type { useVoice } from "../lib/voice";
@@ -21,7 +27,9 @@ import {
   markStageBeat,
   onVoiceStageRelease,
   stageBeats,
+  setAskOutcome,
   voiceStageBuild,
+  voiceStageFacts,
   voiceStageOffers,
   watchStageBeats,
   watchVoiceStage,
@@ -378,6 +386,7 @@ function StageCluster({ cluster }: { cluster: NonNullable<StageBuild["cluster"]>
   return (
     <BoardLinkContext.Provider value={link}>
     <div className="voice-two-card-body voice-two-cluster" data-testid="voice-stage-cluster" data-cards={cards.length} style={{ zoom: scale, width: box.w, height: box.h }}>
+      {cluster.thread && cards.length > 1 && <Thread a={{ ...cards[0], x: cards[0].x - box.x, y: cards[0].y - box.y }} b={{ ...cards[1], x: cards[1].x - box.x, y: cards[1].y - box.y }} tag={cluster.thread} />}
       {cards.map((w, i) => (
         <div key={w.id} className="voice-two-cluster-card" data-type={w.type} style={{ "--i": i } as CSSProperties}>
           <WidgetCard widget={{ ...w, x: w.x - box.x, y: w.y - box.y, z: w.type === "frame" ? 0 : 2 + i }} spaceId={spaceInHash()} canvasScale={scale} />
@@ -434,12 +443,15 @@ function StageCard({
   offers,
   onOffer,
   found,
+  question,
 }: {
   build: StageBuild;
   reveal: ReturnType<typeof useReveal>;
   fly: RefObject<HTMLDivElement | null>;
   /** The card was named with nothing to put in it: the stage asks for the rest. */
   asking: boolean;
+  /** The question (lib/deck/needs.ts) and the field it fills: that part of the skeleton is the empty one. */
+  question?: { ask: string; field: string } | null;
   /** What the room offers to fill it with. */
   offers: StageOffer[];
   onOffer: (offer: StageOffer) => void;
@@ -471,7 +483,8 @@ function StageCard({
     el.style.setProperty("--deal-x", `${o.left + o.width / 2 - (frame.left + el.offsetLeft + el.offsetWidth / 2)}px`);
     el.style.setProperty("--deal-y", `${o.top + o.height / 2 - (frame.top + el.offsetTop + el.offsetHeight / 2)}px`);
   }, [fly]);
-  const widget = reveal.widget;
+  // while it asks, the field it asks about is the empty one (whatever a guess put there)
+  const widget = reveal.widget && asking && question ? { ...reveal.widget, data: askedEmpty(reveal.widget.type, reveal.widget.data as Record<string, unknown>, question.field) as Widget["data"] } : reveal.widget;
   // the size is fixed by the card type, so the card doesn't breathe as rows land
   const scale = useMemo(() => (widget ? stageScale(widget.w, widget.h) : 1), [widget?.type, widget?.w]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!widget) return null;
@@ -485,6 +498,7 @@ function StageCard({
       data-kind={build.kind ?? "card"}
       data-group={build.cluster ? "" : undefined}
       data-state={edit ? "edit" : found ? "found" : whole ? "complete" : asking ? "asking" : "skeleton"}
+      data-asking-field={asking && question ? question.field : undefined}
     >
       <header className="voice-two-kind">
         <b>{build.cluster ? `${build.cluster.cards.filter((w) => w.type !== "frame").length} cards, linked` : (build.kind ?? "card")}</b>
@@ -497,13 +511,14 @@ function StageCard({
               data-status={p.status}
               data-shown={p.id in reveal.at ? "" : undefined}
               data-room={p.room ? "" : undefined}
+              data-asked={asking && question && askedPart(question.field, p.id) ? "" : undefined}
               title={p.label}
             />
           ))}
         </span>
         {asking && !found && (
-          <strong className="voice-two-ask" data-testid="voice-stage-ask">
-            {fillPlan(build.kind).ask}
+          <strong className="voice-two-ask" data-testid="voice-stage-ask" data-field={question?.field}>
+            {question?.ask ?? fillPlan(build.kind).ask}
           </strong>
         )}
         {edit && (
@@ -533,7 +548,7 @@ function StageCard({
         <div className="voice-two-offers" data-testid="voice-stage-offers" onClick={(event) => event.stopPropagation()}>
           <span>say it, or take one from the room</span>
           {offers.map((offer, i) => (
-            <button type="button" key={offer.label} data-testid={`voice-stage-offer-${i}`} style={{ "--i": i } as CSSProperties} onClick={() => onOffer(offer)}>
+            <button type="button" key={offer.label} data-testid={`voice-stage-offer-${i}`} data-fills={offer.fills ? Object.keys(offer.fills).join(" ") : undefined} style={{ "--i": i } as CSSProperties} onClick={() => onOffer(offer)}>
               <b>{offer.label}</b>
               <i>from {offer.from}</i>
             </button>
@@ -548,6 +563,23 @@ function StageCard({
       )}
     </div>
   );
+}
+
+/** A card's field shown empty on the stage: list rows keep their places as blank pills. */
+function askedEmpty(type: string, d: Record<string, unknown>, field: string) {
+  const B = "\u00a0";
+  if (type === "poll" && field === "options") return { ...d, options: [0, 1, 2].map((i) => ({ id: "abc"[i], label: B, votes: 0, total: 0, voters: [] })) };
+  if (type === "wheel" && field === "options") return { ...d, slices: [0, 1, 2, 3].map((i) => ({ id: "abcd"[i], label: B })) };
+  if (type === "potluck" && field === "items") return { ...d, items: [0, 1, 2].map(() => ({ name: B, by: null, claimed: false })) };
+  if (type === "countdown" && (field === "date" || field === "event")) return { ...blankSlot(type, d, "date"), ...(field === "event" ? { event: B } : {}) };
+  if (field === "question" || field === "title" || field === "text") return { ...d, [field]: B };
+  return d;
+}
+
+/** Which skeleton part a field fills (the fill plan's part ids: question, option-0, event, date, total, title, item-0…). */
+function askedPart(field: string, part: string) {
+  const base = part.replace(/-\d+$/, "");
+  return base === field || `${base}s` === field || (field === "items" && base === "item") || (field === "options" && base === "option") || (field === "text" && base === "title") || (field === "activity" && base === "title");
 }
 
 /** Your words, one span each: settled words stand, the newest is live, and
@@ -788,39 +820,131 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
   const build = fresh?.widget ? fresh : fresh && kept ? { ...kept, found: fresh.found, failed: fresh.failed, reply: fresh.reply } : (kept ?? fresh);
   const buildRef = useRef(build);
   buildRef.current = build;
+  const askedBare = useRef(false);
   const reveal = useReveal(build, freeze);
 
-  // ---- a card named with nothing to put in it: the stage asks for the rest ----
-  // The ask stays open across the pause; your next words (or one of the
-  // room's offers) fill it. Quiet for `followUpWait`: a guess that is already
-  // showing is kept, an empty card is let go.
-  const bare = two && phase === "open" && voice.state === "listening" && Boolean(build?.kind) && isBare(voice.transcript);
-  const [asking, setAsking] = useState(false);
+  // ---- it asks for what's missing (lib/deck/needs.ts) ----
+  // Each card says which fields it can't do without. When nothing in the
+  // words stands on one, the pause doesn't end the ask: the question lands on
+  // the card's shoulder and in the slip, the room offers what it knows, and
+  // the next words are the answer (code maps them onto that field only). Two
+  // questions at most. Quiet for `followUpWait`: a card with its type and one
+  // real field lands unfinished, its slot marked; an empty one is let go.
+  const facts = voiceStageFacts();
+  const today = facts?.today ?? new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  const said = voice.transcript;
+  const live = two && phase === "open" && voice.state === "listening";
+  const askCard = live && said.trim() ? (flowFor(said, facts) ?? (/\bchallenge\b/i.test(said) ? "challenge" : (build?.kind ?? null))) : null;
+  type AskRun = { card: string; base: string; answers: Record<string, unknown>; asked: Need[]; from: number; ms: number[] };
+  const askRun = useRef<AskRun | null>(null);
+  const [question, setQuestion] = useState<Need | null>(null);
+  const hasNeeds = Boolean(askCard && needsOf(askCard).length);
+  const missing = askCard && hasNeeds ? missingNeeds(askCard, said, facts, today) : [];
+  // a card with no declared needs keeps the first version: named with nothing in it, "what's it about?"
+  const bare = live && Boolean(build?.kind) && !hasNeeds && isBare(said);
+  const needy = live && Boolean(askCard) && hasNeeds && (missing.length > 0 || askRun.current !== null);
+  const asking = Boolean(question) || (bare && askedBare.current);
+  const lastWordAt = useRef(0);
   useEffect(() => {
-    voiceRef.current.hold(bare);
-    if (!bare) return setAsking(false);
-    const quiet = beat(sentenceHangs(voiceRef.current.transcript) ? "pauseHang" : "pauseQuiet");
-    const ask = window.setTimeout(() => {
-      setAsking(true);
+    lastWordAt.current = performance.now();
+  }, [said]);
+  /** Ask the next question, or end the ask with what code learned. */
+  const advance = (r: AskRun, now: string, unfinished?: string) => {
+    const next = unfinished ? undefined : missingNeeds(r.card, now, facts, today, r.answers)[0];
+    if (next && r.asked.length < 2) {
+      r.asked.push(next);
+      r.from = now.trim().split(/\s+/).filter(Boolean).length;
+      setQuestion(next);
+      r.ms.push(Math.round(performance.now() - lastWordAt.current));
       markStageBeat("asked");
+      return;
+    }
+    const left = unfinished ?? next?.field;
+    const settings = { ...settingsFromWords(r.card, r.base, facts, today), ...pinsFor(r.card, r.answers) };
+    const def = getCard(r.card);
+    const direct = !left && (def ? checkSettings(def.settings as Schema, settings).ok : getRecipe(r.card) ? checkRecipe(r.card, settings).ok : false);
+    setAskOutcome({ card: r.card, said: now, pins: left || direct ? settings : pinsFor(r.card, r.answers), direct, ...(left ? { unfinished: left } : {}), asked: r.asked.map((n) => n.ask), askedMs: r.ms });
+    askRun.current = null;
+    setQuestion(null);
+    voiceRef.current.hold(false);
+    voiceRef.current.finish();
+  };
+  const advanceRef = useRef(advance);
+  advanceRef.current = advance;
+  useEffect(() => {
+    voiceRef.current.hold(needy || bare);
+    if (!needy && !bare) {
+      askRun.current = null;
+      askedBare.current = false;
+      setQuestion(null);
+      return;
+    }
+    const quiet = beat(sentenceHangs(said) ? "pauseHang" : "pauseQuiet");
+    const words = said.trim().split(/\s+/).filter(Boolean).length;
+    const t = window.setTimeout(() => {
+      if (bare) {
+        askedBare.current = true;
+        setQuestion(null);
+        setBareAsked((n) => n + 1);
+        markStageBeat("asked");
+        return;
+      }
+      const r = askRun.current;
+      if (!r) {
+        const first = missingNeeds(askCard!, said, facts, today)[0];
+        if (!first) return;
+        askRun.current = { card: askCard!, base: said, answers: {}, asked: [], from: words, ms: [] };
+        advanceRef.current(askRun.current, said);
+        return;
+      }
+      if (words <= r.from) return;
+      const got = mapAnswer(r.asked.at(-1)!, said.trim().split(/\s+/).slice(r.from).join(" "), today);
+      // not that kind of answer (no list, no date, no number): the question stands
+      if (!got) return;
+      r.answers = { ...r.answers, ...got };
+      advanceRef.current(r, said);
     }, quiet);
     const giveUp = window.setTimeout(() => {
-      const guess = buildRef.current?.parts.length && buildRef.current.parts.every((p) => p.status !== "pending");
-      if (guess) voiceRef.current.finish();
+      if (bare) {
+        const guess = buildRef.current?.parts.length && buildRef.current.parts.every((p) => p.status !== "pending");
+        if (guess) voiceRef.current.finish();
+        else closeRef.current(false);
+        return;
+      }
+      const r = askRun.current;
+      // walked away: something real in it lands unfinished, its slot marked; nothing real is let go
+      const real = r && Object.keys({ ...settingsFromWords(r.card, r.base, facts, today), ...r.answers }).length > 0;
+      if (r && real) advanceRef.current(r, said, missingNeeds(r.card, said, facts, today, r.answers)[0]?.field ?? r.asked.at(-1)!.field);
       else closeRef.current(false);
     }, quiet + beat("followUpWait"));
     return () => {
-      window.clearTimeout(ask);
+      window.clearTimeout(t);
       window.clearTimeout(giveUp);
     };
-  }, [bare, voice.transcript]);
-  const offers = useMemo(() => (asking && build?.kind ? voiceStageOffers(build.kind) : []), [asking, build?.kind]);
+  }, [needy, bare, said]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [, setBareAsked] = useState(0);
+  const offers = useMemo<StageOffer[]>(() => {
+    if (!asking || !build?.kind) return [];
+    const card = askRun.current?.card ?? build.kind;
+    const direct = needOffers(facts, card, question ?? undefined).map((o) => ({ label: o.label, say: o.label, from: o.from, fills: o.fills }));
+    const first = !question || askRun.current?.asked.length === 1;
+    const worded = first && (!question || question.as === "text") ? voiceStageOffers(build.kind) : [];
+    return [...direct, ...worded].slice(0, 3);
+  }, [asking, build?.kind, question]); // eslint-disable-line react-hooks/exhaustive-deps
   const takeOffer = (offer: StageOffer) => {
     playSound("tap");
-    voice.say(`${voice.transcript} ${offer.say}`);
+    const r = askRun.current;
+    const now = `${voice.transcript} ${offer.say}`;
+    voice.say(now);
+    if (r && question) {
+      const got = offer.fills ?? mapAnswer(question, offer.say, today);
+      if (got) {
+        r.answers = { ...r.answers, ...got };
+        return advance(r, now);
+      }
+    }
     voice.finish();
   };
-
   // ---- the board already has this card (the build's own check): say so, then go to it ----
   const found = build?.found ?? null;
   const reply = build?.reply ?? null;
@@ -1111,13 +1235,18 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
                 say what to add
               </p>
             )}
+            {question && listening && (
+              <div className="voice-two-ask-slip" data-testid="voice-stage-ask-slip">
+                <StageReplySlip reply={{ verb: "ask", text: question.ask }} />
+              </div>
+            )}
           </div>
         </section>
         <section className="voice-two-right" data-testid="voice-stage-right" data-state={state}>
           {reply && voice.state !== "listening" ? (
             <StageReplySlip reply={reply} />
           ) : build?.kind && build.widget ? (
-            <StageCard key={build.key} build={build} reveal={reveal} fly={card} asking={asking} offers={offers} onOffer={takeOffer} found={Boolean(found)} />
+            <StageCard key={build.key} build={build} reveal={reveal} fly={card} asking={asking} offers={offers} onOffer={takeOffer} found={Boolean(found)} question={question ? { ask: question.ask, field: question.field } : null} />
           ) : (
             !voice.transcript &&
             listening && (

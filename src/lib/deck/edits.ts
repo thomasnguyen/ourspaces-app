@@ -15,6 +15,7 @@
  */
 import { CATALOG, revealOf } from "./catalog";
 import type { Field } from "./schema";
+import { blankSlot, fillSlot, type Unfinished } from "./needs";
 
 type W = { id: string; type: string; data: Record<string, unknown> };
 export type EditOp = { op: string; value: string | number; item?: string };
@@ -94,6 +95,8 @@ const fail = (reason: string): EditResult => ({ ok: false, reason, refused: fals
  * refuses what would undo people's choices (R2 turns those into a vote).
  */
 export function applyEdit(w: { type: string; data: Record<string, unknown> }, op: EditOp, ctx: EditCtx): EditResult {
+  // an unfinished card's empty slot (C1): the words fill that one field; undo empties it again
+  if (op.op === "fill" || op.op === "unfill") return fillEdit(w, op, ctx);
   const ops = opsFor(w.type);
   const f = ops?.[op.op];
   if (!ops || !f) return fail(`a ${w.type} can't ${op.op}`);
@@ -229,6 +232,27 @@ function resplit(rows: { name: string; owes: number; paid: number }[], total: un
   const share = Math.round(sum / Math.max(1, rows.length));
   return rows.map((r) => ({ ...r, owes: Math.max(0, share - r.paid) }));
 }
+function fillEdit(w: { type: string; data: Record<string, unknown> }, op: EditOp, ctx: EditCtx): EditResult {
+  const d = w.data;
+  let data: Record<string, unknown> | null;
+  let undo: EditOp;
+  if (op.op === "fill") {
+    const u = d.unfinished as Unfinished | undefined;
+    if (!u) return fail("it isn't missing anything");
+    data = fillSlot(w, String(op.value), ctx.today);
+    if (!data) return fail(`that isn't ${u.slot.replace(/^add /, "")}`);
+    undo = { op: "unfill", value: JSON.stringify(u) };
+  } else {
+    const u = JSON.parse(String(op.value)) as Unfinished;
+    data = { ...blankSlot(w.type, d, u.field), unfinished: u };
+    undo = { op: "fill", value: "" };
+  }
+  const fields = touched(d, data).map((field) => ({ field, old: d[field], new: data![field] }));
+  if (!fields.length) return fail("nothing changes");
+  const u = (d.unfinished ?? data.unfinished) as Unfinished;
+  return { ok: true, data, fields, text: op.op === "fill" ? `filled in ${u.slot.replace(/^add /, "")}` : "emptied it again", changed: op.op === "fill" ? String(op.value) : "", undo };
+}
+
 /** "sunday", "oct 20", "the 20th" → the next such date from today (YYYY-MM-DD). */
 export function isoFor(day: string, today: string): string | null {
   const base = new Date(`${today}T12:00:00Z`);
@@ -261,10 +285,13 @@ const clean = (s: string) =>
     .replace(/^((hey|ok|okay|so|um|uh|please|alright|orb|can you|could you),?\s+)+/, "");
 const REF = "(?:it|this|that|(?:the|our|my|this|that) (.+?))";
 /** One edit sentence: the op family, the value, the card phrase (if named), an item (setDay). */
-type Said = { fam: "add" | "remove" | "rename" | "when" | "length"; value: string; phrase?: string; item?: string };
+type Said = { fam: "add" | "remove" | "rename" | "when" | "length" | "fill"; value: string; phrase?: string; item?: string };
 export function parseSaid(said: string): Said | null {
   const t = clean(said);
   let m: RegExpExecArray | null;
+  // the missing part of an unfinished card, said outright: "the choices are tacos, pho and pizza"
+  if ((m = /^(?:the )?(choices|options|items|things|total|cost|date|day|question|words)(?: (?:for|on) (?:the|our|my|this|that) (.+?))? (?:are|is|was|will be) (.+)$/.exec(t)))
+    return { fam: "fill", value: t, phrase: m[2] };
   if ((m = /^(?:rename|retitle) (?:it|this|that|(?:the|our|my) (.+?)) (?:to|as) (.+)$/.exec(t)) || (m = /^change the (?:name|title)(?: of (?:the|our|my) (.+?))? to (.+)$/.exec(t)) || (m = /^call (?:it|this|that) (.+)$()/.exec(t)))
     return m[2] !== "" ? { fam: "rename", value: m[2], phrase: m[1] } : { fam: "rename", value: m[1] };
   if ((m = new RegExp(`^(?:make|set|change|extend|cut) ${REF} (?:to |last |into )?(\\d+|${Object.keys(NUMS).join("|")}) days?(?: long)?$`).exec(t)))
@@ -318,6 +345,7 @@ const FAM_OPS: Record<Said["fam"], Record<string, string>> = {
   rename: Object.fromEntries(Object.keys(RENAMES).map((k) => [k, "rename"])),
   when: { rsvp: "setWhen", countdown: "setDate", itinerary: "setDay" },
   length: { checkIn: "setDays" },
+  fill: {},
 };
 
 export type EditPlan =
@@ -333,6 +361,7 @@ export type EditPlan =
 export function editFor(said: string, widgets: W[], selectedId: string | null, ctx: EditCtx, frames: (w: W) => string = () => ""): EditPlan {
   const p = parseSaid(said);
   if (!p) return { kind: "none", text: "i can't tell what to change" };
+  if (p.fam === "fill") return fillFor(p, widgets, selectedId, ctx);
   const cards = widgets.filter((w) => editable(w) && !w.id.startsWith("voice-draft-"));
   const fits = (w: W) => Boolean(FAM_OPS[p.fam][w.type]);
   const phrase = p.phrase && !/^(it|this|that)$/.test(p.phrase) ? p.phrase : undefined;
@@ -375,6 +404,20 @@ export function editFor(said: string, widgets: W[], selectedId: string | null, c
   if (!op) return { kind: "none", target, how, text: p.fam === "when" && target.type === "countdown" ? "a countdown has no time" : `can't ${p.fam} that on a ${BY_TYPE.get(target.type)?.id ?? target.type}` };
   const result = applyEdit(target, op, ctx);
   if (!result.ok) return result.refused ? { kind: "refused", target, how, op, text: result.reason } : { kind: "none", target, how, text: result.reason };
+  return { kind: "do", target, how, op, result };
+}
+
+/** "the choices are …": the selected card, the named one, or the one card on the board missing that part. */
+function fillFor(p: Said, widgets: W[], selectedId: string | null, ctx: EditCtx): EditPlan {
+  const open = widgets.filter((w) => w.data.unfinished && !w.id.startsWith("voice-draft-"));
+  const phrase = p.phrase ? words(p.phrase.replace(NOUNS, " ")) : [];
+  const sel = open.find((w) => w.id === selectedId);
+  const named = phrase.length ? open.filter((w) => phrase.some((x) => words(titleOf(w)).includes(x))) : [];
+  const [target, how] = sel ? [sel, "the selected card"] : named.length === 1 ? [named[0], `named: "${p.phrase}"`] : open.length === 1 ? [open[0], "the one card missing something"] : [undefined, ""];
+  if (!target) return { kind: "none", text: open.length ? "which card? select it or say its name" : "nothing here is missing anything" };
+  const op = { op: "fill", value: p.value };
+  const result = applyEdit(target, op, ctx);
+  if (!result.ok) return { kind: "none", target, how, text: result.reason };
   return { kind: "do", target, how, op, result };
 }
 

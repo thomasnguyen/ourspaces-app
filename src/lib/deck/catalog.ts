@@ -11,7 +11,7 @@
 import type { Widget, WidgetType } from "../../data/types";
 import { RADIO_STATIONS } from "../radio";
 import { WIDGET_SIZES } from "../widgetDefaults";
-import { date, list, num, oneOf, rows, text, zone, type Field, type Infer, type Schema } from "./schema";
+import { date, list, num, oneOf, rows, text, zone, type Field, type Infer, type Need, type Said, type Schema } from "./schema";
 
 /** What the room knows when a card turns into a widget. */
 export type CardContext = {
@@ -44,7 +44,15 @@ type CardDef<Id extends string, S extends Schema> = {
   rotate?: number;
   /** Voice edits (lib/deck/edits.ts): the closed set of changes this card takes, op → its value. Code applies them, never the model. */
   edits?: Record<string, Field>;
+  /** What it can't do without, and the question for each (lib/deck/needs.ts). A field the model or the room can fill isn't here. */
+  needs?: Need[];
 };
+
+/** Words already stand on it: a topic, or a list said outright. */
+const topic = (w: Said) => !!w.topic || w.list.length >= 2;
+/** Choices only the group can name (a name, a theme): the model would be inventing them. */
+const OWN_CHOICES = /\b(names?|called|theme|colou?rs?|logo|jerseys?|mascot|songs?|movies?|films?|books?|gifts?|presents?|costumes?|tattoos?)\b/i;
+const need = (field: string, ask: string, slot: string, as: Need["as"], has: (w: Said) => boolean = topic, alsoDate?: string): Need => ({ field, ask, slot, as, has, ...(alsoDate ? { alsoDate } : {}) });
 
 const card = <const Id extends string, S extends Schema>(def: CardDef<Id, S>) => def;
 
@@ -59,6 +67,10 @@ export const CATALOG = [
     type: "poll",
     settings: { question: text(80), options: list(2, 5, { itemMax: 32 }) },
     edits: { addOption: text(32), removeOption: text(32), rename: text(80) },
+    needs: [
+      need("question", "what are we voting on?", "add the question", "text"),
+      need("options", "what are the choices?", "add choices", "list", (w) => w.list.length >= 2 || (!!w.topic && !OWN_CHOICES.test(w.topic))),
+    ],
     build: (s, ctx) => ({
       question: s.question,
       options: s.options.map((label, i) => ({ id: LETTERS[i], label, votes: 0, total: 0, voters: [] })),
@@ -71,6 +83,7 @@ export const CATALOG = [
     type: "potluck",
     settings: { title: text(40), items: list(2, 8, { itemMax: 28 }) },
     edits: { addItem: text(28), removeItem: text(28), rename: text(40) },
+    needs: [need("title", "what's the list for?", "add what it's for", "text")],
     build: (s) => ({
       title: s.title,
       kicker: "sign-up sheet",
@@ -85,6 +98,10 @@ export const CATALOG = [
     type: "countdown",
     settings: { event: text(32), date: date() },
     edits: { setDate: date(), rename: text(32) },
+    needs: [
+      need("event", "a countdown to what, and when?", "add what it counts to", "text", (w) => !!w.topic, "date"),
+      need("date", "when is it?", "add the date", "date", (w) => !!w.date || w.roomDate),
+    ],
     build: (s, ctx) => ({ event: s.event, targetDate: s.date, startDate: ctx.today, hyped: [ctx.by] }),
   }),
   card({
@@ -93,6 +110,7 @@ export const CATALOG = [
     type: "rsvp",
     settings: { title: text(40), when: text(24, { optional: true }) },
     edits: { setWhen: text(24), rename: text(40) },
+    needs: [need("title", "who's in for what?", "add what it's for", "text")],
     build: (s, ctx) => ({
       title: s.when ? `${s.title} · ${s.when}` : s.title,
       responses: [],
@@ -104,6 +122,7 @@ export const CATALOG = [
     use: "spin to pick one option or person at random",
     type: "wheel",
     settings: { title: text(32), options: list(2, 8, { itemMax: 18 }) },
+    needs: [need("options", "what's on the wheel?", "add what it picks from", "list")],
     build: (s) => ({
       title: s.title,
       tone: "mint",
@@ -120,6 +139,7 @@ export const CATALOG = [
     type: "note",
     settings: { text: text(140), label: text(20, { optional: true }) },
     rotate: -2,
+    needs: [need("text", "what should it say?", "add the words", "text")],
     build: (s, ctx) => ({ text: s.text, author: ctx.by, tone: "warm", kicker: s.label ?? "note" }),
   }),
   card({
@@ -127,6 +147,7 @@ export const CATALOG = [
     use: "an open question everyone answers in their own words",
     type: "dailyQ",
     settings: { question: text(90) },
+    needs: [need("question", "what's the question?", "add the question", "text")],
     build: (s, ctx) => ({ question: s.question, tone: "butter", streak: 1, answers: [], waitingOn: ctx.people }),
   }),
   card({
@@ -148,6 +169,7 @@ export const CATALOG = [
     type: "expenseSplit",
     settings: { title: text(32), total: num(1, 100000), paidBy: text(24, { optional: true }) },
     edits: { addPerson: text(24), removePerson: text(24), rename: text(32) },
+    needs: [need("title", "split what?", "add what it's for", "text", (w) => !!w.topic || w.number !== null), need("total", "split how much?", "add the total", "number", (w) => w.number !== null)],
     build: (s, ctx) => {
       const payer = s.paidBy ?? ctx.by;
       const share = Math.round(s.total / Math.max(1, ctx.people.length));
@@ -166,6 +188,7 @@ export const CATALOG = [
     type: "itinerary",
     settings: { title: text(32), days: rows(["day", "plan"], 1, 6, { itemMax: 36 }) },
     edits: { setDay: text(36), rename: text(32) },
+    needs: [need("title", "a plan for what?", "add what it's for", "text")],
     build: (s) => ({ title: s.title, days: s.days }),
   }),
   card({
@@ -226,6 +249,7 @@ export const CATALOG = [
       goal: num(1, 100000, { optional: true }),
     },
     edits: { setDays: num(1, 30), rename: text(32) },
+    needs: [need("title", "a check-in of what?", "add what it counts", "text")],
     build: (s, ctx) => {
       const days = s.days ?? 7;
       return {

@@ -29,7 +29,9 @@ import {
   type Rect,
 } from "../lib/deck";
 import type { Schema } from "../lib/deck/schema";
-import { expandRecipe, isRecipe, recipeLead, type RecipePart } from "../lib/deck/recipes";
+import { expandRecipe, flowFor, getRecipe, isFlow, isRecipe, recipeLead, type RecipePart } from "../lib/deck/recipes";
+import { takeAskOutcome, type AskOutcome } from "../lib/voiceStage";
+import { dateIn } from "../lib/deck/needs";
 import { guessCards } from "../lib/deck/guess";
 import { shortlistDeck } from "../lib/deck/shortlist";
 import { answerFor, cardAnswer, goFor, mineFor, routeVerb, type Answer, type MineAct, type Verb, type VerbPick } from "../lib/deck/verbs";
@@ -151,6 +153,8 @@ export type AskFill = {
 
 export type AskTrace = {
   key: number;
+  /** It asked for what was missing (lib/deck/needs.ts): the questions, last word → question ms, what code filled, and whether the model ran. */
+  asked?: { card: string; questions: string[]; ms: number[]; pins: Record<string, unknown>; direct: boolean; unfinished?: string };
   /** Wall clock at the tap. */
   at: number;
   said: string;
@@ -443,7 +447,10 @@ export type Kept = {
   /** A recipe's part: its spot in the group, which write it goes in, its link. */
   part?: RecipePart;
   /** A recipe link, its source already written: the server links this card to it (convex/links.ts). */
-  link?: { from: string; when: string; fill: string; value: string };
+  link?: { from: string; when: string; fill: string; value: string; tag?: string; at?: number };
+  /** A setting left empty (a link fills it, or a person), and whether it is an unfinished card's marked slot. */
+  blank?: string;
+  unfinished?: boolean;
 };
 
 type Dec = {
@@ -493,6 +500,9 @@ function itemsOf(sp: Spec, text: string, whole: boolean): { items: Item[]; none:
  * checklist), so it picks its own card.
  */
 function hintFor(s: Session, f: RoomFacts | null, said: string): string | null {
+  // a flow's words pick it (code); the fill is told to deal it and only fills its slots
+  const flow = flowFor(said, f);
+  if (flow) return flow;
   if (sure(s.decided) && routeAsk(f, said).route === "fast") return s.decided!.card;
   // Code's one guess is the card on either route (v1-verbs: where it named one, it was right every time; the
   // decide's misses on the brain route were cards the guess had right). A challenge is the recipe, never a hint.
@@ -516,6 +526,29 @@ function pickFinal(s: Session, said: string, f: RoomFacts | null): Spec | undefi
   // A call whose prompt didn't show the sure decide's card can't deal it.
   const all = s.specs.filter((sp) => sp.norm === norm(said) && (!sure(s.decided) || sp.deck.includes(s.decided!.card!)));
   return all.find((sp) => sp.hint === want) ?? all.at(-1);
+}
+
+/** The answers gave code the whole card (or an unfinished one): a spec with no call behind it. */
+function codeSpec(s: Session, said: string, o: AskOutcome): Spec {
+  return {
+    nonce: `code-${s.key}`,
+    seq: s.specs.length,
+    text: said,
+    norm: norm(said),
+    spec: false,
+    streamed: JSON.stringify({ card: o.card, settings: o.pins }),
+    whole: true,
+    cardOk: true,
+    answer: null,
+    firstFieldAt: null,
+    route: { route: "fast", why: "code: the answers filled it, no model", menu: null, facts: [] },
+    facts: null,
+    hint: o.card,
+    deck: [o.card],
+    ready: Promise.resolve(),
+    settle: () => {},
+    promise: Promise.resolve(null),
+  };
 }
 
 type Session = {
@@ -1337,15 +1370,16 @@ export function useVoiceBuild({
         leave();
       };
       s.trace.cards = cards;
-      s.shown = "checkin";
+      s.shown = kept.find((k) => k.card.card === "checkin") ? "checkin" : (kept[0].card.card as CardId);
       const m = measure(scrollerRef.current) ?? s.m;
       if (!m) return fail("no canvas");
-      // the group is placed by its frame (the first part), the rest sit inside it
-      const size = { ...kept[0].part!.size };
+      // the group is placed as one footprint (the frame round it, or a flow's pair side by side)
+      const size = { w: Math.max(...kept.map((k) => k.part!.at.x + k.part!.size.w)), h: Math.max(...kept.map((k) => k.part!.at.y + k.part!.size.h)) };
       const placeRoom = { widgets: m.board, view: m.view, bounds: m.bounds, selected: room.current.selectedId?.() ?? null, held: room.current.held?.() };
       const [spot] = placeCards([size], placeRoom);
       s.trace.place = `recipe group ${size.w}×${size.h}: ${placeReason([size], [spot], placeRoom)}`;
-      const placed = kept.map((k) => ({ ...k, widget: { ...k.widget, x: spot.x + k.part!.at.x, y: spot.y + k.part!.at.y } }));
+      const box = { ...spot, ...size };
+      const placed = kept.map((k) => ({ ...k, widget: { ...k.widget, x: spot.x + k.part!.at.x, y: spot.y + k.part!.at.y, ...(k.widget.data.flowTag ? { data: { ...k.widget.data, flowBox: box } } : {}) } }));
       // on this screen, before anything is written, a linked part already points at its source's draft
       for (const k of placed) {
         const l = k.part!.link;
@@ -1385,7 +1419,7 @@ export function useVoiceBuild({
         const cardsOut = idx.map((i) => {
           const l = placed[i].part!.link;
           const from = l ? written.get(l.from) : undefined;
-          return { ...placed[i], ...(l && from ? { link: { from, when: l.when, fill: l.fill, value: l.value } } : {}) };
+          return { ...placed[i], ...(l && from ? { link: { from, when: l.when, fill: l.fill, value: l.value, ...(l.tag ? { tag: l.tag } : {}), ...(l.at ? { at: l.at } : {}) } } : {}) };
         });
         pending.push(
           room.current
@@ -1423,7 +1457,7 @@ export function useVoiceBuild({
       if (failed || session.current !== s) return fail("the commit wrote nothing");
       s.trace.cards.filter((c) => c.ok).forEach((c, i) => (c.widgetId = ids[i]));
       await watch;
-      const lead = placed.findIndex((k) => k.card.card === "checkin");
+      const lead = Math.max(0, placed.findIndex((k) => k.card.card === "checkin"));
       setLanded({ widgetId: ids[0], x: spot.x, y: spot.y, host: m.canvas, traceKey: s.key });
       window.setTimeout(() => {
         if (session.current === s) setDrafts([]);
@@ -1764,27 +1798,31 @@ export function useVoiceBuild({
       if (end.how === "pause") s.marks.pause = end.endedAt;
       s.trace.said = said;
       s.trace.how = end.how;
+      // the stage asked for what was missing: what code learned (pinned fields, the whole card, or an unfinished one)
+      const told: AskOutcome | null = round === 1 ? takeAskOutcome(said) : null;
+      if (told) s.trace.asked = { card: told.card, questions: told.asked, ms: told.askedMs, pins: told.pins, direct: told.direct, ...(told.unfinished ? { unfinished: told.unfinished } : {}) };
+      const byCode = !!told && (told.direct || !!told.unfinished);
       const late: AskTrace["late"][number] | null = round > 1 ? { text: said, ms: Math.round(performance.now() - s.t0), outcome: "…" } : null;
       if (late) s.trace.late.push(late);
       // The router: another verb than make is handled here and nothing is built.
-      if (room.current.verbs && !s.reopened && !s.commitP && !s.forceMake) {
+      if (room.current.verbs && !s.reopened && !s.commitP && !s.forceMake && !told) {
         const handled = await routeAt(s, said, end, round);
         if (handled || session.current !== s || s.round !== round) return;
       }
       // Do my part: your own number on a running check-in, logged by code; the camera goes to the card.
-      const mine = !s.reopened && !s.commitP ? room.current.myPart?.(said) : null;
+      const mine = !s.reopened && !s.commitP && !told ? room.current.myPart?.(said) : null;
       if (mine) {
         s.trace.found = { check: { ok: true, item: mine.item, shared: [], why: "do my part" }, verdict: null, outcome: "dealt", why: `do my part: ${mine.text} (code, no model)` };
         s.foundText = mine.text;
         if (pointAt(s, mine.item)) return;
       }
-      let sp = pickFinal(s, said, room.current.facts?.() ?? null) ?? fire(s, said, false);
+      let sp = byCode ? codeSpec(s, said, told!) : (pickFinal(s, said, room.current.facts?.() ?? null) ?? fire(s, said, false));
       s.final = sp;
       s.trace.calls.forEach((c, i) => (c.used = i === sp.seq));
       s.trace.route = sp.route;
       s.trace.facts = sp.facts;
       // Already on the board? Code's match first; the model is asked only about that widget.
-      const check = s.reopened || s.commitP ? null : existingFor(said, room.current.board?.() ?? []);
+      const check = s.reopened || s.commitP || told ? null : existingFor(said, room.current.board?.() ?? []);
       const verdict = check?.ok ? verdictFor(s, said, check) : null;
       // Words that named no card yet: hold a card-sized ring open in view.
       if (!s.shown && !s.reopened && !sp.cardOk && !check?.ok) {
@@ -1858,7 +1896,7 @@ export function useVoiceBuild({
       // Ultra wins over Lightning: the decide was sure of another card than the fast fill dealt, so it's asked again with it.
       const want = hintFor(s, sp.facts, said);
       const firstCard = itemsOf(sp, sp.streamed, sp.whole).items.find((i) => i.ok);
-      if (want && firstCard?.ok && firstCard.card.card !== want && sp.hint !== want && !s.commitP) {
+      if (want && !byCode && firstCard?.ok && firstCard.card.card !== want && sp.hint !== want && !s.commitP && !isFlow(firstCard.card.card)) {
         s.trace.overrode = `${firstCard.card.card} → ${want}`;
         sp = fire(s, said, false);
         s.final = sp;
@@ -1870,6 +1908,16 @@ export function useVoiceBuild({
       }
       // Its first card is in (the rest of the answer may still be streaming).
       const ctx = ctxNow();
+      /** Walked away with one field missing: the card as code has it, that slot empty and marked (lib/deck/apply.ts). */
+      const unfinishedKept = (o: AskOutcome) => {
+        const raw = { card: o.card, settings: o.pins };
+        const r = applyCard(raw, ctx, { id: `${DRAFT}${s.key}-0`, z: 1000, blank: o.unfinished, unfinished: { by: ctx.by } });
+        return {
+          kept: r.ok ? [{ card: raw as DealtCard, widget: r.widget, blank: o.unfinished, unfinished: true } as Kept] : [],
+          cards: [r.ok ? { card: o.card, ok: true } : { card: o.card, ok: false, reason: r.reason }] as AskTrace["cards"],
+          notes: [] as ResolveNote[],
+        };
+      };
       const final = sp;
       const keep = (text: string, whole: boolean) => {
         const kept: Kept[] = [];
@@ -1881,16 +1929,27 @@ export function useVoiceBuild({
             continue;
           }
           notes.push(...item.notes);
+          // an answered field is the person's, whatever the model wrote there
+          if (told && !told.direct && item.card.card === told.card) item.card = { ...item.card, settings: { ...(item.card.settings as Record<string, unknown>), ...told.pins } } as DealtCard;
           const people = item.people?.length ? item.people : undefined;
           if (isRecipe(item.card.card)) {
             // Code lays out and links the recipe's cards; the model only gave the slots.
             // "me" is the speaker
             const who = people?.map((p) => (p === "@me" ? ctx.by : p)).filter((p, i, all) => all.indexOf(p) === i);
             const c = who ? { ...ctx, people: who } : ctx;
+            const flow = isFlow(item.card.card);
             for (const part of expandRecipe(item.card.card, item.card.settings as Record<string, unknown>, c)) {
+              // a deadline said in the words ("by friday"): that day at 18:00 on this clock, the link's "time"
+              const by = (item.card.settings as { by?: string }).by;
+              const due = part.link?.when.includes("time") && by ? dateIn(by, c.today) : null;
+              if (due && part.link) part.link = { ...part.link, at: new Date(`${due.iso}T18:00:00`).getTime() };
               const raw = { card: part.card, settings: part.settings };
-              const r = applyCard(raw, c, { id: `${DRAFT}${s.key}-${kept.length}`, z: part.z });
-              if (r.ok) kept.push({ card: raw as DealtCard, widget: { ...r.widget, w: part.size.w, h: part.size.h, ...(part.rotate !== undefined ? { rotate: part.rotate } : {}) }, people: c.people, part });
+              const pc = part.people ? { ...c, people: part.people } : c;
+              const unfinished = !!part.blank && !!told?.unfinished && !part.link;
+              const r = applyCard(raw, pc, { id: `${DRAFT}${s.key}-${kept.length}`, z: part.z, ...(part.blank ? { blank: part.blank } : {}), ...(unfinished ? { unfinished: { by: c.by } } : {}) });
+              // a flow's cards carry the thread's tag on this screen only (the stage draws the pair with its thread)
+              const tag = flow ? (getRecipe(item.card.card)!.links[0]?.tag ?? "linked") : undefined;
+              if (r.ok) kept.push({ card: raw as DealtCard, widget: { ...r.widget, w: part.size.w, h: part.size.h, ...(part.rotate !== undefined ? { rotate: part.rotate } : {}), ...(tag ? { data: { ...r.widget.data, flowTag: tag } } : {}) }, people: pc.people, part, ...(part.blank ? { blank: part.blank } : {}), ...(unfinished ? { unfinished: true } : {}) });
               cards.push(r.ok ? { card: part.card, ok: true } : { card: part.card, ok: false, reason: r.reason });
             }
             continue;
@@ -1905,7 +1964,7 @@ export function useVoiceBuild({
         }
         return { kept, cards, notes };
       };
-      const got = keep(sp.streamed, sp.whole);
+      const got = told?.unfinished && !isRecipe(told.card) ? unfinishedKept(told) : keep(sp.streamed, sp.whole);
       s.trace.notes = got.notes;
       let kept = got.kept;
       if (!kept.length) {

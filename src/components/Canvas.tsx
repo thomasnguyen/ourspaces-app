@@ -31,6 +31,7 @@ import type {
 } from "../widgets/CozyColorWidget";
 import { playSound } from "../lib/sounds";
 import { BoardLinkContext } from "../widgets/challenge";
+import { LinkThreads, type ThreadLink } from "./LinkThreads";
 import { inviteUrlForSpace } from "../lib/routes";
 
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
@@ -144,6 +145,7 @@ export function Canvas({
   onWidgetData,
   onCheckIn,
   waiting,
+  flows,
   buildRoomFeed,
   roundtableRepliesByWidget = {},
   paintStrokesByWidget = {},
@@ -224,6 +226,8 @@ export function Canvas({
   onCheckIn?: (widgetId: string, day: number, value: number | null) => void;
   /** Open links: target id → the card it waits on (convex/links.ts `waiting`). */
   waiting?: Record<string, string>;
+  /** Flows (W2): the threads on the board and what a person can do to them (convex/links.ts). */
+  flows?: { threads: ThreadLink[]; callIt: (widgetId: string) => void; cut: (id: string) => void; lock: (id: string) => void; deal: (id: string) => void };
   onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
   onLetterOpen?: (widgetId: string, open: boolean) => void;
   buildRoomFeed?: BuildRoomFeed;
@@ -524,7 +528,7 @@ export function Canvas({
     ],
   );
 
-  const boardLink = useMemo(() => ({ widgets, onWidgetData, onCheckIn, waiting }), [widgets, onWidgetData, onCheckIn, waiting]);
+  const boardLink = useMemo(() => ({ widgets, onWidgetData, onCheckIn, waiting, threads: flows?.threads, onCallIt: flows?.callIt }), [widgets, onWidgetData, onCheckIn, waiting, flows]);
 
   return (
     <BoardLinkContext.Provider value={boardLink}>
@@ -545,6 +549,8 @@ export function Canvas({
       }}
     >
       {widgetCards}
+
+      {flows && flows.threads.length > 0 && <LinkThreads links={flows.threads} onCut={flows.cut} onLock={flows.lock} onDeal={flows.deal} />}
 
       {drawn.map((cursor) => (
         <PeerCursor

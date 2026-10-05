@@ -1,0 +1,193 @@
+/* The thread between a flow's two cards (LinkThreads.tsx): a thin ink line,
+   dashed while the second card waits, solid once filled; a small ink tag at
+   its middle in the ghost ticket's language (lime words, card-coloured keys). */
+.link-thread-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.link-thread-layer.is-board {
+  z-index: 4;
+}
+.link-thread-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.link-thread-line {
+  stroke: var(--color-ink);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 2 9;
+  animation: link-thread-march 900ms linear infinite;
+}
+.link-thread-line[data-state="live"],
+.link-thread-line[data-state="done"] {
+  stroke-dasharray: none;
+  animation: none;
+}
+@keyframes link-thread-march {
+  to {
+    stroke-dashoffset: -11;
+  }
+}
+.link-thread-tag {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  translate: -50% -50%;
+  rotate: -2deg;
+  padding: 5px 6px 5px 11px;
+  border: 2px solid var(--color-ink);
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-lime);
+  font: 700 12px/1.2 var(--font-sans);
+  white-space: nowrap;
+  box-shadow: 3px 3px 0 color-mix(in oklch, var(--color-ink) 35%, transparent);
+  pointer-events: auto;
+  animation: link-thread-tag-in var(--dur-arrive) var(--ease-pop) backwards;
+}
+.link-thread-tag[data-state="done"] {
+  padding-right: 11px;
+  background: var(--color-card);
+  color: var(--color-ink);
+}
+@keyframes link-thread-tag-in {
+  from {
+    scale: 0.6;
+    opacity: 0;
+  }
+}
+.link-thread-key,
+.link-thread-cut {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  font: 700 11px/1.3 var(--font-sans);
+  cursor: pointer;
+  transition: scale var(--dur-quick) var(--ease-glide);
+}
+.link-thread-cut {
+  padding: 2px 7px;
+}
+.link-thread-key:hover,
+.link-thread-cut:hover {
+  scale: 1.08;
+}
+
+/* A card that waits on another (the shared lock, "locked until another card resolves") */
+.widget-group-body:has(> .card-waiting) > :first-child {
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+.card-waiting {
+  position: absolute;
+  left: 14px;
+  top: calc(100% - 3px);
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px 6px;
+  border: 2px dashed var(--color-lime);
+  border-top: 0;
+  border-radius: 0 0 14px 14px;
+  background: var(--color-ink);
+  color: var(--color-lime);
+  font: 700 13px/1.2 var(--font-sans);
+  white-space: nowrap;
+  pointer-events: none;
+  transform-origin: 50% 0;
+  animation: link-thread-tag-in var(--dur-arrive) var(--ease-pop) backwards;
+}
+.card-waiting i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-lime);
+  animation: link-wait-dot 900ms steps(1, end) infinite;
+  animation-delay: calc(var(--i) * 300ms);
+}
+@keyframes link-wait-dot {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* "call it": a poll or a day-finder someone else waits on */
+.card-call-it {
+  position: absolute;
+  right: 12px;
+  bottom: -14px;
+  z-index: 6;
+  padding: 5px 12px;
+  border: 2px solid var(--color-ink);
+  border-radius: 999px;
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font: 800 12px/1.2 var(--font-sans);
+  box-shadow: 3px 3px 0 var(--color-ink);
+  cursor: pointer;
+  transition: translate var(--dur-quick) var(--ease-glide), box-shadow var(--dur-quick) var(--ease-glide);
+}
+.card-call-it:active {
+  translate: 2px 2px;
+  box-shadow: 1px 1px 0 var(--color-ink);
+}
+
+/* The empty slot of an unfinished card (C1): paper with a dashed ink edge, where the field goes */
+.card-slot {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 2px dashed var(--color-ink);
+  border-radius: 12px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  font: 700 14px/1.2 var(--font-sans);
+  cursor: text;
+}
+.card-slot b {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  color: var(--color-lime);
+  font-size: 15px;
+  flex: none;
+}
+.card-slot input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+.card-slot[data-bad] {
+  animation: card-slot-no 300ms var(--ease-glide);
+}
+@keyframes card-slot-no {
+  30% {
+    translate: -5px 0;
+  }
+  60% {
+    translate: 4px 0;
+  }
+}

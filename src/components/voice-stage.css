@@ -1713,3 +1713,18 @@ body.voice-stage-up .voice-found-pulse {
     animation: none;
   }
 }
+
+/* it asks for what's missing (C1): the pip of the part it asks about is the empty one */
+.voice-two-parts i[data-asked] {
+  outline: 2px dashed currentColor;
+  outline-offset: 2px;
+  animation: voice-ask-pip 900ms steps(1, end) infinite;
+}
+@keyframes voice-ask-pip {
+  50% {
+    outline-color: transparent;
+  }
+}
+.voice-two-ask-slip {
+  margin-top: 18px;
+}

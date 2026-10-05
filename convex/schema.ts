@@ -130,10 +130,10 @@ export default defineSchema({
 
   // A voice ask's receipt numbers, JSON (voiceBuild.ts).
   deals: defineTable({ spaceId: v.id("spaces"), run: v.string() }).index("by_space", ["spaceId"]),
-  // A card that waits on another and fills itself from it (links.ts). when: always|closed|winner|time|threshold.
+  // Card feeds card (links.ts); tag: its thread; cutAt: cut.
   links: defineTable({
     spaceId: v.id("spaces"), from: v.id("widgets"), to: v.id("widgets"), when: v.string(), fill: v.string(), value: v.string(),
-    at: v.optional(v.number()), resolvedAt: v.optional(v.number()),
+    at: v.optional(v.number()), resolvedAt: v.optional(v.number()), tag: v.optional(v.string()), cutAt: v.optional(v.number()),
   }).index("by_from", ["from"]).index("by_space", ["spaceId"]),
   // Every AI write through the one door (rightOfWay.ts): fields = JSON [{field,old,new}], verdict go|wait|never,
   // undo = inverse op JSON, outcome = what a wait came to (JSON {state,ms,on}).

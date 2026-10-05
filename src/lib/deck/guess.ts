@@ -36,6 +36,9 @@ const CUES: Array<[CardId, RegExp]> = [
   ["standings", /\b(standings|leaderboard|rankings?|who'?s winning)\b/],
 ];
 
+/** The words that name this card (its cue), for taking them out of the topic. */
+export const cueOf = (card: string): RegExp | undefined => CUES.find(([id]) => id === card)?.[1];
+
 /** The card the words point at, or null when nothing does yet. */
 export function guessCard(said: string): CardId | null {
   const words = said.toLowerCase();

@@ -1,4 +1,5 @@
 import { mutation, query } from "./_generated/server";
+import { applyLinks } from "./links";
 import { v } from "convex/values";
 import { touchSpace } from "./activity";
 import { TableAggregate } from "@convex-dev/aggregate";
@@ -97,6 +98,8 @@ export const vote = mutation({
       await ctx.db.patch(existing._id, { optionId });
       await pollTallies.replace(ctx, existing, { ...existing, optionId });
       await touchSpace(ctx, spaceId);
+      // a card waiting on this poll (a flow, links.ts) may resolve now: everyone voted
+      await applyLinks(ctx, widgetId);
       return existing._id;
     }
 
@@ -104,6 +107,7 @@ export const vote = mutation({
     const doc = await ctx.db.get(id);
     await pollTallies.insert(ctx, doc!);
     await touchSpace(ctx, spaceId);
+    await applyLinks(ctx, widgetId);
     return id;
   },
 });

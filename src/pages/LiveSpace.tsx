@@ -25,7 +25,8 @@ import { LiveHeldBack, RowGhosts, RowHalos, settledLine, withGhosts, type RowGho
 import { useHolds } from "../live/useHolds";
 import type { WaitOutcome } from "../live/useVoiceBuild";
 import { offersFor } from "../lib/deck/suggest";
-import { setVoiceStageBoard, setVoiceStageOffers } from "../lib/voiceStage";
+import { setVoiceStageBoard, setVoiceStageFacts, setVoiceStageOffers } from "../lib/voiceStage";
+import type { ThreadLink } from "../components/LinkThreads";
 import { RoomKnowsDoor, RoomKnowsPage } from "../components/RoomKnows";
 import { standing } from "../lib/roomKnows";
 import { useVoiceBuild } from "../live/useVoiceBuild";
@@ -1688,7 +1689,33 @@ export function LiveSpacePage({
   const correctKnows = useMutation(api.roomBrief.correct);
   /* Cards waiting on another (a recipe's open links, convex/links.ts). */
   const openLinks = useQuery(api.links.waiting, mode === "live" && space ? { spaceId: space._id } : "skip");
-  const waitingOn = useMemo(() => Object.fromEntries((openLinks ?? []).map((l) => [String(l.to), String(l.from)])), [openLinks]);
+  const waitingOn = useMemo(() => Object.fromEntries((openLinks ?? []).filter((l) => l.state === "waiting").map((l) => [String(l.to), String(l.from)])), [openLinks]);
+  // flows (W2): the threads, "call it" on a source, cut / lock / deal on the thread (convex/links.ts)
+  const callItM = useMutation(api.links.callIt);
+  const cutM = useMutation(api.links.cut);
+  const lockM = useMutation(api.links.lock);
+  const dealM = useMutation(api.links.deal);
+  const flows = useMemo(() => {
+    if (!space) return undefined;
+    const spaceId = space._id;
+    const threads: ThreadLink[] = (openLinks ?? []).filter((l) => l.tag).map((l) => ({ id: String(l.id), from: String(l.from), to: String(l.to), tag: l.tag!, state: l.state as ThreadLink["state"], when: l.when }));
+    return {
+      threads,
+      callIt: (widgetId: string) => {
+        playSound("tap");
+        void callItM({ spaceId, widgetId: widgetId as Id<"widgets">, by: identity.name });
+      },
+      cut: (id: string) => {
+        playSound("tap");
+        void cutM({ spaceId, linkId: id as Id<"links"> });
+      },
+      lock: (id: string) => void lockM({ spaceId, linkId: id as Id<"links"> }),
+      deal: (id: string) => {
+        playSound("tap");
+        void dealM({ spaceId, linkId: id as Id<"links"> });
+      },
+    };
+  }, [space, openLinks, callItM, cutM, lockM, dealM, identity.name]);
   const voicePeople = () =>
     [...new Set([identity.name, ...presence.peers.map((peer) => peer.name), ...members.map((m) => m.name)])].slice(0, 8);
   const voiceToday = () => {
@@ -1719,6 +1746,7 @@ export function LiveSpacePage({
     null;
   // What the room can offer for a card named with nothing in it (the voice stage asks; lib/deck/suggest.ts).
   setVoiceStageOffers((card) => offersFor(roomBrief?.room ?? null, card));
+  setVoiceStageFacts(() => roomBrief?.room ?? null);
   // "already here": the stage shows the card that is there
   setVoiceStageBoard((id) => adaptedWidgets.find((widget) => widget.id === id));
   const voiceBuild = useVoiceBuild({
@@ -1877,6 +1905,7 @@ export function LiveSpacePage({
           ...(c.people ? { people: c.people } : {}),
           ...(c.assignees ? { assignees: c.assignees } : {}),
           ...(c.link ? { link: c.link } : {}),
+          ...(c.blank ? { blank: c.blank, ...(c.unfinished ? { unfinished: true } : {}) } : {}),
           ...(c.part ? { w: c.widget.w, h: c.widget.h, ...(c.widget.rotate !== undefined ? { rotate: c.widget.rotate } : {}) } : {}),
         })),
       });
@@ -3017,6 +3046,7 @@ export function LiveSpacePage({
                 onWheelSpin={handlers.onWheelSpin}
                 onCheckIn={handlers.onCheckIn}
                 waiting={waitingOn}
+                flows={flows}
                 onPlaylistTune={handlers.onPlaylistTune}
                 onLetterOpen={handlers.onLetterOpen}
                 buildRoomFeed={buildRoomFeed}

@@ -2,6 +2,11 @@ import type { Widget } from "../../data/types";
 import { cardSize, getCard, CARD_IDS, type CardContext, type DealtCard } from "./catalog";
 import { checkSettings, type Schema } from "./schema";
 import { checkRecipe, isRecipe } from "./recipes";
+import { blankSlot, needsOf, type Unfinished } from "./needs";
+import type { Field } from "./schema";
+
+/** Something that passes a field's check, for a field that is about to be left empty. */
+const stand = (f: Field): unknown => (f.kind === "list" ? ["…", "…"] : f.kind === "number" ? f.min : f.kind === "date" ? "2000-01-01" : f.kind === "rows" ? [{}] : "…");
 
 const POLL_ROW = 42; // one poll option row, in canvas px
 
@@ -41,8 +46,21 @@ export type Applied =
 export function applyCard(
   card: unknown,
   ctx: CardContext,
-  opts: { id?: string; z?: number; assignees?: string[] } = {},
+  opts: {
+    id?: string;
+    z?: number;
+    assignees?: string[];
+    /** Leave this setting empty on the card (a link fills it, or a person: C1 / W2). */
+    blank?: string;
+    /** The card lands unfinished: the empty slot is marked and is a "your turn" for whoever asked. */
+    unfinished?: { by: string; byUserId?: string };
+  } = {},
 ): Applied {
+  if (opts.blank && card && typeof card === "object") {
+    const c = card as { card?: string; settings?: Record<string, unknown> };
+    const f = c.card ? (getCard(c.card)?.settings as Record<string, Field> | undefined)?.[opts.blank] : undefined;
+    if (f && c.settings?.[opts.blank] === undefined) card = { ...c, settings: { ...c.settings, [opts.blank]: stand(f) } };
+  }
   const checked = checkCard(card);
   if (!checked.ok) return checked;
   // A recipe is several cards: `expandRecipe` makes them, each applied on its own.
@@ -57,6 +75,11 @@ export function applyCard(
     const d = data as { items: { name: string; by: string | null; claimed: boolean }[]; openCount: number };
     const items = d.items.map((it, i) => (opts.assignees![i] ? { ...it, by: opts.assignees![i], claimed: true } : it));
     data = { ...d, items, openCount: items.filter((it) => !it.claimed).length } as Widget["data"];
+  }
+  if (opts.blank) {
+    data = blankSlot(def.type, data as Record<string, unknown>, opts.blank) as Widget["data"];
+    const n = needsOf(def.id).find((x) => x.field === opts.blank);
+    if (opts.unfinished && n) data = { ...data, unfinished: { field: n.field, slot: n.slot, ask: n.ask, card: def.id, ...opts.unfinished } satisfies Unfinished } as Widget["data"];
   }
   // A poll's box fits three options; each one past that needs its own row.
   const options = def.type === "poll" ? (data as { options?: unknown[] }).options?.length ?? 0 : 0;

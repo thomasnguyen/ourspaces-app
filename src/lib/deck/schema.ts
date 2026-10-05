@@ -207,3 +207,19 @@ export function checkSettings<S extends Schema>(schema: S, raw: unknown): Checke
   if (extra.length) notes.push(`ignored ${extra.join(", ")}`);
   return { ok: true, value: out as Infer<S>, notes };
 }
+
+/**
+ * What the words already give a card, read by code (`needs.ts` `saidOf`): the
+ * topic left once the card's own words are gone, a list ("tacos, pho or
+ * pizza"), a date, a number, and whether the room already knows the date.
+ */
+export type Said = { text: string; topic: string; list: string[]; date: string | null; number: number | null; roomDate: boolean };
+
+/**
+ * A field a card can't do without (C1, "it asks for what's missing"). When
+ * `has` says the words don't stand on it, the stage asks `ask`; walk away and
+ * the card lands with `slot` marked where the field goes. `as`: how code reads
+ * an answer (the words as said, a list, a date, a number). `alsoDate`: one
+ * question asks what and when ("a countdown to what, and when?").
+ */
+export type Need = { field: string; ask: string; slot: string; as: "text" | "list" | "date" | "number"; has: (w: Said) => boolean; alsoDate?: string };

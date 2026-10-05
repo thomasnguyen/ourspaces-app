@@ -13,7 +13,7 @@
 import { catalogJson, parseDeal } from "./prompt";
 import { checkCard } from "./apply";
 import { CATALOG, type DealtCard } from "./catalog";
-import { RECIPES } from "./recipes";
+import { isFlow, RECIPES } from "./recipes";
 import { callTimes, choresOf, resolveCard, type Resolved, type RoomFacts } from "./resolve";
 
 const EXTRA: Record<string, Record<string, string>> = {
@@ -27,12 +27,16 @@ const CARD_RULES: Array<[string, string]> = [
   ["challenge", "- A challenge between people is the challenge recipe, one line: fill activity, unit, days and stake only when said, and who. Never deal its cards one by one."],
   ["wheel", "- Picking one person (who's driving, who cooks, whose turn) is a wheel of those people. A poll is for choosing between options."],
   ["checklist", "- A checklist's \"for\" hands out every item; leave it out for a sign-up where people claim their own (who's bringing what, packing)."],
+  ["dinner", "- A FLOW is one line: fill its settings only; code makes both cards and the link between them."],
+  ["hangout", "- A FLOW is one line: fill its settings only; code makes both cards and the link between them."],
+  ["cabin", "- A FLOW is one line: fill its settings only; code makes both cards and the link between them."],
+  ["potluck", "- A FLOW is one line: fill its settings only; code makes both cards and the link between them."],
 ];
 
 const tokenRules = (has: (id: string) => boolean) => `ROOM FACTS
 The user turn lists this room's facts as @token = value. To use a fact, write the token itself in a setting, never its value: code fills it in, so it is always current.
 - A people token (@all, @home, @coming, @everyone-but(Name), @on-trip(title)) can be a wheel's or poll's options item, a checklist's "for", a split's "among", a challenge's "who".
-${CARD_RULES.filter(([id]) => has(id)).map(([, line]) => `${line}\n`).join("")}- A token can sit inside text: "matcha cake" can be "@leader(cake flavor?) cake".
+${[...new Set(CARD_RULES.filter(([id]) => has(id)).map(([, line]) => line))].map((line) => `${line}\n`).join("")}- A token can sit inside text: "matcha cake" can be "@leader(cake flavor?) cake".
 - Only the tokens listed in the user turn exist; never write another one (there is no @everyone).
 - Use a fact only when the words need it: who takes part, the group's own options, who pays, when. Words that already say everything (a note, a code, a station, a place they named) get no tokens and nothing from the room.
 - Never make up a name, place or date about this room. A date the words give or everyone knows (a holiday) is written plainly, YYYY-MM-DD. A fact marked past is not a date to use.
@@ -65,6 +69,10 @@ const EXAMPLES: Array<[string, string]> = [
   ["checklist", "Said: \"bake the winning dessert, done 2 days before the graduation\"\n{\"card\":\"checklist\",\"settings\":{\"title\":\"@leader(dessert?) by @date(holly's graduation, -2d)\",\"items\":[\"buy what it needs\",\"bake it\",\"bring it\"]}}"],
   ["countdown", "Said: \"countdown to Holly's graduation\"\n{\"card\":\"countdown\",\"settings\":{\"event\":\"holly's graduation\",\"date\":\"@date(holly's graduation)\"}}"],
   ["challenge", "Said: \"plank challenge for all of us this week, loser makes dinner\"\n{\"card\":\"challenge\",\"settings\":{\"activity\":\"planks\",\"unit\":\"seconds\",\"days\":7,\"stake\":\"loser makes dinner\",\"who\":\"@all\"}}"],
+  ["dinner", "Said: \"plan brunch sunday\"\n{\"card\":\"dinner\",\"settings\":{\"meal\":\"brunch\",\"day\":\"sunday\",\"options\":[\"@places\",\"somewhere new\"]}}"],
+  ["hangout", "Said: \"when can we all get together for a movie\"\n{\"card\":\"hangout\",\"settings\":{\"what\":\"a movie\",\"days\":[\"fri\",\"sat\",\"sun\"]}}"],
+  ["cabin", "Said: \"split the beach house, 900\"\n{\"card\":\"cabin\",\"settings\":{\"title\":\"beach house\",\"total\":900}}"],
+  ["potluck", "Said: \"who's bringing what to the bbq, by friday\"\n{\"card\":\"potluck\",\"settings\":{\"title\":\"bbq\",\"items\":[\"burgers\",\"buns\",\"salad\",\"drinks\",\"ice\"],\"by\":\"friday\"}}"],
   ["note", "Said: \"note: the door code is 4417\"\n{\"card\":\"note\",\"settings\":{\"text\":\"door code is 4417\",\"label\":\"door\"}}"],
 ];
 
@@ -278,7 +286,8 @@ export function scrubTokens<T>(v: T): T {
 /* ---------- The decide pass: one letter from the big model, while you talk ---------- */
 
 /** Deck cards A…Q, then none and several. "several" is the one-vs-several question (the separate count question was dropped: nebius/eval/decide). */
-export const DECIDE_CHOICES: string[] = [...CATALOG.map((c) => c.id), ...RECIPES.map((r) => r.id), "none", "several"];
+/** Flows aren't choices here: their words pick them by code (recipes.ts `flowFor`), so the decide prompt doesn't grow with them. */
+export const DECIDE_CHOICES: string[] = [...CATALOG.map((c) => c.id), ...RECIPES.filter((r) => !isFlow(r.id)).map((r) => r.id), "none", "several"];
 export const DECIDE_LETTERS = DECIDE_CHOICES.map((_, i) => String.fromCharCode(65 + i));
 
 const DECIDE_SYSTEM =

@@ -8,6 +8,7 @@ import type { Id } from "./_generated/dataModel";
 import { chooseLetter, pingTokenFactory, streamChat } from "./nebius";
 import { touchSpace } from "./activity";
 import { addLink } from "./links";
+import { isFlow } from "../src/lib/deck/recipes";
 import { widgetsCounter } from "./stats";
 import {
   applyCard,
@@ -113,7 +114,7 @@ export const deal = action({
     const said = args.said.trim().slice(0, 240);
     const brain = args.route === "brain" && !!args.menu;
     const M = brain ? BRAIN : FAST;
-    const card = args.card && DECIDE_CHOICES.includes(args.card) && args.card !== "none" && args.card !== "several" ? args.card : undefined;
+    const card = args.card && (DECIDE_CHOICES.includes(args.card) || isFlow(args.card)) && args.card !== "none" && args.card !== "several" ? args.card : undefined;
     const context = brain
       ? args.menu!.slice(0, 1600)
       : roomContext({
@@ -282,7 +283,10 @@ export const commit = mutation({
         /** Room tokens: one person per checklist item (`for`). */
         assignees: v.optional(v.array(v.string())),
         /** A recipe's link (convex/links.ts): this card waits on `from`, written earlier in the same ask, and fills `fill` from it. */
-        link: v.optional(v.object({ from: v.string(), when: v.string(), fill: v.string(), value: v.string() })),
+        link: v.optional(v.object({ from: v.string(), when: v.string(), fill: v.string(), value: v.string(), tag: v.optional(v.string()), at: v.optional(v.number()) })),
+        /** A setting left empty for a link or a person to fill; `unfinished`: its slot is marked and the asker gets a "your turn" (src/lib/deck/needs.ts). */
+        blank: v.optional(v.string()),
+        unfinished: v.optional(v.boolean()),
         /** A recipe part's own size and tilt inside its group (code's layout, src/lib/deck/recipes.ts). */
         w: v.optional(v.number()),
         h: v.optional(v.number()),
@@ -305,12 +309,16 @@ export const commit = mutation({
       }
       // A standings card alone ranks the newest check-in; in a recipe, its link fills `source` below.
       const source = /"standings"/.test(c.card) && !c.link ? await checkInFor(ctx, args.spaceId) : undefined;
-      const applied = applyCard(raw, { ...(c.people?.length ? { ...cardCtx, people: c.people.slice(0, 12) } : cardCtx), ...(source ? { source } : {}) }, {
+      const applied = applyCard(raw, { ...(c.people ? { ...cardCtx, people: c.people.slice(0, 12) } : cardCtx), ...(source ? { source } : {}) }, {
         z: c.z,
         assignees: c.assignees?.slice(0, 8),
+        ...(c.blank ? { blank: c.blank } : {}),
+        ...(c.blank && c.unfinished ? { unfinished: { by: args.by, byUserId: args.createdBy } } : {}),
       });
       if (!applied.ok) continue;
       const w = applied.widget;
+      // a wheel that deals what nobody claimed (the potluck flow) remembers who it deals to
+      if (c.link?.value === "unclaimed") w.data = { ...w.data, dealTo: cardCtx.people } as typeof w.data;
       // the one door every AI write passes (rightOfWay.ts): a new card, all its fields new
       const size = { w: Math.round(Math.min(1600, Math.max(80, c.w ?? w.w))), h: Math.round(Math.min(1200, Math.max(60, c.h ?? w.h))) };
       let spot = { x: Math.round(c.x), y: Math.round(c.y) };
@@ -337,7 +345,7 @@ export const commit = mutation({
       ids.push(id);
       const from = c.link ? ctx.db.normalizeId("widgets", c.link.from) : null;
       const fromRow = from ? await ctx.db.get(from) : null;
-      if (c.link && fromRow && fromRow.spaceId === args.spaceId) await addLink(ctx, args.spaceId, fromRow._id, id, { when: c.link.when, fill: c.link.fill, value: c.link.value });
+      if (c.link && fromRow && fromRow.spaceId === args.spaceId) await addLink(ctx, args.spaceId, fromRow._id, id, { when: c.link.when, fill: c.link.fill, value: c.link.value, ...(c.link.tag ? { tag: c.link.tag } : {}), ...(c.link.at ? { at: c.link.at } : {}) });
     }
     // The rest goes in its own transaction right after: the counter, the
     // room's activity stamp (every query reading the space doc would re-run

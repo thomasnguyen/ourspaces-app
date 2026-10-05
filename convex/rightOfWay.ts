@@ -146,9 +146,13 @@ async function replay(ctx: MutationCtx, r: Replay, row: Doc<"aiWrites">): Promis
   if (r.kind === "link") {
     const link = await ctx.db.get(r.linkId);
     const to = link && (await ctx.db.get(link.to));
-    if (!link || !to || link.resolvedAt !== undefined) return changed;
-    await ctx.db.patch(to._id, { data: { ...(to.data as object), [r.fill]: r.value } as Doc<"widgets">["data"] });
-    await ctx.db.patch(link._id, { resolvedAt: Date.now() });
+    // the link still open and not cut by a person while it waited
+    if (!link || !to || link.resolvedAt !== undefined || link.cutAt !== undefined) return changed;
+    // a flow's write is a patch of several fields (links.ts valueOf); the challenge's is one
+    const patch = r.value && typeof r.value === "object" && !Array.isArray(r.value) ? (r.value as Record<string, unknown>) : { [r.fill]: r.value };
+    const { unfinished: _u, ...rest } = to.data as Record<string, unknown>;
+    await ctx.db.patch(to._id, { data: { ...rest, ...patch } as Doc<"widgets">["data"] });
+    await ctx.db.patch(link._id, link.when.split("|").includes("live") ? { at: Date.now() } : { resolvedAt: Date.now() });
     return { ok: true };
   }
   const game = await ctx.db.get(r.gameId);

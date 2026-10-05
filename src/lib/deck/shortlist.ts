@@ -10,7 +10,7 @@
  */
 import { CATALOG } from "./catalog";
 import { guessCards } from "./guess";
-import { RECIPES } from "./recipes";
+import { flowFor, RECIPES } from "./recipes";
 
 const KNOWN = new Set<string>([...CATALOG.map((c) => c.id), ...RECIPES.map((r) => r.id)]);
 const MAX = 8;
@@ -54,6 +54,9 @@ export function shortlistDeck(r: {
     }
   };
   const named = guessCards(r.said);
+  // a flow's words name it (code): it leads, its two cards follow
+  const flow = flowFor(r.said);
+  if (flow) add([flow], "the words name a flow");
   // "challenge" names the recipe; its lead card (the check-in) is the cue
   if (/\bchallenge\b/i.test(r.said)) add(["challenge"], "the words say challenge");
   add(named, "named in the words");

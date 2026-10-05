@@ -1,6 +1,7 @@
 import type { Widget } from "../data/types";
 import { CATALOG, type CardId } from "./deck";
 import { fillPlan, partId, type PartValue } from "./voiceFillPlan";
+import type { RoomFacts } from "./deck/resolve";
 
 /* The seam between the voice stage and whatever starts a build.
 
@@ -67,7 +68,7 @@ export type StageBuild = {
   /** The room facts this card used, in a person's words ("saved places"). */
   sources: string[];
   /** A recipe (lib/deck/recipes.ts): its group as written so far, in board coordinates, and the frame round it. */
-  cluster: { box: { x: number; y: number; w: number; h: number }; cards: Widget[] } | null;
+  cluster: { box: { x: number; y: number; w: number; h: number }; cards: Widget[]; thread?: string } | null;
   /** The ask pointed at a card the board already has instead of dealing one: that card. */
   found: { widgetId: string; host: HTMLElement; title: string } | null;
   /** Another verb than make (an answer, a recap, your part, go): its slip, and offers to tap. No card. */
@@ -84,6 +85,7 @@ export type StageReply = { verb: string; text: string; source?: string; widgetId
     waiting on someone (wait). The slip's tab and colour follow. */
 export function replyTone(reply: { verb: string; text: string; offers?: unknown[] }): { tone: "say" | "no" | "ask" | "wait"; tab: string } {
   const t = reply.text.toLowerCase();
+  if (reply.verb === "ask") return { tone: "ask", tab: "one thing first" };
   if (reply.offers?.length) return { tone: "ask", tab: "which one?" };
   if (t.startsWith("waiting on ")) return { tone: "wait", tab: "not yet" };
   if (/\bwon't\b|\bcan only\b|\bonly acts\b/.test(t)) return { tone: "no", tab: "the space won't" };
@@ -181,7 +183,13 @@ export function feedVoiceStage(feed: StageFeed) {
         });
       }
     }
-    const cluster = frame ? { box: { x: frame.x, y: frame.y, w: frame.w, h: frame.h }, cards: feed.drafts } : (same?.cluster ?? null);
+    // a flow (W2): two cards and the thread between them, in the footprint code placed them in
+    const flowBox = !frame ? (feed.drafts.find((d) => d.data.flowBox)?.data.flowBox as { x: number; y: number; w: number; h: number } | undefined) : undefined;
+    const cluster = frame
+      ? { box: { x: frame.x, y: frame.y, w: frame.w, h: frame.h }, cards: feed.drafts }
+      : flowBox
+        ? { box: flowBox, cards: feed.drafts, thread: String(feed.drafts[0].data.flowTag ?? "linked") }
+        : (same?.cluster ?? null);
     next = {
       cluster,
       key,
@@ -238,9 +246,52 @@ export const stageBeats = () => beats;
    The room registers one function (mock: App.tsx over lib/deck/suggest.ts and
    the mock facts; live: the same over the room brief's facts). */
 
-export type StageOffer = { label: string; say: string; from: string };
+export type StageOffer = { label: string; say: string; from: string; fills?: Record<string, unknown> };
 let offers: (card: string) => StageOffer[] = () => [];
 export function setVoiceStageOffers(fn: (card: string) => StageOffer[]) {
   offers = fn;
 }
 export const voiceStageOffers = (card: string) => offers(card);
+
+/* ---- it asks for what's missing (C1, lib/deck/needs.ts) ----
+   The room registers its facts once (the same facts the offers read); the
+   stage asks, maps the answers by code and, when the ask ends, leaves what
+   it learned here for the build to take: the fields answered (pinned over
+   whatever the model writes), whether code alone has the whole card, or that
+   the card lands unfinished with one slot empty. */
+
+let facts: () => RoomFacts | null = () => null;
+export function setVoiceStageFacts(fn: () => RoomFacts | null) {
+  facts = fn;
+}
+export const voiceStageFacts = () => facts();
+
+export type AskOutcome = {
+  /** The deck card or recipe asked about. */
+  card: string;
+  /** What was said, the answers in it, as the build should read it. */
+  said: string;
+  /** Fields the answers filled, by code. */
+  pins: Record<string, unknown>;
+  /** Code has every setting the card needs: no model call. */
+  direct: boolean;
+  /** Walked away: the card lands with this field empty and marked. */
+  unfinished?: string;
+  /** The questions asked, in order. */
+  asked: string[];
+  /** Last word → question on screen, per question (ms). */
+  askedMs: number[];
+};
+let outcome: AskOutcome | null = null;
+export function setAskOutcome(o: AskOutcome | null) {
+  outcome = o;
+}
+/** The build takes it once, for these words. */
+export function takeAskOutcome(said: string): AskOutcome | null {
+  const o = outcome;
+  if (!o) return null;
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  if (norm(o.said) !== norm(said) && !norm(said).startsWith(norm(o.said).slice(0, 12))) return null;
+  outcome = null;
+  return o;
+}

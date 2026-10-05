@@ -44,7 +44,7 @@ import { mockDeal } from "./lib/deck/mockDeal";
 import { mockFacts } from "./lib/deck/mockFacts";
 import type { MineAct } from "./lib/deck/verbs";
 import { offersFor } from "./lib/deck/suggest";
-import { setVoiceStageBoard, setVoiceStageOffers } from "./lib/voiceStage";
+import { setVoiceStageBoard, setVoiceStageFacts, setVoiceStageOffers } from "./lib/voiceStage";
 import { beat } from "./lib/voiceTimings";
 import { boardItems } from "./lib/deck/existing";
 import { useVoiceBuild } from "./live/useVoiceBuild";
@@ -540,6 +540,7 @@ export default function App() {
   };
   // What the room can offer for a card named with nothing in it (the voice stage asks).
   setVoiceStageOffers((card) => offersFor(voiceFacts(), card));
+  setVoiceStageFacts(voiceFacts);
   setVoiceStageBoard((id) => visibleWidgetsRef.current.find((widget) => widget.id === id));
   // the mock writes, defined further down, for the voice router
   const voiceVerbRef = useRef<{ recap: () => void; act: (a: MineAct) => void; game: (said: string) => string }>({ recap: () => {}, act: () => {}, game: () => "" });

@@ -26,7 +26,7 @@ export type SeeLock = {
   /** `any` (default): the first condition to hold opens it. `all`: every one set. */
   mode?: "any" | "all";
   /** what stays face down until then */
-  hides: "answers" | "ranking" | "right-answer";
+  hides: "answers" | "ranking" | "right-answer" | "filled";
   /** only these people may ever open it (a challenge's people); unset = anyone in the room */
   who?: "players";
   /** `each`: opens per person as they qualify. `everyone`: one moment for the room. */
@@ -46,6 +46,8 @@ export type SeeFacts = {
   resolved?: boolean;
   /** with `who: "players"`: is this person one of them */
   player?: boolean;
+  /** with `until.resolves`: the card it waits on, in a few words ("the poll") */
+  waitsOn?: string;
 };
 
 export type SeeState = {
@@ -60,6 +62,7 @@ const HIDDEN: Record<SeeLock["hides"], string> = {
   answers: "what everyone said",
   ranking: "the ranking",
   "right-answer": "the answer",
+  filled: "this card",
 };
 
 function names(list: string[]) {
@@ -89,6 +92,8 @@ export function seeState(lock: SeeLock, facts: SeeFacts): SeeState {
     line = `${facts.answered} of ${facts.of} in · waiting on ${names(facts.waitingOn)}`;
   } else if (until.everyone) {
     line = `${facts.answered} of ${facts.of} in`;
+  } else if (until.resolves && facts.waitsOn) {
+    line = `waiting on ${facts.waitsOn}`;
   } else {
     line = `${HIDDEN[lock.hides]} opens for everyone at once`;
   }
@@ -112,4 +117,6 @@ export const LOCKS = {
   rightAnswer: { until: { resolves: "the round's reveal" }, hides: "right-answer", revealsTo: "everyone" },
   /** the room's scoreboard: play one this week to see the ranking */
   scoreboard: { until: { answered: true }, hides: "ranking", revealsTo: "each" },
+  /** a flow's second card (W2): empty until the card it waits on resolves (convex/links.ts) */
+  link: { until: { resolves: "another card" }, hides: "filled", revealsTo: "everyone" },
 } satisfies Record<string, SeeLock>;

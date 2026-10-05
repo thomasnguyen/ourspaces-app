@@ -32,7 +32,7 @@ export type TurnMine = {
   answers: Record<string, string | undefined>;
 };
 
-export type TurnKind = "rsvp" | "poll" | "question" | "days" | "signup" | "wheel" | "letter" | "checkin" | "chore" | "game";
+export type TurnKind = "rsvp" | "poll" | "question" | "days" | "signup" | "wheel" | "letter" | "checkin" | "chore" | "game" | "finish";
 
 /** How the item is done from the stack: one choice, a typed line, or a trip. */
 export type TurnAct = "vote" | "rsvp" | "claim" | "days" | "answer" | "go" | "join";
@@ -176,6 +176,22 @@ export function yourTurn(input: TurnInput): TurnItem[] {
 
   for (const widget of widgets) {
     const data = widget.data;
+
+    /* a card you started and walked away from (C1, lib/deck/needs.ts): its empty slot is yours to fill */
+    const unfinished = data.unfinished as { by?: string; byUserId?: string; slot?: string; card?: string } | undefined;
+    if (unfinished) {
+      if (isMe(unfinished.by, unfinished.byUserId) && !guest)
+        push(widget, {
+          kind: "finish",
+          verb: "your turn",
+          title: `finish the ${unfinished.card === "split" ? "split" : unfinished.card ?? "card"} you started`,
+          waiting: `${lower(data.question) || lower(data.title) || lower(data.event) || "it"} · ${unfinished.slot ?? "one thing missing"}`,
+          act: "go",
+          choices: [],
+          base: 50,
+        });
+      continue;
+    }
 
     if (widget.type === "poll") {
       if (input.knownPolls && !input.knownPolls.includes(widget.id)) continue;

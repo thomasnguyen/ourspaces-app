@@ -8,8 +8,8 @@
  *
  * A second recipe is one more entry in RECIPES: slots, a size, and `parts`.
  */
-import { list, num, text, type Infer, type Schema } from "./schema";
-import { revealOf, type CardContext } from "./catalog";
+import { list, num, text, type Infer, type Need, type Said, type Schema } from "./schema";
+import { cardSize, getCard, revealOf, type CardContext } from "./catalog";
 import { checkSettings } from "./schema";
 
 /**
@@ -19,7 +19,7 @@ import { checkSettings } from "./schema";
  * when: "always" | "closed" | "winner" | "time" | "threshold"
  * value: "id" | "winner" | "yes" | "unclaimed" | "date"
  */
-export type RecipeLink = { from: string; to: string; when: string; fill: string; value: string };
+export type RecipeLink = { from: string; to: string; when: string; fill: string; value: string; tag?: string; at?: number };
 
 /** One card of a recipe, frame-relative. `batch` = which write it goes out in. */
 export type RecipePart = {
@@ -34,6 +34,10 @@ export type RecipePart = {
   batch: number;
   /** This part waits on another (from `links`): written after it, linked to its id. */
   link?: Omit<RecipeLink, "to">;
+  /** A field left empty for its link to fill (a countdown's date before the day is picked). */
+  blank?: string;
+  /** Its people, when not the room's (a split among whoever says yes starts with nobody). */
+  people?: string[];
 };
 
 type RecipeDef<S extends Schema> = {
@@ -47,12 +51,31 @@ type RecipeDef<S extends Schema> = {
   parts: (s: Infer<S>, ctx: CardContext) => Omit<RecipePart, "link">[];
   /** Which part feeds which: the flow. A target is written after its source. */
   links: RecipeLink[];
+  /** What it can't do without (lib/deck/needs.ts): asked for before it builds. */
+  needs?: Need[];
+  /** A flow (W2): two cards, the second fed by the first. `cue` = the words that pick it, by code. */
+  flow?: { cue: RegExp };
 };
 const recipe = <S extends Schema>(def: RecipeDef<S>) => def;
 
 const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const COUNT = ["", "just one of us", "the two of us", "the three of us", "the four of us", "the five of us", "the six of us", "the seven of us", "the eight of us"];
 const plural = (s: string) => (/s$/i.test(s) ? s : `${s}s`);
+
+/** Two cards side by side with room for the thread between them: each card's spot and the pair's footprint. */
+const GAP = 150;
+function pair(a: string, b: string) {
+  const sa = cardSize(getCard(a)!);
+  const sb = cardSize(getCard(b)!);
+  const h = Math.max(sa.h, sb.h);
+  return {
+    a: { at: { x: 0, y: Math.round((h - sa.h) / 2) }, size: sa },
+    b: { at: { x: sa.w + GAP, y: Math.round((h - sb.h) / 2) + 24 }, size: sb },
+    size: { w: sa.w + GAP + sb.w, h: h + 24 },
+  };
+}
+const whereFor = (s: { meal?: string; day?: string }) => `where for ${(s.meal ?? "dinner").toLowerCase()}${s.day ? ` ${s.day.toLowerCase()}` : ""}?`;
+const hangTitle = (s: { what?: string }) => (s.what ? `when can we all do ${s.what.toLowerCase()}` : "when can we all hang out");
 
 export const RECIPES = [
   recipe({
@@ -67,6 +90,7 @@ export const RECIPES = [
     },
     size: { w: 1266, h: 650 },
     links: [{ from: "checkin", to: "standings", when: "always", fill: "source", value: "id" }],
+    needs: [{ field: "activity", ask: "a challenge of what?", slot: "add the activity", as: "text", has: (w: Said) => !!w.topic }],
     lead: (s) => ({ card: "checkin", settings: { ...(s.activity ? { title: s.activity } : {}), ...(s.unit ? { unit: s.unit } : {}), ...(s.days ? { days: s.days } : {}) } }),
     parts: (s, ctx) => {
       const days = s.days ?? 7;
@@ -86,9 +110,92 @@ export const RECIPES = [
       ];
     },
   }),
+  /* ---- Flows (W2): one ask, two cards, the second waits on the first. Code makes the pair, the link and the layout. ---- */
+  recipe({
+    id: "dinner",
+    use: "FLOW: plan a meal out: a poll on where, then who's in, which takes the winning place when the poll is called. For \"plan dinner\" asks",
+    flow: { cue: /\bplan (?:a |the |our |some )?(?:dinner|lunch|brunch|breakfast|drinks)\b|\b(?:dinner|lunch|brunch) plans?\b/i },
+    slots: { meal: text(12, { optional: true }), day: text(16, { optional: true }), options: list(2, 5, { itemMax: 32 }) },
+    size: pair("poll", "rsvp").size,
+    links: [{ from: "poll", to: "rsvp", when: "closed|everyone", fill: "title", value: "winner", tag: "winner names it" }],
+    lead: (s) => ({ card: "poll", settings: { question: whereFor(s), ...(s.options ? { options: s.options } : {}) } }),
+    parts: (s) => {
+      const at = pair("poll", "rsvp");
+      return [
+        { key: "poll", card: "poll", settings: { question: whereFor(s), options: s.options }, ...at.a, z: 7, rotate: -1, batch: 0 },
+        { key: "rsvp", card: "rsvp", settings: { title: "who's in", ...(s.day ? { when: s.day.toLowerCase() } : {}) }, ...at.b, z: 7, rotate: 1.5, batch: 1 },
+      ];
+    },
+  }),
+  recipe({
+    id: "hangout",
+    use: "FLOW: find the day that works for everyone, then a countdown that starts counting to the day that wins. For \"when can we all hang out\" asks",
+    flow: { cue: /\bwhen (?:can|could|are) we (?:all )?(?:hang ?out|meet up|get together|see each other|be free)\b|\bfind (?:a|the) day (?:to|we|for)\b/i },
+    slots: { what: text(24, { optional: true }), days: list(2, 7, { itemMax: 10 }) },
+    size: pair("availability", "countdown").size,
+    links: [{ from: "availability", to: "countdown", when: "everyone|closed", fill: "targetDate", value: "date", tag: "the best day sets it" }],
+    lead: (s) => ({ card: "availability", settings: { title: hangTitle(s), ...(s.days ? { days: s.days } : {}) } }),
+    parts: (s) => {
+      const at = pair("availability", "countdown");
+      return [
+        { key: "availability", card: "availability", settings: { title: hangTitle(s), days: s.days }, ...at.a, z: 7, rotate: -0.6, batch: 0 },
+        { key: "countdown", card: "countdown", settings: { event: (s.what ?? "hanging out").toLowerCase(), date: "2000-01-01" }, blank: "date", ...at.b, z: 7, rotate: 2, batch: 1 },
+      ];
+    },
+  }),
+  recipe({
+    id: "cabin",
+    use: "FLOW: split a cost among whoever says yes: who's in, then a split among the yeses that updates as they answer. For \"split the X\" while people are still deciding",
+    flow: { cue: /\bsplit (?:the |our )?[\w' -]{2,30}?\b(?:(?:with|among|between) (?:whoever|anyone|everyone who)|(?:whoever|if|once|when) (?:is |comes|says|people)|still deciding|who'?s in)\b|\bsplit (?:the |our )?(?:cabin|airbnb|house|rental|villa|lake house|beach house)\b/i },
+    slots: { title: text(32), total: num(1, 100000, { optional: true }) },
+    size: pair("rsvp", "split").size,
+    links: [{ from: "rsvp", to: "split", when: "live", fill: "splits", value: "yes", tag: "whoever says yes splits it" }],
+    needs: [{ field: "total", ask: "split how much?", slot: "add the total", as: "number", has: (w: Said) => w.number !== null }],
+    lead: (s) => ({ card: "rsvp", settings: { title: s.title ? `who's in · ${s.title.toLowerCase()}` : "who's in" } }),
+    parts: (s) => {
+      const at = pair("rsvp", "split");
+      return [
+        { key: "rsvp", card: "rsvp", settings: { title: `who's in · ${s.title.toLowerCase()}` }, ...at.a, z: 7, rotate: -1.5, batch: 0 },
+        { key: "split", card: "split", settings: { title: s.title.toLowerCase(), total: s.total ?? 1 }, ...(s.total ? {} : { blank: "total" }), people: [], ...at.b, z: 7, rotate: 1, batch: 1 },
+      ];
+    },
+  }),
+  recipe({
+    id: "potluck",
+    use: "FLOW: a sign-up list people claim from, then a wheel that deals whatever nobody claimed by the deadline. For \"who's bringing what\" asks",
+    flow: { cue: /\bwho'?s bringing what\b|\bbringing what\b|\bpotluck sign-?ups?\b|\bsign-?ups? for the potluck\b/i },
+    slots: { title: text(40), items: list(2, 8, { itemMax: 28 }), by: text(16, { optional: true }) },
+    size: pair("checklist", "wheel").size,
+    links: [{ from: "checklist", to: "wheel", when: "time|tap", fill: "slices", value: "unclaimed", tag: "deals what's left" }],
+    lead: (s) => ({ card: "checklist", settings: { ...(s.title ? { title: s.title.toLowerCase() } : {}), ...(s.items ? { items: s.items } : {}) } }),
+    parts: (s) => {
+      const at = pair("checklist", "wheel");
+      return [
+        { key: "checklist", card: "checklist", settings: { title: s.title.toLowerCase(), items: s.items }, ...at.a, z: 7, rotate: -0.8, batch: 0 },
+        { key: "wheel", card: "wheel", settings: { title: s.by ? `the rest · ${s.by.toLowerCase()}` : "the rest", options: ["…", "…"] }, blank: "options", ...at.b, z: 7, rotate: 1.5, batch: 1 },
+      ];
+    },
+  }),
 ] as const;
 
 export type RecipeId = (typeof RECIPES)[number]["id"];
+
+/** The flow these words name, by code (its cue), or null. A flow is never the decide's pick: the words pick it. */
+export function flowFor(said: string, facts?: { splits: { title: string; also: string[] }[]; rsvps: { title: string; yes: string[] }[] } | null): string | null {
+  for (const r of RECIPES) {
+    if (!(r as { flow?: { cue: RegExp } }).flow?.cue.test(said)) continue;
+    // a cost whose people are already settled (a trip, a yes list for it) is a plain split among them, not a flow
+    if (r.id === "cabin" && facts) {
+      const w = said.toLowerCase().replace(/\bsplit\b|\bthe\b|\bour\b/g, " ").split(/[^a-z0-9]+/).filter((x) => x.length > 3);
+      const hit = (t: string) => w.some((x) => t.toLowerCase().includes(x));
+      if (facts.splits.some((x) => hit(x.title) || x.also.some(hit)) || facts.rsvps.some((x) => x.yes.length > 0 && hit(x.title))) continue;
+    }
+    return r.id;
+  }
+  return null;
+}
+/** Is this a flow (two cards, a thread) rather than a framed group like the challenge? */
+export const isFlow = (id: string | null | undefined) => !!id && !!(getRecipe(id) as { flow?: unknown } | undefined)?.flow;
 const BY_ID = new Map<string, (typeof RECIPES)[number]>(RECIPES.map((r) => [r.id, r]));
 export const getRecipe = (id: string) => BY_ID.get(id);
 export const isRecipe = (id: string | null | undefined) => !!id && BY_ID.has(id);
