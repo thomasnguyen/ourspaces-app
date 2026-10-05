@@ -13,7 +13,8 @@ import { landWaiting } from "./rightOfWay";
  * while it lasts, and `letGo` when it ends. Each hold runs until `until`:
  *
  *   while held     until = last word from the client + 3 s
- *   after letGo    until = now + a short grace (1.5 s; a piece 0.4 s)
+ *   after letGo    until = now + a short grace (typing or choosing 1.5 s;
+ *                  a drag 0.6 s; a piece 0.4 s)
  *
  * so a closed laptop frees the card within 3 s. One scheduled `settle` per
  * lease deletes it once `until` has passed, and in the same mutation lands
@@ -23,6 +24,9 @@ import { landWaiting } from "./rightOfWay";
 
 export const RENEW_MS = 3_000;
 export const GRACE_MS = 1_500;
+/* a dropped card is done with: its grace only covers the drop's own write and a
+   fumbled re-grab, and the halo's release animation runs exactly this long */
+const DRAG_GRACE_MS = 600;
 const PIECE_GRACE_MS = 400;
 
 const live = (l: Doc<"leases">, now: number) => l.until > now;
@@ -68,7 +72,7 @@ export async function letGoThing(ctx: MutationCtx, spaceId: Id<"spaces">, thing:
   const row = await mine(ctx, spaceId, thing, userId);
   if (!row || row.letGoAt !== undefined) return false;
   const now = Date.now();
-  const at = now + (row.kind === "piece" ? PIECE_GRACE_MS : GRACE_MS);
+  const at = now + (row.kind === "piece" ? PIECE_GRACE_MS : row.kind === "drag" ? DRAG_GRACE_MS : GRACE_MS);
   await ctx.db.patch(row._id, { letGoAt: now, until: at, settleAt: at });
   await ctx.scheduler.runAt(at, internal.leases.settle, { leaseId: row._id, at });
   return true;

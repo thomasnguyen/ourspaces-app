@@ -329,7 +329,7 @@ const JigsawMat = memo(function JigsawMat(p: MatProps) {
               "all yours"
             ) : (
               <>
-                waiting on <i aria-hidden="true" /> {lower(ghost.on ?? "", me)}
+                waiting on <b>{lower(ghost.on ?? "", me)}</b>
               </>
             )}
           </span>

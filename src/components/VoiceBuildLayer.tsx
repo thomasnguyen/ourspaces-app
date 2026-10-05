@@ -5,11 +5,13 @@ import type { AskTrace, StageName, VoiceEdit, VoiceFound, VoiceLanded, VoiceRece
 import { feedVoiceStage } from "../lib/voiceStage";
 import type { ResolveNote, RoomFacts } from "../lib/deck";
 
-/** The dev readout and drawer show on the dev lane, or anywhere with `?timing=1`
-    (`?timing=0` hides them). Model names and milliseconds live only there. */
+/** The dev readout (one thin strip) and its drawer show on the dev lane, or
+    anywhere with `?timing=1`. `?timing=table` adds the stage's wide beats
+    table; `?timing=0` hides all of it, for a clean take. Model names and
+    milliseconds live only there. */
 function devMode() {
   const q = new URLSearchParams(window.location.search).get("timing");
-  if (q === "1") return true;
+  if (q === "1" || q === "table") return true;
   if (q === "0") return false;
   return /dusty-condor/.test(import.meta.env.VITE_CONVEX_URL ?? "");
 }
@@ -578,7 +580,9 @@ export function VoiceBuildLayer({
           landed.host,
         )}
       {found && createPortal(<FoundPulse key={`${found.traceKey}-${found.widgetId}`} found={found} tint={tint} />, found.host)}
+      {/* a wait has its own ticket on the card (RightOfWay.tsx): the ring walks the camera over, no second slip */}
       {found &&
+        !found.done?.startsWith("waiting on ") &&
         createPortal(
           <div
             className={`voice-slip is-found ${leaving ? "is-leaving" : ""} ${dev ? "is-dev" : ""}`}

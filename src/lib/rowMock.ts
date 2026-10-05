@@ -12,7 +12,7 @@ import type { RowGhost, RowLease } from "../components/RightOfWay";
 import type { Widget } from "../data/types";
 
 type Member = { name: string; color: string };
-const GRACE_MS = 1_500;
+const GRACE_MS = 600;
 const LET_GO_AFTER_MS = 3_000;
 
 export function useRowMock(widgets: Widget[], members: Member[]) {
@@ -51,7 +51,7 @@ export function useRowMock(widgets: Widget[], members: Member[]) {
         ? []
         : [{ id: "scripted-ghost", thing: card.id, widgetId: card.id, kind: "edit", by: asker.name, byUserId: "scripted-asker", text: r.text, write: JSON.stringify({ kind: "edit", op }), on: JSON.stringify({ userId: "scripted", name: holder.name, color: holder.color, kind: "drag" }), at: t0, scripted: true }];
     const overrides = phase === "landed" && r.ok ? { [card.id]: r.data as Widget["data"] } : {};
-    const slip = phase === "landed" && r.ok ? { id: "scripted-slip", widgetId: card.id, text: `${asker.name.toLowerCase()} ${r.text} (waited ${((LET_GO_AFTER_MS + GRACE_MS) / 1000).toFixed(1)} s for ${holder.name.toLowerCase()}) · scripted`, color: asker.color } : null;
+    const slip = phase === "landed" && r.ok ? { id: "scripted-slip", widgetId: card.id, text: `${asker.name.toLowerCase()} ${r.text} · waited ${((LET_GO_AFTER_MS + GRACE_MS) / 1000).toFixed(1)} s for ${holder.name.toLowerCase()} · scripted`, color: asker.color } : null;
     // "what it held back", scripted (the live page reads the ledger)
     const heldBack = [
       { id: "s1", at: t0, kind: "edit", by: asker.name, verdict: "wait", reason: `${holder.name} is moving it`, text: `${r.ok ? r.text : "a change"} · scripted`, outcome: JSON.stringify({ state: "landed", ms: 4500, on: holder.name }) },

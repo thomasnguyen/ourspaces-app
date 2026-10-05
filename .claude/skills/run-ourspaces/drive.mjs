@@ -27,7 +27,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "../../..");
 const FEATURES = join(HERE, "features");
-const DIR = join(ROOT, ".context/drive");
+const DIR = process.env.DRIVE_DIR ? resolve(ROOT, process.env.DRIVE_DIR) : join(ROOT, ".context/drive"); // a second session in the same checkout sets its own dir + port pair
 const SHOTS = join(DIR, "shots");
 const STATE = join(DIR, "state.json");
 const LOG = join(DIR, "daemon.log");
@@ -135,7 +135,7 @@ async function daemon(mode) {
 
 async function daemonBody(mode, chromium, setVite, setServer, kill) {
   const lane = devLaneEnv();
-  const vite = setVite(spawn(process.execPath, [join(ROOT, "node_modules/vite/bin/vite.js"), "--port", String(VITE_PORT), "--strictPort", "--host", "127.0.0.1"], {
+  const vite = setVite(spawn(process.execPath, [join(ROOT, "node_modules/vite/bin/vite.js"), "--port", String(VITE_PORT), "--strictPort", "--host", "127.0.0.1", ...(process.env.DRIVE_VITE_CONFIG ? ["--config", resolve(ROOT, process.env.DRIVE_VITE_CONFIG)] : [])], {
     cwd: ROOT, env: { ...process.env, ...lane }, detached: true, stdio: ["ignore", "inherit", "inherit"],
   }));
   let viteDead = false;

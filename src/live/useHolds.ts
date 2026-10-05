@@ -3,7 +3,8 @@
  * Right of Way). A card is yours while you drag it (the canvas gesture calls
  * `start`/`stop`), while a field inside it has focus (typing, the title too),
  * and while you press one of its choices and haven't let go (an unsent vote).
- * Renewed every second; on let-go the server keeps it 1.5 s more, and a
+ * Renewed every second; on let-go the server keeps it a short grace more
+ * (a drag 0.6 s, typing or choosing 1.5 s), and a
  * silent client loses it within 3 s.
  */
 import { useCallback, useEffect, useRef } from "react";

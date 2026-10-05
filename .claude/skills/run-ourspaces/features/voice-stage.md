@@ -9,8 +9,8 @@ states:
   split: ?voicePace=talk&voice=split the cabin, 640
   where: ?voicePace=talk&voice=where should we eat Saturday
   nokey: ?voicePace=talk&voice=dinner Saturday, tacos or pho
-  poll-slow: ?slow=3&timing=1&voicePace=talk&voice=add a poll for Saturday dinner
-  poll-timing: ?timing=1&voicePace=talk&voice=add a poll for Saturday dinner
+  poll-slow: ?slow=3&timing=table&voicePace=talk&voice=add a poll for Saturday dinner
+  poll-timing: ?timing=table&voicePace=talk&voice=add a poll for Saturday dinner
   open: | click dock-voice-orb | wait voice-stage | sleep 1400
   words: ?voicePace=talk&stageHold=1&voice=add a | click dock-voice-orb | wait voice-stage | sleep 1500
   type: ?stageFreeze=type&voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-stage-card | sleep 2600
@@ -26,6 +26,7 @@ states:
   ask-offer: ?voicePace=talk&voice=add a poll | click dock-voice-orb | wait voice-stage-offer-0 | sleep 500 | click voice-stage-offer-0 | wait voice-stage-sources | sleep 500
   room: ?stageFreeze=complete&voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-stage-sources | sleep 600
   cluster: ?family=hero&voicePace=talk&voice=set up a push-up challenge for the four of us #/space/family | click dock-voice-orb | wait voice-stage-cluster | sleep 900
+  clustersay: ?family=hero&voicePace=talk&voice=set up a push-up challenge for the four of us #/space/family | sleep 600
   already: ?voicePace=talk&voice=add a poll for cake flavor
   already-found: ?voicePace=talk&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-stage-found | sleep 300
   already-landed: ?voicePace=talk&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-stage-found | sleep 2600
@@ -43,6 +44,7 @@ take:
   nokey: nokey real 60fps 330f warmup 1200 | 20 click dock-voice-orb
   poll-slow: poll-slow real 30fps 400f warmup 1200 | 10 click dock-voice-orb
   ask-answered: ask-answered real 60fps 480f warmup 1200 | 20 click dock-voice-orb
+  cluster: clustersay real 30fps 300f | 6 click dock-voice-orb
   already: already real 60fps 360f warmup 1200 | 20 click dock-voice-orb
   live: live real 30fps 180f | 3 click dock-voice-orb
   livefacts: livefacts real 30fps 180f | 3 click dock-voice-orb
@@ -102,7 +104,7 @@ Pips over the card: `voice-stage-part-<id>` with `data-status`
 
 **Timings:** every mock beat comes from `src/lib/voiceTimings.ts` (one row
 per number: measured / derived / code / assumed / design, with its source).
-`&slow=3` plays it all at a third of the speed. `&timing=1` shows
+`&slow=3` plays it all at a third of the speed. `&timing=table` shows
 `voice-stage-beats`: the table's number beside this run's, from the last
 word, headed "simulated from measurements · no model ran" in mock.
 

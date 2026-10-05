@@ -3319,6 +3319,7 @@ export function LiveSpacePage({
       <RowGhosts
         host={viewportRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null}
         ghosts={ghosts}
+        leases={leases}
         me={identity.userId}
         onCancel={(id) => void cancelPending({ pendingId: id as Id<"pending">, userId: identity.userId })}
       />

@@ -2789,7 +2789,7 @@ export default function App() {
       {rowMock.leases.length + rowMock.ghosts.length > 0 || rowMock.slip ? (
         <>
           <RowHalos host={canvasScaleLayerRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null} leases={rowMock.leases} me="you" />
-          <RowGhosts host={canvasScaleLayerRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null} ghosts={rowMock.ghosts} me="you" onCancel={() => {}} />
+          <RowGhosts host={canvasScaleLayerRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null} ghosts={rowMock.ghosts} leases={rowMock.leases} me="you" onCancel={() => {}} />
           <EditSlips
             slips={rowMock.slip ? [rowMock.slip] : []}
             host={canvasScaleLayerRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null}

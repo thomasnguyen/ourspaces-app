@@ -15,6 +15,8 @@ states:
   game: ?mock=1&voicePace=talk&voice=let's play most likely to | click dock-voice-orb | wait voice-stage-reply | sleep 500
   edit: ?mock=1&voicePace=talk&voice=add ramen to the dinner poll | click dock-voice-orb | wait voice-stage-reply | sleep 500
   drawer: ?mock=1&timing=1&voicePace=talk&voice=when's maya's birthday? | click dock-voice-orb | wait voice-stage-reply | sleep 2800 | click dev-readout | wait dev-context-verb | sleep 300
+  refusesay: ?mock=1&voicePace=talk&voice=put maya down for balloons | sleep 600
+  tiesay: ?mock=1&voicePace=talk&voice=vote matcha | sleep 600
   answersay: ?mock=1&voicePace=talk&voice=when's maya's birthday? | sleep 600
   liveanswer: ?enter=1&timing=1&voicePace=talk&voice=when's maya's birthday? | wait css:[data-widget-id] | sleep 4000
   liveask: ?enter=1&timing=1&voicePace=talk&voice=what's the plan for the japan trip? | wait css:[data-widget-id] | sleep 4000
@@ -22,7 +24,9 @@ states:
   livego: ?enter=1&timing=1&voicePace=talk&voice=show me the cake poll | wait css:[data-widget-id] | sleep 4000
   livedrawer: ?enter=1&timing=1&voicePace=talk&voice=when's maya's birthday? | wait css:[data-widget-id] | sleep 4000 | click dock-voice-orb | wait voice-stage-reply | sleep 2800 | click dev-readout | wait dev-context-verb | sleep 300
 take:
-  answer: answersay real 30fps 150f | 3 click dock-voice-orb
+  answer: answersay real 30fps 210f | 3 click dock-voice-orb
+  refuse: refusesay real 30fps 180f | 3 click dock-voice-orb
+  tie: tiesay real 30fps 150f | 3 click dock-voice-orb
   liveanswer: liveanswer real 30fps 150f | 3 click dock-voice-orb
   liveask: liveask real 30fps 160f | 3 click dock-voice-orb
   liverecap: liverecap real 30fps 120f | 3 click dock-voice-orb

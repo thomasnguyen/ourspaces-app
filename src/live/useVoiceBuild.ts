@@ -1573,12 +1573,14 @@ export function useVoiceBuild({
                 const who = out.on.name.toLowerCase();
                 setEdit(null);
                 pointWith("edit", target.id, `waiting on ${who} · ${who} is ${({ drag: "moving it", type: "typing in it", vote: "choosing" } as Record<string, string>)[out.on.kind] ?? "holding it"}`);
+                const clearSlip = () => setFound((f) => (f && f.traceKey === s.key ? null : f));
                 if (out.writeId && vh.settled)
                   void vh.settled(out.writeId).then((o) => {
                     tr({ waited: `${(o.ms / 1000).toFixed(1)} s`, outcome: `${o.state}${o.why ? `: ${o.why}` : ""}${o.afterLetGo != null ? ` · ${o.afterLetGo} ms after ${o.on} let go` : ""}` });
                     publish(s);
                     // the board's slip takes over from "waiting on …"
                     setReply((r) => (r && r.traceKey === s.key ? null : r));
+                    clearSlip();
                   });
                 return;
               }

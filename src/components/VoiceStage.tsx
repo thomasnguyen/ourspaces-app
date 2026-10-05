@@ -371,7 +371,8 @@ function StageCluster({ cluster }: { cluster: NonNullable<StageBuild["cluster"]>
   const { box, cards } = cluster;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const scale = vw <= 640 ? Math.min((vw - 40) / box.w, (vh * 0.34) / box.h) : Math.min((vw * 0.42) / box.w, (vh * 0.6) / box.h);
+  // a group gets more of the stage than one card: it reaches left into the gap beside the words (voice-stage.css [data-group])
+  const scale = vw <= 640 ? Math.min((vw - 40) / box.w, (vh * 0.34) / box.h) : Math.min((vw * 0.5) / box.w, (vh * 0.66) / box.h);
   const link = useMemo(() => ({ widgets: cards }), [cards]);
   return (
     <BoardLinkContext.Provider value={link}>
@@ -475,10 +476,11 @@ function StageCard({
       className="voice-two-card"
       data-testid="voice-stage-card"
       data-kind={build.kind ?? "card"}
+      data-group={build.cluster ? "" : undefined}
       data-state={edit ? "edit" : found ? "found" : whole ? "complete" : asking ? "asking" : "skeleton"}
     >
       <header className="voice-two-kind">
-        <b>{build.kind ?? "card"}</b>
+        <b>{build.cluster ? `${build.cluster.cards.filter((w) => w.type !== "frame").length} cards, linked` : (build.kind ?? "card")}</b>
         <span className="voice-two-parts" data-testid="voice-stage-parts">
           {build.parts.map((p) => (
             <i
@@ -569,7 +571,7 @@ function StageWords({ text, live, kind, asking }: { text: string; live: boolean;
   );
 }
 
-/** Dev only (`?timing=1`): the beats of this ask, the table's number beside
+/** Dev only (`?timing=table`; `?timing=1` is just the thin readout): the beats of this ask, the table's number beside
     what this run did, counted from the last word. */
 function StageBeats({ said, mock }: { said: string; mock: boolean }) {
   const beats = useSyncExternalStore(watchStageBeats, stageBeats);
@@ -667,9 +669,23 @@ function flyCard(card: HTMLElement, placed: () => StageBuild["placed"], draftId:
     const target = find();
     hidden.forEach((el) => (el.style.visibility = ""));
     card.style.visibility = "hidden";
-    // it takes the hit and settles
+    // it takes the hit and settles; a group lands as one thing, then each of its cards settles in turn
     if (target && !still()) {
-      target.querySelector(".widget-group-body")?.animate([{ scale: "1.045 0.955" }, { scale: "1" }], { duration: 360, easing: POP });
+      const box = target.getBoundingClientRect();
+      const inside = target.hasAttribute("data-frame-id") && host
+        ? [...host.querySelectorAll<HTMLElement>("[data-widget-id]")]
+            .filter((el) => {
+              const r = el.getBoundingClientRect();
+              const x = r.left + r.width / 2;
+              const y = r.top + r.height / 2;
+              return el !== target && x > box.left && x < box.right && y > box.top && y < box.bottom;
+            })
+            .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)
+        : [];
+      if (inside.length) {
+        target.animate([{ scale: "1.03 0.97" }, { scale: "1" }], { duration: 360, easing: POP });
+        inside.forEach((el, i) => el.querySelector(".widget-group-body")?.animate([{ scale: "1", translate: "0 0" }, { scale: "1.06 0.94", translate: "0 -7px" }, { scale: "1", translate: "0 0" }], { duration: 420, delay: 140 + i * 70, easing: GLIDE }));
+      } else target.querySelector(".widget-group-body")?.animate([{ scale: "1.045 0.955" }, { scale: "1" }], { duration: 360, easing: POP });
     }
     markStageBeat("landed");
     done();
@@ -910,7 +926,8 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
     if (reply) {
       // an answer, a recap, your part: said on the stage, then the board takes over (offers wait for a tap)
       markStageBeat("reply");
-      const id = window.setTimeout(() => close(), reply.offers?.length ? 12000 : beat("replyHold"));
+      // a wait is said and let go at once: the board is where it plays out (the halo, the ticket)
+      const id = window.setTimeout(() => close(), reply.offers?.length ? 12000 : reply.text.startsWith("waiting on ") ? beat("replyHold") / 2 : beat("replyHold"));
       return () => window.clearTimeout(id);
     }
     if (found) {
@@ -1126,7 +1143,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
     <>
       {createPortal(<VoiceOrb state={voice.muted ? "idle" : voice.state} level={level} stage={phase === "open"} />, host)}
       {phase !== "closed" && createPortal(two ? twoPart : centred, document.body)}
-      {two && params.get("timing") === "1" && createPortal(<StageBeats said={lastSaid.current} mock={params.has("mock")} />, document.body)}
+      {two && params.get("timing") === "table" && createPortal(<StageBeats said={lastSaid.current} mock={params.has("mock")} />, document.body)}
     </>
   );
 

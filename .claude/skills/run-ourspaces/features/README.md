@@ -4,6 +4,11 @@ One file per feature: a header `drive.mjs` parses, then a ~1 KB body. Drive
 any state with `drive go <feature>:<state>`; `drive check` proves every test
 id named here exists in `src/`.
 
+**Clean takes: add `?timing=0`.** It hides every dev readout (the thin
+strip at the bottom, its drawer, the beats table). `?timing=1` = the thin
+strip + drawer (the default on the dev lane); `?timing=table` = the strip
+plus the wide beats table over the stage.
+
 | feature | room | states |
 |---|---|---|
 | [voice-orb](voice-orb.md) | crew dock | idle · open · quiet · loud · working · dock-listening (+ `-knot`) |

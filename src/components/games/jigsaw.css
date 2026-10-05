@@ -283,8 +283,9 @@ body.jg-on .space-canvas > .live-cursor-positioner {
   overflow: visible;
 }
 
+/* the same marks as a waiting edit on a card (right-of-way.css): lime, a dashed ink edge */
 .jg-ghost path {
-  fill: color-mix(in srgb, var(--color-card) 70%, transparent);
+  fill: var(--color-lime);
   stroke: var(--color-ink);
   stroke-dasharray: 7 6;
   stroke-linecap: round;
@@ -311,23 +312,33 @@ body.jg-on .space-canvas > .live-cursor-positioner {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border-radius: var(--radius-pill);
-  background: var(--color-sticker);
-  box-shadow: 0 0 0 2px white;
-  color: white;
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1;
-  padding: 6px 10px 7px;
+  border: 2px dashed var(--color-lime);
+  border-radius: 12px;
+  background: var(--color-ink);
+  color: var(--color-card);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 5px 7px 5px 11px;
   translate: -50% 0;
   white-space: nowrap;
 }
 
-.jg-ghost-tag i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+.jg-ghost-tag b {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
   background: var(--by);
+  color: var(--color-ink);
+  font-weight: 800;
+}
+
+/* let go: it's the space's turn */
+.jg-ghost.is-leaving .jg-ghost-tag {
+  border-style: solid;
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-weight: 800;
+  padding: 5px 11px;
 }
 
 /* ---------- hands ---------- */

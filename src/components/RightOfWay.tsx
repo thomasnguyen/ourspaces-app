@@ -1,8 +1,9 @@
 /**
  * Right of Way on the board (nebius R1): the halo on anything someone else
  * holds, and the ghost of an AI write waiting for them to let go. Both are
- * portaled into the card's own element, so they ride a drag with it. Plain
- * on purpose; a design pass follows. Data: convex/leases.ts `forRoom`,
+ * portaled into the card's own element, so they ride a drag with it. Solid
+ * is a person's hand, dashed is the space waiting; on let-go the frame draws
+ * in over the grace and the ticket goes up into the card. Data: convex/leases.ts `forRoom`,
  * convex/rightOfWay.ts `room`. Mock: a scripted second person (lib/rowMock.ts).
  */
 import { useEffect, useLayoutEffect, useMemo, useState, type CSSProperties } from "react";
@@ -21,7 +22,11 @@ type Card = { id: string; type: string; data: Record<string, unknown> };
 /** A hold this short is a tap: no halo (it would flicker). */
 export const HALO_AFTER_MS = 250;
 const LEAVE_MS = 220;
-const DOING: Record<string, string> = { drag: "moving it", type: "typing", vote: "choosing", piece: "holding it" };
+/** The server's grace after a let-go (convex/leases.ts), so the halo's release lasts exactly that long. */
+const GRACE: Record<string, number> = { drag: 600, piece: 400 };
+const graceOf = (kind: string) => GRACE[kind] ?? 1500;
+/** How long the landed row keeps its lime. */
+const LANDED_MS = 900;
 const REMOVES = new Set(["removeOption", "removeItem", "removePerson"]);
 
 /** The card element on the board, once it's there. */
@@ -70,11 +75,12 @@ function Halo({ host, lease, leaving }: { host: HTMLElement | null; lease: RowLe
       data-holder={lease.name}
       data-kind={lease.kind}
       data-scripted={lease.scripted ? "true" : undefined}
-      style={{ "--holder": lease.color } as CSSProperties}
+      style={{ "--holder": lease.color, "--grace": `${graceOf(lease.kind)}ms` } as CSSProperties}
       aria-hidden
     >
       <span className="row-halo-tag" data-testid="row-halo-tag">
-        {lease.name.toLowerCase()} has this{lease.scripted ? " · scripted" : ""}
+        <b>{lease.name.toLowerCase()}</b> {lease.letGoAt !== undefined ? "let go" : "has this"}
+        {lease.scripted ? " · scripted" : ""}
       </span>
     </div>,
     el,
@@ -120,35 +126,73 @@ export function withGhosts<T extends Card>(cards: T[], ghosts: RowGhost[], lease
   });
 }
 
-function Ghost({ host, ghost, mine, onCancel, leaving }: { host: HTMLElement | null; ghost: RowGhost; mine: boolean; onCancel: (id: string) => void; leaving?: boolean }) {
+/** The row (or title) of a card that holds the change's own word. */
+function changedParts(el: HTMLElement, want: string) {
+  const body = el.querySelector<HTMLElement>(".widget-group-body") ?? el;
+  const hits = [...body.querySelectorAll<HTMLElement>("*")].filter((x) => !x.closest(".row-ghost, .row-halo") && (x.textContent ?? "").toLowerCase().includes(want));
+  const deepest = hits.filter((x) => !hits.some((o) => o !== x && x.contains(o)));
+  return deepest.slice(0, 2).map((x) => x.closest<HTMLElement>("li, tr") ?? x);
+}
+
+function Ghost({ host, ghost, mine, me, landing, onCancel, leaving }: { host: HTMLElement | null; ghost: RowGhost; mine: boolean; me: string; landing: boolean; onCancel: (id: string) => void; leaving?: boolean }) {
   const el = useCardEl(host, ghost.thing);
-  const on = holderOf(ghost);
+  const held = holderOf(ghost);
+  // on the holder's own screen it is waiting on "you"
+  const on = held.userId === me ? { ...held, name: "you" } : held;
   const w = opOf(ghost);
   // the changed part: what the op names (the new option, the struck one, the new name)
   const want = String(w?.op?.value ?? "").toLowerCase().trim();
   const removal = Boolean(w?.op && REMOVES.has(w.op.op));
   useLayoutEffect(() => {
     if (!el || !want || leaving) return;
-    const body = el.querySelector<HTMLElement>(".widget-group-body") ?? el;
-    const hits = [...body.querySelectorAll<HTMLElement>("*")].filter((x) => !x.closest(".row-ghost, .row-halo") && (x.textContent ?? "").toLowerCase().includes(want));
-    const deepest = hits.filter((x) => !hits.some((o) => o !== x && x.contains(o)));
-    const marked = deepest.slice(0, 2).map((x) => x.closest<HTMLElement>("li, tr") ?? x);
-    for (const m of marked) {
-      m.setAttribute("data-ghost-changed", removal ? "remove" : "add");
-      m.style.setProperty("--holder", on.color);
-    }
+    const marked = changedParts(el, want);
+    for (const m of marked) m.setAttribute("data-ghost-changed", removal ? "remove" : "add");
     return () => marked.forEach((m) => m.removeAttribute("data-ghost-changed"));
   });
+  // the handover's last beat: it left right after the holder let go, so it landed; the changed part pops and lets its lime go
+  const [wasLanding, setWasLanding] = useState(false);
+  useEffect(() => {
+    if (landing) setWasLanding(true);
+  }, [landing]);
+  useEffect(() => {
+    if (!leaving || !wasLanding || !el || !want || removal) return;
+    const marked = changedParts(el, want);
+    marked.forEach((m) => m.setAttribute("data-ghost-landed", ""));
+    window.setTimeout(() => marked.forEach((m) => m.removeAttribute("data-ghost-landed")), LANDED_MS);
+  }, [leaving, wasLanding, el, want, removal]);
   if (!el) return null;
   const what = ghost.kind === "link" ? "fills in" : ghost.kind === "puzzle" ? "the space's piece" : ghost.text || "a change";
+  const going = landing || wasLanding;
   return createPortal(
-    <div className={`row-ghost${leaving ? " is-leaving" : ""}`} data-testid="row-ghost" data-pending-id={ghost.id} data-scripted={ghost.scripted ? "true" : undefined} style={{ "--holder": on.color } as CSSProperties}>
-      <span className="row-ghost-what">{mine ? what : `${ghost.by.toLowerCase()}: ${what}`}</span>
+    <div
+      className={`row-ghost${going ? " is-landing" : ""}${leaving ? " is-leaving" : ""}`}
+      data-testid="row-ghost"
+      data-pending-id={ghost.id}
+      data-scripted={ghost.scripted ? "true" : undefined}
+      style={{ "--holder": on.color } as CSSProperties}
+    >
+      <span className="row-ghost-what">
+        {mine ? "" : `${ghost.by.toLowerCase()} `}
+        <b>{what}</b>
+      </span>
       <span className="row-ghost-on" data-testid="row-ghost-on">
-        waiting on {on.name.toLowerCase()} · {DOING[on.kind] ?? "holding it"}
+        {going ? (
+          <>
+            <b>{on.name.toLowerCase()}</b> let go
+          </>
+        ) : (
+          <>
+            <span className="row-ghost-dots" aria-hidden>
+              {[0, 1, 2].map((i) => (
+                <i key={i} style={{ "--i": i } as CSSProperties} />
+              ))}
+            </span>
+            waiting on <b>{on.name.toLowerCase()}</b>
+          </>
+        )}
         {ghost.scripted ? " · scripted" : ""}
       </span>
-      {mine && !leaving && (
+      {mine && !leaving && !going && (
         <button type="button" className="row-ghost-cancel" data-testid="row-ghost-cancel" onPointerDown={(e) => e.stopPropagation()} onClick={() => onCancel(ghost.id)}>
           cancel
         </button>
@@ -158,13 +202,13 @@ function Ghost({ host, ghost, mine, onCancel, leaving }: { host: HTMLElement | n
   );
 }
 
-export function RowGhosts({ host, ghosts, me, onCancel }: { host: HTMLElement | null; ghosts: RowGhost[]; me: string; onCancel: (id: string) => void }) {
+export function RowGhosts({ host, ghosts, leases, me, onCancel }: { host: HTMLElement | null; ghosts: RowGhost[]; leases: RowLease[]; me: string; onCancel: (id: string) => void }) {
   const keyed = useMemo(() => ghosts.map((g) => ({ ...g, key: g.id })), [ghosts]);
   const items = useLeaving(keyed);
   return (
     <>
       {items.map((g) => (
-        <Ghost key={g.key} host={host} ghost={g} mine={g.byUserId === me} onCancel={onCancel} leaving={g.leaving} />
+        <Ghost key={g.key} host={host} ghost={g} mine={g.byUserId === me} me={me} landing={leases.some((l) => l.thing === g.thing && l.letGoAt !== undefined)} onCancel={onCancel} leaving={g.leaving} />
       ))}
     </>
   );
@@ -175,7 +219,7 @@ export function settledLine(s: { by: string; byUserId?: string; text: string; ou
   const o = parse<{ state: string; ms: number; on: string; why?: string }>(s.outcome);
   if (!o) return null;
   const mine = s.byUserId === me;
-  if (o.state === "landed") return `${mine ? "" : `${s.by.toLowerCase()} `}${s.text} (waited ${(o.ms / 1000).toFixed(1)} s for ${o.on.toLowerCase()})`;
+  if (o.state === "landed") return `${mine ? "" : `${s.by.toLowerCase()} `}${s.text} · waited ${(o.ms / 1000).toFixed(1)} s for ${o.on.toLowerCase()}`;
   if (!mine || o.state === "cancelled" || o.state === "replaced") return null;
   return o.why ?? "that changed while you waited; nothing done";
 }

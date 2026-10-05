@@ -1,86 +1,214 @@
 /* RIGHT OF WAY — the halo and the ghost (components/RightOfWay.tsx).
-   Plain on purpose: a flat outline in the holder's colour, a name tag, a
-   dashed dimmed ghost. A Fable design pass follows. */
+   Two marks, one rule: solid is a person's hand, dashed is the space waiting.
+   A held card wears a thick flat frame in its holder's colour with their
+   name on a tab. A change waiting on them is a lime row with a dashed ink
+   edge and a ticket hanging off the card's bottom edge. On let-go the frame
+   draws in, the ticket turns lime, goes up into the card and the row pops:
+   a handover. The puzzle's ghost (index.css .jigsaw-ghost) uses the same
+   dashed ink + lime. */
 
 .row-halo {
+  --grace: 600ms;
   position: absolute;
-  inset: -6px;
-  border: 3px solid var(--holder);
-  border-radius: 14px;
+  inset: -9px;
+  border: 4px solid var(--holder);
+  border-radius: 16px;
+  /* flat: an ink keyline and a hard offset, no blur */
+  box-shadow:
+    0 0 0 2px var(--color-ink),
+    5px 5px 0 2px var(--color-ink);
   pointer-events: none;
   z-index: 5;
-  animation: row-in var(--dur-base) var(--ease-glide) backwards;
-  transition: opacity var(--dur-base) var(--ease-glide);
+  animation: row-halo-in var(--dur-arrive) var(--ease-pop) backwards;
 }
+/* let go: the frame draws in to the card over the grace, so the wait reads as a handover */
 .row-halo.is-letting-go {
+  animation: row-halo-release var(--grace) var(--ease-glide) forwards;
+}
+.row-halo.is-leaving {
+  opacity: 0;
+  transition: opacity var(--dur-quick) var(--ease-glide);
+}
+.row-halo.is-letting-go.is-leaving {
+  animation: none;
+}
+.row-halo-tag {
+  position: absolute;
+  left: 10px;
+  bottom: calc(100% + 2px);
+  padding: 4px 11px 3px;
+  border: 2px solid var(--color-ink);
+  border-bottom: 0;
+  border-radius: 9px 9px 0 0;
+  background: var(--holder);
+  color: var(--color-ink);
+  font: 500 13px/1.2 var(--font-sans);
+  white-space: nowrap;
+}
+.row-halo-tag b {
+  font-weight: 800;
+}
+
+/* the waiting change, on the card: lime, dashed ink edge */
+[data-ghost-changed] {
+  outline: 2px dashed var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 10px;
+  background: var(--color-lime) !important;
+  color: var(--color-ink);
+}
+[data-ghost-changed="remove"] {
+  background: transparent !important;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
   opacity: 0.55;
 }
-.row-halo.is-leaving,
+/* landed: the dashes close and the lime lets go */
+[data-ghost-landed] {
+  animation: row-landed var(--dur-hero) var(--ease-glide) backwards;
+}
+
+/* the ticket: hangs off the card's bottom edge */
+.row-ghost {
+  --grace: 600ms;
+  position: absolute;
+  left: 14px;
+  top: calc(100% - 3px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 6px 12px;
+  border: 2px dashed var(--color-lime);
+  border-top: 0;
+  border-radius: 0 0 14px 14px;
+  background: var(--color-ink);
+  color: var(--color-card);
+  font: 500 13px/1.2 var(--font-sans);
+  white-space: nowrap;
+  z-index: 6;
+  transform-origin: 50% 0;
+  animation: row-ticket-in var(--dur-arrive) var(--ease-pop) backwards;
+}
+.row-ghost-what b {
+  color: var(--color-lime);
+  font-weight: 700;
+}
+.row-ghost-on {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.75;
+}
+.row-ghost-on b {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--holder);
+  color: var(--color-ink);
+  font-weight: 800;
+  opacity: 1;
+}
+.row-ghost-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+.row-ghost-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-lime);
+  animation: row-dot 900ms steps(1, end) infinite;
+  animation-delay: calc(var(--i) * 300ms);
+}
+.row-ghost-cancel {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  font: 700 12px/1.2 var(--font-sans);
+  cursor: pointer;
+}
+/* the holder let go: the ticket is next */
+.row-ghost.is-landing {
+  border-style: solid;
+  background: var(--color-lime);
+  color: var(--color-ink);
+  transition:
+    background var(--dur-quick) var(--ease-glide),
+    color var(--dur-quick) var(--ease-glide);
+}
+.row-ghost.is-landing .row-ghost-what b {
+  color: var(--color-ink);
+}
+.row-ghost.is-landing .row-ghost-on b {
+  background: var(--color-ink);
+  color: var(--color-lime);
+}
+.row-ghost.is-landing .row-ghost-dots i {
+  background: var(--color-ink);
+}
+/* cancelled or given up: it drops away */
 .row-ghost.is-leaving {
   opacity: 0;
-  translate: 0 4px;
+  translate: 0 6px;
   transition:
     opacity var(--dur-base) var(--ease-glide),
     translate var(--dur-base) var(--ease-glide);
 }
-.row-halo-tag {
-  position: absolute;
-  left: 8px;
-  bottom: calc(100% + 4px);
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--holder);
-  color: var(--color-ink);
-  font: 600 12px/1.2 var(--font-sans);
-  white-space: nowrap;
+/* landed: it goes up into the card */
+.row-ghost.is-landing.is-leaving {
+  translate: 0 -100%;
+  scale: 1 0.4;
 }
 
-.row-ghost {
-  position: absolute;
-  right: 8px;
-  top: calc(100% + 8px);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 6px 5px 11px;
-  border: 2px dashed var(--holder);
-  border-radius: 999px;
-  background: var(--color-sticker);
-  color: var(--color-card);
-  font: 500 12px/1.2 var(--font-sans);
-  white-space: nowrap;
-  z-index: 6;
-  animation: row-in var(--dur-arrive) var(--ease-pop) backwards;
-}
-.row-ghost-what {
-  opacity: 0.6;
-}
-.row-ghost-on {
-  font-weight: 600;
-}
-.row-ghost-cancel {
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: var(--color-lime);
-  color: var(--color-ink);
-  font: inherit;
-  cursor: pointer;
-}
-
-[data-ghost-changed] {
-  outline: 2px dashed var(--holder);
-  outline-offset: 2px;
-  border-radius: 8px;
-  opacity: 0.5;
-}
-[data-ghost-changed="remove"] {
-  text-decoration: line-through;
-}
-
-@keyframes row-in {
+@keyframes row-halo-in {
   from {
     opacity: 0;
-    translate: 0 4px;
+    scale: 1.05;
+  }
+}
+@keyframes row-halo-release {
+  to {
+    inset: 0;
+    opacity: 0;
+    box-shadow:
+      0 0 0 0 var(--color-ink),
+      0 0 0 0 var(--color-ink);
+  }
+}
+@keyframes row-ticket-in {
+  from {
+    opacity: 0;
+    translate: 0 -60%;
+    scale: 1 0.6;
+  }
+}
+@keyframes row-dot {
+  0%,
+  66% {
+    opacity: 0.3;
+  }
+  33% {
+    opacity: 1;
+  }
+}
+@keyframes row-landed {
+  0% {
+    background: var(--color-lime);
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+    scale: 1.05;
+  }
+  25% {
+    scale: 1;
+  }
+  60% {
+    background: var(--color-lime);
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
   }
 }
 
@@ -100,6 +228,22 @@
 
 /* a drag pauses every animation in its card (index.css); the halo and ghost still arrive */
 .widget-group.is-dragging .row-ghost,
-.widget-group.is-dragging .row-halo {
+.widget-group.is-dragging .row-ghost *,
+.widget-group.is-dragging .row-halo,
+.widget-group.is-dragging [data-ghost-changed],
+.widget-group.is-dragging [data-ghost-landed] {
   animation-play-state: running !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-halo,
+  .row-halo.is-letting-go,
+  .row-ghost,
+  .row-ghost-dots i,
+  [data-ghost-landed] {
+    animation: none;
+  }
+  .row-halo.is-letting-go {
+    opacity: 0.4;
+  }
 }
