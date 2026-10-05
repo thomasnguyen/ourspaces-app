@@ -7,14 +7,16 @@ states:
   ask: ?enter=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1200 | click dock-voice-orb | wait voice-shell | wait voice-landed | sleep 900
   hesitate: ?enter=1&voicePace=talk&voice=add a poll for … Saturday dinner | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
   drawer: ?enter=1&timing=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 1500 | click dev-readout | wait dev-context-drawer | sleep 300
-  mock: ?voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-landed | sleep 900
-  shell: ?voice=add a poll for Saturday dinner&voiceHold=1 | click dock-voice-orb | wait voice-shell | sleep 2600
-  mockdrawer: ?timing=1&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-landed | sleep 1200 | click dev-readout | wait dev-context-drawer | sleep 300
+  mock: ?stage=0&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-landed | sleep 900
+  shell: ?stage=0&voice=add a poll for Saturday dinner&voiceHold=1 | click dock-voice-orb | wait voice-shell | sleep 2600
+  mockdrawer: ?stage=0&timing=1&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-landed | sleep 1200 | click dev-readout | wait dev-context-drawer | sleep 300
   gate: | click claim-enter | wait dock-voice-orb | sleep 1200
   say: ?enter=1&timing=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1400
   mocksay: ?voice=add a poll for Saturday dinner | sleep 600
+  dockstrip: ?stage=0&voicePace=talk&voice=add a poll for Saturday dinner | sleep 600
 take:
   ask: say real 30fps 165f | 3 click dock-voice-orb
+  dockstrip: dockstrip real 30fps 165f | 3 click dock-voice-orb
 ---
 # Voice build (say it → it builds)
 
@@ -44,8 +46,8 @@ the context drawer (`dev-context-drawer`, `dev-context-close`): words heard
 with times, every call (speculative or not, used or ignored), the code's
 guess, the room context sent to the model (one `context` string), the raw
 answer, cards after `applyCard` (rejects with the reason), why the spot,
-stage times from the last word. Last 10 asks, older/newer. Mock: stand-in,
-"not sent", no ms.
+stage times from the last word. Last 10 asks, older/newer. Mock: "simulated from
+measurements · no model ran", "not sent", no ms.
 
 **Drive:** `?voice=<sentence>` scripts the ask; `&voicePace=talk` = ~180
 wpm, each word lands when it ends, "…" = a 900 ms hesitation
@@ -69,7 +71,9 @@ not clickable); WidgetCard renders it. A crowded view means it floats over
 the board (`data-voice-draft="lifted"`) until placed. Speculative calls
 cost tokens even when ignored.
 
-**Voice stage:** the orb tap now opens a full-screen stage first
-([voice-orb](voice-orb.md)); it lets go when the ask ends. To start a build
-while the person is still talking, call `releaseVoiceStage()`
-(`src/lib/voiceStage.ts`) where the build starts.
+**Voice stage:** the orb tap opens the two-part stage
+([voice-stage](voice-stage.md)): the skeleton and its fill show there,
+larger, and the card flies to its board spot when it is whole. The stage
+only reads this build (`feedVoiceStage` in `VoiceBuildLayer`). Mock asks
+are simulated on the measured clock (`src/lib/deck/mockDeal.ts`,
+`src/lib/voiceTimings.ts`); `?stage=0` shows the build on the board as before.

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { sentenceHangs } from "./deck/guess";
+import { VOICE_TIMINGS, voiceSlow } from "./voiceTimings";
 
 /** The dock orb's three moods: resting, hearing you, and chewing on it. */
 export type VoiceState = "idle" | "listening" | "working";
@@ -33,7 +34,7 @@ function follow(level: { current: number }, target: number) {
 /** One scripted word's spoken length: ~180 words a minute, longer words longer. */
 function wordMs(word: string) {
   const syllables = Math.max(1, word.toLowerCase().replace(/[^a-z]/g, "").match(/[aeiouy]+/g)?.length ?? 1);
-  return 200 + 70 * syllables;
+  return VOICE_TIMINGS.wordBase.ms + VOICE_TIMINGS.wordPerSyllable.ms * syllables;
 }
 
 /** A hesitation mid-ask, written into a script as "…" or "...". */
@@ -52,10 +53,13 @@ function runScript(
   level: { current: number },
   onText: (text: string) => void,
   onDone: () => void,
+  talking = false,
 ) {
   const q = new URLSearchParams(window.location.search);
-  const talk = q.get("voicePace") === "talk";
-  const pause = Number(q.get("voicePause") ?? 900) || 900;
+  const talk = talking || q.get("voicePace") === "talk";
+  // `?slow=3` stretches the speech with everything else (lib/voiceTimings.ts)
+  const slow = voiceSlow();
+  const pause = (Number(q.get("voicePause")) || VOICE_TIMINGS.hesitation.ms) * slow;
   const tokens = script.replace(/(\S)(…|\.\.\.)/g, "$1 $2").split(/\s+/).filter(Boolean);
   // Each word: when it starts and ends being said, ms from the tap.
   const words: { word: string; from: number; to: number }[] = [];
@@ -65,9 +69,9 @@ function runScript(
       at += pause;
       continue;
     }
-    const len = talk ? wordMs(token) : 300;
+    const len = (talk ? wordMs(token) : 300) * slow;
     words.push({ word: token, from: at, to: at + len });
-    at += len + (talk ? 30 : 0);
+    at += len + (talk ? VOICE_TIMINGS.wordGap.ms * slow : 0);
   }
   const end = words.length ? words[words.length - 1].to : 0;
   const started = performance.now();
@@ -81,7 +85,7 @@ function runScript(
     const syllable = Math.sin(inWord * Math.PI) * (0.55 + 0.35 * Math.sin(t / 97));
     follow(level, word ? Math.max(0, syllable) : 0);
     // Safety only: the listener ends the ask on the pause long before this.
-    if (t > end + 5000) {
+    if (t > end + 5000 * slow) {
       onDone();
       return;
     }
@@ -190,8 +194,9 @@ export function useVoice(hooks: VoiceHooks = {}) {
         return;
       }
       const quiet = now - lastWordAt.current;
-      const wait = sentenceHangs(said.current) ? HANG_MS : PAUSE_MS;
-      if ((quiet > wait && level.current < 0.2) || quiet > MAX_QUIET_MS) finish("pause");
+      const slow = voiceSlow();
+      const wait = (sentenceHangs(said.current) ? HANG_MS : PAUSE_MS) * slow;
+      if ((quiet > wait && level.current < 0.2) || quiet > MAX_QUIET_MS * slow) finish("pause");
     }, 25);
   }, [finish]);
 
@@ -294,6 +299,18 @@ export function useVoice(hooks: VoiceHooks = {}) {
     },
     [hear],
   );
+  /** A starter chip: stop the mic and speak these words as a scripted ask,
+      at the talking pace, so the room hears them arrive one by one. */
+  const play = useCallback(
+    (script: string) => {
+      stopRef.current();
+      mutedRef.current = false;
+      muteCut.current = null;
+      hear("");
+      stopRef.current = runScript(script, level, hear, () => finish("pause"), true);
+    },
+    [finish, hear],
+  );
   /** Close without asking anything (Escape). */
   const cancel = useCallback(() => {
     say("");
@@ -304,5 +321,5 @@ export function useVoice(hooks: VoiceHooks = {}) {
     if (state !== "listening") mute(false);
   }, [state, mute]);
 
-  return { state, transcript, level, start, finish, muted, mute, say, cancel };
+  return { state, transcript, level, start, finish, muted, mute, say, play, cancel };
 }
