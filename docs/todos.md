@@ -5,6 +5,15 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **One main: the voice stage, your turn and the room's brain together (Oct 5, dev lane).** `your-turn`
+  and `orb-stage` merged into main (real merge commits) and deployed to the dev preview. Your turn now
+  reads every poll in a live room (`votes.inSpace`, no schema change); a member (email-joined) gets
+  everything waiting on them, a silent guest three "jump in" starters; rail counts stay mock-only. A card
+  the voice ask builds becomes a ticket for the others. The stage shows the board's own card on "already
+  here", a voice ask closes catch me up, a fresh voice wheel no longer claims a spin. Live timings with the
+  stage on match b3 (plain 640 / 869 ms, room facts 1,083 / 1,288). Ten examples 9/0/1 as before. Rough: a
+  member's expanded pile with ~17 tickets runs off the panel; dev crew has ~13 stray test cards.
+
 - **What this space knows, redesigned (Oct 4, dev lane).** Same facts and actions,
   drawn as a wall: the group as face stickers, each noticed line as a paper
   object (tear-off day count, week strip with the usual day ringed, receipt
