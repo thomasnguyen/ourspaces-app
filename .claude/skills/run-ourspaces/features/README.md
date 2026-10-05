@@ -17,6 +17,7 @@ id named here exists in `src/`.
 | [games](games.md) | crew, house, couple | idle · start · invited · ticket · rail · lobby · round · answered · reveal (-b, -c) · awards · late · knows · house · couple |
 | [most-likely-to](most-likely-to.md) | crew, house, couple | round · reveal · split · awards · house · two · two-match |
 | [scoreboard](scoreboard.md) | crew, house | locked · open · after · house |
+| [jigsaw](jigsaw.md) | crew | start · playing · ghost · late · last · done (+ takes: start · work · yield · nod · reach · hold · finish) |
 | [room-brain](room-brain.md) | crew, house, couple | door · open · visit · forget · told · empty · live |
 
 ## Header format

@@ -504,11 +504,11 @@ export class JigsawEngine {
     this.refusals += 1;
     const [cx, cy] = this.centre(p);
     const d = Math.hypot(cx - a.x, cy - a.y) || 1;
-    const dx = ((cx - a.x) / d) * 10, dy = ((cy - a.y) / d) * 10 - 3;
-    const lean = dx >= 0 ? 5 : -5;
+    const dx = ((cx - a.x) / d) * 15, dy = ((cy - a.y) / d) * 15 - 4;
+    const lean = dx >= 0 ? 8 : -8;
     p.el?.firstElementChild?.animate(
       [{ transform: "none" }, { transform: `translate(${dx}px, ${dy}px) rotate(${lean}deg)`, offset: 0.35 }, { transform: "none" }],
-      { duration: 460, easing: GLIDE_CSS },
+      { duration: 560, easing: GLIDE_CSS },
     );
     p.el?.querySelector(".jg-tag")?.animate([{ scale: "1" }, { scale: "1.22", offset: 0.3 }, { scale: "1" }], { duration: 420, easing: SNAP_CSS });
     this.emit();
@@ -561,6 +561,8 @@ export class JigsawEngine {
       this.youScriptDone = true;
       return held.id;
     }
+    /* a staged beat (&beat=): while the space waits, nobody starts anything new, so the yield is the only thing moving */
+    if (this.o.beat && this.space.want >= 0 && (this.space.waitingOn || this.ghost)) return -1;
     const free = this.pieces.filter((p) => p.state === "loose");
     if (free.length === 0) return -1;
     /* a scripted you lets the space say its line before taking the last one */
@@ -856,7 +858,7 @@ export class JigsawEngine {
     const order = this.pieces.map((p) => p.id).sort(() => this.rand() - 0.5);
     order.forEach((id, i) => {
       const p = this.pieces[id], [cx, cy] = spots[i];
-      p.tw = { x0: p.hx, y0: p.hy, r0: 0, x1: cx - cut.cw / 2, y1: cy - cut.ch / 2, r1: (this.rand() - 0.5) * 34, el: 0, dur: 560, delay: i * 22, ease: POP };
+      p.tw = { x0: p.hx, y0: p.hy, r0: 0, x1: cx - cut.cw / 2, y1: cy - cut.ch / 2, r1: (this.rand() - 0.5) * 34, el: 0, dur: 620, delay: i * 34, ease: POP };
       p.z = 2 + i;
       if (p.el) p.el.style.zIndex = String(p.z);
     });

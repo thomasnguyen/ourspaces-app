@@ -296,7 +296,7 @@ const JigsawMat = memo(function JigsawMat(p: MatProps) {
           </svg>
         </div>
       )}
-      {ghost && ghostPiece && (
+      {ghost && ghostPiece && (ghost.on || ghost.leaving) && (
         <div
           key={`words-${ghost.piece}`}
           className={`jg-ghost is-words ${ghost.leaving ? "is-leaving" : ""}`}
@@ -305,12 +305,10 @@ const JigsawMat = memo(function JigsawMat(p: MatProps) {
           <span className="jg-ghost-tag" style={{ left: cut.pad + cut.cw / 2, top: cut.pad + cut.ch + 8, "--by": colorOf(ghost.on) } as CSSProperties}>
             {ghost.leaving ? (
               "all yours"
-            ) : ghost.on ? (
-              <>
-                waiting on <i aria-hidden="true" /> {lower(ghost.on, me)}
-              </>
             ) : (
-              "the space's turn"
+              <>
+                waiting on <i aria-hidden="true" /> {lower(ghost.on ?? "", me)}
+              </>
             )}
           </span>
         </div>
@@ -359,7 +357,7 @@ const JigsawMat = memo(function JigsawMat(p: MatProps) {
         </svg>
         <span className="jg-hand-tag">
           <i aria-hidden="true" />
-          {snap?.line ?? (snap?.helper === "waiting" ? "the space · after you" : "the space")}
+          {snap?.line ?? "the space"}
         </span>
       </div>
     </div>

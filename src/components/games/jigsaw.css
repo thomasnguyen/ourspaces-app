@@ -442,7 +442,7 @@ body.jg-on .space-canvas > .live-cursor-positioner {
 
 .jg-done strong {
   font-family: var(--font-display);
-  font-size: 54px;
+  font-size: 34px;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1;
