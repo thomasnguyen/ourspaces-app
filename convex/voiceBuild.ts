@@ -551,9 +551,8 @@ export const decide = action({
         : null,
       verbQ,
     ]);
-    await ctx.runMutation(internal.guard.noteSpend, {
-      calls: [r === skipped ? null : r, b, vq].flatMap((x) => (x ? [{ model: "ultra" as const, prompt: x.usage?.prompt_tokens ?? 0, completion: x.usage?.completion_tokens ?? 0 }] : [])),
-    });
+    const spent = [r === skipped ? null : r, b, vq].flatMap((x) => (x ? [{ model: "ultra" as const, prompt: x.usage?.prompt_tokens ?? 0, completion: x.usage?.completion_tokens ?? 0 }] : []));
+    if (spent.length) await ctx.runMutation(internal.guard.noteSpend, { calls: spent });
     const cardOf = (l: string) => DECIDE_CHOICES[DECIDE_LETTERS.indexOf(l)] ?? l;
     const usageOf = (u: typeof r.usage) => (u ? { prompt: u.prompt_tokens ?? 0, completion: u.completion_tokens ?? 0 } : null);
     return {

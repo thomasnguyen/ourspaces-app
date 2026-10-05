@@ -87,10 +87,11 @@ export const voice = internalMutation({
     const count = Math.max(1, Math.min(8, Math.round(calls)));
     const person = { key: me.userId, count };
     const room = { key: spaceId, count };
-    const [p, r] = await Promise.all([rateLimiter.check(ctx, "voicePerson", person), rateLimiter.check(ctx, "voiceRoomDay", room)]);
-    if (!p.ok || !r.ok) return { ok: false, why: "limit", retryAfter: Math.max(p.retryAfter ?? 0, r.retryAfter ?? 0) || null };
-    await rateLimiter.limit(ctx, "voicePerson", person);
-    await rateLimiter.limit(ctx, "voiceRoomDay", room);
+    // two limiter calls, not four (check + limit): this sits in front of every model call
+    const p = await rateLimiter.limit(ctx, "voicePerson", person);
+    if (!p.ok) return { ok: false, why: "limit", retryAfter: p.retryAfter ?? null };
+    const r = await rateLimiter.limit(ctx, "voiceRoomDay", room);
+    if (!r.ok) return { ok: false, why: "limit", retryAfter: r.retryAfter ?? null };
     const dealId = run ? await ctx.db.insert("deals", { spaceId, run }) : null;
     return { ok: true, userId: me.userId, name: me.name, dealId };
   },

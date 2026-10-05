@@ -36,7 +36,8 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   voicePerson: { kind: "token bucket", rate: 50, period: MINUTE, capacity: 60 },
   /* Per room per day: 300 calls ≈ 30–60 asks ≈ $0.08–0.27 (b2-wired §e: a
      fast ask ≈ $0.0021 over ~8 calls, a brain ask ≈ $0.0045 over ~5). */
-  voiceRoomDay: { kind: "fixed window", rate: 300, period: DAY },
+  // sharded: everyone asking in one room shares this row, and a busy minute shouldn't queue on one document
+  voiceRoomDay: { kind: "fixed window", rate: 300, period: DAY, shards: 5 },
   // Firecrawl credit (convex/firecrawl.ts), per person: a link dropped on the
   // board, a topic searched, a site crawled (up to 50 pages each, so rare).
   firecrawlScrape: { kind: "token bucket", rate: 20, period: MINUTE, capacity: 10 },
