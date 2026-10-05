@@ -310,7 +310,11 @@ export function useMockGames(o: {
     const starter = sims.find((sim) => same(sim.name, config.starter)) ?? sims[0];
     const play: Play | undefined = q.get("play") === "seat" ? { kind: "hot-seat", about: q.get("about") ?? undefined } : undefined;
     if (want === "start") {
-      const t = window.setTimeout(() => open(roomId, me, play), 700);
+      const t = window.setTimeout(() => {
+        open(roomId, me, play);
+        /* you started it: a phone goes straight to its play sheet */
+        if (roomId === room && window.matchMedia(PHONE).matches) setSheetOpen(true);
+      }, 700);
       return () => window.clearTimeout(t);
     }
     if (want === "invited") {
