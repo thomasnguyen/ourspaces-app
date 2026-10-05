@@ -5,6 +5,21 @@ export function normalSpaceHash(slug: string) {
   return `#/space/${encodeURIComponent(slug)}`;
 }
 
+/** A room's own "what this space knows" page: `#/space/<slug>/knows`. */
+export function knowsHash(slug: string) {
+  return `${normalSpaceHash(slug)}/knows`;
+}
+
+/** The room a `#/space/<slug>[/page]` hash names, without the page. */
+export function slugOfSpaceHash(rest: string) {
+  return rest.split(/[/?]/)[0];
+}
+
+/** Which page of the room the hash is on: the board, or what the space knows. */
+export function spacePageFromHash(): "board" | "knows" {
+  return /^#\/?space\/[^/?]+\/knows\b/.test(window.location.hash) ? "knows" : "board";
+}
+
 export function inviteUrlForSpace(slug: string) {
   return `${window.location.origin}${window.location.pathname}#/join/${encodeURIComponent(slug)}`;
 }

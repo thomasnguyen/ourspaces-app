@@ -83,6 +83,9 @@ import { widgetSupportsThread } from "./lib/widgetThreads";
 import { linkCardQuestions, questionThreadId } from "./lib/linkQuestions";
 import { LinkQuestionStrip } from "./components/LinkQuestionStrip";
 import { LiveSpacePage } from "./pages/LiveSpace";
+import { RoomKnowsDoor, RoomKnowsPage, type KnowsChange } from "./components/RoomKnows";
+import { standing, type RoomKnows } from "./lib/roomKnows";
+import { mockRoomKnows } from "./data/roomKnows";
 import { getDataMode } from "./live/dataMode";
 import { getIdentity } from "./live/identity";
 import { useCanvasSpacePan } from "./lib/canvasSpacePan";
@@ -93,7 +96,7 @@ import {
 } from "./lib/buildRoomPresentation";
 import { flushSync } from "react-dom";
 import { flyWidgetIn } from "./lib/flipLanding";
-import { DEFAULT_SPACE_SLUG, lastSpaceSlug, normalSpaceHash, rememberSpaceSlug } from "./lib/routes";
+import { DEFAULT_SPACE_SLUG, lastSpaceSlug, normalSpaceHash, rememberSpaceSlug, slugOfSpaceHash } from "./lib/routes";
 import { pileInsideFrame } from "./lib/frameMembership";
 import {
   linkReplyCounts,
@@ -317,7 +320,7 @@ function spaceFromHash(): string {
   // from, and spaceId has to still be that room when you take it.
   if (hash === "about" || hash.startsWith("about/")) return lastSpaceSlug();
   if (hash.startsWith("space/")) {
-    const slug = hash.slice("space/".length) || DEFAULT_SPACE_SLUG;
+    const slug = slugOfSpaceHash(hash.slice("space/".length)) || DEFAULT_SPACE_SLUG;
     rememberSpaceSlug(slug);
     return slug;
   }
@@ -353,6 +356,23 @@ export default function App() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const tabIdentity = useTabIdentity();
+  /* What this space knows, mock: fixture lines (data/roomKnows.ts) plus the
+     corrections made on this screen, per room. Nothing is stored. */
+  const [mockKnowsEdits, setMockKnowsEdits] = useState<Record<string, Pick<RoomKnows, "told" | "forgot">>>({});
+  const correctMockKnows = (change: KnowsChange) =>
+    setMockKnowsEdits((all) => {
+      const { told, forgot } = all[spaceId] ?? { told: [], forgot: [] };
+      const who = { by: tabIdentity.name, color: tabIdentity.color, at: Date.now() };
+      const next =
+        change.kind === "tell"
+          ? { told: [...told, { id: `t${who.at}`, text: change.text, ...who }], forgot }
+          : change.kind === "untell"
+            ? { told: told.filter((t) => t.id !== change.id), forgot }
+            : change.kind === "forget"
+              ? { told, forgot: [...forgot, { key: change.key, text: change.text, ...who }] }
+              : { told, forgot: forgot.filter((f) => f.key !== change.key) };
+      return { ...all, [spaceId]: next };
+    });
   // Whatever you picked off the tray, riding the cursor until you click it down.
   const [placing, setPlacing] = useState<PlacingItem | null>(null);
   const [placingOrigin, setPlacingOrigin] = useState<
@@ -1948,6 +1968,7 @@ export default function App() {
     spaceDraft ??
     spaceCustomizations[spaceId] ??
     defaultSpaceCustomization(baseSpace);
+  const mockKnows: RoomKnows = { ...mockRoomKnows(spaceId, activeSpaceCustomization.name), ...(mockKnowsEdits[spaceId] ?? {}) };
   const visibleWidgets = [
     ...baseSpace.widgets,
     ...(addedWidgets[spaceId] ?? []),
@@ -2131,6 +2152,7 @@ export default function App() {
         spaceId={spaceId}
         addOpen={pickerOpen}
         onAddClick={openPicker}
+        knowsDoor={<RoomKnowsDoor slug={spaceId} count={standing(mockKnows)} />}
         spaceMeta={activeSpaceCustomization}
         roomEditing={Boolean(spaceDraft)}
         onEditSpace={openSpaceEditor}
@@ -2598,6 +2620,7 @@ export default function App() {
           <span>editing this space</span>
         </div>
       )}
+      <RoomKnowsPage slug={spaceId} roomName={activeSpaceCustomization.name} knows={mockKnows} self={tabIdentity} onChange={correctMockKnows} fixture />
     </main>
   );
 }

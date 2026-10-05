@@ -33,6 +33,8 @@ export type RoomFacts = {
   /** The group's cards by deck name and title, for duplicate checks. */
   board: { card: string; title: string }[];
   lowercase: boolean;
+  /** Facts a person told the space (`src/lib/roomKnows.ts`), each with who said it. They win over anything noticed. */
+  told?: string[];
 };
 
 /** Facts plus who this ask's surprise or gift is for, if anyone. */

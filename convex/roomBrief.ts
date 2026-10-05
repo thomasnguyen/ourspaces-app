@@ -1,8 +1,9 @@
 import { v } from "convex/values";
-import { internalMutation, internalQuery, query, type QueryCtx } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { RoomFacts } from "../src/lib/deck/resolve";
+import { applyCorrections, listNames, TOLD_CHARS, TOLD_MAX, type Forgot, type KnowLine, type RoomKnows, type Told } from "../src/lib/roomKnows";
 
 /**
  * The room brief (path-to-win §3 "The room has a brain"): a few short lines a
@@ -80,7 +81,11 @@ const EMOJI_RE = /\p{Extended_Pictographic}/u;
 type Fact = { kind: string; what: string; n: number; from: string[] };
 /** One line of the brief and the rows behind it ("votes 5 · widgets rsvp"). */
 type BriefLine = { text: string; src: string };
-export type Brief = { text: string; facts: Fact[]; lines: BriefLine[]; room: RoomFacts };
+/** The page's noticed half: the cast with colours, and a line per fact with its cards. */
+type Noticed = Pick<RoomKnows, "people" | "lines">;
+export type Brief = { text: string; facts: Fact[]; lines: BriefLine[]; room: RoomFacts; knows: Noticed };
+/** What a `briefs` row's `facts` JSON holds. `told` and `forgot` are people's corrections and outlive every rebuild. */
+type Stored = { lines?: BriefLine[]; facts?: Fact[]; room?: RoomFacts; knows?: Noticed; told?: Told[]; forgot?: Forgot[] };
 
 type Data = Record<string, unknown>;
 const str = (x: unknown) => (typeof x === "string" ? x.trim() : "");
@@ -173,8 +178,14 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
     (w) => !SKIP_TYPES.has(w.type) && w.createdBy !== "mail" && (w.createdBy.startsWith("seed") || castIds.has(w.createdBy)),
   );
   const said = own.filter((w) => !dealt.has(w._id));
+  /* A habit's source back to its card, for the page's camera. */
+  const srcWid = new Map<string, string>();
   const sources: { id: string; text: string }[] = [
-    ...said.map((w) => ({ id: `${CARD_NAME[w.type] ?? w.type} "${titleOf(w)}"`, text: wordsOf(w.data, []).join(" · ") })),
+    ...said.map((w) => {
+      const id = `${CARD_NAME[w.type] ?? w.type} "${titleOf(w)}"`;
+      srcWid.set(id, w._id);
+      return { id, text: wordsOf(w.data, []).join(" · ") };
+    }),
     ...recent
       .filter((m) => m.widgetId !== "recap" && castIds.has(m.userId))
       .map((m) => ({ id: `${m.authorName}: "${clip(m.text, 40)}"`, text: m.text })),
@@ -203,7 +214,10 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
   // A day the group settled on counts too: an availability card's best day.
   for (const w of said) {
     const best = str((w.data as Data).best).toLowerCase().slice(0, 3);
-    if (w.type === "availability" && best in DAY_OF) tally(days, [WEEKDAYS[DAY_OF[best]]], `availability "${titleOf(w)}" best`);
+    if (w.type === "availability" && best in DAY_OF) {
+      srcWid.set(`availability "${titleOf(w)}" best`, w._id);
+      tally(days, [WEEKDAYS[DAY_OF[best]]], `availability "${titleOf(w)}" best`);
+    }
   }
 
   /* Today, in the room's first clock zone if it keeps clocks, else UTC. */
@@ -236,12 +250,16 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
 
   /* Who's away: a cast name next to "out" / "away" / "traveling" on the board. */
   const away = new Map<string, string>();
+  const awayWid = new Map<string, string>();
   for (const w of own) {
     const d = w.data as Data;
     for (const s of [str(d.title), str(d.subtitle), str(d.text), str(d.kicker)]) {
       for (const n of group) {
         const re = new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:'s| is)? (?:out|away|traveling|travelling|sick|gone)\\b`, "i");
-        if (re.test(s) && !away.has(n)) away.set(n, clip(s, 30));
+        if (re.test(s) && !away.has(n)) {
+          away.set(n, clip(s, 30));
+          awayWid.set(n, w._id);
+        }
       }
     }
   }
@@ -289,6 +307,7 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
     if (payer?.paid) before.push(`"${titleOf(w)}": ${payer.name} paid most (${payer.paid} of ${(w.data as Data).total}); on it ${ss.map((s) => s.name).join(", ")}`);
   }
   const claims = new Map<string, string[]>();
+  const claimWid = new Map<string, Set<string>>();
   let claimRows = 0;
   for (const w of own.filter((w) => w.type === "potluck")) {
     for (const it of ((w.data as Data).items as { name?: string; by?: string | null; claimed?: boolean }[] | undefined) ?? []) {
@@ -296,6 +315,8 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
       if (!it.claimed || !by) continue;
       claimRows++;
       if (!claims.has(by)) claims.set(by, []);
+      if (!claimWid.has(by)) claimWid.set(by, new Set());
+      claimWid.get(by)!.add(w._id);
       claims.get(by)!.push(clip(str(it.name).replace(/^\p{L}+day\s*·\s*/iu, ""), 20));
     }
   }
@@ -370,7 +391,151 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
     ...pollFacts, ...dayFacts, ...timeFacts, ...termFacts,
   ];
   const room = factsOf({ name: space.name, today, t0, group, away, rsvps, polls: pollRows, own, zones, said, dayNo });
-  return { text, facts, lines: lines.map(({ text, src }) => ({ text, src })), room };
+
+  /* The same facts as a page for the people in the room ("what this space
+     knows", src/lib/roomKnows.ts): one plain line per fact, the cards it came
+     from, and a key a person can cross it out by. Nothing here the brief
+     above doesn't already rest on. */
+  const wid = (type: string, title: string) => own.filter((w) => w.type === type && titleOf(w) === title).map((w) => String(w._id));
+  const bare = (t: string) => t.replace(/[?:]\s*$/, "");
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const dayOf = (iso: string) => `${dow(iso)} ${MONTHS[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`;
+  const know: KnowLine[] = [];
+  for (const [n, why] of away) {
+    // "back sunday" on the same card is the until-when.
+    const sub = str((own.find((w) => w._id === awayWid.get(n))?.data as Data | undefined)?.subtitle);
+    know.push({ key: `away:${n}`, section: "who", text: `${n} is away${/^back\b/i.test(sub) ? `, ${clip(sub, 24)}` : ""}`, why: `the board says "${why}"`, src: [awayWid.get(n) ?? ""].filter(Boolean) });
+  }
+  if (room.clocks.length >= 2) {
+    const where = (tz: string) => (tz.split("/").pop() ?? tz).replace(/_/g, " ");
+    know.push({
+      key: "zones",
+      section: "who",
+      text: room.clocks.slice(0, 2).map((c) => `${c.label} is on ${where(c.tz)} time`).join(", "),
+      why: "from the clocks card",
+      src: own.filter((w) => w.type === "dualClock").map((w) => String(w._id)),
+    });
+  }
+  for (const d of room.dates) {
+    if (d.days < -45) continue;
+    const base = { key: `date:${d.title}`, section: "soon" as const, why: `${dayOf(d.date)}, from the countdown`, src: wid("countdown", d.title) };
+    if (d.days > 0) know.push({ ...base, text: `${d.days === 1 ? "day" : "days"} to ${d.title}`, n: d.days });
+    else if (d.days === 0) know.push({ ...base, text: `${d.title} is today` });
+    else know.push({ ...base, text: `${d.title} was ${-d.days} ${d.days === -1 ? "day" : "days"} ago` });
+  }
+  for (const p of room.polls) {
+    if (!p.votes) continue;
+    know.push({
+      key: `poll:${p.title}`,
+      section: "decided",
+      text: `${bare(p.title)}: ${p.leader ? `${p.leader} is ahead, ${p.lead} of ${p.votes}` : "tied so far"}`,
+      why: `from the poll, ${p.votes} ${p.votes === 1 ? "vote" : "votes"} in`,
+      src: wid("poll", p.title),
+    });
+  }
+  for (const r of room.rsvps) {
+    const parts = [r.yes.length ? `${listNames(r.yes)} ${r.yes.length === 1 ? "is" : "are"} in` : "nobody's in yet"];
+    if (r.no.length) parts.push(`${listNames(r.no)} can't`);
+    if (r.maybe.length) parts.push(`${listNames(r.maybe)} said maybe`);
+    if (r.waiting.length) parts.push(`${listNames(r.waiting)} ${r.waiting.length === 1 ? "hasn't" : "haven't"} answered`);
+    know.push({ key: `rsvp:${r.title}`, section: "decided", text: `${bare(r.title)}: ${parts.join(" · ")}`, why: "from the rsvp", src: wid("rsvp", r.title) });
+  }
+  for (const sp of room.splits) {
+    if (!sp.people.length) continue;
+    know.push({ key: `split:${sp.title}`, section: "decided", text: `${bare(sp.title)}: ${/\d/.test(sp.title) || !sp.total ? "split" : `${sp.total.toLocaleString("en-US")} split`} between ${listNames(sp.people)}`, why: "from the split", src: wid("expenseSplit", sp.title) });
+  }
+  for (const w of room.wheels) {
+    if (w.last) know.push({ key: `wheel:${w.title}`, section: "decided", text: `${bare(w.title)}: last landed on ${w.last}`, why: "from the wheel's last spin", src: wid("wheel", w.title) });
+  }
+  // Habits: only what the rows can back, said as strongly as they back it.
+  const habitOf = (f: Fact, text: string): KnowLine => ({
+    key: `${f.kind}:${f.what}`,
+    section: "habits",
+    text,
+    why: `said in ${f.n} places: ${f.from.slice(0, 2).join(", ")}${f.n > 2 ? ` + ${f.n - 2} more` : ""}`,
+    src: f.from.map((id) => srcWid.get(id) ?? "").filter(Boolean),
+  });
+  for (const f of lead(dayFacts)) know.push(habitOf(f, `${f.what} is our usual day`));
+  for (const f of lead(timeFacts)) know.push(habitOf(f, `${f.what} is our usual time`));
+  const paidBy = new Map<string, typeof room.splits>();
+  for (const sp of room.splits) if (sp.payer) paidBy.set(sp.payer, [...(paidBy.get(sp.payer) ?? []), sp]);
+  const topPayer = [...paidBy.entries()].sort((a, b) => b[1].length - a[1].length)[0];
+  if (topPayer) {
+    const [who, on] = topPayer;
+    know.push({
+      key: `payer:${who}`,
+      section: "habits",
+      text: on.length >= MIN_EVIDENCE ? `${who} usually covers the most` : `${who} covered the most last time`,
+      why: on.length >= MIN_EVIDENCE ? `paid the most on ${on.length} splits` : `from the split "${on[0].title}"`,
+      src: on.flatMap((sp) => wid("expenseSplit", sp.title)),
+    });
+  }
+  const spots = placesOf(own).slice(0, 5);
+  if (spots.length) {
+    const won = room.polls.find((p) => p.leader && spots.some((pl) => pl.label.toLowerCase() === p.leader!.toLowerCase()));
+    know.push({
+      key: "places",
+      section: "habits",
+      text: `our places: ${spots.map((pl) => pl.label).join(", ")}`,
+      why: `${spots.length} saved ${spots.length === 1 ? "link" : "links"}${won ? `, and ${won.leader} is ahead in "${won.title}" ${won.lead} of ${won.votes}` : ""}`,
+      src: [...new Set([...(won ? wid("poll", won.title) : []), ...spots.map((pl) => pl.wid)])],
+    });
+  }
+  for (const [who, items] of claims) {
+    if (items.length < MIN_EVIDENCE) continue;
+    know.push({ key: `claims:${who}`, section: "habits", text: `${who} takes things on: ${items.slice(0, 3).join(", ")}`, why: `${items.length} claims on the lists`, src: [...(claimWid.get(who) ?? [])] });
+  }
+  if (room.lowercase) know.push({ key: "lowercase", section: "habits", text: "we write titles in lowercase", why: `${lowerTitles} of ${titles.length} card titles`, src: [] });
+  if (termFacts.length >= 3) know.push({ key: "words", section: "habits", text: `words we use a lot: ${termFacts.map((f) => f.what).join(", ")}`, why: "each one in 2 or more places", src: [] });
+
+  /* What the voice asks made, and what the group did with it (the outcome
+     log on each `deals` row). Newest first, five at most. */
+  const nameOf = new Map(roster.map((m) => [m.userId, m.name]));
+  const byId = new Map(widgets.map((w) => [String(w._id), w]));
+  const heard = new Set<string>();
+  for (const d of deals) {
+    if (know.filter((l) => l.section === "made").length >= 5) break;
+    let run: { at?: number; said?: string; committed?: string[]; outcome?: { kind: string }[] };
+    try {
+      run = JSON.parse(d.run) as typeof run;
+    } catch {
+      continue;
+    }
+    if (!run.committed?.length || !run.said) continue;
+    // The same words asked again (a retry) show once, as the newest.
+    if (heard.has(run.said.toLowerCase())) continue;
+    heard.add(run.said.toLowerCase());
+    const made = run.committed.map((id) => byId.get(id)).filter((w): w is Doc<"widgets"> => !!w);
+    const status = !made.length || run.outcome?.some((o) => o.kind === "deleted") ? "removed" : run.outcome?.some((o) => o.kind === "edited") ? "edited" : "kept";
+    const who = made[0] ? nameOf.get(made[0].createdBy) : undefined;
+    const when = run.at ? dayOf(new Date(run.at).toISOString().slice(0, 10)) : "";
+    know.push({
+      key: `made:${d._id}`,
+      section: "made",
+      text: made[0] ? `${CARD_NAME[made[0].type] ?? made[0].type} "${titleOf(made[0])}"` : `"${clip(run.said, 44)}"`,
+      why: [who ? `${who} said "${clip(run.said, 40)}"` : made[0] ? `someone said "${clip(run.said, 40)}"` : "a spoken ask", when].filter(Boolean).join(" · "),
+      src: made.map((w) => String(w._id)),
+      status,
+    });
+  }
+  const people = group.map((n) => {
+    const m = cast.find((c) => c.name.toLowerCase() === n.toLowerCase());
+    return { name: n, color: m?.color ?? "", ...(away.has(n) ? { away: true } : {}) };
+  });
+  return { text, facts, lines: lines.map(({ text, src }) => ({ text, src })), room, knows: { people, lines: know } };
+}
+
+/** Saved links that are places (maps links, "… place"), each with its card. */
+function placesOf(own: Doc<"widgets">[]): { label: string; wid: string }[] {
+  const out: { label: string; wid: string }[] = [];
+  for (const w of own.filter((w) => w.type === "linkShelf" || w.type === "linkCard")) {
+    const d = w.data as { links?: { label?: string; url?: string }[]; label?: string; title?: string; url?: string };
+    for (const l of d.links ?? [{ label: d.label ?? d.title, url: d.url }]) {
+      const label = str(l.label);
+      if (label && (/maps|yelp|opentable|resy/i.test(str(l.url)) || /\b(place|spot|restaurant|cafe|bar)\b/i.test(label))) out.push({ label: label.replace(/\s*\((maps|map)\)\s*$/i, ""), wid: String(w._id) });
+    }
+  }
+  return out;
 }
 
 /**
@@ -413,14 +578,7 @@ function factsOf(r: {
     title: titleOf(w),
     items: (((w.data as Data).items as { name?: string }[] | undefined) ?? []).map((it) => clip(str(it.name), 24)).filter(Boolean).slice(0, 8),
   }));
-  const places: string[] = [];
-  for (const w of [...of("linkShelf"), ...of("linkCard")]) {
-    const d = w.data as { links?: { label?: string; url?: string }[]; label?: string; title?: string; url?: string };
-    for (const l of d.links ?? [{ label: d.label ?? d.title, url: d.url }]) {
-      const label = str(l.label);
-      if (label && (/maps|yelp|opentable|resy/i.test(str(l.url)) || /\b(place|spot|restaurant|cafe|bar)\b/i.test(label))) places.push(label.replace(/\s*\((maps|map)\)\s*$/i, ""));
-    }
-  }
+  const places = placesOf([...of("linkShelf"), ...of("linkCard")]).map((p) => p.label);
   const dates = of("countdown")
     .map((w) => ({ title: titleOf(w), date: str((w.data as Data).targetDate) }))
     .filter((c) => /^\d{4}-\d{2}-\d{2}$/.test(c.date))
@@ -456,8 +614,11 @@ export const refresh = internalMutation({
     const now = Date.now();
     const brief = await buildBrief(ctx, spaceId, now);
     if (!brief) return null;
-    const row = { spaceId, text: brief.text, facts: JSON.stringify({ lines: brief.lines, facts: brief.facts, room: brief.room }), at: now };
     const old = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
+    // What people told it or crossed out is theirs: a rebuild never drops it.
+    const { told = [], forgot = [] } = old ? (JSON.parse(old.facts) as Stored) : {};
+    const stored: Stored = { lines: brief.lines, facts: brief.facts, room: brief.room, knows: brief.knows, told, forgot };
+    const row = { spaceId, text: brief.text, facts: JSON.stringify(stored), at: now };
     if (old) await ctx.db.replace("briefs", old._id, row);
     else await ctx.db.insert("briefs", row);
     return null;
@@ -513,6 +674,7 @@ const roomV = v.object({
   clocks: v.array(v.object({ label: v.string(), tz: v.string() })),
   board: v.array(v.object({ card: v.string(), title: v.string() })),
   lowercase: v.boolean(),
+  told: v.optional(names),
 });
 
 /** For the dev inspector: the stored brief, its age, and which table and how
@@ -528,8 +690,9 @@ export const inspect = query({
     const row = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
     if (!row) return null;
     // Briefs stored before the room facts existed have no `room` until the next refresh.
-    const { lines = [], room } = JSON.parse(row.facts) as { lines?: BriefLine[]; room?: RoomFacts };
-    return { text: row.text, chars: row.text.length, at: row.at, ageMs: Math.max(0, now - row.at), lines, ...(room ? { room } : {}) };
+    // The room facts go out as people corrected them: crossed-out lines gone, told facts attached.
+    const { lines = [], room, told = [], forgot = [] } = JSON.parse(row.facts) as Stored;
+    return { text: row.text, chars: row.text.length, at: row.at, ageMs: Math.max(0, now - row.at), lines, ...(room ? { room: applyCorrections(room, told, forgot) } : {}) };
   },
 });
 
@@ -564,5 +727,94 @@ export const roomFacts = internalQuery({
     const space = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", slug)).first();
     if (!space) return null;
     return (await buildBrief(ctx, space._id, now))?.room ?? null;
+  },
+});
+
+/* ---------- What this space knows: the page, and people's corrections ---------- */
+
+const knowLineV = v.object({
+  key: v.string(),
+  section: v.union(v.literal("who"), v.literal("soon"), v.literal("decided"), v.literal("habits"), v.literal("made")),
+  text: v.string(),
+  why: v.string(),
+  src: names,
+  n: v.optional(v.number()),
+  status: v.optional(v.union(v.literal("kept"), v.literal("edited"), v.literal("removed"))),
+});
+const saidV = { text: v.string(), by: v.string(), color: v.string(), at: v.number() };
+
+/** The page everyone in the room can open: what code noticed (each line with
+ * its cards), what people told it, and what they crossed out, with who did.
+ * Names and board text only, the same for everyone in the room. */
+export const knows = query({
+  args: { spaceId: v.id("spaces") },
+  returns: v.union(
+    v.null(),
+    v.object({
+      room: v.string(),
+      at: v.number(),
+      people: v.array(v.object({ name: v.string(), color: v.string(), away: v.optional(v.boolean()) })),
+      lines: v.array(knowLineV),
+      told: v.array(v.object({ id: v.string(), ...saidV })),
+      forgot: v.array(v.object({ key: v.string(), ...saidV })),
+    }),
+  ),
+  handler: async (ctx, { spaceId }): Promise<RoomKnows | null> => {
+    const row = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
+    if (!row) return null;
+    const s = JSON.parse(row.facts) as Stored;
+    return { room: s.room?.room ?? "", at: row.at, people: s.knows?.people ?? [], lines: s.knows?.lines ?? [], told: s.told ?? [], forgot: s.forgot ?? [] };
+  },
+});
+
+/** The room's stored brief for a correction to land on; built now if the cron hasn't reached this room yet. */
+async function storedFor(ctx: MutationCtx, spaceId: Id<"spaces">): Promise<{ id: Id<"briefs">; s: Stored } | null> {
+  const row = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
+  if (row) return { id: row._id, s: JSON.parse(row.facts) as Stored };
+  const now = Date.now();
+  const brief = await buildBrief(ctx, spaceId, now);
+  if (!brief) return null;
+  const s: Stored = { lines: brief.lines, facts: brief.facts, room: brief.room, knows: brief.knows, told: [], forgot: [] };
+  return { id: await ctx.db.insert("briefs", { spaceId, text: brief.text, facts: JSON.stringify(s), at: now }), s };
+}
+
+/**
+ * A person corrects what the space knows. Anyone in the room may (it's a
+ * shared page), and each change keeps who made it:
+ * - `tell`: add a short fact in their own words; it goes to voice asks as a fact line.
+ * - `untell`: take a told fact back.
+ * - `forget`: cross out a noticed line; it stops going to voice asks.
+ * - `restore`: put a crossed-out line back.
+ */
+export const correct = mutation({
+  args: {
+    spaceId: v.id("spaces"),
+    by: v.string(),
+    color: v.string(),
+    change: v.union(
+      v.object({ kind: v.literal("tell"), text: v.string() }),
+      v.object({ kind: v.literal("untell"), id: v.string() }),
+      v.object({ kind: v.literal("forget"), key: v.string(), text: v.string() }),
+      v.object({ kind: v.literal("restore"), key: v.string() }),
+    ),
+  },
+  returns: v.null(),
+  handler: async (ctx, { spaceId, by, color, change }) => {
+    const row = await storedFor(ctx, spaceId);
+    if (!row) return null;
+    const at = Date.now();
+    const who = { by: by.trim().slice(0, 40) || "someone", color: color.slice(0, 40), at };
+    let told = row.s.told ?? [];
+    let forgot = row.s.forgot ?? [];
+    if (change.kind === "tell") {
+      const text = change.text.replace(/\s+/g, " ").trim().slice(0, TOLD_CHARS);
+      if (!text) return null;
+      // The newest facts stay when the list is full.
+      told = [...told.filter((t) => t.text.toLowerCase() !== text.toLowerCase()), { id: `t${at.toString(36)}`, text, ...who }].slice(-TOLD_MAX);
+    } else if (change.kind === "untell") told = told.filter((t) => t.id !== change.id);
+    else if (change.kind === "forget") forgot = [...forgot.filter((f) => f.key !== change.key), { key: change.key.slice(0, 120), text: change.text.slice(0, 200), ...who }].slice(-40);
+    else forgot = forgot.filter((f) => f.key !== change.key);
+    await ctx.db.patch("briefs", row.id, { facts: JSON.stringify({ ...row.s, told, forgot }) });
+    return null;
   },
 });

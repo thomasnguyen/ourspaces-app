@@ -5,6 +5,18 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **What this space knows (Oct 4, dev lane).** Every room has a second side at
+  `#/space/<slug>/knows`, opened from the black chip by the room's name: who
+  we are, coming up, how we usually do things (each habit with its evidence),
+  where things stand, what the voice asks made. Tap a line → back on the board
+  with the camera on its card. `cross out` a noticed line or `tell it
+  something`; both are stored with who did it inside the room's `briefs` row
+  (no schema change) and change what the next voice ask is sent. No model
+  writes any of it. Mock rooms show fixtures. Feature file
+  `.claude/skills/run-ourspaces/features/room-brain.md`. Known gaps: day /
+  time / word habits are on the page but were never sent to the ask; the
+  lines refresh with the brief's cron, not on every vote.
+
 - **The room brief (B1, 2026-10-04, night):** `convex/roomBrief.ts` builds a ≤640-char (≈237-token) brief per room from its own rows, no model: the real group (seeded cast, else whoever wrote/voted/made something), who's away, upcoming dates with the arithmetic done, poll leaders and RSVPs, who paid and claimed, the board by title, clocks, and habits that have 2+ sources. Cards the voice ask dealt never count as habits. Stored in the new `briefs` table (schema 7,982 chars; two long comments shortened to pay for it). Refreshed by the cron every 10 min (active rooms, plus once a day). `getBrief` (internal) is what the ask will read; `inspect` (public, read-only) gives the text, its age and a source per line for the dev inspector. **Not wired into `voiceBuild` yet** (the next small task). Offline A/B, 150 Lightning calls, in the local eval folder: the shipped shape makes 5 of 20 asks more specific, 12 no change, 3 worse; first line −17 ms median; Thomas's ten examples 0 hit / 2 partial / 8 miss. The brief knows the facts, but the deck can't say "already there", and code has to filter people by RSVP/away.
 
 - **Say it → it builds, filled while you talk (S1 round two, 2026-10-04, late night):** every word that names a card goes to Lightning at once (two in flight, newest words wait for a slot); each answer fills the draft *tentatively* (washed out, `data-voice-tentative`), newest words winning, closed fields only, merged so unchanged fields stay put; nothing commits while you talk. A pause ends the ask sooner (350 ms) when the exact words already made a whole card, never on a trailing number; hanging words still wait 1.6 s. A word within 1.2 s of the end reopens the ask and the written card is corrected in place (`voiceBuild.amend`), never dealt twice. The commit goes out the moment the final card closes in the stream (row found by nonce), inserts directly, and leaves the counter, activity stamp and log line to a scheduled `noteCommitted`. Live, 13 + 13 runs from the last word: options on screen 634 ms *before* it (tentative), final card 686 (was 800), second browser 938 (was 1,213), 3 calls per ask, 4 field changes per poll ask (real content as the words grow). 10 gap cases: none lost, no double-deal; four long content-word gaps reopened and corrected in place. Rough: the pause is still the floor (the last word's call takes ~550–700 ms to close through the row mirror); a late word shows everyone the shorter card for ~1–2 s; the tentative look needs the design pass.

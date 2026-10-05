@@ -21,6 +21,8 @@ const PLAY_LAB_SOURCE = "crew";
 import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock, radioRoomOf } from "../components/ActionDock";
 import { VoiceBuildLayer } from "../components/VoiceBuildLayer";
+import { RoomKnowsDoor, RoomKnowsPage } from "../components/RoomKnows";
+import { standing } from "../lib/roomKnows";
 import { useVoiceBuild } from "../live/useVoiceBuild";
 import { boardItems } from "../lib/deck";
 import { Canvas, SpaceHeader } from "../components/Canvas";
@@ -1488,6 +1490,11 @@ export function LiveSpacePage({
      them and its tokens resolve against them, on this screen. */
   const [briefNow] = useState(() => Date.now());
   const roomBrief = useQuery(api.roomBrief.inspect, mode === "live" && space ? { spaceId: space._id, now: briefNow } : "skip");
+  /* What this space knows (components/RoomKnows.tsx): the same brief as a
+     page people can read and correct. A correction lands on the brief's row,
+     so the facts above change with it and the next ask is routed by them. */
+  const roomKnows = useQuery(api.roomBrief.knows, mode === "live" && space ? { spaceId: space._id } : "skip");
+  const correctKnows = useMutation(api.roomBrief.correct);
   const voicePeople = () =>
     [...new Set([identity.name, ...presence.peers.map((peer) => peer.name), ...members.map((m) => m.name)])].slice(0, 8);
   const voiceToday = () => {
@@ -2561,6 +2568,7 @@ export function LiveSpacePage({
         livePeers={liveCursors}
         arrivalPeerId={arrivalPeer?.userId}
         inboxAddress={space?.inboxAddress}
+        knowsDoor={mode === "live" && space ? <RoomKnowsDoor slug={slug} count={roomKnows ? standing(roomKnows) : undefined} /> : undefined}
         addOpen={pickerOpen}
         onAddClick={() => {
           if (pickerOpen) {
@@ -3043,6 +3051,15 @@ export function LiveSpacePage({
           if (next) playSound("tap");
         }}
       />
+      {mode === "live" && space && roomEntered && (
+        <RoomKnowsPage
+          slug={slug}
+          roomName={activeCustomization.name}
+          knows={roomKnows}
+          self={identity}
+          onChange={(change) => void correctKnows({ spaceId: space._id, by: identity.name, color: identity.color, change })}
+        />
+      )}
     </main>
   );
 }

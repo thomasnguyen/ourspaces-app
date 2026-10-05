@@ -153,8 +153,13 @@ export function tokenMenu(f: RoomFacts, said?: string): string {
     if (own.length) lines.push(`their lists: ${own.join(", ")}`);
   }
   if (f.lowercase) lines.push("titles: lowercase");
+  // What people told the space themselves (the "what this space knows" page).
+  if (f.told?.length) lines.push(`${TOLD_LEAD} ${f.told.join("; ")}`);
   return lines.join("\n");
 }
+
+/** Leads the line of facts people told the space; they outrank what code noticed. */
+export const TOLD_LEAD = "The group told us (true, wins over anything above):";
 
 /** The user turn: the facts, then the words (and the card, when the decide pass already picked it). */
 export function dealTurnV2(r: { menu: string; said: string; card?: string }): string {
@@ -190,10 +195,13 @@ const factName = (line: string) => line.split(/ = |: /)[0];
 export function routeAsk(f: RoomFacts | null, said: string): AskRoute {
   if (!f) return { route: "fast", why: "no room brief yet", menu: null, facts: [] };
   const menu = tokenMenu(f, said);
-  let facts = menu.split("\n").slice(1).filter((l) => !l.startsWith("titles:"));
+  const lines = menu.split("\n").slice(1).filter((l) => !l.startsWith("titles:"));
+  // Told facts ride along with a brain ask; alone they don't make one.
+  const told = lines.filter((l) => l.startsWith(TOLD_LEAD));
+  let facts = lines.filter((l) => !l.startsWith(TOLD_LEAD));
   if (!ASKS_WHO.test(said)) facts = facts.filter((l) => !/^@(home|coming)\b/.test(l));
   return facts.length
-    ? { route: "brain", why: `the words point at ${facts.map(factName).join(", ")}`, menu, facts }
+    ? { route: "brain", why: `the words point at ${facts.map(factName).join(", ")}`, menu, facts: [...facts, ...told] }
     : { route: "fast", why: "no room fact in the words", menu, facts };
 }
 
