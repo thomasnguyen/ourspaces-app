@@ -6,7 +6,7 @@
  */
 import type { CSSProperties } from "react";
 import { AnswerToSee, SeeSlip } from "../AnswerToSee";
-import { seeSecondsLeft, type SeeLock } from "../../lib/answerToSee";
+import { LOCKS, seeSecondsLeft, type SeeLock } from "../../lib/answerToSee";
 import { awardsOf, closestCall, currentRound, isIn, pointsOf, ROUND_MS, tally } from "../../lib/games/engine";
 import type { Game, GamePerson, GameRound } from "../../lib/games/types";
 import { SCOREBOARD_WIDGET_ID, useGames, type GamesApi } from "../../lib/games/useMockGames";
@@ -45,6 +45,8 @@ export function GameCard({ sheet = false }: { sheet?: boolean }) {
       className={`gm at-${game.phase} ${sheet ? "is-sheet" : "widget-shell"} ${playing ? "is-playing" : "is-watching"}`}
       data-testid="game-card"
       data-phase={game.phase}
+      data-game-id={game.id}
+      data-live={api.live ? "true" : undefined}
       data-kind={game.kind}
       data-round={game.round + 1}
       data-cast={game.cast.length}
@@ -139,9 +141,10 @@ function Round({ api, game, round }: { api: GamesApi; game: Game; round: GameRou
   const revealed = game.phase === "reveal";
   /* the round's answers: face down until everyone is in or the timer ends,
      then turned over for the whole room at the same moment */
-  const lock: SeeLock = { until: { everyone: true, at: round.revealedAt ?? round.endsAt }, hides: "answers", revealsTo: "everyone" };
+  const lock: SeeLock = { ...LOCKS.round, until: { ...LOCKS.round.until, everyone: true, at: round.revealedAt ?? round.endsAt } };
   const facts = {
     mine: Boolean(mine),
+    resolved: revealed,
     answered: round.answers.length,
     of: game.players.length,
     now: revealed ? (round.revealedAt ?? api.now) : Math.min(api.now, (round.endsAt ?? api.now + 1) - 1),

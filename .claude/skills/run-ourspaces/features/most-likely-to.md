@@ -1,6 +1,6 @@
 ---
 route: #/space/crew
-ready: game-door
+ready: scoreboard
 testids: game-pick game-reveal game-sticker game-awards
 states:
   round: ?as=Maya&game=round&round=2 | wait game-round | sleep 1300

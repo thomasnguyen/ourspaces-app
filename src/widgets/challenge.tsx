@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { LOCKS, seeState } from "../lib/answerToSee";
 import type { Widget } from "../data/types";
 import { MemberFace } from "../components/MemberFace";
 import { getDataMode } from "../live/dataMode";
@@ -300,9 +301,10 @@ export function StandingsWidget({ widget, style }: { widget: Widget; style: Styl
   const { data, today, day, viewer, final } = useChallenge(source?.data);
   const rows = useMemo(() => rank(data, Math.max(day, 0)), [data, day]);
   const mine = viewer && today >= 0 ? logOf(data, viewer, today) : null;
-  const locked = Boolean(source) && !final && (viewer == null || mine == null);
-  const you = locked ? undefined : rows.find((row) => row.name === viewer);
   const inToday = today >= 0 ? data.people.filter((p) => logOf(data, p.name, today) != null).length : 0;
+  /* the one "answer to see" lock (lib/answerToSee.ts LOCKS.standings): log yours, or the reveal opens it for all */
+  const locked = Boolean(source) && !seeState(LOCKS.standings, { mine: mine != null, answered: inToday, of: data.people.length, now: Date.now(), resolved: final, player: viewer != null }).open;
+  const you = locked ? undefined : rows.find((row) => row.name === viewer);
   const reveal = revealLabel(data);
 
   /* the flip plays when the lock opens under you, not on a load that's already open */

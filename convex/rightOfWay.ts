@@ -5,7 +5,8 @@ import type { Id } from "./_generated/dataModel";
  * The one door. Every change the AI makes to the board passes through
  * `rightOfWay` before it is committed: a voice edit and its undo
  * (edits.ts), a link filling its target (links.ts `writeLinked`), a card the
- * voice build writes (voiceBuild.ts `commit`). It gets the write (who asked,
+ * voice build writes (voiceBuild.ts `commit`), a game started (games.ts
+ * `start`, by tap or by voice), a puzzle piece the space would place (R1). It gets the write (who asked,
  * which card, which fields, old and new values) and answers:
  *
  *   go    commit it
@@ -20,7 +21,7 @@ import type { Id } from "./_generated/dataModel";
  */
 
 export type AiWrite = {
-  kind: "edit" | "undo" | "link" | "build";
+  kind: "edit" | "undo" | "link" | "build" | "game" | "puzzle";
   spaceId: Id<"spaces">;
   widgetId?: Id<"widgets">;
   /** Who asked: a person's name, or "link" for a link resolving. */

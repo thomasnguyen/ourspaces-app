@@ -1,6 +1,6 @@
 ---
 route: #/space/crew
-ready: game-door
+ready: scoreboard
 testids: jigsaw-mat jigsaw-piece jigsaw-count jigsaw-ghost jigsaw-helper jigsaw-done jigsaw-slip jigsaw-invite jigsaw-invite-join jigsaw-invite-hide jigsaw-start jigsaw-sheet jigsaw-sheet-close jigsaw-sheet-leave jigsaw-dev
 states:
   start: ?as=Maya&jigsaw=start&you=play | wait jigsaw-mat | sleep 2800

@@ -1,6 +1,6 @@
 ---
 route: #/space/crew
-ready: game-door
+ready: scoreboard
 testids: hot-seat-start hot-seat-why hot-seat-short hot-seat-others hot-seat-pick hot-seat-option hot-seat-slider hot-seat-value hot-seat-lock hot-seat-watch hot-seat-answer hot-seat-fact hot-seat-reacts hot-seat-react hot-seat-reaction hot-seat-podium hot-seat-rank hot-seat-to-keepsake hot-seat-keepsake keepsake-row
 states:
   lobby: ?as=Sam&game=lobby&play=seat | wait game-lobby | sleep 1300

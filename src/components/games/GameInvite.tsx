@@ -6,9 +6,8 @@
  * has won, small enough to ride on an avatar.
  */
 import { isIn } from "../../lib/games/engine";
-import { SCOREBOARD_WIDGET_ID, useGames } from "../../lib/games/useMockGames";
+import { useGames } from "../../lib/games/useMockGames";
 import { GameCard } from "./GameCard";
-import { useJigsaw } from "../../lib/jigsaw/useMockJigsaw";
 import { AwardSticker, byStyle, GameFace, useNoticeAside } from "./parts";
 import "./games.css";
 
@@ -58,34 +57,6 @@ export function GameInvite() {
         ×
       </button>
     </aside>
-  );
-}
-
-/** The header chip: where games live. Flies to the scoreboard; while a game
-    is on it says so and takes you to it (joining if you aren't in). */
-export function GameDoor({ onGo }: { onGo: (widgetId: string) => void }) {
-  const api = useGames();
-  const jig = useJigsaw();
-  if (!api || !api.gameName) return null;
-  const game = api.game;
-  const on = game && game.phase !== "done";
-  /* a puzzle on the board is a game that's on, too */
-  if (!on && jig?.run?.phase === "on")
-    return (
-      <button type="button" className="gm-door is-on" data-testid="game-door" onClick={() => jig.start()}>
-        <i aria-hidden="true">▶</i>a puzzle is on
-      </button>
-    );
-  return (
-    <button
-      type="button"
-      className={`gm-door ${on ? "is-on" : ""}`}
-      data-testid="game-door"
-      onClick={() => (on ? (isIn(game, api.me.name) ? api.start() : api.join()) : onGo(SCOREBOARD_WIDGET_ID))}
-    >
-      <i aria-hidden="true">▶</i>
-      {on ? `${game.kind === "hot-seat" ? "the hot seat" : game.name} is on` : "games"}
-    </button>
   );
 }
 

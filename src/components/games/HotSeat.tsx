@@ -7,7 +7,7 @@
  */
 import { useState, type CSSProperties } from "react";
 import { AnswerToSee, SeeSlip } from "../AnswerToSee";
-import { seeSecondsLeft, type SeeLock } from "../../lib/answerToSee";
+import { LOCKS, seeSecondsLeft, type SeeLock } from "../../lib/answerToSee";
 import { awardsOf, isIn, ROUND_MS, roundPlayers } from "../../lib/games/engine";
 import { askAbout, askFor, distance, SEAT_REACTIONS, seatRanking } from "../../lib/games/hotSeat";
 import type { Game, GamePerson, GameRound, HotQuestion, SeatReaction } from "../../lib/games/types";
@@ -167,9 +167,10 @@ function SeatRound({ api, game, round }: { api: GamesApi; game: Game; round: Gam
   const out = players.filter((p) => !round.answers.some((a) => same(a.by, p.name)));
   const revealed = game.phase === "reveal";
   /* the same lock as any game round: face down until everyone's in or the timer ends */
-  const lock: SeeLock = { until: { everyone: true, at: round.revealedAt ?? round.endsAt }, hides: "right-answer", revealsTo: "everyone" };
+  const lock: SeeLock = { ...LOCKS.rightAnswer, until: { ...LOCKS.rightAnswer.until, everyone: true, at: round.revealedAt ?? round.endsAt } };
   const facts = {
     mine: Boolean(mine) || !ask,
+    resolved: revealed,
     answered: round.answers.length,
     of: players.length,
     now: revealed ? (round.revealedAt ?? api.now) : Math.min(api.now, (round.endsAt ?? api.now + 1) - 1),

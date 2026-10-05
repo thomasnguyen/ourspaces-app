@@ -6,7 +6,7 @@
  */
 import type { CSSProperties } from "react";
 import { AnswerToSee, SeeSlip } from "../AnswerToSee";
-import type { SeeLock } from "../../lib/answerToSee";
+import { LOCKS, type SeeLock } from "../../lib/answerToSee";
 import type { ScoreRow } from "../../lib/games/types";
 import { useGames } from "../../lib/games/useMockGames";
 import { AwardSticker, byStyle, GameFace } from "./parts";
@@ -14,7 +14,7 @@ import { JigsawStart } from "./Jigsaw";
 import { SeatStart } from "./HotSeat";
 import "./games.css";
 
-const LOCK: SeeLock = { until: { answered: true }, hides: "ranking", revealsTo: "each" };
+const LOCK: SeeLock = LOCKS.scoreboard;
 
 /** One line per row. Nobody's line is a number alone. */
 function kindLine(row: ScoreRow, i: number, rows: ScoreRow[]): string {
@@ -81,7 +81,33 @@ export function Scoreboard() {
         </ol>
       </AnswerToSee>
       <footer className="sb-foot" style={{ "--n": rows.length } as CSSProperties}>
-        <span className="sb-slot">the challenge · standings land here</span>
+        {api.challenge ? (
+          /* a running challenge in this room rides on the same card, behind the same kind of lock */
+          <div className="sb-slot sb-challenge" data-testid="scoreboard-challenge" data-open={api.challenge.open ? "true" : "false"}>
+            <span>
+              {api.challenge.title.toLowerCase()} · day {api.challenge.day} of {api.challenge.days}
+            </span>
+            {api.challenge.open ? (
+              <ol>
+                {api.challenge.rows.slice(0, 4).map((r, i) =>
+                  r ? (
+                    <li key={r.name} style={byStyle(r)} data-testid="scoreboard-challenge-row">
+                      <b>{i + 1}</b>
+                      <GameFace person={r} />
+                      <em>{r.name.toLowerCase()}</em>
+                      <strong>{r.total}</strong>
+                    </li>
+                  ) : null,
+                )}
+              </ol>
+            ) : (
+              <em>{api.challenge.rows.length} in · face down until you log today</em>
+            )}
+          </div>
+        ) : (
+          <span className="sb-slot">the challenge · standings land here</span>
+        )}
+        {api.notice ? <span className="sb-notice" data-testid="game-notice">{api.notice}</span> : null}
         {start}
         <SeatStart />
         <JigsawStart />

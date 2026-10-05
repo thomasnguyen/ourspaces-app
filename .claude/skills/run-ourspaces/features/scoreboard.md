@@ -1,12 +1,12 @@
 ---
 route: #/space/crew
-ready: game-door
-testids: scoreboard scoreboard-locked scoreboard-open scoreboard-row game-start game-door
+ready: scoreboard
+testids: scoreboard scoreboard-locked scoreboard-open scoreboard-row scoreboard-challenge scoreboard-challenge-row game-notice game-start
 states:
-  locked: ?as=Rio | click game-door | sleep 1400
-  open: ?as=Rio&board=open | click game-door | sleep 1400
+  locked: ?as=Rio&fly=scoreboard | sleep 1400
+  open: ?as=Rio&board=open&fly=scoreboard | sleep 1400
   after: ?as=Maya&game=awards | wait game-awards | sleep 1300
-  house: ?as=gigi&board=open #/space/house | click game-door | sleep 1400
+  house: ?as=gigi&board=open&fly=scoreboard #/space/house | sleep 1400
 take:
   open: locked real 30fps 60f
 ---

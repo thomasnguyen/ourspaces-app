@@ -108,7 +108,12 @@ import { useShowAfter } from "../lib/entrance";
 import { freshWidgetData, getWidgetBlueprint } from "../lib/widgetDefaults";
 import { widgetLabel } from "../lib/widgetLabels";
 import { panToWidget, recapTargetsOf, startBoardScan } from "../lib/recapBoard";
-import { YourTurn } from "../components/YourTurn";
+import { YourTurn, goToTurnWidget } from "../components/YourTurn";
+import { GameInvite, GameSheet, GameSheetTab } from "../components/games/GameInvite";
+import { GAME_WIDGET_ID, GamesProvider, KEEPSAKE_WIDGET_ID, SCOREBOARD_WIDGET_ID } from "../lib/games/useMockGames";
+import { useLiveGames } from "../live/useLiveGames";
+import { gameSpots, GAME_CARD } from "../lib/games/place";
+import { LIVE_GAME_ROOMS } from "../data/games";
 import { yourTurn, type TurnViewer } from "../lib/yourTurn";
 import { widgetSupportsThread } from "../lib/widgetThreads";
 import { RSVP_CHOICES, type RsvpStatus } from "../widgets/extras";
@@ -847,6 +852,40 @@ export function LiveSpacePage({
   turnPollsRef.current = turnPolls.widgets;
   const openRecapRef = useRef<() => void>(() => {});
   const respondToRsvpRef = useRef<(widgetId: string, status: RsvpStatus) => void>(() => {});
+  /* Games, live (convex/games.ts): the scoreboard and the game card are placed like any card,
+     in the board, once per room; nothing about them is stored as a widget row. */
+  const games = useLiveGames({
+    room: slug,
+    spaceId: space?._id,
+    identity,
+    enabled: mode === "live" && roomEntered && LIVE_GAME_ROOMS.has(slug),
+    flyTo: goToTurnWidget,
+  });
+  const gameWidgets = useMemo<Widget[]>(() => {
+    if (!games || adaptedWidgets.length === 0) return [];
+    const spot = gameSpots(slug, adaptedWidgets, { w: space?.canvasW ?? snapshot?.canvasW ?? 1640, h: space?.canvasH ?? snapshot?.canvasH ?? 1080 });
+    const g = games.game;
+    const out: Widget[] = [
+      {
+        id: SCOREBOARD_WIDGET_ID, type: "scoreboard", ...spot.board, w: 300, z: 4, data: { title: "scoreboard" },
+        h: 110 + 49 * Math.min(7, games.rows.length) + 96 + (games.challenge ? 40 + 30 * Math.min(4, games.challenge.rows.length) : 0) + (games.seatName && !(g && g.phase !== "done") ? 48 : 0),
+      },
+    ];
+    if (g && !(g.kind === "hot-seat" && g.phase === "done"))
+      out.push({
+        id: GAME_WIDGET_ID, type: "game", ...spot.card, ...GAME_CARD, z: 5,
+        data: {
+          title: g.name, name: g.name, phase: g.phase, startedBy: g.startedBy.name,
+          players: g.players.map((p) => p.name), youIn: g.players.some((p) => p.name === games.me.name),
+          round: g.round + 1, rounds: g.rounds.length,
+          ...(g.seat?.length === 1 && g.seat[0].name === games.me.name ? { ticket: "you're in the hot seat", waiting: `${g.startedBy.name.toLowerCase()} started a game about you. sit down` } : {}),
+        },
+      });
+    const keep = games.keepsake;
+    if (keep) out.push({ id: KEEPSAKE_WIDGET_ID, type: "keepsake", ...spot.card, w: 304, h: 112 + 37 * keep.rows.length, z: 6, data: { title: keep.title } });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adaptedWidgets, Boolean(games), games?.game, games?.rows.length, games?.challenge?.rows.length, games?.seatName, games?.me.name, slug, snapshot?.canvasW, snapshot?.canvasH, space?.canvasW, space?.canvasH]);
   const turnViewer = useMemo<TurnViewer>(
     () => ({
       name: identity.name,
@@ -857,7 +896,8 @@ export function LiveSpacePage({
   );
   const turnItems = useMemo(
     () => yourTurn({
-      widgets: turnPolls.widgets,
+      /* a game you're not in is a ticket in the same list, ranked first while it's open */
+      widgets: [...turnPolls.widgets, ...gameWidgets.filter((w) => w.type === "game")],
       members: members.map((member) => member.name),
       viewer: turnViewer,
       mine: { polls: { ...pollSelections, ...turnPolls.voted }, rsvps: rsvpSelections, answers: dailyAnswers },
@@ -865,7 +905,7 @@ export function LiveSpacePage({
       knownPolls: roomVotes ? undefined : [],
       sharedSeals: true,
     }),
-    [dailyAnswers, members, pollSelections, roomVotes, rsvpSelections, turnPolls, turnViewer],
+    [dailyAnswers, gameWidgets, members, pollSelections, roomVotes, rsvpSelections, turnPolls, turnViewer],
   );
   /* `/?peers=3#/space/house` — the peers lab (src/live/labPeers.ts) on a real
      space: the fixture's roster gets a cursor each, moving the way people do
@@ -1810,7 +1850,7 @@ export function LiveSpacePage({
     () => ({ ...voiceBuild.voice, start: () => { setRecapOpen(false); voiceBuild.voice.start?.(); } }),
     [voiceBuild.voice],
   );
-  const canvasWidgets = useMemo(() => voiceBuild.withDrafts(adaptedWidgets), [voiceBuild.withDrafts, adaptedWidgets]);
+  const canvasWidgets = useMemo(() => voiceBuild.withDrafts([...adaptedWidgets, ...gameWidgets]), [voiceBuild.withDrafts, adaptedWidgets, gameWidgets]);
   /* The header always needs a number to print, so an unloaded count reads as
      quiet rather than falling through to the seeded roster. The strip can
      stay silent until the real one lands, so it gets the raw value. */
@@ -2722,6 +2762,7 @@ export function LiveSpacePage({
   );
 
   return (
+    <GamesProvider value={games}>
     <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${gateLeaving ? "is-gate-leaving" : ""} ${claimOpen ? "has-claim-popover" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""} ${spacePan.panning ? "is-canvas-panning" : ""} ${spacePan.spaceHeld ? "is-space-panning" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
       <Rail
         activeId={slug}
@@ -3210,6 +3251,7 @@ export function LiveSpacePage({
           roomKey={slug}
           items={turnItems}
           viewer={turnViewer}
+          onJoin={() => games?.join()}
           onVote={handlers.onVote}
           onRsvp={respondToRsvp}
           onAnswer={answerDailyQuestion}
@@ -3227,6 +3269,13 @@ export function LiveSpacePage({
             });
           }}
         />
+      )}
+      {games && (
+        <>
+          <GameInvite />
+          <GameSheetTab />
+          <GameSheet />
+        </>
       )}
       <ActionDock
         voice={voiceHooks}
@@ -3288,5 +3337,6 @@ export function LiveSpacePage({
         />
       )}
     </main>
+    </GamesProvider>
   );
 }

@@ -1566,3 +1566,44 @@ button.gm-pick:not(:disabled):active .gm-face {
     animation-delay: 0ms !important;
   }
 }
+
+/* the challenge on the scoreboard (live: the family's push-ups), and a refused start */
+.sb-challenge {
+  display: grid;
+  gap: 5px;
+}
+.sb-challenge > em {
+  font-style: normal;
+}
+.sb-challenge ol {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sb-challenge li {
+  display: grid;
+  grid-template-columns: 12px 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-ink);
+  font-size: 12px;
+}
+.sb-challenge li .gm-face {
+  width: 24px;
+  height: 24px;
+}
+.sb-challenge li em {
+  font-style: normal;
+  font-weight: 700;
+}
+.sb-challenge li strong {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+.sb-notice {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 600;
+}

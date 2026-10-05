@@ -26,8 +26,8 @@ const low = (s: string) => s.trim().toLowerCase();
 /** a title without its emoji: "maya's bday 🎂" → "maya's bday" */
 const plain = (s: string) => s.replace(/[^\p{L}\p{N}\p{P}\p{Zs}]/gu, "").replace(/\s+/g, " ").trim();
 const mentions = (text: string, name: string) => new RegExp(`(^|[^a-z])${low(name).replace(/[^a-z0-9]/g, "")}('s)?([^a-z]|$)`).test(low(text));
-const PRYING = /\b(ex|crush|kiss\w*|dating|owes?|owed|debt|iou|weigh\w*|diet|body|bod)\b/i;
-const isKind = (...texts: string[]) => !texts.some((t) => PRYING.test(t));
+export const PRYING = /\b(ex|crush|kiss\w*|dating|owes?|owed|debt|iou|weigh\w*|diet|body|bod)\b/i;
+export const isKind = (...texts: string[]) => !texts.some((t) => PRYING.test(t));
 const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
 /* ---------- the room, as the game reads it ---------- */

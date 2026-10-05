@@ -13,6 +13,7 @@
  *   &gameRoom=crew  the room it happens in (default: the one you opened)
  *   &reveal=a|b|c   the reveal direction (default: the pick)
  *   ?board=open     the scoreboard face up without playing
+ *   &fly=scoreboard the camera goes to the scoreboard (there's no header chip any more)
  *   &play=seat      the game is the hot seat ("how well do you know maya")
  *     &about=Sam    who sits (default: the space's pick)
  *     &react=ha|wrong|who-told-you   a held reveal with your reaction already on it
@@ -72,7 +73,17 @@ export type GamesApi = {
   hideInvite: () => void;
   closeSheet: () => void;
   openSheet: () => void;
+  /** live rooms: the data is Convex's, the players are real (useLiveGames) */
+  live?: boolean;
+  /** one plain line after a start the server refused ("join the space to start a game") */
+  notice?: string;
+  /** a running challenge in this room, ranked on the same card (face down until you log) */
+  challenge?: ChallengeBoard | null;
+  /** mock only: the people the tab is pretending to be, for the dev readout */
+  simulated?: string[];
 };
+
+export type ChallengeBoard = { widgetId: string; title: string; unit: string; day: number; days: number; open: boolean; rows: Array<{ name: string; color: string; total: number; streak: number } | null> };
 
 const GamesContext = createContext<GamesApi | null>(null);
 export const GamesProvider = GamesContext.Provider;
@@ -299,6 +310,11 @@ export function useMockGames(o: {
   }, [apply, scheduleAnswers, scheduleReactions]);
 
   /* ---------- state URLs ---------- */
+  useEffect(() => {
+    if (params().get("fly") !== "scoreboard") return;
+    const t = window.setTimeout(() => panToWidget(SCOREBOARD_WIDGET_ID), 600);
+    return () => window.clearTimeout(t);
+  }, []);
   useEffect(() => {
     const q = params();
     const want = q.get("game");

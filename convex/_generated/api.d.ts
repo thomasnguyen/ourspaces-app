@@ -21,6 +21,7 @@ import type * as digest from "../digest.js";
 import type * as edits from "../edits.js";
 import type * as emails_signIn from "../emails/signIn.js";
 import type * as firecrawl from "../firecrawl.js";
+import type * as games from "../games.js";
 import type * as http from "../http.js";
 import type * as inbox from "../inbox.js";
 import type * as inboxRouting from "../inboxRouting.js";
@@ -75,6 +76,7 @@ declare const fullApi: ApiFromModules<{
   edits: typeof edits;
   "emails/signIn": typeof emails_signIn;
   firecrawl: typeof firecrawl;
+  games: typeof games;
   http: typeof http;
   inbox: typeof inbox;
   inboxRouting: typeof inboxRouting;

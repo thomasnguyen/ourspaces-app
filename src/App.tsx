@@ -116,9 +116,10 @@ import type { RoomOrigin } from "./components/CanvasRoom";
 import type { BuildRoomLink } from "./data/buildroom";
 import { pendingLinkRows, scheduleMockResolve } from "./lib/mockArrival";
 import { YourTurn, goToTurnWidget } from "./components/YourTurn";
-import { GameDoor, GameInvite, GameSheet, GameSheetTab } from "./components/games/GameInvite";
+import { GameInvite, GameSheet, GameSheetTab } from "./components/games/GameInvite";
+import { gameSpots, GAME_CARD } from "./lib/games/place";
 import { GAME_WIDGET_ID, GamesProvider, KEEPSAKE_WIDGET_ID, SCOREBOARD_WIDGET_ID, useMockGames, type CastPerson } from "./lib/games/useMockGames";
-import { GAME_SPOTS, KEEPSAKE_SPOTS, hasGames } from "./data/games";
+import { KEEPSAKE_SPOTS, hasGames } from "./data/games";
 import { JigsawDev, JigsawInvite, JigsawSheet, JigsawWorld } from "./components/games/Jigsaw";
 import { JigsawProvider, useMockJigsaw, withJigsaw, JIGSAW_WIDGET_ID } from "./lib/jigsaw/useMockJigsaw";
 import { hasJigsaw } from "./data/jigsaw";
@@ -2113,17 +2114,18 @@ export default function App() {
   const jigsaw = useMockJigsaw({ room: spaceId, meOf: gameMeOf, castOf: gameCastOf, flyTo: goToTurnWidget });
   const games = withJigsaw(gamesOnly, jigsaw);
   const jigsawOverlay = useMemo(() => <JigsawWorld />, []);
+  /* the games corner is placed like any card, inside the board (lib/games/place.ts) */
+  const gameSpot = gameSpots(spaceId, getSpace(spaceId).widgets, { w: canvasSizeFor(spaceId).width, h: canvasSizeFor(spaceId).height });
   const gameWidgets: Widget[] = hasGames(spaceId)
     ? [
-        { id: SCOREBOARD_WIDGET_ID, type: "scoreboard", ...GAME_SPOTS[spaceId].board, w: 300, h: 110 + 49 * Math.min(7, games.rows.length) + 96 + (hasJigsaw(spaceId) ? 44 : 0) + (games.seatName && !(games.game && games.game.phase !== "done") ? 48 : 0), z: 4, data: { title: "scoreboard" } },
+        { id: SCOREBOARD_WIDGET_ID, type: "scoreboard", ...gameSpot.board, w: 300, h: 110 + 49 * Math.min(7, games.rows.length) + 96 + (hasJigsaw(spaceId) ? 44 : 0) + (games.seatName && !(games.game && games.game.phase !== "done") ? 48 : 0), z: 4, data: { title: "scoreboard" } },
         ...(games.game
           ? [
               {
                 id: GAME_WIDGET_ID,
                 type: "game" as const,
-                ...GAME_SPOTS[spaceId].card,
-                w: 400,
-                h: 560,
+                ...gameSpot.card,
+                ...GAME_CARD,
                 z: 5,
                 data: {
                   title: games.game.name,
@@ -2359,7 +2361,6 @@ export default function App() {
         knowsDoor={
           <>
             <RoomKnowsDoor slug={spaceId} count={standing(mockKnows)} />
-            <GameDoor onGo={goToTurnWidget} />
           </>
         }
         spaceMeta={activeSpaceCustomization}

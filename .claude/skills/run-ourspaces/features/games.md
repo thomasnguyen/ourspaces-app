@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
-ready: game-door
-testids: game-card game-lobby game-round game-see game-reveal game-awards game-sticker game-join game-begin game-pick game-next game-rematch game-to-board game-start game-invite game-invite-join game-invite-hide game-sheet game-sheet-close game-sheet-tab game-door rail-game award-dots award-row
+ready: scoreboard
+testids: game-card game-lobby game-round game-see game-reveal game-awards game-sticker game-join game-begin game-pick game-next game-rematch game-to-board game-start game-invite game-invite-join game-invite-hide game-sheet game-sheet-close game-sheet-tab rail-game award-dots award-row
 states:
   idle: ?as=Rio
   start: ?as=Maya&game=start | wait game-lobby | sleep 5200
@@ -17,21 +17,22 @@ states:
   awards: ?as=Maya&game=awards | wait game-awards | sleep 1300
   late: ?as=Rio&game=late | wait game-invite | sleep 500
   knows: ?as=Maya&game=awards #/space/crew/knows | wait room-knows | sleep 900
-  board: ?as=Rio&board=open | click game-door | sleep 1400
-  locked: ?as=Rio | click game-door | sleep 1400
+  board: ?as=Rio&board=open&fly=scoreboard | sleep 1400
+  locked: ?as=Rio&fly=scoreboard | sleep 1400
   house: ?as=gigi&game=reveal&round=3 #/space/house | wait game-reveal | sleep 2800
   house-awards: ?as=gigi&game=awards #/space/house | wait game-awards | sleep 1300
   couple: ?game=round&round=2 #/space/couple | wait game-round | sleep 1300
   couple-match: ?game=reveal&round=1 #/space/couple | wait game-reveal | sleep 2800
   couple-awards: ?game=awards #/space/couple | wait game-awards | sleep 1300
   idle-maya: ?as=Maya
+  idle-maya-board: ?as=Maya&fly=scoreboard
   late-live: ?as=Ash&game=late
   invited-live: ?as=Rio&game=invited
   play: ?as=Maya&game=round&live=1 | wait game-round | sleep 600
   play-b: ?as=Maya&game=round&live=1&reveal=b | wait game-round | sleep 600
   play-c: ?as=Maya&game=round&live=1&reveal=c | wait game-round | sleep 600
 take:
-  start: idle-maya real 30fps 400f | 20 click game-door | 70 click game-start | 215 click game-begin | 255 click css:[data-testid="game-pick"][data-name="Sam"]
+  start: idle-maya-board real 30fps 400f | 70 click game-start | 215 click game-begin | 255 click css:[data-testid="game-pick"][data-name="Sam"]
   invitee: invited-live real 30fps 560f | 85 click game-invite-join | 420 click css:[data-testid="game-pick"][data-name="Sam"]
   phone: late-live real 30fps 330f | 40 click game-invite-join | 110 click css:[data-testid="game-sheet"] [data-name="Rio"]
   reveal: play real 30fps 170f focus css:[data-widget-id="game-card"] | 15 click css:[data-testid="game-pick"][data-name="Sam"]
