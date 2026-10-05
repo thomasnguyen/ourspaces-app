@@ -112,6 +112,11 @@ import { YourTurn, goToTurnWidget } from "../components/YourTurn";
 import { GameInvite, GameSheet, GameSheetTab } from "../components/games/GameInvite";
 import { GAME_WIDGET_ID, GamesProvider, KEEPSAKE_WIDGET_ID, SCOREBOARD_WIDGET_ID } from "../lib/games/useMockGames";
 import { useLiveGames } from "../live/useLiveGames";
+import { useLiveJigsaw } from "../live/useLiveJigsaw";
+import { ROOM_JIGSAW } from "../data/jigsaw";
+import { gameAsk } from "../lib/deck/verbs";
+import { JigsawDev, JigsawInvite, JigsawWorld } from "../components/games/Jigsaw";
+import { JigsawProvider } from "../lib/jigsaw/useMockJigsaw";
 import { gameSpots, GAME_CARD } from "../lib/games/place";
 import { LIVE_GAME_ROOMS } from "../data/games";
 import { yourTurn, type TurnViewer } from "../lib/yourTurn";
@@ -861,7 +866,12 @@ export function LiveSpacePage({
     enabled: mode === "live" && roomEntered && LIVE_GAME_ROOMS.has(slug),
     flyTo: goToTurnWidget,
   });
+  /* the live puzzle (convex/puzzles.ts): real hands only, the space's is absent */
+  const jigsaw = useLiveJigsaw({ room: slug, spaceId: space?._id, identity, enabled: mode === "live" && roomEntered && LIVE_GAME_ROOMS.has(slug), flyTo: goToTurnWidget });
+  const jigsawOverlay = useMemo(() => <JigsawWorld />, []);
   const gamesRef = useRef(games);
+  const jigsawRef = useRef(jigsaw);
+  jigsawRef.current = jigsaw;
   gamesRef.current = games;
   const gameWidgets = useMemo<Widget[]>(() => {
     if (!games || adaptedWidgets.length === 0) return [];
@@ -1721,7 +1731,18 @@ export function LiveSpacePage({
         return await answerAsk({ spaceId: space._id, question: said });
       },
       today: () => voiceToday(),
-      game: (said) => gamesRef.current?.voice?.(said) ?? "no games in this room",
+      game: (said) => {
+        const ask = gameAsk(said);
+        const jig = jigsawRef.current;
+        if (ask.kind === "jigsaw" && jig) {
+          const photos = ROOM_JIGSAW[slug]?.photos ?? [];
+          const photo = photos.find((p) => ask.photo && p.caption.includes(ask.photo.split(" ")[0])) ?? photos[0];
+          const already = jig.run?.phase === "on";
+          jig.start(photo?.key);
+          return already ? `a puzzle of ${jig.run?.photo.caption ?? "the photo"} is already on. jump in` : `a puzzle of ${photo?.caption ?? "the photo"}. everyone here gets the invite`;
+        }
+        return gamesRef.current?.voice?.(said) ?? "no games in this room";
+      },
       edit: async (widgetId, op) => {
         if (!space) throw new Error("no space");
         return await applyVoiceEdit({ spaceId: space._id, widgetId: widgetId as Id<"widgets">, op, by: identity.name, byUserId: identity.userId, today: voiceToday() });
@@ -2766,6 +2787,7 @@ export function LiveSpacePage({
 
   return (
     <GamesProvider value={games}>
+    <JigsawProvider value={jigsaw}>
     <main className={`paper-bg space-theme-${activeCustomization.theme} relative h-dvh overflow-hidden ${chatOpen ? "has-chat-open" : ""} ${spaceDraft ? "has-editor-open is-room-editing" : ""} ${gateOpen ? "has-entry-gate" : ""} ${gateLeaving ? "is-gate-leaving" : ""} ${claimOpen ? "has-claim-popover" : ""} ${photoGalleryWidget ? "has-photo-gallery" : ""} ${focusedTarget?.kind === "frame" ? "has-frame-focus" : ""} ${focusedTarget?.kind === "widget" ? "has-widget-focus" : ""} ${canvasCameraAnimating ? "is-canvas-camera-animating" : ""} ${canvasAwayFromHome ? "is-canvas-away" : ""} ${spacePan.panning ? "is-canvas-panning" : ""} ${spacePan.spaceHeld ? "is-space-panning" : ""}`} style={spaceCustomizationStyle(activeCustomization)} ref={wrapperRef} data-data-mode={mode} data-space-id={slug}>
       <Rail
         activeId={slug}
@@ -2968,6 +2990,7 @@ export function LiveSpacePage({
                 entrance
                 arrivalPeerId={arrivalPeer?.userId}
                 viewportRef={viewportRef}
+                overlay={jigsaw ? jigsawOverlay : null}
                 placingItem={placing}
                 placingOrigin={placingOrigin}
                 onPlaceItem={placeItem}
@@ -3276,6 +3299,8 @@ export function LiveSpacePage({
       {games && (
         <>
           <GameInvite />
+          <JigsawInvite />
+          <JigsawDev />
           <GameSheetTab />
           <GameSheet />
         </>
@@ -3340,6 +3365,7 @@ export function LiveSpacePage({
         />
       )}
     </main>
+    </JigsawProvider>
     </GamesProvider>
   );
 }

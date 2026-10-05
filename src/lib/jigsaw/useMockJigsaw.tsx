@@ -21,7 +21,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { ROOM_JIGSAW, type JigsawPhoto } from "../../data/jigsaw";
 import type { GamesApi } from "../games/useMockGames";
 import type { Award, GamePerson } from "../games/types";
-import type { Beat, JigsawResult, YouMode } from "./engine";
+import type { Beat, JigsawResult, LocalMove, RemotePiece, YouMode } from "./engine";
 
 export const JIGSAW_WIDGET_ID = "jigsaw-mat";
 const PHONE = "(max-width: 800px)";
@@ -65,6 +65,12 @@ export type JigsawApi = {
   close: () => void;
   openSheet: () => void;
   closeSheet: () => void;
+  /** live rooms (src/live/useLiveJigsaw.ts): the pieces as Convex has them, and where your moves go */
+  live?: {
+    rows: RemotePiece[];
+    /** resolves "wait" when the server gave the piece to someone else first */
+    onLocal: (m: LocalMove) => Promise<string | void> | void;
+  };
 };
 
 const JigsawContext = createContext<JigsawApi | null>(null);

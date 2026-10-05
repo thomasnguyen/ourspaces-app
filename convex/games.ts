@@ -37,10 +37,10 @@ const MAX_CAST = 8;
 
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
-type Who = { userId: string; name: string; color: string; guest: boolean };
+export type Who = { userId: string; name: string; color: string; guest: boolean };
 
 /** The caller's seat in this room: the signed-in id first, the tab's id otherwise (as votes and check-ins do). */
-async function caller(ctx: QueryCtx, spaceId: Id<"spaces">, tabId: string): Promise<Who | null> {
+export async function caller(ctx: QueryCtx, spaceId: Id<"spaces">, tabId: string): Promise<Who | null> {
   const seat = (userId: string) => ctx.db.query("members").withIndex("by_space_user", (q) => q.eq("spaceId", spaceId).eq("userId", userId)).first();
   const authId = await getAuthUserId(ctx);
   const row = (authId ? await seat(authId) : null) ?? (tabId && !tabId.startsWith("seed:") && !authId ? await seat(tabId) : null);

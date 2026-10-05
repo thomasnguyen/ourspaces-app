@@ -13,8 +13,8 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { LiveCursor } from "../../cursors";
 import { ROOM_JIGSAW, type JigsawPhoto } from "../../data/jigsaw";
 import { cutPicture, gridFor, type Cut, type CutPiece } from "../../lib/jigsaw/cut";
-import { clock, JigsawEngine, SPACE_NAME, type JigsawResult, type Layout, type Person, type Rect, type Snap } from "../../lib/jigsaw/engine";
-import { JIGSAW_WIDGET_ID, useJigsaw, type JigsawDone, type JigsawOptions } from "../../lib/jigsaw/useMockJigsaw";
+import { clock, JigsawEngine, SPACE_NAME, type JigsawResult, type Layout, type Person, type Rect, type RemotePiece, type Snap } from "../../lib/jigsaw/engine";
+import { JIGSAW_WIDGET_ID, useJigsaw, type JigsawApi, type JigsawDone, type JigsawOptions } from "../../lib/jigsaw/useMockJigsaw";
 import { playSound } from "../../lib/sounds";
 import { byStyle, GameFace, inkOn, nameList, useNoticeAside } from "./parts";
 import "./games.css";
@@ -103,6 +103,8 @@ type MatProps = {
   onClose: () => void;
   /** a phone: put the sheet away, the puzzle goes on */
   onLeave?: () => void;
+  /** a live room: the server's pieces in, your moves out (no simulated hands, no space hand) */
+  live?: JigsawApi["live"];
 };
 
 type Stage = "fly" | "play" | "whole" | "return";
@@ -123,11 +125,15 @@ const JigsawMat = memo(function JigsawMat(p: MatProps) {
   const whole = useRef<HTMLImageElement | null>(null);
   const box = useRef<{ left: number; top: number; k: number; at: number } | null>(null);
 
+  const engineRef = useRef<JigsawEngine | null>(null);
   const [engine] = useState(
     () =>
       new JigsawEngine({
         layout, cut, seed: options.seed, you: me, youMode: options.you, sims, beat: options.beat,
         already: p.already, skipIntro: p.skipIntro,
+        ...(p.live
+          ? { live: { onLocal: (m) => void Promise.resolve(live.current.live?.onLocal(m)).then((r) => r === "wait" && engineRef.current?.yieldPiece(m.id)) } }
+          : {}),
         onChange: (s) => setSnap(s),
         onFinish: (r) => setResult(r),
         sound: () => playSound("place"),
@@ -156,6 +162,16 @@ const JigsawMat = memo(function JigsawMat(p: MatProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engine]);
 
+  engineRef.current = engine;
+  /* live: what the server says about every touched piece (a lease past its end is no hold) */
+  const rows = p.live?.rows;
+  useEffect(() => {
+    if (!rows) return;
+    const apply = () => engine.applyRemote(rows.map((r) => ((r as RemotePiece & { until?: number }).until ?? 0) > Date.now() || r.placed ? r : { ...r, holder: null }), (name) => sims.find((s) => s.name === name)?.color ?? "var(--color-sticker)");
+    apply();
+    const t = window.setInterval(apply, 1000);
+    return () => window.clearInterval(t);
+  }, [engine, rows, sims]);
   useEffect(() => {
     document.body.classList.add("jg-on");
     return () => document.body.classList.remove("jg-on");
@@ -347,11 +363,11 @@ const JigsawMat = memo(function JigsawMat(p: MatProps) {
         </div>
       )}
 
-      {sims.map((sim) => (
+      {!p.live && sims.map((sim) => (
         <LiveCursor key={sim.name} motionRef={refs(sim.name)} name={sim.name} color={sim.color} active={snap?.holders.includes(sim.name) ?? false} className="jg-cursor" />
       ))}
       {drawYou && <LiveCursor motionRef={refs(me.name)} name={me.name} color={me.color} label={me.name === "You" ? "you" : `${me.name} (you)`} active={snap?.holders.includes(me.name) ?? false} className="jg-cursor" />}
-      <div className="jg-hand" ref={refs(SPACE_NAME)} data-testid="jigsaw-helper" data-state={snap?.helper ?? "idle"}>
+      {!p.live && <div className="jg-hand" ref={refs(SPACE_NAME)} data-testid="jigsaw-helper" data-state={snap?.helper ?? "idle"}>
         <svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true">
           <path d="M4 3l17 9.5-7.6 2.1L10 23z" />
         </svg>
@@ -359,7 +375,7 @@ const JigsawMat = memo(function JigsawMat(p: MatProps) {
           <i aria-hidden="true" />
           {snap?.line ?? "the space"}
         </span>
-      </div>
+      </div>}
     </div>
   );
 });
@@ -432,7 +448,7 @@ export function JigsawWorld() {
       )}
       {on && !api.phone && (out || run.skipIntro) && (
         <div className="jg-spot" style={{ left: spot.x, top: spot.y }}>
-          <JigsawMat key={run.id} layout={DESK} photo={run.photo} options={api.options} me={api.me} sims={api.sims} startedBy={run.startedBy} already={run.already} skipIntro={run.skipIntro} home={home} onTouch={onTouch} onPlaced={onPlaced} onFinish={onFinish} onClose={onClose} />
+          <JigsawMat key={run.id} layout={DESK} photo={run.photo} options={api.options} me={api.me} sims={api.sims} startedBy={run.startedBy} already={run.already} skipIntro={run.skipIntro} home={home} onTouch={onTouch} onPlaced={onPlaced} onFinish={onFinish} onClose={onClose} live={api.live} />
         </div>
       )}
       {last && !on && rects[last.photo.key] && <Slip done={last} me={api.me} rect={rects[last.photo.key]} />}
@@ -532,6 +548,12 @@ export function JigsawDev() {
   }, [on]);
   if (!api || !on) return null;
   const o = api.options;
+  if (api.live)
+    return (
+      <p className="jg-dev" data-testid="jigsaw-dev">
+        jigsaw · live · {api.sims.length + 1} real players, nobody simulated · no space hand in live rooms (the Right of Way gate is the next task) · leases 4 s · {o.pieces} pieces · <span ref={el}>…</span>
+      </p>
+    );
   return (
     <p className="jg-dev" data-testid="jigsaw-dev">
       jigsaw · mock · the space's hand is scripted, not a model; the yield is the real rule (rightOfWay.ts) · seed {o.seed} · {o.pieces} pieces · {api.sims.length} simulated · <span ref={el}>…</span>

@@ -8,8 +8,11 @@
  * rule. Every pick-up and every placement, a person's or the space's, goes
  * through `rightOfWay` (lib/games/rightOfWay.ts).
  *
- * A live room would keep `pieces` (x, y, state, holder) and the holds in
- * Convex, and replace the simulated hands with real ones.
+ * Live (`o.live`): nobody is simulated and the space's hand is absent. The
+ * other people's pieces arrive from Convex (`applyRemote`: where each piece
+ * is and who holds it, a lease that runs out by itself); your own grabs,
+ * moves and drops go out through `o.live.onLocal`. The same rule decides a
+ * grab here and again on the server (convex/puzzles.ts).
  */
 import { rightOfWay, type Decision, type Hold, type Mover } from "../games/rightOfWay";
 import { seeded, type Cut } from "./cut";
@@ -95,7 +98,13 @@ const POP = bezier(0.2, 0.9, 0.3, 1.18);
 const GLIDE_CSS = "cubic-bezier(0.16, 1, 0.3, 1)";
 const SNAP_CSS = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 
+/** live: one of your moves, for the server */
+export type LocalMove = { kind: "grab" | "move" | "drop" | "place"; id: number; x: number; y: number };
+/** live: a piece as the server has it */
+export type RemotePiece = { i: number; x: number; y: number; placed: boolean; by?: string | null; holder: string | null };
+
 export type EngineOptions = {
+  live?: { onLocal: (m: LocalMove) => void };
   layout: Layout;
   cut: Cut;
   seed: number;
@@ -166,13 +175,14 @@ export class JigsawEngine {
         speed: 0.8 + this.rand() * 0.5, el: null, dirty: true, chase: 0, want: -1, waitingOn: null,
       };
     };
-    o.sims.forEach((sim, i) => this.agents.push(agent(sim, "person", false, true, i)));
+    o.sims.forEach((sim, i) => this.agents.push(agent(sim, "person", false, !o.live, i)));
     this.you = agent(o.you, "person", true, o.youMode !== "real" && o.youMode !== "none", 1);
     this.you.wait = o.youMode === "hold" ? 900 : o.youMode === "reach" ? 2600 : 1400;
     this.you.x = layout.W * 0.5;
     this.you.y = layout.H + 50;
     if (o.youMode !== "none") this.agents.push(this.you);
-    this.space = agent({ name: SPACE_NAME, color: "var(--color-sticker)" }, "space", false, true, 1);
+    /* live: the space's hand is absent (its live behaviour is the Right of Way gate's task) */
+    this.space = agent({ name: SPACE_NAME, color: "var(--color-sticker)" }, "space", false, !o.live, 1);
     this.space.wait = o.youMode === "hold" ? 3300 : 2400;
     this.space.y = -50;
     this.space.x = layout.W * 0.8;
@@ -264,8 +274,10 @@ export class JigsawEngine {
     if (this.phase !== "play" || !p || p.state === "placed" || this.you.holding >= 0) return null;
     this.point(x, y);
     const d = rightOfWay(this.holds(), { thing: String(id), by: this.mover(this.you) });
-    if (d.kind === "go") this.take(this.you, p);
-    else if (d.kind === "wait") this.refuse(p, this.you);
+    if (d.kind === "go") {
+      this.take(this.you, p);
+      this.o.live?.onLocal({ kind: "grab", id, x: p.x, y: p.y });
+    } else if (d.kind === "wait") this.refuse(p, this.you);
     return d;
   }
   point(x: number, y: number) {
@@ -275,15 +287,86 @@ export class JigsawEngine {
     a.dirty = true;
     if (a.holding >= 0) {
       this.carry(a);
-      this.write(this.pieces[a.holding]);
+      const p = this.pieces[a.holding];
+      this.write(p);
+      this.o.live?.onLocal({ kind: "move", id: p.id, x: p.x, y: p.y });
     }
   }
   release() {
     const a = this.you;
     if (a.holding < 0) return;
     const p = this.pieces[a.holding];
-    if (Math.hypot(p.x - p.hx, p.y - p.hy) < this.snapWithin()) this.place(a, p);
-    else this.drop(a, p, (this.rand() - 0.5) * 8);
+    if (Math.hypot(p.x - p.hx, p.y - p.hy) < this.snapWithin()) {
+      this.place(a, p);
+      this.o.live?.onLocal({ kind: "place", id: p.id, x: p.hx, y: p.hy });
+    } else {
+      this.drop(a, p, (this.rand() - 0.5) * 8);
+      this.o.live?.onLocal({ kind: "drop", id: p.id, x: p.tw?.x1 ?? p.x, y: p.tw?.y1 ?? p.y });
+    }
+  }
+
+  /** live: the server said someone else has it (a race the local rule couldn't see): let go */
+  yieldPiece(id: number) {
+    const a = this.you;
+    if (a.holding !== id) return;
+    const p = this.pieces[id];
+    this.drop(a, p, 0);
+    this.refuse(p, a);
+  }
+
+  /** live: the room's pieces as the server has them. Your own hand wins on your screen. */
+  applyRemote(rows: readonly RemotePiece[], colors: (name: string) => string) {
+    let changed = false;
+    const agentFor = (name: string): A => {
+      let a = this.agents.find((x) => x.name === name);
+      if (!a) {
+        a = { name, color: colors(name), kind: "person", you: false, auto: false, x: -60, y: -60, segs: [], wait: 0, mode: "off", target: -1, holding: -1, gx: 0, gy: 0, plan: "place", wrongAt: null, retry: -1, force: -1, forcePlan: null, speed: 1, el: null, dirty: false, chase: 0, want: -1, waitingOn: null };
+        this.agents.push(a);
+      }
+      return a;
+    };
+    const glide = (p: P, x: number, y: number) => {
+      if (Math.hypot(p.x - x, p.y - y) < 0.5) return;
+      p.tw = { x0: p.x, y0: p.y, r0: p.r, x1: x, y1: y, r1: p.state === "held" ? 0 : p.r, el: 0, dur: 110, delay: 0, ease: GLIDE };
+    };
+    for (const r of rows) {
+      const p = this.pieces[r.i];
+      if (!p || this.you.holding === p.id) continue;
+      if (r.placed) {
+        if (p.state !== "placed") {
+          const a = agentFor(r.by ?? r.holder ?? "someone");
+          if (p.holder && p.holder !== a.name) { const h = this.agents.find((x) => x.name === p.holder); if (h) h.holding = -1; }
+          a.holding = p.id;
+          this.place(a, p);
+          changed = true;
+        }
+        continue;
+      }
+      if (r.holder && r.holder !== this.you.name) {
+        const a = agentFor(r.holder);
+        if (p.state !== "held" || p.holder !== a.name) {
+          if (a.holding >= 0 && a.holding !== p.id) { const q = this.pieces[a.holding]; if (q.state === "held") { q.state = "loose"; q.holder = null; } }
+          if (p.holder) { const h = this.agents.find((x) => x.name === p.holder); if (h) h.holding = -1; }
+          p.state = "held";
+          p.holder = a.name;
+          a.holding = p.id;
+          p.z = this.z += 1;
+          if (p.el) p.el.style.zIndex = String(p.z);
+          changed = true;
+        }
+        glide(p, r.x, r.y);
+      } else {
+        if (p.state === "held" && p.holder !== this.you.name) {
+          const h = this.agents.find((x) => x.name === p.holder);
+          if (h) h.holding = -1;
+          p.state = "loose";
+          p.holder = null;
+          changed = true;
+        }
+        glide(p, r.x, r.y);
+      }
+    }
+    if (changed) this.emit();
   }
 
   /* ---------- the clock ---------- */

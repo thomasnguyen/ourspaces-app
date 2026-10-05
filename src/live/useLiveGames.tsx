@@ -88,7 +88,7 @@ export function useLiveGames(o: {
   const voice = async (said: string): Promise<string> => {
     if (!spaceId) return "no games in this room";
     const ask = gameAsk(said, me.name);
-    if (ask.kind === "jigsaw") return "the puzzle starts from the scoreboard in live rooms";
+    if (ask.kind === "jigsaw") return "say it at the scoreboard: puzzle the group photo →";
     const res = await startGame({ spaceId, userId: identity.userId, kind: ask.kind, said, ...(ask.about ? { about: ask.about } : {}) });
     if (!res.ok) return res.reason ?? "couldn't start it";
     enter();

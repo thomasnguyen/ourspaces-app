@@ -152,7 +152,7 @@ export default defineSchema({
     startedBy: v.object({ userId: v.string(), name: v.string(), color: v.string() }), startedAt: v.number(),
     phaseEndsAt: v.optional(v.number()), cast: v.array(v.object({ name: v.string(), color: v.string() })),
     seat: v.optional(v.array(v.object({ name: v.string(), color: v.string() }))), seatWhy: v.optional(v.string()),
-    known: v.optional(v.number()), worded: v.optional(v.string()), // model | templates (+ why)
+    known: v.optional(v.number()), worded: v.optional(v.string()), photo: v.optional(v.string()), // worded: model | templates; jigsaw: known = pieces
   }).index("by_space", ["spaceId"]),
   gamePlayers: defineTable({ gameId: v.id("games"), userId: v.string(), name: v.string(), color: v.string(), joinedAt: v.number(), fromRound: v.number() })
     .index("by_game", ["gameId"]),

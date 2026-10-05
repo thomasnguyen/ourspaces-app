@@ -35,6 +35,7 @@ import type * as paint from "../paint.js";
 import type * as photos from "../photos.js";
 import type * as playLab from "../playLab.js";
 import type * as presence from "../presence.js";
+import type * as puzzles from "../puzzles.js";
 import type * as questions from "../questions.js";
 import type * as rag from "../rag.js";
 import type * as rateLimits from "../rateLimits.js";
@@ -90,6 +91,7 @@ declare const fullApi: ApiFromModules<{
   photos: typeof photos;
   playLab: typeof playLab;
   presence: typeof presence;
+  puzzles: typeof puzzles;
   questions: typeof questions;
   rag: typeof rag;
   rateLimits: typeof rateLimits;
