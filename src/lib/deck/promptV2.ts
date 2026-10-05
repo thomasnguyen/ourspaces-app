@@ -155,6 +155,18 @@ export function tokenMenu(f: RoomFacts, said?: string): string {
   // The chores this room already tracks (its dishes wheel, its grocery run), named by code.
   const chores = choresOf(f);
   if (chores.length && (!said || /\b(chores?|jobs?|tasks?|clean\w*|rota|roster)\b/i.test(said))) lines.push(`@chores = ${chores.join(", ")}`);
+  // A chore list's last week: who did what, what's still open (for "set up chores for next week").
+  if (said === undefined || /\b(chores?|jobs?|tasks?|clean\w*|rota|roster|who did|did last)\b/i.test(said)) {
+    for (const l of f.lists.filter((x) => /\bchores?\b/i.test(x.title) && x.done?.length).slice(0, 1)) {
+      const open = l.items.filter((it) => !l.done!.some((d) => d.item === it));
+      lines.push(`list "${l.title}" this week: done ${l.done!.map((d) => `${d.item} (${d.by})`).join(", ")}${open.length ? `; still open ${open.join(", ")}` : ""}`);
+    }
+  }
+  // A running challenge, when the words are about it (or what it decides)
+  for (const c of (f.challenges ?? []).slice(0, 1)) {
+    if (said !== undefined && !/\b(challenge|standings|winning|ahead|behind|leader|logged|streak|reveal)\b/i.test(said) && !overlaps(sw!, `${c.title} ${c.unit} ${c.stake ?? ""}`)) continue;
+    lines.push(`challenge "${c.title}" running: day ${c.day} of ${c.days}${c.reveal ? `, reveal ${c.reveal}` : ""}; ${c.totals.map((t) => `${t.name} ${t.total}`).join(", ")}; logged today ${c.logged.join(", ") || "nobody"}${c.stake ? `; stake: ${c.stake}` : ""}`);
+  }
   // The group's standing lists and wheels, titles only: a list's items read as one item to copy.
   if (want("list")) {
     const own = [...f.lists.slice(0, 3).map((l) => `list "${l.title}"`), ...f.wheels.slice(0, 2).map((w) => `wheel "${w.title}"`)];

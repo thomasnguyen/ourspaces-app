@@ -24,7 +24,8 @@ export type RoomFacts = {
   /** Shared costs: who was on it, who paid most, other labels it went by (a mail's "tahoe cabin"). */
   splits: { title: string; also: string[]; total: number; people: string[]; payer: string | null; paid: number }[];
   wheels: { title: string; options: string[]; last: string | null }[];
-  lists: { title: string; items: string[] }[];
+  /** `done`: claimed items and who did them (a chore list's last week). */
+  lists: { title: string; items: string[]; done?: { item: string; by: string }[] }[];
   /** Saved links that are places (maps links, "… place"), by label. */
   places: string[];
   /** Countdown dates, `days` from today (negative = past). */
@@ -33,8 +34,27 @@ export type RoomFacts = {
   /** The group's cards by deck name and title, for duplicate checks. */
   board: { card: string; title: string }[];
   lowercase: boolean;
+  /** Running challenges (check-ins): who's in, who logged today, totals, the stake, the reveal. */
+  challenges?: Challenge[];
   /** Facts a person told the space (`src/lib/roomKnows.ts`), each with who said it. They win over anything noticed. */
   told?: string[];
+};
+
+export type Challenge = {
+  title: string;
+  unit: string;
+  /** 1-based day of the challenge, and its length. */
+  day: number;
+  days: number;
+  /** "Wed 9:00", and in how many days. */
+  reveal: string | null;
+  revealIn: number | null;
+  people: string[];
+  logged: string[];
+  waiting: string[];
+  /** Ranked: total, days in a row, every day so far. */
+  totals: { name: string; total: number; streak: number; perfect: boolean }[];
+  stake: string | null;
 };
 
 /** Facts plus who this ask's surprise or gift is for, if anyone. */

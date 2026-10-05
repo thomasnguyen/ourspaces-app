@@ -2,7 +2,8 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { RoomFacts } from "../src/lib/deck/resolve";
+import type { Challenge, RoomFacts } from "../src/lib/deck/resolve";
+import { rank, readCheckIn, readStandings, revealDate } from "../src/lib/challenge";
 import { applyCorrections, listNames, TOLD_CHARS, TOLD_MAX, type Forgot, type KnowLine, type RoomKnows, type Told } from "../src/lib/roomKnows";
 
 /**
@@ -354,6 +355,33 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
     .sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type) || b.createdAt - a.createdAt)
     .map((w) => `${CARD_NAME[w.type]} "${titleOf(w)}"`);
 
+  /* Running challenges: every check-in on the board (its numbers are people's own logs, whoever dealt the card). */
+  const checkIns = widgets.filter((w) => w.type === "checkIn").sort((a, b) => b.createdAt - a.createdAt).slice(0, 2);
+  const challenges: Challenge[] = checkIns.map((w) => {
+    const data = readCheckIn(w.data as Record<string, unknown>);
+    const i = t0 - dayNo(data.start);
+    const day = Math.max(0, Math.min(i, data.days - 1));
+    const rows = rank(data, day);
+    const live = i >= 0 && i < data.days;
+    const logged = live ? data.people.filter((p) => data.logs[p.name]?.[i] != null).map((p) => p.name) : [];
+    const rd = revealDate(data);
+    const revealIso = data.revealAt?.slice(0, 10) ?? null;
+    const stand = widgets.find((s) => s.type === "standings" && readStandings(s.data as Record<string, unknown>).source === w._id);
+    return {
+      title: data.title,
+      unit: data.unit,
+      day: day + 1,
+      days: data.days,
+      reveal: rd && revealIso ? `${dow(revealIso)} ${rd.getHours()}:${String(rd.getMinutes()).padStart(2, "0")}` : null,
+      revealIn: revealIso ? dayNo(revealIso) - t0 : null,
+      people: data.people.map((p) => p.name),
+      logged,
+      waiting: live ? data.people.map((p) => p.name).filter((n) => !logged.includes(n)) : [],
+      totals: rows.map((r) => ({ name: r.name, total: r.total, streak: r.streak, perfect: r.perfect })),
+      stake: stand ? (readStandings(stand.data as Record<string, unknown>).stake ?? null) : null,
+    };
+  });
+  const challengeWid = new Map(checkIns.map((w, k) => [challenges[k].title, [String(w._id), ...widgets.filter((s) => s.type === "standings" && readStandings(s.data as Record<string, unknown>).source === w._id).map((s) => String(s._id))]]));
   /* Assemble: each line with the rows behind it, most useful first. */
   type Line = { text: string; src: string; keep: number };
   const ruleNote = seeded.length ? "the seeded cast" : cast === roster ? "most recently seen" : "everyone who wrote, voted or made something";
@@ -366,6 +394,11 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
     { text: `${space.name} (${space.type === "event" ? "one event" : "ongoing"}) · people: ${group.join(", ")}`, src: `spaces 1 · members ${group.length} of ${roster.length} rows (${ruleNote})`, keep: 0 },
     ...(away.size ? [{ text: `away: ${[...away].map(([n, s]) => `${n} ("${s}")`).join(", ")}`, src: `widgets ${away.size}`, keep: 1 }] : []),
     { text: `dates: ${dated.join("; ")}`, src: `widgets ${countdowns.length} countdowns · code`, keep: 1 },
+    ...challenges.map((c) => ({
+      text: `challenge "${c.title}": day ${c.day} of ${c.days}${c.reveal ? `, reveal ${c.reveal}` : ""} · ${c.totals.map((t) => `${t.name} ${t.total}`).join(", ")}${c.logged.length ? ` · logged today ${c.logged.join(", ")}` : ""}${c.waiting.length ? ` · not yet ${c.waiting.join(", ")}` : ""}${c.stake ? ` · stake: ${c.stake}` : ""}`,
+      src: "widgets checkIn + standings",
+      keep: 1,
+    })),
     ...(live.length ? [{ text: `votes so far: ${live.join(" · ")}`, src: `votes ${pollVotes.flat().length} · widgets ${rsvpRows ? "rsvp" : ""}`.trim(), keep: 1 }] : []),
     ...(zones.length ? [{ text: `clocks: ${zones.map((z) => `${z.label} ${z.tz}`).join(", ")}`, src: `widgets ${zones.length / 2} clocks`, keep: 1 }] : []),
     ...(before.length ? [{ text: `before: ${before.join("; ")}`, src: `widgets ${splits.length} splits, ${claimRows} claims`, keep: 2 }] : []),
@@ -390,7 +423,7 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
     { kind: "group", what: ruleNote, n: group.length, from: [`${roster.length} member rows`] },
     ...pollFacts, ...dayFacts, ...timeFacts, ...termFacts,
   ];
-  const room = factsOf({ name: space.name, today, t0, group, away, rsvps, polls: pollRows, own, zones, said, dayNo });
+  const room = { ...factsOf({ name: space.name, today, t0, group, away, rsvps, polls: pollRows, own, zones, said, dayNo }), ...(challenges.length ? { challenges } : {}) };
 
   /* The same facts as a page for the people in the room ("what this space
      knows", src/lib/roomKnows.ts): one plain line per fact, the cards it came
@@ -404,7 +437,8 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
   for (const [n, why] of away) {
     // "back sunday" on the same card is the until-when.
     const sub = str((own.find((w) => w._id === awayWid.get(n))?.data as Data | undefined)?.subtitle);
-    know.push({ key: `away:${n}`, section: "who", text: `${n} is away${/^back\b/i.test(sub) ? `, ${clip(sub, 24)}` : ""}`, why: `the board says "${why}"`, src: [awayWid.get(n) ?? ""].filter(Boolean) });
+    const till = /\b(till|until)\s+(\w+)/i.exec(why)?.slice(1).join(" ");
+    know.push({ key: `away:${n}`, section: "who", text: `${n} is away${till ? ` ${till.toLowerCase()}` : /^back\b/i.test(sub) ? `, ${clip(sub, 24)}` : ""}`, why: `the board says "${why}"`, src: [awayWid.get(n) ?? ""].filter(Boolean) });
   }
   if (room.clocks.length >= 2) {
     const where = (tz: string) => (tz.split("/").pop() ?? tz).replace(/_/g, " ");
@@ -422,6 +456,30 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
     if (d.days > 0) know.push({ ...base, text: `${d.days === 1 ? "day" : "days"} to ${d.title}`, n: d.days });
     else if (d.days === 0) know.push({ ...base, text: `${d.title} is today` });
     else know.push({ ...base, text: `${d.title} was ${-d.days} ${d.days === -1 ? "day" : "days"} ago` });
+  }
+  for (const c of challenges) {
+    const src = challengeWid.get(c.title) ?? [];
+    const [first, second] = c.totals;
+    const bare2 = (n: string) => n.toLowerCase();
+    // the reveal has its own countdown on the board already (the recipe deals one): said once
+    const counted = room.dates.some((d) => d.days === c.revealIn);
+    if (!counted && c.revealIn !== null && c.revealIn >= 0 && c.reveal) know.push({ key: `reveal:${c.title}`, section: "soon", text: c.revealIn === 0 ? `the ${c.title} reveal is today, ${c.reveal.split(" ")[1]}` : `${c.revealIn === 1 ? "day" : "days"} to the ${c.title} reveal`, why: `${c.reveal.toLowerCase()}, from the check-in`, src, ...(c.revealIn > 0 ? { n: c.revealIn } : {}) });
+    know.push({ key: `in:${c.title}`, section: "decided", text: `in the ${c.title}: ${listNames(c.people.map(bare2))}`, why: `day ${c.day} of ${c.days}, from the check-in`, src });
+    if (c.waiting.length && c.logged.length) know.push({ key: `today:${c.title}`, section: "decided", text: `${listNames(c.waiting.map(bare2))} ${c.waiting.length === 1 ? "hasn't" : "haven't"} logged ${c.title} today`, why: `${c.logged.length} of ${c.people.length} logged today`, src });
+    if (first && second && first.total > 0) know.push({ key: `lead:${c.title}`, section: "decided", text: `${c.title}: ${bare2(first.name)} leads with ${first.total}, ${bare2(second.name)} is ${first.total - second.total} behind`, why: `totals after day ${c.day}`, src });
+    if (c.stake) know.push({ key: `stake:${c.title}`, section: "decided", text: `the deal: ${c.stake.replace(/\.$/, "")}`, why: "from the standings", src });
+    for (const t of c.totals) if (t.perfect && t.streak >= 3) know.push({ key: `streak:${c.title}:${t.name}`, section: "habits", text: `${bare2(t.name)} hasn't missed a day of ${c.title}`, why: `${t.streak} for ${t.streak}`, src, n: t.streak });
+  }
+  for (const l of room.lists) {
+    if (!/\bchores?\b/i.test(l.title) || !l.done?.length) continue;
+    const open = l.items.filter((it) => !l.done!.some((d) => d.item === it));
+    know.push({
+      key: `chores:${l.title}`,
+      section: "decided",
+      text: `${bare(l.title)}: ${l.done.map((d) => `${d.by.toLowerCase()} did ${d.item}`).join(", ")}${open.length ? ` · still open: ${open.join(", ")}` : ""}`,
+      why: "who ticked what on the list",
+      src: wid("potluck", l.title),
+    });
   }
   for (const p of room.polls) {
     if (!p.votes) continue;
@@ -574,10 +632,11 @@ function factsOf(r: {
     const d = w.data as { slices?: { label: string }[]; resultIndex?: number; spinNonce?: number };
     return { title: titleOf(w), options: (d.slices ?? []).map((x) => x.label), last: d.slices?.[d.resultIndex ?? -1]?.label ?? null };
   });
-  const lists = of("potluck").map((w) => ({
-    title: titleOf(w),
-    items: (((w.data as Data).items as { name?: string }[] | undefined) ?? []).map((it) => clip(str(it.name), 24)).filter(Boolean).slice(0, 8),
-  }));
+  const lists = of("potluck").map((w) => {
+    const its = ((w.data as Data).items as { name?: string; by?: string | null; claimed?: boolean }[] | undefined) ?? [];
+    const done = its.filter((it) => it.claimed && str(it.by)).map((it) => ({ item: clip(str(it.name), 24), by: str(it.by) }));
+    return { title: titleOf(w), items: its.map((it) => clip(str(it.name), 24)).filter(Boolean).slice(0, 8), ...(done.length ? { done } : {}) };
+  });
   const places = placesOf([...of("linkShelf"), ...of("linkCard")]).map((p) => p.label);
   const dates = of("countdown")
     .map((w) => ({ title: titleOf(w), date: str((w.data as Data).targetDate) }))
@@ -668,13 +727,18 @@ const roomV = v.object({
   polls: v.array(v.object({ title: v.string(), options: names, leader: v.union(v.string(), v.null()), lead: v.number(), votes: v.number() })),
   splits: v.array(v.object({ title: v.string(), also: names, total: v.number(), people: names, payer: v.union(v.string(), v.null()), paid: v.number() })),
   wheels: v.array(v.object({ title: v.string(), options: names, last: v.union(v.string(), v.null()) })),
-  lists: v.array(v.object({ title: v.string(), items: names })),
+  lists: v.array(v.object({ title: v.string(), items: names, done: v.optional(v.array(v.object({ item: v.string(), by: v.string() }))) })),
   places: names,
   dates: v.array(v.object({ title: v.string(), date: v.string(), days: v.number() })),
   clocks: v.array(v.object({ label: v.string(), tz: v.string() })),
   board: v.array(v.object({ card: v.string(), title: v.string() })),
   lowercase: v.boolean(),
   told: v.optional(names),
+  challenges: v.optional(v.array(v.object({
+    title: v.string(), unit: v.string(), day: v.number(), days: v.number(), reveal: v.union(v.string(), v.null()), revealIn: v.union(v.number(), v.null()),
+    people: names, logged: names, waiting: names, stake: v.union(v.string(), v.null()),
+    totals: v.array(v.object({ name: v.string(), total: v.number(), streak: v.number(), perfect: v.boolean() })),
+  }))),
 });
 
 /** For the dev inspector: the stored brief, its age, and which table and how
