@@ -277,8 +277,10 @@ export function parseSaid(said: string): Said | null {
     if (/^(the |this |that |it$)/.test(m[1]) && !m[2]) return null; // "delete the poll": a whole card, not an edit
     return { fam: "remove", value: m[1].replace(/^(the) /, ""), phrase: m[2] };
   }
-  if ((m = new RegExp(`^(?:move|push|change|switch|make|set|bump|shift) ${REF} (?:to |for |on |till |until )?(.+)$`).exec(t)) && whenOf(m[2]))
+  // the last "to" splits the card from the new time: "move the trivia night countdown to oct 20"
+  if ((m = /^(?:move|push|change|switch|make|set|bump|shift) (?:it|this|that|(?:the|our|my) (.+)) (?:to|till|until|for|on) (.+)$/.exec(t)) && whenOf(m[2]))
     return { fam: "when", value: m[2], phrase: m[1] };
+  if ((m = /^(?:make|set|change|switch) (?:it|this|that) (.+)$/.exec(t)) && whenOf(m[1])) return { fam: "when", value: m[1] };
   // "move kyoto to nov 9": a row on a plan
   if ((m = /^(?:move|push|shift) (.+?) to (.+)$/.exec(t)) && whenOf(m[2]) && !/^(it|this|that)$/.test(m[1])) return { fam: "when", value: m[2], item: m[1] };
   return null;

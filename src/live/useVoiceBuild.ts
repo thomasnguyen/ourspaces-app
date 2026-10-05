@@ -1237,6 +1237,10 @@ export function useVoiceBuild({
     if (!s || s.reopened) return false;
     // "catch me up", "let's play most likely to": whole as said, even on a hanging word
     if (s.verb?.sure && (s.verb.verb === "recap" || s.verb.verb === "game")) return true;
+    // an edit whose words already make a whole change on a card ("add ramen to the dinner poll")
+    const vh = room.current.verbs;
+    if (vh && s.verb?.sure && s.verb.verb === "edit")
+      return editFor(text, vh.widgets(), room.current.selectedId?.() ?? null, { today: vh.today?.() ?? new Date().toISOString().slice(0, 10) }, vh.frameOf).kind === "do";
     return !!pickFinal(s, text, room.current.facts?.() ?? null)?.cardOk;
   }, []);
 
