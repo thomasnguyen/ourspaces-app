@@ -583,6 +583,14 @@ function askedEmpty(type: string, d: Record<string, unknown>, field: string) {
   return d;
 }
 
+/** The stage card while it asks: the answers so far, plus code's parse of the answer being said for the field asked (never a model's guess there); every other missing field empty. */
+function askedView(r: { card: string; answers: Record<string, unknown>; from: number }, q: Need, said: string, facts: ReturnType<typeof voiceStageFacts>, today: string) {
+  const partial = said.trim().split(/\s+/).slice(r.from).join(" ");
+  const live = partial ? mapAnswer(q, partial, today) : null;
+  const empty = new Set([q.field, ...missingNeeds(r.card, said, facts, today, r.answers).map((n) => n.field)]);
+  return { pins: pinsFor(r.card, { ...r.answers, ...(live ?? {}) }), empty: [...empty] };
+}
+
 /** What the answers filled, as the card will have it (a poll's question, a list's rows, a countdown's date). */
 function withAnswers(type: string, d: Record<string, unknown>, pins: Record<string, unknown>) {
   const out = { ...d };
@@ -1278,7 +1286,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
               onOffer={takeOffer}
               found={Boolean(found)}
               question={question ? { ask: question.ask, field: question.field } : null}
-              answered={askRun.current ? { pins: pinsFor(askRun.current.card, askRun.current.answers), empty: missingNeeds(askRun.current.card, said, facts, today, askRun.current.answers).map((n) => n.field) } : null}
+              answered={askRun.current && question ? askedView(askRun.current, question, said, facts, today) : null}
             />
           ) : (
             !voice.transcript &&
