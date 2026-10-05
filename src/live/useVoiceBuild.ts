@@ -17,6 +17,7 @@ import {
   type Placement,
   type Rect,
 } from "../lib/deck";
+import type { Schema } from "../lib/deck/schema";
 import type { VoiceEnd, VoiceHooks } from "../lib/voice";
 
 /**
@@ -26,20 +27,29 @@ import type { VoiceEnd, VoiceHooks } from "../lib/voice";
  * 1. Every new word: code guesses the card from the words (deck/guess.ts) and
  *    shows that card's real widget as a skeleton in your view at once, the
  *    title filling from your words. A changed guess morphs the same skeleton.
- * 2. Words steady for a beat: a speculative `deal` call goes out for them.
- *    It only returns cards; nothing is committed. Its answer streams into the
- *    skeleton field by field while the words still match it.
- * 3. A pause ends the ask. If a call already went out for exactly these words
- *    its answer is used (often already there); else one goes out now.
- * 4. The finished card renders on this screen from the answer right away,
- *    `placeCards` picks its spot (it glides there, the camera follows only if
- *    the spot is off-screen), then `commit` writes it and Convex brings it to
- *    every other screen. The synced card replaces the local one in the same
- *    frame (`withDrafts`).
+ * 2. Every new word that names a card (no card named: 4+ words steady for a
+ *    beat) goes out as a speculative `deal` call, at most two in flight; when
+ *    both are out, the newest words wait for a slot. Each answer fills the
+ *    skeleton *tentatively* (dimmed) the moment it lands, the newest words
+ *    winning: an answer for older words than the one shown is ignored. Only
+ *    closed fields show, so a field that didn't change stays put. Nothing is
+ *    committed while you talk.
+ * 3. A pause ends the ask (lib/voice.ts; shorter when these exact words have
+ *    already made a whole card). The call for exactly these words is used,
+ *    else one goes out now.
+ * 4. The moment that call's first card closes in the stream, the card goes
+ *    final on this screen, `placeCards` picks its spot, and `commit` writes it
+ *    with that spot in one mutation; Convex brings it to every other screen.
+ *    The synced card replaces the local one in the same frame (`withDrafts`).
+ *    More cards in the same answer follow in a second write.
+ * 5. A word that lands just after the pause reopens the ask (lib/voice.ts).
+ *    The longer sentence gets its own call; a card already committed is
+ *    corrected in place (`amend`), never dealt twice.
  *
- * Every ask leaves a trace (words, calls, guesses, the context the model got,
- * its raw answer, the cards kept or rejected, why the spot, stage times from
- * the last word) for the dev readout and drawer. Clocks start at the last word.
+ * Every ask leaves a trace (words, calls, guesses, every tentative fill and
+ * which answer became final, the context the model got, its raw answer, the
+ * cards kept or rejected, why the spot, stage times from the last word) for
+ * the dev readout and drawer. Clocks start at the last word.
  */
 
 export type DealCall = { said: string; nonce: string; spec: boolean };
@@ -54,6 +64,21 @@ export type DealAnswer = {
   modelMs?: { firstLine: number | null; total: number } | null;
 };
 
+/** One time an answer went into the card on this screen. */
+export type AskFill = {
+  /** ms from the tap. */
+  ms: number;
+  /** Which call (index into `calls`). */
+  call: number;
+  words: string;
+  /** Model fields whose value changed from the fill before (the flicker count). */
+  changed: string[];
+  /** The model's whole card, not some of its fields. */
+  whole: boolean;
+  /** The answer that became final (after the ask ended); else tentative. */
+  final: boolean;
+};
+
 export type AskTrace = {
   key: number;
   /** Wall clock at the tap. */
@@ -64,6 +89,11 @@ export type AskTrace = {
   words: { text: string; ms: number }[];
   calls: { text: string; ms: number; spec: boolean; used: boolean }[];
   guesses: { card: string; ms: number }[];
+  fills: AskFill[];
+  /** Field changes after a field first appeared, summed over the ask. */
+  flicker: number;
+  /** Words after a pause had ended the ask, and what happened to the card. */
+  late: { text: string; ms: number; outcome: string; after?: number }[];
   model: string | null;
   context: string | null;
   answer: string | null;
@@ -80,7 +110,7 @@ export type AskTrace = {
   ok: boolean | null;
 };
 
-const STAGES = ["pause", "skeleton", "first-field", "card-local", "committed", "card-on-screen"] as const;
+const STAGES = ["pause", "skeleton", "tentative", "card-full", "first-field", "card-local", "committed", "card-on-screen"] as const;
 export type StageName = (typeof STAGES)[number];
 
 /** The ring in the maker's colour around the card being built (or, before
@@ -103,9 +133,10 @@ const DOCK_ROOM = 20; // clear air between a landed card and the dock
 const HANDOFF_MS = 520; // the ring's let-go (--dur-stage, plus a frame)
 const LEAVE_MS = 240; // the slip's exit (--dur-base, plus a frame)
 const FRAME_PAD = 12; // a frame's label, garland and dashes paint past its box
-const STEADY_MS = 200; // words unchanged this long: send them speculatively
-const SPEC_MIN_WORDS = 4;
-const SPEC_MAX_CALLS = 4; // per ask, the final call included
+const STEADY_MS = 200; // no card named yet: words unchanged this long go out speculatively
+const SPEC_MIN_WORDS = 4; // …and only from this many words
+const SPEC_MAX_CALLS = 6; // speculative calls per ask (the final call is extra)
+const SPEC_IN_FLIGHT = 2; // more words while this many are out: the newest waits for a slot
 const RECEIPT_MS = 6000;
 const DRAFT = "voice-draft-";
 const LIFTED_Z = 99990; // a skeleton floating over the board until it has a spot
@@ -113,6 +144,13 @@ const LIFTED_Z = 99990; // a skeleton floating over the board until it has a spo
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
 const nextFrame = () => new Promise<number>((r) => requestAnimationFrame(() => r(performance.now())));
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/** Every required field of the card has a value from the model. */
+function filledIn(card: CardId, settings: Record<string, unknown>) {
+  const schema = (getCard(card)?.settings ?? {}) as Schema;
+  return Object.entries(schema).every(([k, f]) => f.optional || f.default !== undefined || settings[k] !== undefined);
+}
 
 /** The box a frame really paints: its own, its label and decorations, and a pad. */
 function paintedBox(el: HTMLElement) {
@@ -198,13 +236,23 @@ const inView = (r: Rect, v: Rect) => r.x >= v.x && r.y >= v.y && r.x + r.w <= v.
 
 type Spec = {
   nonce: string;
+  /** Order fired in this ask: a newer call's answer beats an older one's. */
+  seq: number;
   text: string;
   norm: string;
   spec: boolean;
+  /** The answer as streamed so far. */
+  streamed: string;
+  /** The stream is whole (the row says done, or the call returned). */
+  whole: boolean;
+  /** A closed, valid card is in: enough to end on, go final and commit. */
+  cardOk: boolean;
   answer: DealAnswer | null;
-  /** performance.now() when its answer first put a model field / the whole card on screen. */
+  /** performance.now() when its answer first put a model field on screen. */
   firstFieldAt: number | null;
-  completeAt: number | null;
+  /** Resolves once a valid card has closed in the stream, or the call ended without one. */
+  ready: Promise<void>;
+  settle: () => void;
   promise: Promise<DealAnswer | null>;
 };
 
@@ -218,13 +266,26 @@ type Session = {
   shown: CardId | null;
   /** The skeleton shows the model's fields now, not the words' guess. */
   fromModel: boolean;
+  /** What the model has put in the card so far, and from which call. */
+  tent: { card: CardId; settings: Record<string, unknown>; key: string } | null;
+  shownSeq: number;
   /** The skeleton's spot, and whether it floats over the board until placed. */
   spot: Placement | null;
   lifted: boolean;
   specs: Spec[];
+  inFlight: number;
+  /** Words came while every slot was taken: send the newest when one frees. */
+  queued: boolean;
   steady: number;
   final: Spec | null;
   ended: boolean;
+  /** Each pause that ends the ask is a round; a late word starts the next. */
+  round: number;
+  /** The first write, once it's gone out; a later round corrects it in place. */
+  commitP: Promise<string[]> | null;
+  committedCard: string | null;
+  /** Reopened after the card was already written: no new draft, only a correction. */
+  reopened: boolean;
   lastWordAt: number;
   marks: Partial<Record<StageName, number>>;
   trace: AskTrace;
@@ -234,15 +295,19 @@ export function useVoiceBuild({
   scrollerRef,
   deal,
   commit,
+  amend,
   cardContext,
   selectedId,
   warm,
   onLanded,
 }: {
   scrollerRef: RefObject<HTMLElement | null>;
-  deal: (call: DealCall, onPartial: (answer: string) => void) => Promise<DealAnswer>;
+  /** `onPartial` gets the answer so far, and `done` once the stream is whole. */
+  deal: (call: DealCall, onPartial: (answer: string, done?: boolean) => void) => Promise<DealAnswer>;
   /** Write the kept cards (already placed); resolves to the synced widget ids, in order. */
-  commit: (c: { dealId: string | null; cards: Array<{ card: DealtCard; widget: Widget }> }) => Promise<string[]>;
+  commit: (c: { dealId: string | null; nonce: string; cards: Array<{ card: DealtCard; widget: Widget }> }) => Promise<string[]>;
+  /** A late word changed the card: rewrite the committed widget in place (live only). */
+  amend?: (a: { widgetId: string; nonce: string; card: DealtCard }) => Promise<unknown>;
   cardContext: () => CardContext;
   selectedId?: () => string | null;
   /** Orb tapped: wake the model path (live only). */
@@ -259,12 +324,14 @@ export function useVoiceBuild({
   const [traces, setTraces] = useState<AskTrace[]>([]);
   /** The slip is on its way out (it leaves on glide, then unmounts). */
   const [leaving, setLeaving] = useState(false);
-  const room = useRef({ deal, commit, cardContext, selectedId, warm, onLanded });
-  room.current = { deal, commit, cardContext, selectedId, warm, onLanded };
+  const room = useRef({ deal, commit, amend, cardContext, selectedId, warm, onLanded });
+  room.current = { deal, commit, amend, cardContext, selectedId, warm, onLanded };
   const session = useRef<Session | null>(null);
   const clearTimer = useRef(0);
   const shellTimer = useRef(0);
   const warmedAt = useRef(0);
+  /** Send the newest words if they're worth a call and a slot is free (set below). */
+  const maybeFire = useRef<(s: Session) => void>(() => {});
 
   useEffect(
     () => () => {
@@ -292,9 +359,22 @@ export function useVoiceBuild({
     performance.mark(`voice:${name}`, { startTime: at });
   }, []);
 
+  /** Mark a stage at the next frame (when what was just set is on screen). */
+  const markNext = useCallback(
+    (s: Session, name: StageName) => {
+      if (s.marks[name] !== undefined) return;
+      s.marks[name] = -1;
+      void nextFrame().then((t) => {
+        delete s.marks[name];
+        mark(s, name, t);
+      });
+    },
+    [mark],
+  );
+
   /** Put the skeleton (or the finished card) on the board as a local draft. */
   const show = useCallback(
-    (s: Session, widgets: Widget[], at?: Placement[], state: "skeleton" | "card" = "skeleton") => {
+    (s: Session, widgets: Widget[], at?: Placement[], state: "skeleton" | "card" = "skeleton", tentative = false) => {
       if (session.current !== s || !widgets.length) return;
       const first = widgets[0];
       if (!s.spot) {
@@ -316,25 +396,23 @@ export function useVoiceBuild({
       setDrafts(
         widgets.map((w, i) => ({ ...w, x: spots[i].x, y: spots[i].y, z: s.lifted && !at ? LIFTED_Z + i : w.z })),
       );
-      // The draft's look (shimmer while a skeleton), set on WidgetCard's own element.
+      // The draft's look (shimmer while a skeleton, dimmed while tentative), set on WidgetCard's own element.
       requestAnimationFrame(() => {
         const look = s.lifted && !at ? "lifted" : state;
-        for (const el of s.m?.canvas.querySelectorAll<HTMLElement>(`[data-widget-id^="${DRAFT}${s.key}-"]`) ?? []) el.dataset.voiceDraft = look;
+        for (const el of s.m?.canvas.querySelectorAll<HTMLElement>(`[data-widget-id^="${DRAFT}${s.key}-"]`) ?? []) {
+          el.dataset.voiceDraft = look;
+          if (tentative) el.dataset.voiceTentative = "";
+          else delete el.dataset.voiceTentative;
+        }
       });
-      if (s.marks.skeleton === undefined) {
-        s.marks.skeleton = -1;
-        void nextFrame().then((t) => {
-          delete s.marks.skeleton;
-          mark(s, "skeleton", t);
-        });
-      }
+      markNext(s, "skeleton");
       setShell((sh) =>
         sh && sh.draftId === `${DRAFT}${s.key}-0` && sh.phase === "dealing"
           ? sh
           : { host: s.m!.canvas, draftId: `${DRAFT}${s.key}-0`, box: { ...spots[0], w: first.w, h: first.h }, said: s.text, phase: "dealing" },
       );
     },
-    [mark, scrollerRef],
+    [markNext, scrollerRef],
   );
 
   const ctxNow = useCallback(() => room.current.cardContext(), []);
@@ -343,7 +421,7 @@ export function useVoiceBuild({
   const showGuess = useCallback(
     (s: Session) => {
       // Once the model has written into the skeleton, only the model changes it.
-      if (!s.guess || s.fromModel) return;
+      if (!s.guess || s.fromModel || s.reopened) return;
       s.shown = s.guess;
       const { widget } = skeletonWidget(s.guess, { id: `${DRAFT}${s.key}-0`, ctx: ctxNow(), said: s.text });
       show(s, [widget]);
@@ -351,97 +429,153 @@ export function useVoiceBuild({
     [ctxNow, show],
   );
 
-  /** A call's answer so far → the skeleton, field by field (only while its words are the current ones). */
+  /** Note what a fill changed (fields that already had a model value count as flicker). */
+  const note = useCallback((s: Session, sp: Spec, card: CardId, settings: Record<string, unknown>, whole: boolean, final: boolean) => {
+    const prev = s.tent;
+    const changed = !prev
+      ? []
+      : prev.card !== card
+        ? ["card"]
+        : [...new Set([...Object.keys(prev.settings), ...Object.keys(settings)])].filter(
+            (k) => prev.settings[k] !== undefined && !same(prev.settings[k], settings[k]),
+          );
+    s.trace.flicker += changed.length;
+    s.trace.fills.push({ ms: Math.round(performance.now() - s.t0), call: sp.seq, words: sp.text, changed, whole, final });
+    s.tent = { card, settings, key: card + JSON.stringify(settings) };
+    s.shownSeq = sp.seq;
+  }, []);
+
+  /** A call's answer so far → the card, tentatively (while talking, or the final call's fields before its card closes). */
   const fill = useCallback(
-    (s: Session, sp: Spec, answer: string) => {
-      if (session.current !== s) return;
-      const current = s.final ? s.final === sp : sp.norm === norm(s.text);
-      if (!current || sp.completeAt) return;
-      const p = parsePartialCard(answer);
-      if (!p || !getCard(p.card)) return;
-      const card = p.card as CardId;
+    (s: Session, sp: Spec) => {
+      if (session.current !== s || s.reopened) return;
+      if (s.ended ? s.final !== sp : sp.seq < s.shownSeq) return;
+      let card: CardId;
+      let settings: Record<string, unknown>;
+      let whole = false;
+      const first = parseDeal(sp.streamed, sp.whole).items.find((i) => i.ok);
+      if (first?.ok) {
+        // After the end, the final card is drawn by `ask` (placed, then committed).
+        if (s.ended) return;
+        card = first.card.card;
+        settings = first.card.settings as Record<string, unknown>;
+        whole = true;
+      } else {
+        const p = parsePartialCard(sp.streamed);
+        if (!p || !getCard(p.card)) return;
+        card = p.card as CardId;
+        // Only closed fields show: the last key may be a list still being written.
+        settings = { ...p.settings };
+        const last = Object.keys(settings).at(-1);
+        if (last && typeof settings[last] === "object") delete settings[last];
+        // A newer call's first fields go over the card already shown, not over blanks.
+        if (s.tent?.card === card) settings = { ...s.tent.settings, ...settings };
+      }
+      if (s.tent && s.tent.key === card + JSON.stringify(settings)) {
+        s.shownSeq = Math.max(s.shownSeq, sp.seq);
+        return;
+      }
+      const hasField = Object.keys(settings).length > 0;
+      note(s, sp, card, settings, whole, false);
       s.shown = card;
       s.fromModel = true;
-      const { widget, filled } = skeletonWidget(card, { id: `${DRAFT}${s.key}-0`, ctx: ctxNow(), said: s.text, partial: p.settings });
-      show(s, [widget]);
-      if (filled && !sp.firstFieldAt) {
-        sp.firstFieldAt = -1;
-        void nextFrame().then((t) => {
-          sp.firstFieldAt = t;
-          if (s.final === sp) mark(s, "first-field", t);
-        });
+      const { widget } = skeletonWidget(card, { id: `${DRAFT}${s.key}-0`, ctx: ctxNow(), said: s.text, partial: settings });
+      show(s, [widget], undefined, "skeleton", hasField);
+      if (hasField) {
+        markNext(s, "tentative");
+        if (!sp.firstFieldAt) {
+          sp.firstFieldAt = -1;
+          void nextFrame().then((t) => (sp.firstFieldAt = t));
+        }
       }
+      if (filledIn(card, settings)) markNext(s, "card-full");
     },
-    [ctxNow, mark, show],
+    [ctxNow, markNext, note, show],
   );
 
-  /** A card's object has closed (in the stream, or the whole answer is in):
-      the finished card(s) on this screen, still local. */
-  const complete = useCallback(
-    (s: Session, sp: Spec, text = sp.answer?.answer): Widget[] | null => {
-      if (session.current !== s || text === undefined) return null;
-      const current = s.final ? s.final === sp : sp.norm === norm(s.text);
-      if (!current) return null;
-      const ctx = ctxNow();
-      const { items } = parseDeal(text, sp.answer !== null);
-      const widgets: Widget[] = [];
-      items.forEach((item) => {
-        if (!item.ok) return;
-        const r = applyCard(item.card, ctx, { id: `${DRAFT}${s.key}-${widgets.length}`, z: 1000 + widgets.length });
-        if (r.ok) widgets.push(r.widget);
-      });
-      if (!widgets.length) return null;
-      s.fromModel = true;
-      show(s, widgets, undefined, "card");
-      if (!sp.completeAt) {
-        sp.completeAt = -1;
-        void nextFrame().then((t) => {
-          sp.completeAt = t;
-          if (!sp.firstFieldAt || sp.firstFieldAt < 0) sp.firstFieldAt = t;
-          if (s.final === sp) {
-            mark(s, "first-field", sp.firstFieldAt);
-            mark(s, "card-local", t);
-          }
-        });
-      }
-      return widgets;
+  /** The stream moved (or the call returned): keep the newest text, settle `ready`, fill. */
+  const stream = useCallback(
+    (s: Session, sp: Spec, text: string, done: boolean) => {
+      if (session.current !== s) return;
+      // A watch update can arrive after the returned answer: never step back.
+      if (text.length >= sp.streamed.length) sp.streamed = text;
+      if (done) sp.whole = true;
+      if (!sp.cardOk && parseDeal(sp.streamed, sp.whole).items.some((i) => i.ok)) sp.cardOk = true;
+      if (sp.cardOk || sp.whole) sp.settle();
+      fill(s, sp);
     },
-    [ctxNow, mark, show],
+    [fill],
   );
 
   const fire = useCallback(
     (s: Session, text: string, spec: boolean): Spec => {
+      let settle = () => {};
+      const ready = new Promise<void>((r) => (settle = r));
       const sp: Spec = {
         nonce: `${s.key.toString(36)}-${s.specs.length}-${Math.random().toString(36).slice(2, 7)}`,
+        seq: s.specs.length,
         text,
         norm: norm(text),
         spec,
+        streamed: "",
+        whole: false,
+        cardOk: false,
         answer: null,
         firstFieldAt: null,
-        completeAt: null,
+        ready,
+        settle,
         promise: Promise.resolve(null),
       };
       s.specs.push(sp);
       s.trace.calls.push({ text, ms: Math.round(performance.now() - s.t0), spec, used: false });
-      if (spec) performance.mark("voice:phrase");
+      // A speculative call holds a slot until its card is in (or it ends).
+      let held = spec;
+      const release = () => {
+        if (!held) return;
+        held = false;
+        s.inFlight--;
+        if (s.queued) {
+          s.queued = false;
+          maybeFire.current(s);
+        }
+      };
+      if (spec) {
+        s.inFlight++;
+        performance.mark("voice:phrase");
+      }
+      void ready.then(release);
       sp.promise = room.current
-        .deal({ said: text, nonce: sp.nonce, spec }, (a) => {
-          // A closed card object is a finished card; before that, fill field by field.
-          if (!sp.answer && parseDeal(a).items.some((i) => i.ok)) complete(s, sp, a);
-          else fill(s, sp, a);
-        })
+        .deal({ said: text, nonce: sp.nonce, spec }, (a, done) => stream(s, sp, a, done === true))
         .then(
           (answer) => {
             sp.answer = answer;
-            complete(s, sp);
+            stream(s, sp, answer.answer, true);
             return answer;
           },
           () => null,
-        );
+        )
+        .finally(() => {
+          sp.whole = true;
+          sp.settle();
+        });
       return sp;
     },
-    [complete, fill],
+    [stream],
   );
+
+  maybeFire.current = (s: Session) => {
+    const text = s.text;
+    if (session.current !== s || s.ended || !text || sentenceHangs(text)) return;
+    const n = text.split(/\s+/).length;
+    if (!(guessCard(text) ? n >= 2 : n >= SPEC_MIN_WORDS)) return;
+    if (s.specs.some((sp) => sp.norm === norm(text))) return;
+    if (s.specs.filter((sp) => sp.spec).length >= SPEC_MAX_CALLS) return;
+    if (s.inFlight >= SPEC_IN_FLIGHT) {
+      s.queued = true;
+      return;
+    }
+    fire(s, text, true);
+  };
 
   const start = useCallback(() => {
     if (session.current) window.clearTimeout(session.current.steady);
@@ -456,12 +590,20 @@ export function useVoiceBuild({
       guess: null,
       shown: null,
       fromModel: false,
+      tent: null,
+      shownSeq: -1,
       spot: null,
       lifted: false,
       specs: [],
+      inFlight: 0,
+      queued: false,
       steady: 0,
       final: null,
       ended: false,
+      round: 0,
+      commitP: null,
+      committedCard: null,
+      reopened: false,
       lastWordAt: 0,
       marks: {},
       trace: {
@@ -472,6 +614,9 @@ export function useVoiceBuild({
         words: [],
         calls: [],
         guesses: [],
+        fills: [],
+        flicker: 0,
+        late: [],
         model: null,
         context: null,
         answer: null,
@@ -503,7 +648,15 @@ export function useVoiceBuild({
   const words = useCallback(
     (text: string) => {
       const s = session.current;
-      if (!s || s.ended) return;
+      if (!s) return;
+      if (s.ended) {
+        // A late word reopened the ask (lib/voice.ts). Once a card is written,
+        // it's corrected in place at the next pause, not drawn again.
+        s.ended = false;
+        s.reopened = s.commitP !== null;
+        s.round++; // the round that pause started is over, written or not
+
+      }
       s.text = text;
       s.trace.words.push({ text, ms: Math.round(performance.now() - s.t0) });
       const guess = guessCard(text);
@@ -512,17 +665,23 @@ export function useVoiceBuild({
         s.trace.guesses.push({ card: guess, ms: Math.round(performance.now() - s.t0) });
       }
       showGuess(s);
-      // Words steady for a beat and they mean something: send them now.
+      // Words that name a card go out at once; others once they've held for a beat.
       window.clearTimeout(s.steady);
-      s.steady = window.setTimeout(() => {
-        if (session.current !== s || s.ended || s.text !== text) return;
-        if (text.split(/\s+/).length < SPEC_MIN_WORDS || sentenceHangs(text)) return;
-        if (s.specs.length >= SPEC_MAX_CALLS - 1 || s.specs.some((sp) => sp.norm === norm(text))) return;
-        fire(s, text, true);
-      }, STEADY_MS);
+      if (guess) maybeFire.current(s);
+      else
+        s.steady = window.setTimeout(() => {
+          if (session.current === s && s.text === text) maybeFire.current(s);
+        }, STEADY_MS);
     },
-    [fire, showGuess],
+    [showGuess],
   );
+
+  /** These exact words already made a whole card: the pause can be shorter (lib/voice.ts). */
+  const ready = useCallback((text: string) => {
+    const s = session.current;
+    if (!s || s.reopened) return false;
+    return s.specs.some((sp) => sp.norm === norm(text) && sp.cardOk);
+  }, []);
 
   const leave = useCallback(() => {
     clearTimer.current = window.setTimeout(() => {
@@ -535,10 +694,21 @@ export function useVoiceBuild({
     }, RECEIPT_MS);
   }, []);
 
+  /** The model's details for the trace, once the call has returned. */
+  const traceAnswer = useCallback((s: Session, answer: DealAnswer | null) => {
+    s.trace.model = answer?.model ?? null;
+    s.trace.context = answer?.context ?? null;
+    s.trace.answer = answer?.answer ?? null;
+    s.trace.error = answer?.error ?? null;
+    s.trace.dealId = answer?.dealId ?? null;
+    s.trace.modelMs = answer?.modelMs ?? null;
+  }, []);
+
   const ask = useCallback(
     async (said: string, end: VoiceEnd) => {
       const s = session.current;
       if (!s) return;
+      const round = ++s.round;
       s.ended = true;
       s.text = said;
       s.lastWordAt = end.lastWordAt || end.endedAt;
@@ -547,15 +717,14 @@ export function useVoiceBuild({
       if (end.how === "pause") s.marks.pause = end.endedAt;
       s.trace.said = said;
       s.trace.how = end.how;
+      const late: AskTrace["late"][number] | null = round > 1 ? { text: said, ms: Math.round(performance.now() - s.t0), outcome: "…" } : null;
+      if (late) s.trace.late.push(late);
       const hit = s.specs.find((sp) => sp.norm === norm(said));
       const sp = hit ?? fire(s, said, false);
       s.final = sp;
-      s.trace.calls[s.specs.indexOf(sp)].used = true;
-      // Marks this call already reached before the pause count now.
-      if (sp.firstFieldAt && sp.firstFieldAt > 0) mark(s, "first-field", sp.firstFieldAt);
-      if (sp.completeAt && sp.completeAt > 0) mark(s, "card-local", sp.completeAt);
+      s.trace.calls.forEach((c, i) => (c.used = i === sp.seq));
       // Words that named no card yet: hold a card-sized ring open in view.
-      if (!s.shown && !s.final.answer) {
+      if (!s.shown && !s.reopened && !sp.cardOk) {
         s.m = measure(scrollerRef.current) ?? s.m;
         if (s.m) {
           const size = { w: 300, h: 240 };
@@ -565,53 +734,92 @@ export function useVoiceBuild({
           void nextFrame().then((t) => mark(s, "skeleton", t));
         }
       }
+      // The final call's fields so far (it may have streamed some before the end).
+      fill(s, sp);
       publish(s);
 
+      const stale = () => session.current !== s || s.round !== round;
       const fail = (reason?: string) => {
-        if (session.current !== s) return;
+        if (stale()) return;
+        if (reason) s.trace.error = s.trace.error ?? reason;
+        if (s.commitP) {
+          // The card from before the late word stays as it was.
+          if (late) late.outcome = `kept the card as it was (${reason ?? "no answer"})`;
+          publish(s);
+          return;
+        }
         setShell(null);
         setDrafts([]);
         setReceipt({ ok: false, key: s.key });
         s.trace.done = true;
         s.trace.ok = false;
-        if (reason) s.trace.error = s.trace.error ?? reason;
         publish(s);
         leave();
       };
 
-      const answer = await sp.promise;
-      if (session.current !== s) return;
-      s.trace.model = answer?.model ?? null;
-      s.trace.context = answer?.context ?? null;
-      s.trace.answer = answer?.answer ?? null;
-      s.trace.error = answer?.error ?? null;
-      s.trace.dealId = answer?.dealId ?? null;
-      s.trace.modelMs = answer?.modelMs ?? null;
-      if (!answer) return fail("the deal call failed");
-      const { items, none } = parseDeal(answer.answer, true);
+      await sp.ready;
+      if (stale()) return;
+      // Its first card is in (the rest of the answer may still be streaming).
       const ctx = ctxNow();
-      const kept: Array<{ card: DealtCard; widget: Widget }> = [];
-      for (const item of items) {
-        if (!item.ok) {
-          s.trace.cards.push({ card: /"card"\s*:\s*"([^"]+)"/.exec(item.raw)?.[1] ?? "?", ok: false, reason: item.reason });
-          continue;
+      const keep = (text: string, whole: boolean) => {
+        const kept: Array<{ card: DealtCard; widget: Widget }> = [];
+        const cards: AskTrace["cards"] = [];
+        for (const item of parseDeal(text, whole).items) {
+          if (!item.ok) {
+            cards.push({ card: /"card"\s*:\s*"([^"]+)"/.exec(item.raw)?.[1] ?? "?", ok: false, reason: item.reason });
+            continue;
+          }
+          const r = applyCard(item.card, ctx, { id: `${DRAFT}${s.key}-${kept.length}`, z: 1000 + kept.length });
+          if (r.ok) kept.push({ card: item.card, widget: r.widget });
+          cards.push(r.ok ? { card: item.card.card, ok: true } : { card: item.card.card, ok: false, reason: r.reason });
         }
-        const r = applyCard(item.card, ctx, { id: `${DRAFT}${s.key}-${kept.length}`, z: 1000 + kept.length });
-        if (r.ok) kept.push({ card: item.card, widget: r.widget });
-        s.trace.cards.push(r.ok ? { card: item.card.card, ok: true } : { card: item.card.card, ok: false, reason: r.reason });
+        return { kept, cards };
+      };
+      const got = keep(sp.streamed, sp.whole);
+      let kept = got.kept;
+      if (!kept.length) {
+        traceAnswer(s, sp.answer);
+        s.trace.cards = got.cards;
+        return fail(parseDeal(sp.streamed, true).none ? "the model said no card fits" : sp.answer ? "no valid card in the answer" : "the deal call failed");
       }
-      s.trace.guessAgreed = s.guess && kept.length ? kept[0].card.card === s.guess : null;
-      if (!kept.length) return fail(none ? "the model said no card fits" : "no valid card in the answer");
-      complete(s, sp);
 
-      // Where it goes: code, from the board as drawn, as close to the skeleton as fits.
+      if (s.commitP) {
+        // A late word, after the card was written: correct it in place.
+        const ids = await s.commitP;
+        if (stale() || !late) return;
+        const json = JSON.stringify(kept[0].card);
+        if (!ids.length) late.outcome = "nothing was written to correct";
+        else if (json === s.committedCard) late.outcome = "same card: nothing to change";
+        else if (!room.current.amend) late.outcome = "stand-in: not corrected";
+        else {
+          await room.current.amend({ widgetId: ids[0], nonce: sp.nonce, card: kept[0].card }).catch(() => {});
+          s.committedCard = json;
+          late.outcome = `corrected in place → ${kept[0].card.card}`;
+          late.after = Math.round(performance.now() - s.lastWordAt);
+        }
+        void sp.promise.then((a) => {
+          if (!stale()) traceAnswer(s, a);
+          publish(s);
+        });
+        publish(s);
+        return;
+      }
+
+      // Final: the answer for exactly these words, on this screen.
+      note(s, sp, kept[0].card.card, kept[0].card.settings as Record<string, unknown>, true, true);
+      s.trace.cards = got.cards;
+      s.trace.guessAgreed = s.guess ? kept[0].card.card === s.guess : null;
       const m = measure(scrollerRef.current) ?? s.m;
       if (!m) return fail("no canvas");
+      // Where it goes: code, from the board as drawn, as close to the skeleton as fits.
       const sizes = kept.map((k) => footprint(k.widget));
       const placeRoom = { widgets: m.board, view: m.view, bounds: m.bounds, selected: room.current.selectedId?.() ?? null, anchor: s.spot ?? undefined };
       const spots = placeCards(sizes, placeRoom);
       s.trace.place = placeReason(sizes, spots, placeRoom);
       const placed = kept.map((k, i) => ({ ...k, widget: { ...k.widget, ...spots[i] } }));
+      // The write goes out now, with the final spot; the screen catches up in the same tick.
+      s.commitP = room.current.commit({ dealId: sp.answer?.dealId ?? null, nonce: sp.nonce, cards: placed }).catch(() => [] as string[]);
+      s.committedCard = JSON.stringify(kept[0].card);
       s.lifted = false;
       show(
         s,
@@ -619,6 +827,10 @@ export function useVoiceBuild({
         spots,
         "card",
       );
+      if (sp.firstFieldAt && sp.firstFieldAt > 0) mark(s, "first-field", sp.firstFieldAt);
+      markNext(s, "first-field");
+      markNext(s, "card-local");
+      markNext(s, "card-full");
       // The camera follows only when the spot is off-screen.
       const cluster = {
         x: Math.min(...spots.map((p) => p.x)),
@@ -635,15 +847,14 @@ export function useVoiceBuild({
       shellTimer.current = window.setTimeout(() => setShell(null), reducedMotion() ? 0 : HANDOFF_MS);
       const firstId = `${DRAFT}${s.key}-0`;
       setLanded({ widgetId: firstId, x: spots[0].x, y: spots[0].y, host: m.canvas, traceKey: s.key });
+      publish(s);
 
-      let ids: string[] = [];
-      try {
-        ids = await room.current.commit({ dealId: answer.dealId, cards: placed });
-      } catch {
-        ids = [];
-      }
+      const ids = await s.commitP;
       if (session.current !== s) return;
-      if (!ids.length) return fail("the commit wrote nothing");
+      if (!ids.length) {
+        s.commitP = null;
+        return fail("the commit wrote nothing");
+      }
       mark(s, "committed");
       s.trace.cards.filter((c) => c.ok).forEach((c, i) => (c.widgetId = ids[i]));
       setSynced((all) => ({ ...all, ...Object.fromEntries(ids.map((id, i) => [`${DRAFT}${s.key}-${i}`, id])) }));
@@ -655,6 +866,32 @@ export function useVoiceBuild({
         await new Promise((r) => setTimeout(r, 16));
       }
       if (m.canvas.querySelector(`[data-widget-id="${ids[0]}"]`)) mark(s, "card-on-screen");
+      const t = s.marks["card-on-screen"];
+      // Drafts that were replaced are dropped once the synced cards are in.
+      if (t !== undefined)
+        window.setTimeout(() => {
+          if (session.current === s) setDrafts([]);
+        }, 50);
+
+      // The rest of the answer: the model's details, and any card after the first ones.
+      const answer = await sp.promise;
+      if (session.current !== s) return;
+      traceAnswer(s, answer);
+      if (answer && !stale()) {
+        const more = keep(answer.answer, true);
+        const extra = more.kept.slice(kept.length);
+        if (extra.length) {
+          s.trace.cards = more.cards;
+          const m2 = measure(scrollerRef.current) ?? m;
+          const sizes2 = extra.map((k) => footprint(k.widget));
+          const spots2 = placeCards(sizes2, { widgets: m2.board, view: m2.view, bounds: m2.bounds, anchor: spots[0] });
+          const ids2 = await room.current
+            .commit({ dealId: answer.dealId, nonce: sp.nonce, cards: extra.map((k, i) => ({ ...k, widget: { ...k.widget, ...spots2[i] } })) })
+            .catch(() => [] as string[]);
+          s.trace.cards.filter((c) => c.ok).forEach((c, i) => (c.widgetId = [...ids, ...ids2][i]));
+          kept = more.kept;
+        }
+      }
       s.trace.done = true;
       s.trace.ok = true;
       publish(s);
@@ -663,20 +900,14 @@ export function useVoiceBuild({
         ok: true,
         key: s.key,
         cards: kept.map((k) => k.card.card),
-        model: answer.model,
-        ms: answer.model && local !== undefined ? Math.round(local - s.lastWordAt) : null,
+        model: answer?.model ?? null,
+        ms: answer?.model && local !== undefined ? Math.round(local - s.lastWordAt) : null,
         widgetId: ids[0],
       });
-      const t = s.marks["card-on-screen"];
-      if (answer.dealId && t !== undefined) room.current.onLanded?.(answer.dealId, t - s.lastWordAt, s.trace);
+      if (answer?.dealId && t !== undefined) room.current.onLanded?.(answer.dealId, t - s.lastWordAt, s.trace);
       leave();
-      // Drafts that were replaced are dropped once the synced cards are in.
-      if (t !== undefined)
-        window.setTimeout(() => {
-          if (session.current === s) setDrafts([]);
-        }, 50);
     },
-    [complete, ctxNow, fire, leave, mark, publish, scrollerRef, show],
+    [ctxNow, fill, fire, leave, mark, markNext, note, publish, scrollerRef, show, traceAnswer],
   );
 
   /** The board as this screen should draw it: the synced widgets plus any
@@ -692,6 +923,6 @@ export function useVoiceBuild({
     [drafts, synced],
   );
 
-  const voice: VoiceHooks = { start, words, ask };
+  const voice: VoiceHooks = { start, words, ask, ready };
   return { voice, withDrafts, drafts, shell, landed, receipt, leaving, traces };
 }

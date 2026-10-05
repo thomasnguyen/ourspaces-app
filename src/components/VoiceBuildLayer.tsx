@@ -50,8 +50,10 @@ function ShellRing({ shell, tint }: { shell: VoiceShell; tint: CSSProperties }) 
 const STAGE_LABEL: Record<StageName, string> = {
   pause: "pause detected",
   skeleton: "skeleton on screen",
-  "first-field": "first field filled",
-  "card-local": "card complete (local)",
+  tentative: "first tentative field",
+  "card-full": "card visually complete (tentative or final)",
+  "first-field": "final answer's first field",
+  "card-local": "final card on this screen",
   committed: "committed",
   "card-on-screen": "synced card on screen",
 };
@@ -104,10 +106,31 @@ function ContextDrawer({
           {t.calls.map((c, i) => (
             <li key={i}>
               <code>{ms(c.ms)}</code> {c.spec ? "speculative" : "at the end"}
-              {c.used ? " · used" : " · ignored"} · “{c.text}”
+              {c.used ? " · final" : t.fills.some((f) => f.call === i) ? " · tentative only" : " · ignored"} · “{c.text}”
             </li>
           ))}
         </ol>
+      </section>
+
+      <section>
+        <h3>fills (dimmed until final)</h3>
+        <ol className="dev-context-list">
+          {t.fills.map((f, i) => (
+            <li key={i}>
+              <code>{ms(f.ms)}</code> {f.final ? "final" : "tentative"} · call {f.call + 1}
+              {f.whole ? " · whole card" : " · some fields"}
+              {f.changed.length ? ` · changed ${f.changed.join(", ")}` : ""} · “{f.words}”
+            </li>
+          ))}
+          {!t.fills.length && <li>—</li>}
+        </ol>
+        <p>{t.flicker} field change{t.flicker === 1 ? "" : "s"} after first showing</p>
+        {t.late.map((l, i) => (
+          <p key={i}>
+            late word at {ms(l.ms)}: “{l.text}” · {l.outcome}
+            {l.after !== undefined && ` · ${ms(l.after)} after its last word`}
+          </p>
+        ))}
       </section>
 
       <section>
@@ -256,12 +279,19 @@ export function VoiceBuildLayer({
                 data-testid={okReceipt ? "voice-receipt" : undefined}
                 data-ms={okReceipt && okReceipt.ms !== null ? okReceipt.ms : undefined}
               >
-                last word → card {latest.stages["card-local"] === null ? "…" : ms(latest.stages["card-local"]).replace("+", "")}
+                last word → final card {latest.stages["card-local"] === null ? "…" : ms(latest.stages["card-local"]).replace("+", "")}
               </span>
+              {latest.stages.tentative !== null && <span>tentative {ms(latest.stages.tentative).replace("+", "")}</span>}
               <span>
                 {latest.calls.length} call{latest.calls.length === 1 ? "" : "s"}
                 {latest.calls.some((c) => c.spec && c.used) ? " · early hit" : ""}
               </span>
+              {latest.late.length > 0 && (
+                <span>
+                  late word · {latest.late.at(-1)!.outcome}
+                  {latest.late.at(-1)!.after !== undefined && ` ${ms(latest.late.at(-1)!.after).replace("+", "")} after it`}
+                </span>
+              )}
               {latest.guessAgreed !== null && <span>guess {latest.guessAgreed ? "right" : "wrong"}</span>}
             </>
           )}

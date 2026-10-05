@@ -2,10 +2,12 @@
 /// <reference types="vite/client" />
 import { v } from "convex/values";
 import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import { api, internal } from "./_generated/api";
-import type { MutationCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { pingTokenFactory, streamChat } from "./nebius";
+import { touchSpace } from "./activity";
+import { widgetsCounter } from "./stats";
 import { applyCard, deckPrompt, dealTurn, parseDeal, roomContext } from "../src/lib/deck";
 
 /**
@@ -19,8 +21,12 @@ import { applyCard, deckPrompt, dealTurn, parseDeal, roomContext } from "../src/
  *   skeleton field by field.
  * - `commit` takes the cards the asker kept, checks each again (`applyCard`)
  *   and creates them where the asker's code placed them (`placeCards` runs on
- *   the client, which can see the board as drawn). Convex sync puts them on
- *   every screen in the room.
+ *   the client, which can see the board as drawn), in one mutation. Convex
+ *   sync puts them on every screen in the room. The asker sends it the moment
+ *   the first card closes in the stream, before `deal` has returned, so it
+ *   finds the ask's row by the call's nonce.
+ * - `amend` rewrites a card just committed when a late word changed the ask
+ *   ("…dinner" after the pause): same widget, same spot, never a second card.
  *
  * The model answers with cards only; coordinates, HTML and code never come
  * from it. One `deals` row per call (JSON in `run`): the words, whether it was
@@ -182,22 +188,28 @@ export const finish = internalMutation({
   },
 });
 
+/** One call's row, by the asker's nonce (among the room's newest). */
+async function rowByNonce(ctx: QueryCtx, spaceId: Id<"spaces">, nonce: string) {
+  const rows = await ctx.db
+    .query("deals")
+    .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
+    .order("desc")
+    .take(40);
+  for (const row of rows) {
+    if (!row.run.includes(nonce)) continue;
+    const run = JSON.parse(row.run) as { nonce?: string; answer?: string; done?: boolean };
+    if (run.nonce === nonce) return { row, run };
+  }
+  return null;
+}
+
 /** The answer so far for one call (by the asker's nonce), while it streams. */
 export const live = query({
   args: { spaceId: v.id("spaces"), nonce: v.string() },
   returns: v.union(v.null(), v.object({ answer: v.string(), done: v.boolean() })),
   handler: async (ctx, { spaceId, nonce }) => {
-    const rows = await ctx.db
-      .query("deals")
-      .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
-      .order("desc")
-      .take(40);
-    for (const row of rows) {
-      if (!row.run.includes(nonce)) continue;
-      const run = JSON.parse(row.run) as { nonce?: string; answer?: string; done?: boolean };
-      if (run.nonce === nonce) return { answer: run.answer ?? "", done: run.done === true };
-    }
-    return null;
+    const found = await rowByNonce(ctx, spaceId, nonce);
+    return found ? { answer: found.run.answer ?? "", done: found.run.done === true } : null;
   },
 });
 
@@ -210,6 +222,8 @@ export const commit = mutation({
   args: {
     spaceId: v.id("spaces"),
     dealId: v.optional(v.id("deals")),
+    /** The call's nonce, when the asker commits before `deal` has returned its row id. */
+    nonce: v.optional(v.string()),
     by: v.string(),
     people: v.array(v.string()),
     today: v.string(),
@@ -221,6 +235,7 @@ export const commit = mutation({
     const people = args.people.slice(0, 12);
     const cardCtx = { by: args.by, people: people.length ? people : [args.by], today: args.today };
     const ids: Id<"widgets">[] = [];
+    const now = Date.now();
     for (const c of args.cards.slice(0, 8)) {
       let raw: unknown;
       try {
@@ -231,7 +246,8 @@ export const commit = mutation({
       const applied = applyCard(raw, cardCtx, { z: c.z });
       if (!applied.ok) continue;
       const w = applied.widget;
-      const id: Id<"widgets"> = await ctx.runMutation(api.widgets.createWidget, {
+      // What widgets.createWidget does, without a nested mutation in the hot path.
+      const id = await ctx.db.insert("widgets", {
         spaceId: args.spaceId,
         type: w.type,
         x: Math.round(c.x),
@@ -242,11 +258,78 @@ export const commit = mutation({
         ...(w.rotate !== undefined ? { rotate: w.rotate } : {}),
         data: w.data as never,
         createdBy: args.createdBy,
+        createdAt: now,
       });
       ids.push(id);
     }
-    if (args.dealId) await patchRun(ctx, args.dealId, { committed: ids, committedAt: Date.now() });
+    // The rest goes in its own transaction right after: the counter, the
+    // room's activity stamp (every query reading the space doc would re-run
+    // before this write reaches anyone) and the log line (the ask's row may
+    // still be streaming). This write is only the card.
+    if (ids.length)
+      await ctx.scheduler.runAfter(0, internal.voiceBuild.noteCommitted, {
+        spaceId: args.spaceId,
+        ...(args.dealId ? { dealId: args.dealId } : {}),
+        ...(args.nonce ? { nonce: args.nonce } : {}),
+        ids,
+        at: Date.now(),
+      });
     return ids;
+  },
+});
+
+export const noteCommitted = internalMutation({
+  args: {
+    spaceId: v.id("spaces"),
+    dealId: v.optional(v.id("deals")),
+    nonce: v.optional(v.string()),
+    ids: v.array(v.id("widgets")),
+    at: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    for (let i = 0; i < args.ids.length; i++) await widgetsCounter.inc(ctx);
+    await touchSpace(ctx, args.spaceId, args.at);
+    if (!args.dealId && !args.nonce) return null;
+    const dealId = args.dealId ?? (args.nonce ? (await rowByNonce(ctx, args.spaceId, args.nonce))?.row._id : undefined);
+    const row = dealId ? await ctx.db.get(dealId) : null;
+    if (!dealId || !row) return null;
+    const before = (JSON.parse(row.run) as { committed?: string[] }).committed ?? [];
+    await patchRun(ctx, dealId, { committed: [...before, ...args.ids], committedAt: args.at });
+    return null;
+  },
+});
+
+/** A late word changed the ask: rewrite the card it just wrote, in place. */
+export const amend = mutation({
+  args: {
+    spaceId: v.id("spaces"),
+    widgetId: v.id("widgets"),
+    nonce: v.string(),
+    by: v.string(),
+    people: v.array(v.string()),
+    today: v.string(),
+    createdBy: v.string(),
+    card: v.string(),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const widget = await ctx.db.get(args.widgetId);
+    // Only a card this asker wrote moments ago; anything else stays as it is.
+    if (!widget || widget.spaceId !== args.spaceId || widget.createdBy !== args.createdBy) return false;
+    if (Date.now() - widget.createdAt > 60_000) return false;
+    let raw: unknown;
+    try {
+      raw = JSON.parse(args.card);
+    } catch {
+      return false;
+    }
+    const people = args.people.slice(0, 12);
+    const applied = applyCard(raw, { by: args.by, people: people.length ? people : [args.by], today: args.today }, { z: widget.z });
+    if (!applied.ok) return false;
+    const w = applied.widget;
+    await ctx.db.patch(args.widgetId, { type: w.type, w: w.w, h: w.h, data: w.data as never });
+    return true;
   },
 });
 

@@ -24,6 +24,8 @@ function makeRecognition(): Recognition | null {
   return Ctor ? new Ctor() : null;
 }
 
+const wordCount = (s: string) => s.toLowerCase().match(/[a-z0-9']+/g)?.length ?? 0;
+
 /** Mic loudness → 0..1. Fast attack, slow release, so the orb swells on a
     syllable and settles between words instead of flickering. */
 function follow(level: { current: number }, target: number) {
@@ -36,8 +38,8 @@ function wordMs(word: string) {
   return 200 + 70 * syllables;
 }
 
-/** A hesitation mid-ask, written into a script as "…" or "...". */
-const HESITATE = /^(…|\.\.\.)$/;
+/** A hesitation mid-ask, written into a script as "…" or "..." ("…500": 500 ms). */
+const HESITATE = /^(…|\.\.\.)(\d+)?$/;
 
 /** `?voice=Make a space for our Tahoe weekend` plays a scripted ask instead of
     the mic: words land one at a time and the level fakes a speaking voice.
@@ -61,8 +63,9 @@ function runScript(
   const words: { word: string; from: number; to: number }[] = [];
   let at = 0;
   for (const token of tokens) {
-    if (HESITATE.test(token)) {
-      at += pause;
+    const hesitate = HESITATE.exec(token);
+    if (hesitate) {
+      at += Number(hesitate[2] ?? pause);
       continue;
     }
     const len = talk ? wordMs(token) : 300;
@@ -99,17 +102,25 @@ export type VoiceEnd = { how: "pause" | "done"; lastWordAt: number; endedAt: num
 export type VoiceAsk = (said: string, end: VoiceEnd) => Promise<unknown> | void;
 
 /** The room listening along: `start` on the tap, `words` every time the
-    transcript changes, `ask` once it ends. */
+    transcript changes, `ask` once it ends. `ready`: these words already
+    made a whole card, so a shorter quiet is enough to end on. A word that
+    lands just after a pause ended the ask reopens it: `words` again, then
+    `ask` again with the longer sentence. */
 export type VoiceHooks = {
   start?: () => void;
   words?: (text: string) => void;
   ask?: VoiceAsk;
+  ready?: (text: string) => boolean;
 };
 
 /** Quiet after the last word that ends the ask. */
 const PAUSE_MS = 650;
 /** …unless the words stop mid-thought ("add a poll for…"): then wait longer. */
 const HANG_MS = 1600;
+/** …and when the words already made a whole card (never on a trailing number: "640…"). */
+const READY_MS = 350;
+/** After a pause ends the ask, a word this soon reopens it instead of being lost. */
+const LATE_MS = 1200;
 /** A loud room can't hold an ask open past this much quiet from the recogniser. */
 const MAX_QUIET_MS = 2600;
 /** Nothing said at all: give up. */
@@ -129,6 +140,10 @@ export function useVoice(hooks: VoiceHooks = {}) {
   const lastWordAt = useRef(0);
   const listenTimer = useRef(0);
   const listening = useRef(false);
+  const lateTimer = useRef(0);
+  /** Words when the last ask ended on a pause: a late word reopens only if it adds one. */
+  const endedWords = useRef(-1);
+  const askSeq = useRef(0);
 
   const finish = useCallback((how: VoiceEnd["how"] = "done") => {
     window.clearInterval(listenTimer.current);
@@ -136,13 +151,27 @@ export function useVoice(hooks: VoiceHooks = {}) {
     listening.current = false;
     const endedAt = performance.now();
     if (how === "pause") performance.mark("voice:pause");
-    stopRef.current();
-    stopRef.current = () => {};
     level.current = 0;
+    window.clearTimeout(lateTimer.current);
+    if (how === "pause") {
+      // Keep hearing a moment: a word that was only a hesitation away reopens the ask.
+      endedWords.current = wordCount(said.current);
+      lateTimer.current = window.setTimeout(() => {
+        if (listening.current) return;
+        endedWords.current = -1;
+        stopRef.current();
+        stopRef.current = () => {};
+      }, LATE_MS);
+    } else {
+      endedWords.current = -1;
+      stopRef.current();
+      stopRef.current = () => {};
+    }
     if (lastWordAt.current) performance.mark("voice:last-word", { startTime: lastWordAt.current });
     setState("working");
     window.clearTimeout(workTimer.current);
     const text = said.current.trim();
+    const seq = ++askSeq.current;
     const pending = text ? hooksRef.current.ask?.(text, { how, lastWordAt: lastWordAt.current, endedAt }) : undefined;
     if (!pending) {
       workTimer.current = window.setTimeout(() => setState("idle"), 1400);
@@ -152,11 +181,20 @@ export function useVoice(hooks: VoiceHooks = {}) {
     workTimer.current = window.setTimeout(() => setState("idle"), 15000);
     void pending.finally(() => {
       window.clearTimeout(workTimer.current);
-      setState((s) => (s === "working" ? "idle" : s));
+      if (seq === askSeq.current) setState((s) => (s === "working" ? "idle" : s));
     });
   }, []);
 
   const hear = useCallback((text: string) => {
+    if (!listening.current) {
+      // Just ended on a pause: only a new word reopens it, not a recogniser's tidy-up.
+      if (endedWords.current < 0 || wordCount(text) <= endedWords.current) return;
+      endedWords.current = -1;
+      window.clearTimeout(lateTimer.current);
+      listening.current = true;
+      setState("listening");
+      listenRef.current();
+    }
     if (text && text !== said.current) {
       if (!said.current) performance.mark("voice:first-word");
       lastWordAt.current = performance.now();
@@ -177,16 +215,27 @@ export function useVoice(hooks: VoiceHooks = {}) {
         return;
       }
       const quiet = now - lastWordAt.current;
-      const wait = sentenceHangs(said.current) ? HANG_MS : PAUSE_MS;
+      const wait = sentenceHangs(said.current)
+        ? HANG_MS
+        : !/\d\W*$/.test(said.current) && hooksRef.current.ready?.(said.current)
+          ? READY_MS
+          : PAUSE_MS;
       if ((quiet > wait && level.current < 0.2) || quiet > MAX_QUIET_MS) finish("pause");
     }, 25);
   }, [finish]);
+  const listenRef = useRef(listenForPause);
+  listenRef.current = listenForPause;
 
   const start = useCallback(async () => {
     window.clearTimeout(workTimer.current);
+    window.clearTimeout(lateTimer.current);
+    endedWords.current = -1;
+    stopRef.current();
+    stopRef.current = () => {};
     performance.mark("voice:tap");
     lastWordAt.current = 0;
-    hear("");
+    said.current = "";
+    setTranscript("");
     setState("listening");
     listening.current = true;
     hooksRef.current.start?.();
@@ -252,6 +301,7 @@ export function useVoice(hooks: VoiceHooks = {}) {
       stopRef.current();
       window.clearTimeout(workTimer.current);
       window.clearInterval(listenTimer.current);
+      window.clearTimeout(lateTimer.current);
     },
     [],
   );

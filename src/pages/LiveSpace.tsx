@@ -1479,6 +1479,7 @@ export function LiveSpacePage({
   const convex = useConvex();
   const dealCards = useAction(api.voiceBuild.deal);
   const commitCards = useMutation(api.voiceBuild.commit);
+  const amendCard = useMutation(api.voiceBuild.amend);
   const warmDeal = useAction(api.voiceBuild.warm);
   const noteDealLanded = useMutation(api.voiceBuild.noteLanded);
   const voicePeople = () =>
@@ -1503,7 +1504,7 @@ export function LiveSpacePage({
       const watch = convex.watchQuery(api.voiceBuild.live, { spaceId: space._id, nonce: call.nonce });
       const stop = watch.onUpdate(() => {
         const live = watch.localQueryResult();
-        if (live?.answer) onPartial(live.answer);
+        if (live?.answer) onPartial(live.answer, live.done);
       });
       try {
         const r = await dealCards({
@@ -1528,11 +1529,12 @@ export function LiveSpacePage({
         stop();
       }
     },
-    commit: async ({ dealId, cards }) => {
+    commit: async ({ dealId, nonce, cards }) => {
       if (!space) return [];
       const ids = await commitCards({
         spaceId: space._id,
         ...(dealId ? { dealId: dealId as Id<"deals"> } : {}),
+        nonce,
         by: identity.name,
         people: voicePeople(),
         today: voiceToday(),
@@ -1540,6 +1542,19 @@ export function LiveSpacePage({
         cards: cards.map((c) => ({ card: JSON.stringify(c.card), x: c.widget.x, y: c.widget.y, z: c.widget.z })),
       });
       return ids.map(String);
+    },
+    amend: async ({ widgetId, nonce, card }) => {
+      if (!space) return false;
+      return await amendCard({
+        spaceId: space._id,
+        widgetId: widgetId as Id<"widgets">,
+        nonce,
+        by: identity.name,
+        people: voicePeople(),
+        today: voiceToday(),
+        createdBy: identity.userId,
+        card: JSON.stringify(card),
+      });
     },
     onLanded: (dealId, ms, trace) =>
       void noteDealLanded({ dealId: dealId as Id<"deals">, landedMs: ms, trace: JSON.stringify({ stages: trace.stages, calls: trace.calls.length, guess: trace.guesses.at(-1)?.card ?? null, guessAgreed: trace.guessAgreed }) }).catch(() => {}),
