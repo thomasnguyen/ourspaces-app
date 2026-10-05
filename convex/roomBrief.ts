@@ -163,7 +163,8 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
   for (const vs of pollVotes) for (const vote of vs) bump(vote.userId);
   for (const w of widgets) bump(w.createdBy);
   const seeded = roster.filter((m) => m.userId.startsWith("seed:"));
-  let cast = seeded.length ? seeded : roster.filter((m) => did.has(m.userId));
+  // a made room's roster is only people who had its link: all of them are the group from the moment they walk in
+  let cast = seeded.length ? seeded : space.ownerId ? [...roster] : roster.filter((m) => did.has(m.userId));
   if (!cast.length) cast = [...roster].sort((a, b) => b.lastSeen - a.lastSeen);
   const castIds = new Set(cast.map((m) => m.userId));
   const names: string[] = [];

@@ -45,6 +45,7 @@ import type * as recap from "../recap.js";
 import type * as rightOfWay from "../rightOfWay.js";
 import type * as roomBrief from "../roomBrief.js";
 import type * as roomPresence from "../roomPresence.js";
+import type * as seat from "../seat.js";
 import type * as seed from "../seed.js";
 import type * as shootReset from "../shootReset.js";
 import type * as similar from "../similar.js";
@@ -108,6 +109,7 @@ declare const fullApi: ApiFromModules<{
   rightOfWay: typeof rightOfWay;
   roomBrief: typeof roomBrief;
   roomPresence: typeof roomPresence;
+  seat: typeof seat;
   seed: typeof seed;
   shootReset: typeof shootReset;
   similar: typeof similar;

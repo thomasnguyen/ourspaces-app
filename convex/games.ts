@@ -43,7 +43,9 @@ export type Who = { userId: string; name: string; color: string; guest: boolean 
 export async function caller(ctx: QueryCtx, spaceId: Id<"spaces">, tabId: string): Promise<Who | null> {
   const seat = (userId: string) => ctx.db.query("members").withIndex("by_space_user", (q) => q.eq("spaceId", spaceId).eq("userId", userId)).first();
   const authId = await getAuthUserId(ctx);
-  const row = (authId ? await seat(authId) : null) ?? (tabId && !tabId.startsWith("seed:") && !authId ? await seat(tabId) : null);
+  // the signed-in seat only: a tab id the client sends could name anyone (convex/seat.ts)
+  void tabId;
+  const row = authId ? await seat(authId) : null;
   if (!row) return null;
   const user = authId ? await ctx.db.get("users", authId) : null;
   return { userId: row.userId, name: row.name, color: row.color, guest: !user || user.isAnonymous === true };
@@ -278,7 +280,9 @@ export const start = mutation({
   handler: async (ctx, { spaceId, userId, kind, about, said }) => {
     const me = await caller(ctx, spaceId, userId);
     if (!me) return { ok: false, reason: "enter the space to play" };
-    if (me.guest) return { ok: false, reason: "join the space to start a game. you can still play one" };
+    // the tour rooms are public, so a drive-by guest can't start one there; a made room is only people with its link
+    const madeRoom = Boolean((await ctx.db.get(spaceId))?.ownerId);
+    if (me.guest && !madeRoom) return { ok: false, reason: "join the space to start a game. you can still play one" };
     const on = await ctx.db.query("games").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(5);
     const open = on.find((g) => g.phase !== "done" && g.kind !== "jigsaw");
     if (open) return { ok: true, gameId: open._id, name: open.name, reason: "already on" };
@@ -286,6 +290,7 @@ export const start = mutation({
     const knows = await knowsOf(ctx, spaceId);
     const people = knows.people.filter((p) => !same(p.name, me.name));
     const cast: GamePerson[] = [{ name: me.name, color: me.color }, ...people.map(({ name, color }) => ({ name, color }))].slice(0, MAX_CAST);
+    if (madeRoom && cast.length < 2) return { ok: false, reason: "games need at least two of you. send the invite link, then ask again" };
     const dealt = on.length;
     let fields: Partial<Doc<"games">> & { name: string };
     let prompts: Array<{ prompt: GameRound["prompt"]; asks?: HotQuestion[] }>;

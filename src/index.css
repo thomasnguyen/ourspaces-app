@@ -26780,6 +26780,8 @@ body:has(.demo-banner) .space-rail {
   max-height: calc(100dvh - var(--demo-banner-height) - 40px);
 }
 body:has(.demo-banner) .canvas-focus-hud { top: calc(var(--demo-banner-height) + 22px); }
+/* the entry gate centres in the room below the banner, never under it (N1: the phone cut the room name in half) */
+body:has(.demo-banner) .claim-card.is-gate { top: var(--demo-banner-height); max-height: calc(100dvh - var(--demo-banner-height) - 24px); overflow: auto; }
 body:has(.demo-banner) .settings-sheet {
   top: calc(var(--demo-banner-height) + 20px);
   max-height: calc(100dvh - var(--demo-banner-height) - 40px);

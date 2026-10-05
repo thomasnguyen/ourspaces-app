@@ -40,7 +40,10 @@ import { ClaimCard, type RoomContext } from "../components/ClaimCard";
 import { SettingsSheet } from "../components/SettingsSheet";
 import { JoinForm } from "../components/JoinForm";
 import { useAccount } from "../live/useJoin";
-import { resetIdentity } from "../live/identity";
+import { isPersonaName, PERSONAS, resetIdentity, updateIdentity } from "../live/identity";
+import { NewRoomInvite, NewRoomStart } from "../components/NewRoom";
+import { MAKE_SPACE_EVENT } from "../components/DemoBanner";
+import { setNextVoiceScript } from "../lib/voice";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useAvatarUpload } from "../live/useAvatarUpload";
 import { GateCursor, type GatePoint } from "../components/GateCursor";
@@ -869,7 +872,8 @@ export function LiveSpacePage({
     room: slug,
     spaceId: space?._id,
     identity,
-    enabled: mode === "live" && roomEntered && LIVE_GAME_ROOMS.has(slug),
+    // a made room gets games too (N1); the jigsaw stays in the tour rooms (it puzzles their group photo)
+    enabled: mode === "live" && roomEntered && (LIVE_GAME_ROOMS.has(slug) || Boolean(space?.ownerId)),
     flyTo: goToTurnWidget,
   });
   /* the live puzzle (convex/puzzles.ts): real hands only, the space's is absent */
@@ -1709,6 +1713,54 @@ export function LiveSpacePage({
      page people can read and correct. A correction lands on the brief's row,
      so the facts above change with it and the next ask is routed by them. */
   const roomKnows = useQuery(api.roomBrief.knows, mode === "live" && space ? { spaceId: space._id } : "skip");
+
+  /* ── a room someone just made (N1, components/NewRoom.tsx) ── */
+  const madeRoom = mode === "live" && !!space?.ownerId && !SPACES_BY_ID[slug];
+  // the banner's "make your own space" opens the maker from any room
+  useEffect(() => {
+    const open = () => setSpacePickerOpen(true);
+    window.addEventListener(MAKE_SPACE_EVENT, open);
+    return () => window.removeEventListener(MAKE_SPACE_EVENT, open);
+  }, []);
+  // a starter ask plays its words into the orb, as if they were said
+  const askStarter = useCallback((words: string) => {
+    setNextVoiceScript(words);
+    document.querySelector<HTMLElement>('[data-testid="dock-voice-orb"]')?.click();
+  }, []);
+  // two new people never walk in as the same persona: a guest still on a
+  // persona name takes the first one nobody in the room has
+  const roomNames = useMemo(() => (roomKnows?.people ?? []).map((p) => p.name.toLowerCase()), [roomKnows]);
+  useEffect(() => {
+    if (!gateOpen || account.joined || !isPersonaName(identity.name) || !roomNames.includes(identity.name.toLowerCase())) return;
+    const free = PERSONAS.find((p) => !roomNames.includes(p.name));
+    if (free) updateIdentity({ name: free.name, color: free.color, emoji: free.emoji, avatarUrl: free.avatarUrl });
+  }, [account.joined, gateOpen, identity.name, roomNames]);
+  // the first card's arrival, and the invite one tap away while it's only you
+  const cardCount = widgets.length;
+  const startedEmpty = useRef<boolean | null>(null);
+  if (startedEmpty.current === null && status !== "loading" && space) startedEmpty.current = cardCount === 0;
+  const [inviteClosed, setInviteClosed] = useState(() => sessionStorage.getItem(`ourspaces:invite-nudge:${slug}`) === "closed");
+  const aloneHere = (hereCount ?? 1) <= 1 && (roomKnows?.people.length ?? 1) <= 1;
+  // `?newroom=first` shows the first-card nudge as it lands (takes; features/new-space.md)
+  const nudgeTake = new URLSearchParams(window.location.search).get("newroom") === "first";
+  const showInviteNudge = madeRoom && roomEntered && !gateOpen && (nudgeTake || (cardCount > 0 && aloneHere && !inviteClosed));
+  // a phone opens a made room on its cards, wherever the first asker's screen put them
+  const framedSlug = useRef("");
+  useEffect(() => {
+    if (!madeRoom || !roomEntered || cardCount === 0 || framedSlug.current === slug) return;
+    framedSlug.current = slug;
+    const timer = window.setTimeout(() => {
+      const view = viewportRef.current?.getBoundingClientRect();
+      const cards = [...document.querySelectorAll<HTMLElement>("[data-widget-id]")];
+      const seen = cards.some((el) => {
+        const r = el.getBoundingClientRect();
+        return view && r.right > view.left + 40 && r.left < view.right - 40 && r.bottom > view.top + 40 && r.top < view.bottom - 120;
+      });
+      const first = cards[0]?.dataset.widgetId;
+      if (!seen && first) panToWidget(first);
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [cardCount, madeRoom, roomEntered, slug]);
   const correctKnows = useMutation(api.roomBrief.correct);
   /* Cards waiting on another (a recipe's open links, convex/links.ts). */
   const openLinks = useQuery(api.links.waiting, mode === "live" && space ? { spaceId: space._id } : "skip");
@@ -3110,8 +3162,8 @@ export function LiveSpacePage({
             {ghostLifecycle !== "hidden" && (
               <GhostCanvas spaceId={slug} phase={ghostLifecycle === "leaving" ? "leaving" : "in"} />
             )}
-            {status === "empty" && (
-              <div className="space-state-pill">nothing here yet — run: npx convex run seed:demo</div>
+            {status === "empty" && !madeRoom && (
+              <div className="space-state-pill">nothing here yet</div>
             )}
             {status === "missing" && (
               <div className="space-state-pill">this room doesn't exist</div>
@@ -3287,6 +3339,19 @@ export function LiveSpacePage({
         onAddWidget={addWidget}
         onClose={() => setPickerOpen(false)}
       />
+      {madeRoom && roomEntered && !gateOpen && cardCount === 0 && status !== "loading" && !nudgeTake && (
+        <NewRoomStart roomName={space?.name ?? ""} onAsk={askStarter} />
+      )}
+      {showInviteNudge && (
+        <NewRoomInvite
+          slug={slug}
+          first={nudgeTake || (startedEmpty.current === true && cardCount === 1)}
+          onClose={() => {
+            sessionStorage.setItem(`ourspaces:invite-nudge:${slug}`, "closed");
+            setInviteClosed(true);
+          }}
+        />
+      )}
       <SpaceMaker
         open={spacePickerOpen}
         onClose={() => setSpacePickerOpen(false)}

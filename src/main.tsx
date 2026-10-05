@@ -9,8 +9,9 @@ import App from "./App.tsx";
 import { getDataMode } from "./live/dataMode.ts";
 import { AuthIdentityBridge } from "./live/useAuthIdentity.ts";
 import { UpdateNudge } from "./components/UpdateNudge.tsx";
-import { DemoBanner } from "./components/DemoBanner.tsx";
+import { DemoBanner, MAKE_SPACE_EVENT } from "./components/DemoBanner.tsx";
 import { api } from "../convex/_generated/api";
+import { useQuery } from "convex/react";
 import "./index.css";
 
 const url = import.meta.env.VITE_CONVEX_URL as string | undefined;
@@ -36,17 +37,27 @@ function MissingConvexConfig() {
   );
 }
 
+/** Live: the banner asks the deployment whether rooms are open (by lane, convex/spaces.ts `roomsOpen`). */
+function LiveDemoBanner() {
+  const open = useQuery(api.spaces.roomsOpen, {});
+  return (
+    <DemoBanner
+      onJoinWaitlist={(email) => convexClient.mutation(api.waitlist.join, { email })}
+      onMakeSpace={open ? () => window.dispatchEvent(new Event(MAKE_SPACE_EVENT)) : undefined}
+    />
+  );
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <DemoBanner onJoinWaitlist={mode === "live" && url
-      ? (email) => convexClient.mutation(api.waitlist.join, { email })
-      : undefined} />
+    {mode !== "live" || !url ? <DemoBanner /> : null}
     {mode === "live" && url ? (
       // Guests sign in silently from AuthIdentityBridge once this provider
       // settles; the canvas renders either way (§1).
       <ConvexAuthProvider client={convexClient}>
         <ConvexQueryCacheProvider expiration={600_000}>
           <AuthIdentityBridge />
+          <LiveDemoBanner />
           <App />
           {/* Live path only. UpdateNudge subscribes to the static-hosting
               component's deployment row, and that hook needs a Convex client

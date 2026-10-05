@@ -156,6 +156,13 @@ export function answerFor(said: string, f: RoomFacts | null, widgets: W[], frame
   const q = topic(t);
   const of = (type: string) => widgets.filter((w) => w.type === type);
 
+  // who's in the group: the room's own people (a new room knows its name and people from the first second)
+  if (/^(so |ok |okay )?who('?s| is| are)( all)? (in (this|the|our) (group|space|room|crew|chat)|here)\b/.test(t) && f?.people.length) {
+    const ps = f.people;
+    const text = ps.length === 1 ? `just ${ps[0]} so far. send the invite link to bring people in` : `${ps.slice(0, -1).join(", ")} and ${ps[ps.length - 1]}`;
+    return { text, source: "who's in the room", facts: [`people: ${ps.join(", ")}`] };
+  }
+
   // a running challenge: who leads, who hasn't logged
   if (/\b(winning|ahead|behind|leading|leader|first|last place|standings|score|logged|log today|streak)\b/.test(t) || (f?.challenges ?? []).some((c) => shares(q, `${c.title} ${c.unit}`).length)) {
     const c = f?.challenges?.[0];

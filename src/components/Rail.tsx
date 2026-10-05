@@ -242,6 +242,7 @@ export function Rail({
             type="button"
             className="create-space-button"
             aria-label="Create a new space"
+            data-testid="rail-new-space"
             onClick={onCreateClick}
           >
             <span>+</span>

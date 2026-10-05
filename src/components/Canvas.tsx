@@ -6,7 +6,7 @@ import {
   WIDGET_MOTION,
   usePeerMotion,
 } from "../live/peerMotion";
-import { DECISION_WIDGET, getSpace, SPACE_CURSORS } from "../data/spaces";
+import { DECISION_WIDGET, getSpace, SPACE_CURSORS, SPACES_BY_ID } from "../data/spaces";
 import type { BackendCount } from "../lib/backendCounts";
 import type { SpaceMember, SpaceMeta, Widget } from "../data/types";
 import { useSpaceEntrance, wavefrontDelays } from "../lib/entrance";
@@ -656,7 +656,8 @@ export function SpaceHeader({
     : [];
   const name = spaceName ?? spaceMeta?.name ?? space.name;
   const tagline = spaceMeta?.tagline ?? space.tagline;
-  const mailAddress = inboxAddress ?? space.inboxAddress;
+  // a made room has no fixture: getSpace() falls back to the crew, whose inbox isn't this room's (N1)
+  const mailAddress = inboxAddress ?? (SPACES_BY_ID[spaceId] ? space.inboxAddress : undefined);
   const kind = spaceMeta?.kind ?? space.kind;
   const visibleLivePeers = livePeers.slice(0, 3);
   const visibleOnline = online.slice(0, Math.max(0, 4 - visibleLivePeers.length));
@@ -814,8 +815,8 @@ export function SpaceHeader({
         <div className="space-title-block">
           <div className="space-meta">
             <span className="space-kind">{kind}</span>
-            <span className="space-meta-separator" aria-hidden="true">·</span>
-            <span className="space-tagline">{tagline}</span>
+            {tagline && <span className="space-meta-separator" aria-hidden="true">·</span>}
+            {tagline && <span className="space-tagline">{tagline}</span>}
           </div>
           <div className="space-title-row">
             <h1><span className="space-title-text">{name}</span></h1>

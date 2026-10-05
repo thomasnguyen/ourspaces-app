@@ -3,7 +3,7 @@ import { requireRegisteredUserId, requireUserId } from "./auth";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { TableAggregate } from "@convex-dev/aggregate";
-import { components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import type { DataModel, Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { pollTallies } from "./votes";
@@ -68,12 +68,16 @@ async function deleteSpaceBySlug(ctx: MutationCtx, slug: string) {
   return space._id;
 }
 
-/** Feeds Home and the rail — preview payload plus live member count (PRD §11). */
+/**
+ * The showcase rooms with their live member count (PRD §11). Only rooms
+ * nobody made (the seeded tour): a made room's slug is its invite link, so it
+ * is never listed for strangers. Your own rooms come from `listMine`.
+ */
 export const listSpaces = query({
   args: {},
   returns: v.array(schema.doc("spaces").extend({ memberCount: v.number() })),
   handler: async (ctx) => {
-    const spaces = await ctx.db.query("spaces").collect();
+    const spaces = (await ctx.db.query("spaces").collect()).filter((space) => !space.ownerId);
     return await Promise.all(
       spaces.map(async (space) => {
         const memberCount = await memberCounts.count(ctx, { namespace: space._id });
@@ -153,9 +157,28 @@ function randomSuffix() {
 }
 
 /**
- * Make a space. Registered people only — this is the one thing an account
- * buys (§1). The owner comes from the session, never from an argument, so
- * there is no path from a forged userId to owning someone else's space.
+ * The switch for "make your own" (nebius/eval/n1-new-space.md §5), by lane:
+ * on the deployments named here a guest can make a room and the demo banner's
+ * waitlist becomes "make your own space". Today that is the dev lane only; on
+ * prod (not listed) making a room still needs an email code and the banner
+ * offers the waitlist. To open prod, add "necessary-cobra-892" here.
+ */
+declare const process: { env: Record<string, string | undefined> };
+const OPEN_ROOM_DEPLOYMENTS = ["dusty-condor-648"];
+const openRooms = () => OPEN_ROOM_DEPLOYMENTS.some((name) => (process.env.CONVEX_CLOUD_URL ?? "").includes(name));
+
+export const roomsOpen = query({
+  args: {},
+  returns: v.boolean(),
+  handler: async () => openRooms(),
+});
+
+/**
+ * Make a space. Registered people only unless the deployment is in
+ * `OPEN_ROOM_DEPLOYMENTS` (then a guest's anonymous account owns it; joining later
+ * keeps the same user id). The owner comes from the session, never from an
+ * argument, so there is no path from a forged userId to owning someone
+ * else's space.
  */
 export const createSpace = mutation({
   args: {
@@ -167,7 +190,7 @@ export const createSpace = mutation({
   },
   returns: v.object({ spaceId: v.id("spaces"), slug: v.string() }),
   handler: async (ctx, args) => {
-    const ownerId = await requireRegisteredUserId(ctx);
+    const ownerId = openRooms() ? await requireUserId(ctx) : await requireRegisteredUserId(ctx);
     const now = Date.now();
     const slug = `${slugify(args.name)}-${randomSuffix()}`;
     const spaceId = await ctx.db.insert("spaces", {
@@ -178,6 +201,8 @@ export const createSpace = mutation({
       lastActivityAt: now,
     });
     await spacesCounter.inc(ctx);
+    // The brain knows the room's name from the first second, not the next cron.
+    await ctx.scheduler.runAfter(0, internal.roomBrief.refresh, { spaceId });
     return { spaceId, slug };
   },
 });
@@ -449,7 +474,13 @@ export const joinDemoSpace = mutation({
     avatarUrl: v.optional(v.string()),
   },
   returns: v.id("members"),
-  handler: async (ctx, { spaceId, userId, name, color, emoji, avatarUrl }) => {
+  handler: async (ctx, { spaceId, userId: tabId, name, color, emoji, avatarUrl }) => {
+    /* The seat is the signed-in id (guests are anonymous accounts). The tab's
+       id is used only before the session lands, and never one that names a
+       real account: nobody can write a seat for someone else. */
+    const authId = await getAuthUserId(ctx);
+    if (!authId && ctx.db.normalizeId("users", tabId)) throw new Error("sign in first");
+    const userId = authId ?? tabId;
     const existing = await ctx.db
       .query("members")
       .withIndex("by_space_user", (q) =>
@@ -474,6 +505,10 @@ export const joinDemoSpace = mutation({
     });
     const member = await ctx.db.get(memberId);
     await memberCounts.insert(ctx, member!);
+    // A made room's brief learns a new person at once (the seeded tour's rooms
+    // get drive-by visitors all day; their cast is fixed, so they skip this).
+    const space = await ctx.db.get(spaceId);
+    if (space?.ownerId) await ctx.scheduler.runAfter(0, internal.roomBrief.refresh, { spaceId });
     return memberId;
   },
 });

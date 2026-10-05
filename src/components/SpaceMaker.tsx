@@ -4,6 +4,8 @@ import type { SpaceTemplate, WidgetType } from "../data/types";
 import { useCreateSpace } from "../live/useCreateSpace";
 import { useAccount, useJoin } from "../live/useJoin";
 import { CodeSlots } from "./CodeSlots";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 /**
  * Pick a starting point, name it on the preview, then create.
@@ -279,8 +281,16 @@ export function SpaceMaker({
   const [makeWhenJoined, setMakeWhenJoined] = useState(false);
 
   const account = useAccount();
+  // Where rooms are open (the dev lane, convex/spaces.ts `roomsOpen`) a guest
+  // makes the room at once; the email code is for keeping it, later.
+  const roomsOpen = useQuery(api.spaces.roomsOpen, {}) === true;
+  const canMake = account.joined || roomsOpen;
   const join = useJoin();
   const maker = useCreateSpace();
+  // the code boxes start empty, not with the email's first six letters
+  useEffect(() => {
+    if (join.stage === "code") setDraft("");
+  }, [join.stage]);
   const madeRef = useRef(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -368,6 +378,7 @@ export function SpaceMaker({
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-label="Start a new space"
+        data-testid="space-maker"
       >
         <header>
           <div>
@@ -407,6 +418,7 @@ export function SpaceMaker({
               type="button"
               className={isCustom ? "is-picked" : ""}
               disabled={settingUp}
+              data-testid="space-maker-empty"
               onClick={() => pick(CUSTOM_ID)}
             >
               <span aria-hidden="true">✎</span>
@@ -427,11 +439,12 @@ export function SpaceMaker({
               placeholder={template.name}
               disabled={settingUp}
               aria-label="Name your space"
+              data-testid="space-maker-name"
               onChange={(event) => setName(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key !== "Enter") return;
                 event.preventDefault();
-                if (account.joined) void make();
+                if (canMake) void make();
                 else setStep("keep");
               }}
             />
@@ -550,7 +563,8 @@ export function SpaceMaker({
                   type="button"
                   className="claim-done"
                   disabled={settingUp}
-                  onClick={() => (account.joined ? void make() : setStep("keep"))}
+                  data-testid="space-maker-create"
+                  onClick={() => (canMake ? void make() : setStep("keep"))}
                 >
                   {settingUp ? "creating…" : "create space"} <span aria-hidden="true">→</span>
                 </button>

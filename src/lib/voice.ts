@@ -265,7 +265,7 @@ export function useVoice(hooks: VoiceHooks = {}) {
     hooksRef.current.start?.();
     listenForPause();
 
-    const script = new URLSearchParams(window.location.search).get("voice");
+    const script = takeNextVoiceScript() ?? new URLSearchParams(window.location.search).get("voice");
     if (script) {
       // `&stageHold=1` keeps the scripted ask open for a still of the stage
       const hold = new URLSearchParams(window.location.search).has("stageHold");
@@ -389,4 +389,16 @@ export function useVoice(hooks: VoiceHooks = {}) {
   }, [state, mute]);
 
   return { state, transcript, level, start, finish, muted, mute, say, play, cancel, hold };
+}
+
+/* A starter ask on an empty room (N1): the tap plays these words into the
+   orb as if they were said, then the orb works exactly as for a spoken ask. */
+let nextScript: string | null = null;
+export function setNextVoiceScript(words: string) {
+  nextScript = words;
+}
+function takeNextVoiceScript() {
+  const words = nextScript;
+  nextScript = null;
+  return words;
 }

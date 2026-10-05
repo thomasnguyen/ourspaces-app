@@ -97,10 +97,12 @@ function load(): LiveIdentity {
     window.sessionStorage.removeItem(SESSION_KEY);
   }
 
-  const sequence = Number.parseInt(
-    window.localStorage.getItem(SEQUENCE_KEY) ?? "0",
-    10,
-  );
+  // A fresh browser starts somewhere random: every new person used to be
+  // "juno", so the first two people in a new room looked like one (N1).
+  const stored = window.localStorage.getItem(SEQUENCE_KEY);
+  const sequence = stored === null
+    ? crypto.getRandomValues(new Uint8Array(1))[0] % PERSONA_NAMES.length
+    : Number.parseInt(stored, 10);
   const index = Number.isFinite(sequence)
     ? Math.abs(sequence) % PERSONA_NAMES.length
     : 0;

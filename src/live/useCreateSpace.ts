@@ -5,6 +5,18 @@ import type { SpaceTemplate } from "../data/types";
 import { createDemoWidget } from "../lib/widgetDefaults";
 import { getIdentity } from "./identity";
 
+/** A made room starts with nobody else's words in it: the template cards'
+ *  sample people (the crew's Maya, Jules, Sam) come out (N1). */
+function ownRoomData(data: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...data };
+  if (Array.isArray(out.messages)) out.messages = [];
+  if (Array.isArray(out.members)) out.members = [];
+  if (Array.isArray(out.vibes)) out.vibes = [];
+  if (typeof out.playedBy === "string") out.playedBy = "";
+  if (Array.isArray(out.items)) out.items = (out.items as Record<string, unknown>[]).map((item) => ({ ...item, by: null, claimed: false }));
+  return out;
+}
+
 /**
  * Make a space from a template.
  *
@@ -46,7 +58,7 @@ export function useCreateSpace() {
           w: blueprint.w,
           h: blueprint.h,
           z: index + 1,
-          data: blueprint.data,
+          data: ownRoomData(blueprint.data as Record<string, unknown>),
           createdBy,
         });
       }
