@@ -1607,3 +1607,8 @@ button.gm-pick:not(:disabled):active .gm-face {
   font-size: 11px;
   font-weight: 600;
 }
+
+/* above the jigsaw's line when both are up */
+.gm-dev {
+  bottom: 20px;
+}

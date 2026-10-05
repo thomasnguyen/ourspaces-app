@@ -116,7 +116,7 @@ import type { RoomOrigin } from "./components/CanvasRoom";
 import type { BuildRoomLink } from "./data/buildroom";
 import { pendingLinkRows, scheduleMockResolve } from "./lib/mockArrival";
 import { YourTurn, goToTurnWidget } from "./components/YourTurn";
-import { GameInvite, GameSheet, GameSheetTab } from "./components/games/GameInvite";
+import { GameInvite, GameSheet, GameSheetTab, GamesDev } from "./components/games/GameInvite";
 import { gameSpots, GAME_CARD } from "./lib/games/place";
 import { GAME_WIDGET_ID, GamesProvider, KEEPSAKE_WIDGET_ID, SCOREBOARD_WIDGET_ID, useMockGames, type CastPerson } from "./lib/games/useMockGames";
 import { KEEPSAKE_SPOTS, hasGames } from "./data/games";
@@ -2791,6 +2791,7 @@ export default function App() {
       <JigsawInvite />
       <JigsawSheet />
       <JigsawDev />
+      <GamesDev />
       <GameSheetTab />
       <GameSheet />
       <ActionDock

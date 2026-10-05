@@ -97,16 +97,19 @@ transforms on rAF; `useMockJigsaw` = room state, state URLs, scoring) ·
 `GameInvite.tsx` (the chip), `parts.tsx` (`useNoticeAside`),
 `DemoBanner.tsx` (no notice on a game link), `lib/yourTurn.ts` (`waiting`).
 
-**Live version needs:** a `jigsaws` row (photo, seed, grid, startedBy,
-startedAt) and `jigsawPieces` rows synced like widget drags (position at
-20 Hz through presence while held, one write on drop); holders as leases
-that expire after a few silent seconds; the snap and `rightOfWay` inside
-the mutation, so two hands on one piece resolve on the server; who may start
-(any member; one puzzle per room); loose positions stored per layout (a
-phone's tray isn't the desk's mat); the space's hand driven by the real
-helper through the same gate, with its waits written to the ledger.
+**Live (Oct 5):** `convex/puzzles.ts` + `src/live/useLiveJigsaw.ts`. A puzzle is
+a `games` row (kind `jigsaw`, `known` = pieces, `photo`); a touched piece is a
+`puzzlePieces` row (x, y, placed, `heldBy` until `heldUntil`). Grabbing is a
+lease (4 s, renewed while you drag, gone by itself) decided by the same
+`rightOfWay` with the live leases, on the server too: a piece someone holds is
+refused to everyone else (the nudge + "ziggy has this"). Moves are coalesced
+(one write in flight); a drop never queues behind them. The engine's live mode
+has no simulated hands and **no space hand: in live rooms the space's hand is
+simply absent** (its live behaviour is the Right of Way gate, the next task).
+Same seed on every screen, so untouched pieces lie in the same place. Desktop
+only (the phone's tray layout isn't synced). Crew only (`ROOM_JIGSAW`).
 
-**Gotchas:** crew only. Mock: two tabs don't share a puzzle. The mat covers
+**Gotchas:** crew only. Live: the header's counts show the space at 0. Mock: two tabs don't share a puzzle. The mat covers
 the middle of the board while it's on. Frame time at 1440 (20 pieces, 3
 players + you + the space): 8.7 ms average, p95 9.8, worst 27; about 1.5% of
 frames run past 16.7 ms (idle board: 0.5%), not tied to piece count.

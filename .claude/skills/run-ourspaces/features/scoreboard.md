@@ -4,6 +4,7 @@ ready: scoreboard
 testids: scoreboard scoreboard-locked scoreboard-open scoreboard-row scoreboard-challenge scoreboard-challenge-row game-notice game-start
 states:
   locked: ?as=Rio&fly=scoreboard | sleep 1400
+  lane-family: ?enter=1&fly=scoreboard #/space/family | wait scoreboard | sleep 1500
   open: ?as=Rio&board=open&fly=scoreboard | sleep 1400
   after: ?as=Maya&game=awards | wait game-awards | sleep 1300
   house: ?as=gigi&board=open&fly=scoreboard #/space/house | sleep 1400
@@ -32,7 +33,7 @@ week the rows are black slips with a rank and a `?`, under a lime note
 in `src/data/games.ts` (`seed`, `seedAwards`); games played in the tab add
 to them. Nothing resets by itself in mock.
 
-**Drive:** `game-door` flies to it · `scoreboard` the card ·
+**Drive:** `?fly=scoreboard` puts the camera on it · `scoreboard` the card ·
 `scoreboard-locked` / `scoreboard-open` the lock's two sides ·
 `scoreboard-row` · `game-start`.
 
@@ -40,5 +41,11 @@ to them. Nothing resets by itself in mock.
 `scoreRows` in `src/lib/games/engine.ts` · mounted as widget type
 `scoreboard`, injected by `App.tsx` at `GAME_SPOTS[room].board`.
 
-**Live version:** an `awards` table and a `scores` row per member per
-week; a cron resets on the room's day; the challenge's standings fill the slot.
+**Live:** `games.forRoom` gives this week's rows (points from every game
+since sun 9:00, stickers from `awards`); `games.challenge` puts a running
+check-in on the same card (`scoreboard-challenge`, rows
+`scoreboard-challenge-row`): the family's push-ups, ranked, behind the
+standings' own lock (`LOCKS.standings`: open once you've logged today, or at
+the reveal; face down for anyone not in it). No weekly reset cron yet: the
+week is computed from sun 9:00 (UTC-7). A refused start prints one line
+(`game-notice`). Its pills are the only way to start a game by tap.

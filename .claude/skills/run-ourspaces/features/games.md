@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
 ready: scoreboard
-testids: game-card game-lobby game-round game-see game-reveal game-awards game-sticker game-join game-begin game-pick game-next game-rematch game-to-board game-start game-invite game-invite-join game-invite-hide game-sheet game-sheet-close game-sheet-tab rail-game award-dots award-row
+testids: game-card game-lobby game-round game-see game-reveal game-awards game-sticker game-join game-begin game-pick game-next game-rematch game-to-board game-start game-invite game-invite-join game-invite-hide game-sheet game-sheet-close game-sheet-tab games-dev game-notice rail-game award-dots award-row
 states:
   idle: ?as=Rio
   start: ?as=Maya&game=start | wait game-lobby | sleep 5200
@@ -25,6 +25,7 @@ states:
   couple-match: ?game=reveal&round=1 #/space/couple | wait game-reveal | sleep 2800
   couple-awards: ?game=awards #/space/couple | wait game-awards | sleep 1300
   idle-maya: ?as=Maya
+  lane: ?enter=1 | wait scoreboard | sleep 1500
   idle-maya-board: ?as=Maya&fly=scoreboard
   late-live: ?as=Ash&game=late
   invited-live: ?as=Rio&game=invited
@@ -63,9 +64,13 @@ rail tile wears a lime ▶ when you're in another room. Banner, ticket and
 chip all join and fly the camera to the card; a phone opens the game as a
 full sheet instead (`board ↗` leaves it, a tab brings it back).
 
-**Starting one:** the black `▶ games` chip in the header flies to the
-scoreboard; its pill `play most likely to →` starts a game. `?game=start`
-starts one as if spoken ("let's play most likely to"); voice isn't wired.
+**Starting one:** the scoreboard card's pills (`play most likely to →`, `how
+well do you know maya →`, `puzzle the group photo →`) or the orb: "let's play
+most likely to", "how well do you know maya", "let's do a puzzle of the tahoe
+photo" (`lib/deck/verbs.ts` `gameAsk`; live through `games.start` and the
+one door `rightOfWay()`). There is no header chip any more (folded into the
+scoreboard and the orb, Oct 5); `?fly=scoreboard` puts the camera on it.
+`?game=start` starts one in mock.
 
 **State URLs (mock):** `?game=start | invited | late` run live;
 `lobby | round | answered | reveal | awards` are held still for sheets
@@ -114,9 +119,24 @@ Shared edits: `data/types.ts` (+`game`, `scoreboard`), `WidgetCard.tsx`
 `Canvas.tsx` (dots on header faces), `RoomKnowsObjects.tsx` (stickers
 under portraits).
 
-**Gotchas:** mock only; nothing is stored and two tabs don't share a game.
-The games corner sits past the right edge of each mock board
-(`GAME_SPOTS`), so every entry flies there. In a game you're in, the reveal
+**Live (dev lane, Oct 5, `nebius/eval/g5-games-live.md`):** `convex/games.ts`
+(tables `games gamePlayers gameRounds gameAnswers awards`), `src/live/useLiveGames.tsx`
+(the same `GamesApi`), mounted in `pages/LiveSpace.tsx` for crew, house, couple,
+family (`LIVE_GAME_ROOMS`). Any joined member starts; a silent guest joins and
+plays but can't start (`game-notice` says so). Rounds move on a scheduled `tick`
+(14 s) or the write that makes everyone in; the reveal is that one write. The
+query never sends another player's pick, or a hot-seat right answer, before the
+round's reveal is written (`redact`, `LOCKS` in `lib/answerToSee.ts`). `next →`
+moves on once every player pressed it, or 15 s after the reveal. A game that
+starts while you're here shows the strip; one already on when you arrive is a
+ticket only. Two players with one name play as "juno" and "juno 2". No
+simulated players in a live room; `games-dev` (bottom right) says who is real.
+Drive live with two members: `.context/g5/` (`mlt.mjs`, `live2.mjs`, `jig.mjs`).
+
+**Gotchas:** mock: nothing is stored and two tabs don't share a game. The
+games corner (game card + scoreboard) is placed once per room with
+`placeCards` (`lib/games/place.ts`), inside the board; on a full board that
+is below the cards. In a game you're in, the reveal
 waits for `next →` (27 s cap); a game you're not in moves on by itself.
 Tried and dropped for the reveal: paper slips turning one by one (reads as
 a log) and a row count (reads as a poll); the receipt is what was kept of

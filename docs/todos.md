@@ -5,6 +5,8 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Games live on dev (Oct 5, G5).** `games` merged into main; "most likely to", the hot seat and the photo puzzle play live between real people (`convex/games.ts`, `convex/puzzles.ts`). Start from the scoreboard card or the orb ("let's play most likely to", "how well do you know maya", "let's do a puzzle of the tahoe photo"); members start, silent guests join and play. Invitation on a second screen ~0.7 s after a tap (~0.8–2.0 s after a spoken last word); reveals land on both screens within 1–103 ms; no pick or right answer reaches another client before the reveal (checked on the socket). One answer-to-see shape (`LOCKS`), one scoreboard per room (with the family's push-ups), game invitations in "waiting on you", the header games chip folded into the scoreboard. Prompts from the room's facts, worded by one Super call, templates as fallback. Rough: the model's "names someone" check rejects place names like "sam's place"; the puzzle mat covers the crew board's middle; live phones don't get the puzzle; no weekly reset cron. Write-up `nebius/eval/g5-games-live.md`.
+
 - **Voice edits + the one door (R0, 2026-10-05, dev lane).** "add ramen to the dinner poll", "take pizza off", "move it to 7:30", "take ash off the cabin split", "make the challenge 10 days"… change the card that's there (`src/lib/deck/edits.ts`, `convex/edits.ts`); refused when it would undo people's choices; undo on the slip; other screens get "tara added ramen". Every AI write passes `convex/rightOfWay.ts` (always go until R1). Also: every poll's votes now repaint on every screen (the board read only the first poll's); a running challenge of the same activity is "already here"; retrieval that cites an rsvp is read by code. Feature file `voice-edits.md`.
 
 - **The orb's verbs, and the room-facts regression fixed (Oct 5, V1, dev lane).** Each ask's prompt
@@ -38,7 +40,6 @@ Backward-looking history lives in `hackathon.md`.
   (the deck prompt grew ~300 tokens); family examples 2/5/3; the phone column shows a voice group
   where it sits on the board. Write-up `nebius/eval/f2-family.md`.
 
-- **Games, mock mode (Oct 5, branch `games`, not live).** A game is a card on the board with a life: invite (starter's colour, faces join) → rounds (tap a face, one face-down slip per player) → a reveal for everyone at once (votes land on faces, the card floods with the winner's colour, an award sticker lands, a receipt of who said who) → the awards wall. First game: "most likely to" ("more likely to" for two), prompts hand-written from each mock room's "what this space knows" facts. Others find out by a strip in the starter's colour, a "your turn" ticket, a lime header chip and a mark on the rail tile. A scoreboard card (face down until you play) starts games. Shared "answer to see" lock in `src/lib/answerToSee.ts`. Start: header chip `▶ games` → `play most likely to →`, or `?mock=1&game=start`. **Not built:** Convex tables, the voice ask, prompts written by the model, two real browsers. The family room's standings has its own answer-to-see; unify at merge. Feature files: `features/games.md`, `most-likely-to.md`, `scoreboard.md`.
 
 - **What this space knows, redesigned (Oct 4, dev lane).** Same facts and actions,
   drawn as a wall: the group as face stickers, each noticed line as a paper

@@ -34,8 +34,14 @@ covered the most last time"). Crew and house have two sets (a rematch deals
 the other), the couple one. Never about bodies, money owed or who's liked.
 `lean` in that file is only how the simulated players tend to vote.
 
-**Live version:** code picks 5 facts from `roomBrief` `knows` (habits,
-claims, places, told, away), the model words each as a prompt + a 2–3 word
-sticker title, code checks the names against the member list. Same engine.
+**Live:** code picks up to 5 facts from the room's "what this space knows"
+lines (`lib/games/facts.ts` `likelyFacts`, `dealLikely`: one per kind first;
+eligible: away, poll leaders, rsvp holdouts, the usual day and time, places,
+claims, words, dates, lowercase, told facts; never `payer:` / `split:` (money),
+`made:`, or anything `PRYING` matches). The round starts on the template
+wording; one Nemotron Super call (`games.word`) rewords the rounds nobody has
+seen yet, each line checked (length, a 1–3 word sticker, one emoji, kind, names
+nobody); a failed line keeps its template. Every round keeps its `fact` key
+and `from` line. Fewer than three facts: house prompts, marked as such.
 
 **Drive / code:** see `games.md` (same card, same test ids).

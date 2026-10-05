@@ -222,7 +222,18 @@ export const forRoom = query({
     const latest = recent.find((g) => g.kind !== "jigsaw");
     const game = latest ? (loaded.find((l) => l.doc._id === latest._id) ?? (await load(ctx, latest))).game : null;
     const meIn = me && latest ? await asPlayer(ctx, latest._id, me) : me;
-    /* the family's push-ups (any running check-in) ride on the same card */
+    return { game: game ? redact(game, meIn?.name ?? null) : null, rows, awards, me: meIn, played: Boolean(me && loaded.some((l) => isIn(l.game, me.name) && l.game.rounds.some((r) => r.revealedAt !== undefined))) };
+  },
+});
+
+/** A running challenge on the scoreboard (the family's push-ups), behind the standings' own lock. Its own query: it reads
+    the board, and a query that reads the board re-runs on every card write. */
+export const challenge = query({
+  args: { spaceId: v.id("spaces"), userId: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { spaceId, userId }) => {
+    const now = Date.now();
+    const me = await caller(ctx, spaceId, userId);
     const checkIn = (await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).take(300)).find((w) => w.type === "checkIn");
     let challenge = null;
     if (checkIn) {
@@ -232,11 +243,12 @@ export const forRoom = query({
       const open = seeState(LOCKS.standings, { mine: mine != null, answered: 0, of: data.people.length, now, resolved: isRevealed(data, new Date(now)), player: Boolean(me && data.people.some((p) => same(p.name, me.name))) }).open;
       challenge = { widgetId: String(checkIn._id), title: data.title, unit: data.unit, day: Math.min(day, data.days - 1) + 1, days: data.days, open, rows: open ? rank(data, Math.max(0, day)).map((r) => ({ name: r.name, color: r.color, total: r.total, streak: r.streak })) : data.people.map(() => null) };
     }
-    return { game: game ? redact(game, meIn?.name ?? null) : null, rows, awards, challenge, me: meIn, played: Boolean(me && loaded.some((l) => isIn(l.game, me.name) && l.game.rounds.some((r) => r.revealedAt !== undefined))) };
+    return challenge;
   },
 });
 
-/** Who the space would put in the hot seat here, best offer first (read only). */
+/** Who the space would put in the hot seat here, best offer first. Read once per visit (not subscribed): it deals
+    every person's questions from the whole board, too heavy to re-run on every card write. */
 export const offer = query({
   args: { spaceId: v.id("spaces") },
   returns: v.array(v.object({ name: v.string(), color: v.string(), why: v.optional(v.string()), known: v.number(), away: v.optional(v.boolean()) })),
@@ -473,5 +485,29 @@ export const setWording = internalMutation({
       } else await ctx.db.patch("gameRounds", row._id, { prompt: { ...row.prompt, text: w.text, award: w.award, glyph: w.glyph } });
     }
     return null;
+  },
+});
+
+/** Dev cleanup: remove the named games and everything under them (players, rounds, answers, stickers, pieces). Ids only, never a sweep by time or name. */
+export const sweep = internalMutation({
+  args: { gameIds: v.array(v.id("games")) },
+  returns: v.number(),
+  handler: async (ctx, { gameIds }) => {
+    let n = 0;
+    for (const gameId of gameIds) {
+      const game = await ctx.db.get("games", gameId);
+      if (!game) continue;
+      const rows = [
+        ...(await ctx.db.query("gamePlayers").withIndex("by_game", (q) => q.eq("gameId", gameId)).take(200)),
+        ...(await ctx.db.query("gameRounds").withIndex("by_game", (q) => q.eq("gameId", gameId)).take(50)),
+        ...(await ctx.db.query("gameAnswers").withIndex("by_game", (q) => q.eq("gameId", gameId)).take(500)),
+        ...(await ctx.db.query("puzzlePieces").withIndex("by_game", (q) => q.eq("gameId", gameId)).take(100)),
+        ...(await ctx.db.query("awards").withIndex("by_space", (q) => q.eq("spaceId", game.spaceId)).take(500)).filter((a) => a.gameId === gameId),
+      ];
+      for (const r of rows) await ctx.db.delete(r._id);
+      await ctx.db.delete(gameId);
+      n += rows.length + 1;
+    }
+    return n;
   },
 });

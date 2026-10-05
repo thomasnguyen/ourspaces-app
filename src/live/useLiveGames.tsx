@@ -9,7 +9,7 @@
  * on you" (yourTurn's `game` item) and no strip.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMutation } from "convex/react";
+import { useConvex, useMutation } from "convex/react";
 import { useQuery } from "convex-helpers/react/cache";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -21,7 +21,7 @@ import { gameAsk } from "../lib/deck/verbs";
 
 const PHONE = "(max-width: 800px)";
 
-type RoomGames = { game: Game | null; rows: ScoreRow[]; awards: Award[]; challenge: ChallengeBoard | null; me: { name: string; color: string; guest: boolean } | null; played: boolean };
+type RoomGames = { game: Game | null; rows: ScoreRow[]; awards: Award[]; me: { name: string; color: string; guest: boolean } | null; played: boolean };
 
 export function useLiveGames(o: {
   room: string;
@@ -32,7 +32,18 @@ export function useLiveGames(o: {
 }): GamesApi | null {
   const { room, spaceId, identity, enabled, flyTo } = o;
   const data = useQuery(api.games.forRoom, enabled && spaceId ? { spaceId, userId: identity.userId } : "skip") as RoomGames | undefined;
-  const offer = useQuery(api.games.offer, enabled && spaceId ? { spaceId } : "skip");
+  const challenge = useQuery(api.games.challenge, enabled && spaceId ? { spaceId, userId: identity.userId } : "skip") as ChallengeBoard | null | undefined;
+  /* read once per visit, not subscribed (see games.offer) */
+  const convex = useConvex();
+  const [offer, setOffer] = useState<Array<{ name: string; color: string; why?: string; known: number; away?: boolean }>>();
+  useEffect(() => {
+    if (!enabled || !spaceId) return;
+    let live = true;
+    void convex.query(api.games.offer, { spaceId }).then((o) => live && setOffer(o)).catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [convex, enabled, spaceId]);
   const startGame = useMutation(api.games.start);
   const joinGame = useMutation(api.games.join);
   const beginGame = useMutation(api.games.begin);
@@ -131,6 +142,6 @@ export function useLiveGames(o: {
     live: true,
     voice,
     notice,
-    challenge: data?.challenge ?? null,
+    challenge: challenge ?? null,
   };
 }

@@ -195,16 +195,19 @@ and reactions, state URLs) · `components/games/HotSeat.tsx` + `hot-seat.css`
 `WidgetCard.tsx` (one case), `App.tsx` (keepsake widget, seat ticket,
 scoreboard height), `lib/yourTurn.ts` (`ticket` title).
 
-**Live version needs:** `roomBrief` to hand out per-person rows (votes by
-voter, daily answers, claims, availability rows) beside the lines, i.e. a
-`seatFacts` query run on the server so a client never holds the right
-answer before the reveal; `gameRounds.asks` and `reactions` stored, with
-`right` held back like `pick`; the model wording step behind `WORD`, its
-output checked against the fact's names; a `keepsakes` row (or a widget
-written at the end); "just back" as a `back:<name>` line when an away
-frame expires; "wrong" offered as a cross-out on the knows page.
+**Live:** `games.start {kind: "hot-seat", about?}` builds the room as
+`seatRoomOf` (knows lines + the board's cards) and deals with the same
+`dealSeat`; the asks (with `right`) are stored on `gameRounds.asks` and the
+query blanks `right` and other players' picks until the reveal (the person in
+the seat sees their own answers). One model call rewords the questions
+(`readSeatWording`: keeps the name, no option in the text, kind); options,
+answers and the fact stay code's. `games.offer` (who the space would seat) is
+read once per visit, not subscribed. The seat can only react if they are a real
+player in the room; seeded people never react. Not live yet: `reseat` (pick
+someone else in the lobby), the keepsake as a stored card (it's drawn from the
+finished game).
 
-**Gotchas:** mock only. Simulated players are right about as often as
+**Gotchas:** mock: simulated players are right about as often as
 `SEAT_SKILL` says; a simulated seat reacts by how many knew (all = "who
 told you", a third or fewer = "wrong", else "ha"). The couple's knows page
 says 9 days to SFO while its countdown card says 47; the game reads the

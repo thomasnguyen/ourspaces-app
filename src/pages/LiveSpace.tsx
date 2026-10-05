@@ -109,7 +109,7 @@ import { freshWidgetData, getWidgetBlueprint } from "../lib/widgetDefaults";
 import { widgetLabel } from "../lib/widgetLabels";
 import { panToWidget, recapTargetsOf, startBoardScan } from "../lib/recapBoard";
 import { YourTurn, goToTurnWidget } from "../components/YourTurn";
-import { GameInvite, GameSheet, GameSheetTab } from "../components/games/GameInvite";
+import { GameInvite, GameSheet, GameSheetTab, GamesDev } from "../components/games/GameInvite";
 import { GAME_WIDGET_ID, GamesProvider, KEEPSAKE_WIDGET_ID, SCOREBOARD_WIDGET_ID } from "../lib/games/useMockGames";
 import { useLiveGames } from "../live/useLiveGames";
 import { useLiveJigsaw } from "../live/useLiveJigsaw";
@@ -3301,6 +3301,7 @@ export function LiveSpacePage({
           <GameInvite />
           <JigsawInvite />
           <JigsawDev />
+          <GamesDev />
           <GameSheetTab />
           <GameSheet />
         </>

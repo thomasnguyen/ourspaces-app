@@ -108,3 +108,18 @@ export function AwardRow({ name }: { name: string }) {
     </span>
   );
 }
+
+/** The dev readout's games line: says who is real. Mock: the simulated players by name; live: nobody is. */
+export function GamesDev() {
+  const api = useGames();
+  const game = api?.game;
+  if (!api || !game || game.phase === "done") return null;
+  const others = game.players.filter((p) => p.name.toLowerCase() !== api.me.name.toLowerCase()).map((p) => p.name.toLowerCase());
+  return (
+    <p className="jg-dev gm-dev" data-testid="games-dev">
+      {api.live
+        ? `games · live · ${game.players.length} real players, nobody simulated · rounds and the reveal on the server`
+        : `games · mock · simulated players: ${others.join(", ") || "none yet"} · only you are real`}
+    </p>
+  );
+}
