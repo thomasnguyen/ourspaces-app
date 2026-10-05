@@ -35,8 +35,6 @@ export const VOICE_TIMINGS = {
 
   // ---- which card ----
   typeAtKeyword: t(0, "measured", "eval/s1-speed.md · After (guess.ts, 0 ms)", "a card word in the sentence: code names the card the frame the word lands"),
-  decide: t(621, "measured", "eval/b2-wired.md · (c) The decide pass", "no card word: the one-letter pick through Convex, median of 122, after its call leaves"),
-  onBoard: t(683, "derived", "621 × 1.1 (eval/decide/head.md: the on-board question costs about 10% more)", "the pick that says the card is already on the board"),
 
   // ---- the call (the room sends one per new word; these count from when it leaves) ----
   fastFirstCard: t(460, "measured", "eval/b2-wired.md · (b) Brain route note", "fast route: the small model's first line through Convex, about 460 ms"),

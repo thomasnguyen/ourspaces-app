@@ -66,8 +66,8 @@ export type StageBuild = {
   failed: boolean;
   /** The room facts this card used, in a person's words ("saved places"). */
   sources: string[];
-  /** The board already has this card: the one it repeats. */
-  duplicate: { card: string; title: string } | null;
+  /** The ask pointed at a card the board already has instead of dealing one: that card. */
+  found: { widgetId: string; host: HTMLElement; title: string } | null;
   maker: { name: string; color: string };
 };
 
@@ -77,6 +77,8 @@ export type StageFeed = {
   drafts: Widget[];
   shell: { said: string; draftId: string | null } | null;
   landed: { widgetId: string; host: HTMLElement; traceKey: number } | null;
+  /** The build's "already here" (useVoiceBuild `found`). */
+  found?: { widgetId: string; host: HTMLElement; traceKey: number; title: string } | null;
   receipt: { ok: boolean; key: number } | null;
   traces: Array<{ key: number; said: string; how: string | null; notes?: Array<{ token: string; kind: string; detail: string }> }>;
   color: string;
@@ -114,7 +116,7 @@ const watchers = new Set<() => void>();
 export function feedVoiceStage(feed: StageFeed) {
   const draft = feed.drafts[0] ?? null;
   const draftKey = draft ? Number(/^voice-draft-(\d+)-/.exec(draft.id)?.[1]) : NaN;
-  const key = Number.isFinite(draftKey) ? draftKey : (feed.landed?.traceKey ?? feed.receipt?.key ?? (feed.shell ? feed.traces[0]?.key : undefined));
+  const key = Number.isFinite(draftKey) ? draftKey : (feed.found?.traceKey ?? feed.landed?.traceKey ?? feed.receipt?.key ?? (feed.shell ? feed.traces[0]?.key : undefined));
   let next: StageBuild | null = null;
   if (key !== undefined) {
     const same = current?.key === key ? current : null;
@@ -127,11 +129,8 @@ export function feedVoiceStage(feed: StageFeed) {
     const ended = complete || Boolean(trace?.how);
     // where values came from: the resolver's notes on this ask (lib/deck/resolve.ts)
     const fromRoom = new Map<string, string>();
-    let duplicate: StageBuild["duplicate"] = null;
     for (const note of trace?.notes ?? []) {
       if (note.kind === "expanded") for (const value of note.detail.split(", ")) fromRoom.set(value.toLowerCase(), sourceName(note.token));
-      const repeat = note.kind === "rule" && /^already on the board: (\S+) "(.*)"$/.exec(note.detail);
-      if (repeat) duplicate = { card: repeat[1], title: repeat[2] };
     }
     const parts: StagePart[] = [];
     if (widget) {
@@ -153,7 +152,7 @@ export function feedVoiceStage(feed: StageFeed) {
       placed,
       failed: feed.receipt?.key === key && !feed.receipt.ok,
       sources: [...new Set(parts.flatMap((p) => (p.room ? [p.room] : [])))],
-      duplicate: duplicate ?? same?.duplicate ?? null,
+      found: feed.found?.traceKey === key ? { widgetId: feed.found.widgetId, host: feed.found.host, title: feed.found.title } : null,
       maker: { name: feed.by, color: feed.color },
     };
   }

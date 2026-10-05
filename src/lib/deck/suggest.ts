@@ -17,11 +17,15 @@ export type AskOffer = {
   from: string;
 };
 
+/** A title as someone would say it: no emoji ("maya's bday 🎂" → "maya's bday"). */
+const spoken = (s: string) => s.replace(/[^\p{L}\p{N}\p{P}\p{Zs}]/gu, "").replace(/\s+/g, " ").trim();
+
 export function offersFor(f: RoomFacts | null, card: string): AskOffer[] {
   if (!f) return [];
-  const next = f.dates.filter((d) => d.days >= 0).sort((a, b) => a.days - b.days)[0];
+  const date = f.dates.filter((d) => d.days >= 0).sort((a, b) => a.days - b.days)[0];
+  const next = date ? { ...date, title: spoken(date.title) } : undefined;
   const countdown = next ? `the “${next.title}” countdown` : "";
-  const rsvp = f.rsvps[0];
+  const rsvp = f.rsvps[0] ? { ...f.rsvps[0], title: spoken(f.rsvps[0].title) } : undefined;
   const out: AskOffer[] = [];
   if (card === "poll") {
     if (f.places.length) out.push({ label: "where we eat", say: "for where we eat", from: "your saved places" });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { PeerCursor } from "./PeerCursor";
 import {
   CURSOR_MOTION,
@@ -568,8 +568,11 @@ export function SpaceHeader({
   livePeers = [],
   arrivalPeerId,
   inboxAddress,
+  knowsDoor,
 }: {
   spaceId: string;
+  /** The chip that turns the board over to "what this space knows" (RoomKnows.tsx). */
+  knowsDoor?: ReactNode;
   addOpen?: boolean;
   onAddClick?: () => void;
   spaceMeta?: Pick<SpaceMeta, "name" | "tagline" | "kind">;
@@ -812,6 +815,7 @@ export function SpaceHeader({
               <span className="space-edit-mark" aria-hidden="true">✎</span>
               <span className="space-edit-label">edit</span>
             </button>
+            {knowsDoor}
           </div>
         </div>
 

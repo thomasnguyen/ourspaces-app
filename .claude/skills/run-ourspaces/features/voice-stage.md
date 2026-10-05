@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
 ready: dock-voice-orb
-testids: dock-voice-orb voice-stage voice-stage-left voice-stage-right voice-stage-text voice-stage-status voice-stage-wave voice-stage-card voice-stage-parts voice-stage-part-question voice-stage-part-option-0 voice-stage-part-option-1 voice-stage-part-option-2 voice-stage-part-title voice-stage-part-item-0 voice-stage-part-who voice-stage-part-event voice-stage-part-date voice-stage-part-days voice-stage-part-total voice-stage-part-person-0 voice-stage-chip-0 voice-stage-chip-3 voice-stage-mute voice-stage-finish voice-stage-beats voice-stage-ask voice-stage-offers voice-stage-offer-0 voice-stage-sources voice-stage-found voice-stage-found-slip voice-landed
+testids: dock-voice-orb voice-stage voice-stage-left voice-stage-right voice-stage-text voice-stage-status voice-stage-wave voice-stage-card voice-stage-parts voice-stage-part-question voice-stage-part-option-0 voice-stage-part-option-1 voice-stage-part-option-2 voice-stage-part-title voice-stage-part-item-0 voice-stage-part-who voice-stage-part-event voice-stage-part-date voice-stage-part-days voice-stage-part-total voice-stage-part-person-0 voice-stage-chip-0 voice-stage-chip-3 voice-stage-mute voice-stage-finish voice-stage-beats voice-stage-ask voice-stage-offers voice-stage-offer-0 voice-stage-sources voice-stage-found voice-found-pulse voice-landed
 states:
   poll: ?voicePace=talk&voice=add a poll for Saturday dinner
   countdown: ?voicePace=talk&voice=countdown to Holly's birthday on November 14
@@ -27,7 +27,7 @@ states:
   room: ?stageFreeze=complete&voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-stage-sources | sleep 600
   already: ?voicePace=talk&voice=add a poll for cake flavor
   already-found: ?voicePace=talk&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-stage-found | sleep 300
-  already-landed: ?voicePace=talk&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-stage-found-slip | sleep 1200
+  already-landed: ?voicePace=talk&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-stage-found | sleep 2600
   center: ?stage=center&voice=Make a space for our Tahoe weekend | click dock-voice-orb | wait voice-stage | sleep 1500
 take:
   poll: poll real 60fps 300f warmup 1200 | 20 click dock-voice-orb
@@ -77,10 +77,12 @@ counts down to) gets an orange pip and the card a line under it
 (`voice-stage-sources`: "from the room: your saved places").
 
 **Already here.** The words name a card the board already has ("add a poll
-for cake flavor"): the stage says "already on the board"
-(`voice-stage-found`), then the camera goes to that card and the stage's
-card melts into it; it wears a lime ring and an "already here" slip
-(`voice-stage-found-slip`) for six seconds. Nothing is written.
+for cake flavor"). The check is the build's own ([voice-build](voice-build.md):
+code's match, then the model's yes/no; mock: code's match alone). The stage
+keeps the card it was showing, says "already on the board"
+(`voice-stage-found`), then that card travels to the one on the board and
+melts into it, and the build's pulse and "already here" slip play there.
+Nothing is written.
 
 **Fill plans** (`src/lib/voiceFillPlan.ts`, data): poll = question, then
 options one per beat · checklist = title, items one per beat, who · countdown
@@ -113,8 +115,8 @@ arrives after the words). Stills: `open` (nothing said), `words`, `type`
 **Mock runs the real brain path.** `src/lib/deck/mockFacts.ts` reads a
 `RoomFacts` off the mock board, so `routeAsk`, the token resolver and the
 duplicate rule all run as live; the simulated answer writes tokens
-(`@places`, `@on-trip(…)`, `@date(…)`), never their values, and
-`mockDecide` stands in for the one-letter pick.
+(`@places`, `@on-trip(…)`, `@date(…)`), never their values. Mock has no
+pick: with no card word the type arrives with the first field.
 
 **The seam (what live code must feed):** the stage never reads the build. It
 reads `StageBuild` from `src/lib/voiceStage.ts`: `kind` (type known),
@@ -128,14 +130,12 @@ the stage keeps working: the draft's id is `voice-draft-<session key>-0`;
 `traces[].how` is set when the ask ends; an unfilled field is blank
 (` `), an unknown date equals `startDate`. Tentative fills mid-sentence
 need nothing more: a non-blank field before `how` is set shows as tentative.
-Three more, all already true on main except the last: (1) `traces[].notes`
-(the resolver's notes): `expanded` notes become "from the room", the
-"already on the board" rule note becomes `duplicate`. (2) Offers: the room
-calls `setVoiceStageOffers((card) => offersFor(facts, card))`
-(`src/lib/deck/suggest.ts`, pure; mock does this in `App.tsx`, **live does
-not yet**). (3) Already here needs the room to **not write a duplicate**:
-mock's `commit` resolves `[]` for one; live still writes it, and then the
-stage treats the card as new. The stage holds the ask open with
+Three more: (1) `traces[].notes` (the resolver's notes): `expanded` notes
+become "from the room". (2) `found` (the build's "already here"): the stage
+flies its card to that widget. (3) Offers: the room calls
+`setVoiceStageOffers((card) => offersFor(facts, card))`
+(`src/lib/deck/suggest.ts`, pure); `App.tsx` does it over the mock facts,
+`LiveSpace.tsx` over the room brief. The stage holds the ask open with
 `voice.hold()` (`src/lib/voice.ts`), which the pause detector respects.
 
 **Code:** `src/components/VoiceStage.tsx` (`useVoiceStage`: orb travel,

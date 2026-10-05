@@ -11,7 +11,7 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { CATALOG, guessCard, sentenceHangs } from "../lib/deck";
+import { guessCard, sentenceHangs } from "../lib/deck";
 import { isBare, SCRIPTED_ASKS } from "../lib/deck/mockDeal";
 import { orbLook } from "../lib/orbShader";
 import { playSound } from "../lib/sounds";
@@ -511,7 +511,7 @@ function StageBeats({ said, mock }: { said: string; mock: boolean }) {
   const counts = timingCounts();
   const both = (fast: number, brain: number) => `${fast.toLocaleString()} · brain ${brain.toLocaleString()}`;
   const rows: Array<[string, string, string]> = [
-    ["card type known", keyword ? "at the card word" : `pick +${T.decide.ms}`, since("type")],
+    ["card type known", keyword ? "at the card word" : "with the first field", since("type")],
     ["first field (tentative)", both(T.fastTentative.ms, T.brainTentative.ms), parts.length > 1 ? since(parts[1].name) : "—"],
     ["pause detected", `${T.pauseDetected.ms}`, since("pause")],
     ["final card", both(T.fastFinal.ms, T.brainFinal.ms), since("complete")],
@@ -653,14 +653,6 @@ function mergeCard(card: HTMLElement, target: HTMLElement, ms: number, done: () 
   return end;
 }
 
-/** The card on the board that a dealt card repeats: same kind, the title in its words. */
-function findOnBoard(duplicate: NonNullable<StageBuild["duplicate"]>): HTMLElement | null {
-  const type = CATALOG.find((c) => c.id === duplicate.card)?.type;
-  const title = duplicate.title.toLowerCase().replace(/[?!.]+$/, "");
-  const cards = document.querySelectorAll<HTMLElement>(`.space-canvas [data-widget-type="${type}"]:not([data-widget-id^="voice-draft-"])`);
-  return Array.from(cards).find((el) => (el.textContent ?? "").toLowerCase().includes(title)) ?? null;
-}
-
 /** Owns the orb (so it can travel) and the stage. The dock gives it the
     voice and the orb's seat; it gets back whether the stage is up, a way to
     open it, and the layer to render. */
@@ -686,7 +678,14 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
   // the build, through the adapter; one from an earlier ask is not this stage's
   const openedAt = useRef(0);
   const fed = useSyncExternalStore(watchVoiceStage, voiceStageBuild);
-  const build = two && phase !== "closed" && fed && fed.key >= openedAt.current - 100 ? fed : null;
+  const fresh = two && phase !== "closed" && fed && fed.key >= openedAt.current - 100 ? fed : null;
+  // The build takes its skeleton down while the words match a card already on
+  // the board. The stage keeps showing the card it had: it is what travels to
+  // the one that is there.
+  const held = useRef<{ at: number; build: StageBuild } | null>(null);
+  if (fresh?.widget) held.current = { at: openedAt.current, build: fresh };
+  const kept = phase !== "closed" && held.current?.at === openedAt.current ? held.current.build : null;
+  const build = fresh?.widget ? fresh : fresh && kept ? { ...kept, found: fresh.found, failed: fresh.failed } : (kept ?? fresh);
   const buildRef = useRef(build);
   buildRef.current = build;
   const reveal = useReveal(build, freeze);
@@ -722,9 +721,8 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
     voice.finish();
   };
 
-  // ---- the board already has this card: say so, then go to it ----
-  const [found, setFound] = useState<{ el: HTMLElement; left: number; top: number; color: string } | null>(null);
-  const duplicate = build?.duplicate ?? null;
+  // ---- the board already has this card (the build's own check): say so, then go to it ----
+  const found = build?.found ?? null;
 
   // `&level=0.8` pins the loudness the orb and the waveform show
   const pinned = useRef(Number(params.get("level")));
@@ -791,13 +789,8 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
       const b = buildRef.current;
       let stopCard = () => {};
       if (card.current && onto) {
-        // the camera goes to the card that is already there; the stage's card melts into it
-        onto.scrollIntoView({ behavior: still() ? "auto" : "smooth", block: "center", inline: "center" });
-        stopCard = mergeCard(card.current, onto, beat("cardTravel"), () => {
-          onto.dataset.voiceFound = "";
-          setFound({ el: onto, left: onto.offsetLeft, top: onto.offsetTop, color: b?.maker.color ?? "" });
-          land();
-        });
+        // the build's camera is already on its way to the card that is there; the stage's card melts into it
+        stopCard = mergeCard(card.current, onto, beat("cardTravel"), land);
       } else if (card.current && b?.complete && b.placed) {
         stopCard = flyCard(card.current, () => buildRef.current?.placed ?? b.placed, `voice-draft-${b.key}-0`, beat("cardTravel"), land);
       } else land();
@@ -811,23 +804,9 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
 
   const closeRef = useRef(close);
   closeRef.current = close;
-  // the "already here" mark stays on the board card for a while, then lets go
-  useEffect(() => {
-    if (!found) return;
-    const id = window.setTimeout(() => {
-      delete found.el.dataset.voiceFound;
-      setFound(null);
-    }, 6000);
-    return () => window.clearTimeout(id);
-  }, [found]);
-
   const open = useCallback(() => {
     if (!enabled || phaseRef.current !== "closed") return;
-    document.body.classList.remove("voice-stage-found");
-    setFound((was) => {
-      if (was) delete was.el.dataset.voiceFound;
-      return null;
-    });
+
     openedAt.current = Date.now();
     markStageBeat("tap");
     document.body.classList.add("voice-stage-up");
@@ -850,18 +829,11 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
   useEffect(() => {
     if (!two || phase !== "open" || freeze) return;
     if (voice.state !== "idle") busy.current = true;
-    if (duplicate) {
-      // the room does not write a card twice: wait for it to say so, then go to the one that is there.
-      // (If it wrote it anyway, the card is new after all and travels as usual.)
-      document.body.classList.add("voice-stage-found");
-      const written = Boolean(build?.placed && !build.placed.widgetId.startsWith("voice-draft-"));
-      if (!failed && !written) return;
-      const onto = failed ? findOnBoard(duplicate) : null;
-      if (onto) {
-        markStageBeat("found");
-        const id = window.setTimeout(() => close(undefined, onto), beat("foundHold"));
-        return () => window.clearTimeout(id);
-      }
+    if (found) {
+      markStageBeat("found");
+      const onto = found.host.querySelector<HTMLElement>(`[data-widget-id="${found.widgetId}"]`) ?? undefined;
+      const id = window.setTimeout(() => close(undefined, onto), beat("foundHold"));
+      return () => window.clearTimeout(id);
     }
     if (whole) {
       markStageBeat("all");
@@ -874,7 +846,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
       const id = window.setTimeout(() => close(), 300);
       return () => window.clearTimeout(id);
     }
-  }, [two, phase, freeze, whole, failed, duplicate, build?.placed?.widgetId, voice.state, close]);
+  }, [two, phase, freeze, whole, failed, found, voice.state, close]);
   useEffect(() => {
     if (phase === "closed") busy.current = false;
   }, [phase]);
@@ -1015,7 +987,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
           <div className="voice-two-bar">
             <span className="voice-stage-status" data-testid="voice-stage-status" data-mood={voice.muted ? "muted" : listening ? "listening" : "working"}>
               <i aria-hidden="true" />
-              {voice.muted ? "Muted" : listening ? "Listening" : duplicate && failed ? "Already here" : whole ? "Placing" : "Building"}
+              {voice.muted ? "Muted" : listening ? "Listening" : found ? "Already here" : whole ? "Placing" : "Building"}
             </span>
             {controls(done)}
           </div>
@@ -1032,7 +1004,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
         </section>
         <section className="voice-two-right" data-testid="voice-stage-right" data-state={state}>
           {build?.kind && build.widget ? (
-            <StageCard key={build.key} build={build} reveal={reveal} fly={card} asking={asking} offers={offers} onOffer={takeOffer} found={Boolean(duplicate && failed)} />
+            <StageCard key={build.key} build={build} reveal={reveal} fly={card} asking={asking} offers={offers} onOffer={takeOffer} found={Boolean(found)} />
           ) : (
             !voice.transcript &&
             listening && (
@@ -1065,15 +1037,6 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
     <>
       {createPortal(<VoiceOrb state={voice.muted ? "idle" : voice.state} level={level} stage={phase === "open"} />, host)}
       {phase !== "closed" && createPortal(two ? twoPart : centred, document.body)}
-      {found?.el.parentElement &&
-        createPortal(
-          <div className="voice-slip voice-found-slip" style={{ "--maker": found.color, left: found.left, top: found.top } as CSSProperties}>
-            <span className="voice-landed" data-testid="voice-stage-found-slip">
-              already here
-            </span>
-          </div>,
-          found.el.parentElement,
-        )}
       {two && params.get("timing") === "1" && createPortal(<StageBeats said={lastSaid.current} mock={params.has("mock")} />, document.body)}
     </>
   );

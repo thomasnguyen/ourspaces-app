@@ -1092,26 +1092,10 @@ body.voice-stage-up .voice-slip {
   animation: voice-stage-out calc(var(--dur-quick) * var(--slow)) var(--ease-glide) forwards;
 }
 
-/* ---- already on the board: the card that was there takes the ring and the slip ---- */
-.widget-group[data-voice-found] > .widget-group-body {
-  border-radius: 18px;
-  outline: 4px solid var(--color-lime);
-  outline-offset: 7px;
-}
-
-.voice-slip.voice-found-slip {
-  --maker: var(--color-sticker);
-  animation-play-state: running;
-}
-
-.voice-slip.voice-found-slip .voice-landed {
-  background: var(--color-lime);
-  color: var(--color-ink);
-}
-
-/* the stage already said it: no "couldn't place that" for a card that exists */
-body.voice-stage-found .voice-receipt.is-miss {
-  display: none;
+/* ---- already on the board: the build's own pulse and slip (index.css) wait
+   under the stage and play when its card has gone to the one that is there ---- */
+body.voice-stage-up .voice-found-pulse {
+  animation-play-state: paused;
 }
 
 @media (max-width: 640px) {

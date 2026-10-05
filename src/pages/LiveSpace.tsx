@@ -21,7 +21,12 @@ const PLAY_LAB_SOURCE = "crew";
 import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock, radioRoomOf } from "../components/ActionDock";
 import { VoiceBuildLayer } from "../components/VoiceBuildLayer";
+import { offersFor } from "../lib/deck/suggest";
+import { setVoiceStageOffers } from "../lib/voiceStage";
+import { RoomKnowsDoor, RoomKnowsPage } from "../components/RoomKnows";
+import { standing } from "../lib/roomKnows";
 import { useVoiceBuild } from "../live/useVoiceBuild";
+import { boardItems } from "../lib/deck";
 import { Canvas, SpaceHeader } from "../components/Canvas";
 import { ClaimCard, type RoomContext } from "../components/ClaimCard";
 import { SettingsSheet } from "../components/SettingsSheet";
@@ -1487,6 +1492,11 @@ export function LiveSpacePage({
      them and its tokens resolve against them, on this screen. */
   const [briefNow] = useState(() => Date.now());
   const roomBrief = useQuery(api.roomBrief.inspect, mode === "live" && space ? { spaceId: space._id, now: briefNow } : "skip");
+  /* What this space knows (components/RoomKnows.tsx): the same brief as a
+     page people can read and correct. A correction lands on the brief's row,
+     so the facts above change with it and the next ask is routed by them. */
+  const roomKnows = useQuery(api.roomBrief.knows, mode === "live" && space ? { spaceId: space._id } : "skip");
+  const correctKnows = useMutation(api.roomBrief.correct);
   const voicePeople = () =>
     [...new Set([identity.name, ...presence.peers.map((peer) => peer.name), ...members.map((m) => m.name)])].slice(0, 8);
   const voiceToday = () => {
@@ -1494,20 +1504,36 @@ export function LiveSpacePage({
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   };
   const voiceSelectedId = () => (focusedTarget?.kind === "widget" ? focusedTarget.id : selectedWidgetId) ?? null;
+  // What the room can offer for a card named with nothing in it (the voice stage asks; lib/deck/suggest.ts).
+  setVoiceStageOffers((card) => offersFor(roomBrief?.room ?? null, card));
   const voiceBuild = useVoiceBuild({
     scrollerRef: viewportRef,
     cardContext: () => ({ by: identity.name, people: voicePeople(), today: voiceToday() }),
     selectedId: voiceSelectedId,
     warm: () => void warmDeal({}).catch(() => {}),
     facts: () => roomBrief?.room ?? null,
-    decide: (said) =>
+    decide: (said, { onBoard }) =>
       decideCard({
         said,
         room: space?.name ?? "",
         today: voiceToday(),
         people: voicePeople(),
         board: (roomBrief?.room?.board ?? []).map((b) => b.title),
+        ...(onBoard ? { onBoard: true, match: onBoard } : {}),
       }),
+    /* The board as drawn, for the "already here" check; who made each card
+       when the row says (a seeded cast member, or you). */
+    board: () => {
+      const makers = new Map((boardRows?.widgets ?? []).map((row) => [String(row._id), row.createdBy]));
+      const cast = roomBrief?.room?.people ?? [];
+      return boardItems(adaptedWidgets, (id) => {
+        const by = makers.get(id);
+        if (!by) return null;
+        if (by === identity.userId) return "you";
+        const seeded = /^seed:[^:]+:(.+)$/.exec(by)?.[1];
+        return seeded ? (cast.find((n) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-") === seeded) ?? null) : null;
+      });
+    },
     deal: async (call, onPartial) => {
       if (!space) throw new Error("no space");
       const selId = voiceSelectedId();
@@ -2546,6 +2572,7 @@ export function LiveSpacePage({
         livePeers={liveCursors}
         arrivalPeerId={arrivalPeer?.userId}
         inboxAddress={space?.inboxAddress}
+        knowsDoor={mode === "live" && space ? <RoomKnowsDoor slug={slug} count={roomKnows ? standing(roomKnows) : undefined} /> : undefined}
         addOpen={pickerOpen}
         onAddClick={() => {
           if (pickerOpen) {
@@ -3028,6 +3055,15 @@ export function LiveSpacePage({
           if (next) playSound("tap");
         }}
       />
+      {mode === "live" && space && roomEntered && (
+        <RoomKnowsPage
+          slug={slug}
+          roomName={activeCustomization.name}
+          knows={roomKnows}
+          self={identity}
+          onChange={(change) => void correctKnows({ spaceId: space._id, by: identity.name, color: identity.color, change })}
+        />
+      )}
     </main>
   );
 }

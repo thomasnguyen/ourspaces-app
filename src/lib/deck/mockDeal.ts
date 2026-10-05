@@ -11,10 +11,13 @@
  * fact's value: when the call's fact menu offers a token the words need
  * (`@places`, `@date(…)`, `@coming(…)`, `@on-trip(…)`), it writes the token and
  * the real resolver fills it in on screen and notes where it came from.
+ * There is no simulated pick: with no card word the type arrives with the
+ * answer's first field, and "already here" is the room's own stand-in rule
+ * (code's match alone, src/live/useVoiceBuild.ts).
  */
 import { beat } from "../voiceTimings";
 import type { CardId } from "./catalog";
-import { guessCard, sentenceHangs, titleFromWords } from "./guess";
+import { guessCard, titleFromWords } from "./guess";
 
 type StandIn = { card: CardId; settings: Record<string, string | number | string[]> };
 
@@ -185,10 +188,3 @@ export async function mockDeal(call: { said: string; route?: "fast" | "brain"; m
   return parts[parts.length - 1];
 }
 
-/** The simulated one-letter pick (the room's `decide`): the card the stand-in
-    would deal for these words, sure of it, after `decide` ms. */
-export async function mockDecide(said: string) {
-  await wait(beat("decide"));
-  const card = sentenceHangs(said) ? null : (standInFor(said)?.card ?? null);
-  return { card, conf: card ? 0.9 : null, top: card ? [{ card, p: 0.9 }] : [], ms: beat("decide"), usage: null, error: null };
-}

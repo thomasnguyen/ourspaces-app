@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { Widget } from "../data/types";
-import type { AskTrace, StageName, VoiceLanded, VoiceReceipt, VoiceShell } from "../live/useVoiceBuild";
+import type { AskTrace, StageName, VoiceFound, VoiceLanded, VoiceReceipt, VoiceShell } from "../live/useVoiceBuild";
 import { feedVoiceStage } from "../lib/voiceStage";
 import type { ResolveNote, RoomFacts } from "../lib/deck";
 
@@ -50,9 +50,33 @@ function ShellRing({ shell, tint }: { shell: VoiceShell; tint: CSSProperties }) 
   );
 }
 
+/** The ask was already on the board: a ring in the asker's colour pulses
+    once around that widget (following it while the camera glides). */
+function FoundPulse({ found, tint }: { found: VoiceFound; tint: CSSProperties }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      const el = found.host.querySelector<HTMLElement>(`[data-widget-id="${found.widgetId}"]`);
+      const ring = ref.current;
+      if (el && ring) {
+        ring.style.left = `${el.offsetLeft}px`;
+        ring.style.top = `${el.offsetTop}px`;
+        ring.style.width = `${el.offsetWidth}px`;
+        ring.style.height = `${el.offsetHeight}px`;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(raf);
+  }, [found.host, found.widgetId]);
+  return <div ref={ref} className="voice-found-pulse" data-testid="voice-found-pulse" data-widget-ref={found.widgetId} style={tint} aria-hidden />;
+}
+
 const STAGE_LABEL: Record<StageName, string> = {
   pause: "pause detected",
   decided: "decide sure (≥ 0.8) back",
+  found: "camera on the card already here",
   skeleton: "skeleton on screen",
   tentative: "first tentative field",
   "card-full": "card visually complete (tentative or final)",
@@ -107,6 +131,8 @@ function sourceOf(token: string, f: RoomFacts | null): string | null {
       return `clocks: ${f.clocks.map((c) => `${c.label} ${c.tz}`).join(" · ") || "none"}`;
     case "everyone-but":
       return `people ${f.people.join(", ")}`;
+    case "chores":
+      return `wheels ${f.wheels.map((w) => `"${w.title}"`).join(", ") || "none"} · lists ${f.lists.map((l) => `"${l.title}"`).join(", ") || "none"}`;
     default:
       return null;
   }
@@ -241,6 +267,49 @@ function ContextDrawer({
       </section>
 
       <section>
+        <h3>already on the board?</h3>
+        {t.found ? (
+          <>
+            <p data-testid="dev-context-found">
+              <b>{t.found.outcome === "pointed" ? "pointed at the card already here, nothing written" : "dealt a card"}</b> · {t.found.why}
+            </p>
+            <p>
+              code's check: {t.found.check.ok ? `match: ${t.found.check.why}` : `no match: ${t.found.check.why}`}
+              {t.found.widgetId && <> · widget <code>{t.found.widgetId}</code></>}
+            </p>
+            <p>
+              the model's yes/no (Ultra, same prefix as the decide):{" "}
+              {t.found.verdict
+                ? t.found.verdict.standIn
+                  ? "not asked: mock mode, code's match stands in"
+                  : `${t.found.verdict.yes ? "yes" : "no"} ${t.found.verdict.conf?.toFixed(2) ?? ""} on “${t.found.verdict.text}”`
+                : t.found.check.ok
+                  ? "no answer in time"
+                  : "not asked (no match)"}
+            </p>
+          </>
+        ) : (
+          <p>{t.done ? "not checked (a late word, or a card already written)" : "…"}</p>
+        )}
+        {t.decides.some((d) => d.match) && (
+          <ol className="dev-context-list">
+            {t.decides
+              .filter((d) => d.match)
+              .map((d, i) => (
+                <li key={i}>
+                  “{d.text}” · match {d.match} · {d.onBoard ? (d.onBoard.error ?? `${d.onBoard.yes ? "yes" : "no"} ${d.onBoard.conf?.toFixed(2)}`) : "…"}
+                </li>
+              ))}
+          </ol>
+        )}
+        {t.held.length > 0 && (
+          <p>
+            skeleton held against: {t.held.map((h) => `${h.card} (call ${h.call + 1}, ${ms(h.ms)})`).join(", ")}
+          </p>
+        )}
+      </section>
+
+      <section>
         <h3>route</h3>
         <p data-testid="dev-context-route">
           {t.route ? <b>{t.route.route === "brain" ? "room facts → Ultra (token prompt)" : "plain → Lightning (fast fill)"}</b> : mock ? "mock: no route" : "—"}
@@ -349,6 +418,7 @@ export function VoiceBuildLayer({
   drafts,
   shell,
   landed,
+  found,
   receipt,
   leaving,
   traces,
@@ -359,6 +429,7 @@ export function VoiceBuildLayer({
   drafts: Widget[];
   shell: VoiceShell | null;
   landed: VoiceLanded | null;
+  found?: VoiceFound | null;
   receipt: VoiceReceipt | null;
   leaving: boolean;
   traces: AskTrace[];
@@ -368,7 +439,7 @@ export function VoiceBuildLayer({
 }) {
   const [dev] = useState(devMode);
   // The voice stage shows this build on its right half; it reads it through this one call.
-  useEffect(() => feedVoiceStage({ drafts, shell, landed, receipt, traces, color, by }), [drafts, shell, landed, receipt, traces, color, by]);
+  useEffect(() => feedVoiceStage({ drafts, shell, landed, found: found ?? null, receipt, traces, color, by }), [drafts, shell, landed, found, receipt, traces, color, by]);
   const [open, setOpen] = useState<number | null>(null);
   const tint = { "--maker": color } as CSSProperties;
   const latest = traces[0];
@@ -394,6 +465,33 @@ export function VoiceBuildLayer({
           </div>,
           landed.host,
         )}
+      {found && createPortal(<FoundPulse key={`${found.traceKey}-${found.widgetId}`} found={found} tint={tint} />, found.host)}
+      {found &&
+        createPortal(
+          <div
+            className={`voice-slip is-found ${leaving ? "is-leaving" : ""} ${dev ? "is-dev" : ""}`}
+            style={{ ...tint, left: found.x, top: found.y }}
+            onClick={dev ? () => openFor(found.traceKey) : undefined}
+          >
+            <span className="voice-landed voice-found" data-testid="voice-found" data-widget-ref={found.widgetId} data-card={found.card}>
+              already here{found.by ? ` · ${found.by} made it` : ""}
+            </span>
+            {found.next === "spin" && (
+              <button
+                type="button"
+                className="voice-found-next"
+                data-testid="voice-found-spin"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  found.host.querySelector<HTMLButtonElement>(`[data-widget-id="${found.widgetId}"] [data-testid="wheel-spin"]`)?.click();
+                }}
+              >
+                spin it
+              </button>
+            )}
+          </div>,
+          found.host,
+        )}
       {receipt && !receipt.ok && (
         <p
           key={receipt.key}
@@ -415,6 +513,16 @@ export function VoiceBuildLayer({
         >
           {!latest ? (
             <span>voice · no ask yet</span>
+          ) : latest.found?.outcome === "pointed" ? (
+            <>
+              <span data-testid="dev-readout-route">already here</span>
+              <span data-testid="voice-receipt" data-found="1">
+                {latest.found.verdict?.standIn
+                  ? "stand-in · code's match only · not timed"
+                  : `yes/no ${latest.found.verdict?.conf?.toFixed(2)} · last word → camera ${latest.stages.found === null ? "…" : ms(latest.stages.found).replace("+", "")}`}
+              </span>
+              <span>nothing written</span>
+            </>
           ) : latest.model === null && latest.done ? (
             <span>simulated from measurements · no model ran</span>
           ) : (

@@ -39,12 +39,12 @@ import { RECAP_LINES, type RecapTurn } from "./data/recap";
 import { DECISION_WIDGET, canvasSizeFor, getSpace, getWidgets } from "./data/spaces";
 import { createLabPeerFeed, labPeersRequested } from "./live/labPeers";
 import { dealDemo, deckLabRequested } from "./lib/deck/lab";
-import { mockDeal, mockDecide } from "./lib/deck/mockDeal";
+import { mockDeal } from "./lib/deck/mockDeal";
 import { mockFacts } from "./lib/deck/mockFacts";
 import { offersFor } from "./lib/deck/suggest";
 import { setVoiceStageOffers } from "./lib/voiceStage";
-import { resolveCard } from "./lib/deck/resolve";
 import { beat } from "./lib/voiceTimings";
+import { boardItems } from "./lib/deck/existing";
 import { useVoiceBuild } from "./live/useVoiceBuild";
 import { VoiceBuildLayer } from "./components/VoiceBuildLayer";
 import {
@@ -87,6 +87,9 @@ import { widgetSupportsThread } from "./lib/widgetThreads";
 import { linkCardQuestions, questionThreadId } from "./lib/linkQuestions";
 import { LinkQuestionStrip } from "./components/LinkQuestionStrip";
 import { LiveSpacePage } from "./pages/LiveSpace";
+import { RoomKnowsDoor, RoomKnowsPage, type KnowsChange } from "./components/RoomKnows";
+import { standing, type RoomKnows } from "./lib/roomKnows";
+import { mockRoomKnows } from "./data/roomKnows";
 import { getDataMode } from "./live/dataMode";
 import { getIdentity } from "./live/identity";
 import { useCanvasSpacePan } from "./lib/canvasSpacePan";
@@ -97,7 +100,7 @@ import {
 } from "./lib/buildRoomPresentation";
 import { flushSync } from "react-dom";
 import { flyWidgetIn } from "./lib/flipLanding";
-import { DEFAULT_SPACE_SLUG, lastSpaceSlug, normalSpaceHash, rememberSpaceSlug } from "./lib/routes";
+import { DEFAULT_SPACE_SLUG, lastSpaceSlug, normalSpaceHash, rememberSpaceSlug, slugOfSpaceHash } from "./lib/routes";
 import { pileInsideFrame } from "./lib/frameMembership";
 import {
   linkReplyCounts,
@@ -321,7 +324,7 @@ function spaceFromHash(): string {
   // from, and spaceId has to still be that room when you take it.
   if (hash === "about" || hash.startsWith("about/")) return lastSpaceSlug();
   if (hash.startsWith("space/")) {
-    const slug = hash.slice("space/".length) || DEFAULT_SPACE_SLUG;
+    const slug = slugOfSpaceHash(hash.slice("space/".length)) || DEFAULT_SPACE_SLUG;
     rememberSpaceSlug(slug);
     return slug;
   }
@@ -357,6 +360,23 @@ export default function App() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const tabIdentity = useTabIdentity();
+  /* What this space knows, mock: fixture lines (data/roomKnows.ts) plus the
+     corrections made on this screen, per room. Nothing is stored. */
+  const [mockKnowsEdits, setMockKnowsEdits] = useState<Record<string, Pick<RoomKnows, "told" | "forgot">>>({});
+  const correctMockKnows = (change: KnowsChange) =>
+    setMockKnowsEdits((all) => {
+      const { told, forgot } = all[spaceId] ?? { told: [], forgot: [] };
+      const who = { by: tabIdentity.name, color: tabIdentity.color, at: Date.now() };
+      const next =
+        change.kind === "tell"
+          ? { told: [...told, { id: `t${who.at}`, text: change.text, ...who }], forgot }
+          : change.kind === "untell"
+            ? { told: told.filter((t) => t.id !== change.id), forgot }
+            : change.kind === "forget"
+              ? { told, forgot: [...forgot, { key: change.key, text: change.text, ...who }] }
+              : { told, forgot: forgot.filter((f) => f.key !== change.key) };
+      return { ...all, [spaceId]: next };
+    });
   // Whatever you picked off the tray, riding the cursor until you click it down.
   const [placing, setPlacing] = useState<PlacingItem | null>(null);
   const [placingOrigin, setPlacingOrigin] = useState<
@@ -507,7 +527,6 @@ export default function App() {
     scrollerRef: canvasViewportRef,
     cardContext: voiceCtx,
     facts: voiceFacts,
-    decide: mockDecide,
     deal: async (call, onPartial) => {
       // `?voiceHold=1` keeps the skeleton up for a still (drive voice-build:shell).
       if (new URLSearchParams(window.location.search).has("voiceHold")) await new Promise(() => {});
@@ -515,11 +534,11 @@ export default function App() {
       const answer = await mockDeal(call, onPartial);
       return { dealId: null, model: null, context: null, answer, error: null };
     },
+    /* "Already here" in mock: no model to ask, so code's match alone stands
+       in (the drawer says so). */
+    board: () => boardItems([...getSpace(spaceId).widgets, ...(addedWidgets[spaceId] ?? [])]),
     commit: async ({ cards }) => {
       await new Promise((r) => setTimeout(r, beat("commit")));
-      // A card the board already has is not written twice: the voice stage takes you to it instead.
-      const facts = voiceFacts();
-      if (cards.length === 1 && resolveCard({ card: cards[0].card.card, settings: cards[0].card.settings as Record<string, unknown> }, facts, "").duplicateOf) return [];
       const dealt = cards.map((c, i) => ({ ...c.widget, id: `voice-standin-${Date.now().toString(36)}-${i}` }));
       setAddedWidgets((current) => ({ ...current, [spaceId]: [...(current[spaceId] ?? []), ...dealt] }));
       return dealt.map((w) => w.id);
@@ -1963,6 +1982,7 @@ export default function App() {
     spaceDraft ??
     spaceCustomizations[spaceId] ??
     defaultSpaceCustomization(baseSpace);
+  const mockKnows: RoomKnows = { ...mockRoomKnows(spaceId, activeSpaceCustomization.name), ...(mockKnowsEdits[spaceId] ?? {}) };
   const visibleWidgets = [
     ...baseSpace.widgets,
     ...(addedWidgets[spaceId] ?? []),
@@ -2146,6 +2166,7 @@ export default function App() {
         spaceId={spaceId}
         addOpen={pickerOpen}
         onAddClick={openPicker}
+        knowsDoor={<RoomKnowsDoor slug={spaceId} count={standing(mockKnows)} />}
         spaceMeta={activeSpaceCustomization}
         roomEditing={Boolean(spaceDraft)}
         onEditSpace={openSpaceEditor}
@@ -2613,6 +2634,7 @@ export default function App() {
           <span>editing this space</span>
         </div>
       )}
+      <RoomKnowsPage slug={spaceId} roomName={activeSpaceCustomization.name} knows={mockKnows} self={tabIdentity} onChange={correctMockKnows} fixture />
     </main>
   );
 }
