@@ -54,6 +54,31 @@ const FIXTURES: Record<string, Omit<RoomKnows, "told" | "forgot" | "at">> = {
       line("habits", "words", "words we use a lot: call, same, sfo", "each one in 2 or more places", []),
     ],
   },
+  family: {
+    room: "the family",
+    people: [
+      { name: "Dev", color: "#ff7c42" },
+      { name: "Alex", color: "#e9369d", away: true },
+      { name: "Casey", color: "#13b8a6" },
+      { name: "Mina", color: "#ffb02e" },
+    ],
+    lines: [
+      line("who", "away:Alex", "Alex is away, back thursday", 'the board says "alex is out till thursday"', ["fam-away"]),
+      line("soon", "date:the reveal", "days to the reveal", "9:00, from the countdown", ["fam-reveal"], { n: 2 }),
+      line("soon", "date:mina turns 12 🎂", "days to mina turns 12 🎂", "from the countdown", ["fam-bday"], { n: 11 }),
+      line("decided", "poll:saturday?", "saturday: trampoline park and hike + pancakes are level, 2 of 4 each", "from the poll, 4 votes in", ["fam-poll-saturday"]),
+      line("decided", "rsvp:who's in", "who's in: Dev, Casey, Mina and Alex are in", "from the rsvp", ["fam-signup"]),
+      line("decided", "wheel:who empties the dishwasher", "who empties the dishwasher: last landed on casey", "from the wheel's last spin", ["fam-wheel"]),
+      line("habits", "day:Friday", "Friday is our usual day", 'said in 2 places: availability "home for dinner" best, note "allowance, friday"', ["fam-home", "fam-allowance"]),
+      line("habits", "places", "our places: lake loop, trampoline park, noodles by the library, the climbing wall", "4 saved links, and trampoline park is in the saturday poll", ["fam-places", "fam-poll-saturday"]),
+      line("habits", "claims:Dev", "Dev takes things on: bins + recycling", "1 claim on the lists, and 5 check-ins in a row", ["fam-chores", "fam-checkin"]),
+      line("habits", "claims:Mina", "Mina takes things on: walk biscuit", "1 claim on the lists, and 5 check-ins in a row", ["fam-chores", "fam-checkin"]),
+      line("habits", "lowercase", "we write titles in lowercase", "14 of 14 card titles", []),
+      line("habits", "words", "words we use a lot: bathroom, biscuit, dishwasher, friday, push-ups, saturday", "each one in 2 or more places", []),
+      line("made", "made:1", 'the push-up challenge: "who\'s in", "push-ups", "standings", "the reveal"', 'Dev said "set up a push-up challenge for the four of us" · 4 days ago', ["fam-signup", "fam-checkin", "fam-standings", "fam-reveal"], { status: "kept" }),
+      line("made", "made:2", 'wheel "who cleans the bathroom"', 'Casey said "spin for who cleans the bathroom" · 2 days ago', [], { status: "removed" }),
+    ],
+  },
   house: {
     room: "the house",
     people: [
@@ -78,6 +103,10 @@ const FIXTURES: Record<string, Omit<RoomKnows, "told" | "forgot" | "at">> = {
 /* What the demo crew has already had to say about its own page: one thing
    told, one thing crossed out, so the first look shows people are in charge. */
 const SAID: Record<string, { told: Told[]; forgot: Forgot[] }> = {
+  family: {
+    told: [{ id: "seed-biscuit", text: "biscuit is the dog. he does not do chores", by: "Mina", color: "#ffb02e", at: 1 }],
+    forgot: [],
+  },
   crew: {
     told: [{ id: "seed-mondays", text: "we never do mondays", by: "Kenji", color: "#13b8a6", at: 1 }],
     forgot: [{ key: "words", text: "words we use a lot: cake, matcha, balloons, bday, party, place", by: "Rio", color: "#ff7a3d", at: 1 }],

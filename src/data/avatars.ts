@@ -21,6 +21,7 @@ export const AVATAR_CATALOG: Record<string, string> = {
   morgan: "/avatars/morgan.png",
   priya: "/avatars/priya.png",
   casey: "/avatars/casey.png",
+  mina: "/avatars/priya.png",
   dev: "/avatars/dev.png",
   juno: "/avatars/juno.png",
   momo: "/avatars/momo.png",

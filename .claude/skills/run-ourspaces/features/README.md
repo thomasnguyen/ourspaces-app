@@ -14,7 +14,10 @@ id named here exists in `src/`.
 | [deck](deck.md) | crew board | one · four · eight · beside |
 | [your-turn](your-turn.md) | crew dock (✦ key + recap panel) | badge · rio · ash · guest · mid · next · more · house · couple · rail · live (lane) |
 | [voice-build](voice-build.md) | crew (lane) | room · ask · hesitate · drawer · mock · shell · mockdrawer · gate · say |
-| [room-brain](room-brain.md) | crew, house, couple | door · open · visit · forget · told · empty · live |
+| [room-brain](room-brain.md) | crew, house, couple, family | door · open · visit · forget · told · empty · live |
+| [family](family.md) | the family | board · logged · final · knows |
+| [check-in](check-in.md) | family board | open · logging · logged · mina · final |
+| [standings](standings.md) | family board | locked · open · unlocked · final |
 
 ## Header format
 

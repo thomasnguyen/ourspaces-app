@@ -1,0 +1,752 @@
+/* ── CHALLENGE: check-in + standings ──
+   Two cards for a challenge a group is in together. Fridge, not fitness app:
+   flat colour strips, round magnets, big numerals, hard ink shadows. Both are
+   container-query cards: under ~430px (a phone column) each is recomposed. */
+
+.widget-checkin,
+.widget-standings {
+  --ink: var(--color-ink);
+  --paper: var(--color-card);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 2.5px solid var(--ink);
+  border-radius: 16px 13px 17px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 6px 7px 0 var(--ink);
+  font-family: var(--font-sans);
+}
+
+.widget-checkin {
+  container: checkin / inline-size;
+  padding: 16px 16px 12px;
+}
+
+.ci-tape {
+  position: absolute;
+  top: -11px;
+  left: 44%;
+  width: 92px;
+  height: 22px;
+  rotate: -2.5deg;
+  background: color-mix(in srgb, var(--color-mat) 78%, transparent);
+}
+
+.ci-head,
+.st-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ci-kicker,
+.st-kicker {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-muted);
+}
+
+.ci-head h3,
+.st-head h3 {
+  margin: 1px 0 0;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.ci-total {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  text-align: right;
+}
+
+.ci-total strong {
+  font-family: var(--font-display);
+  font-size: 54px;
+  font-weight: 800;
+  line-height: 0.8;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  animation: ci-count var(--dur-arrive) var(--ease-pop) both;
+}
+
+.ci-total small {
+  max-width: 108px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  color: var(--color-muted);
+}
+
+@keyframes ci-count {
+  from { translate: 0 8px; scale: 1.14 0.9; }
+  to { translate: 0 0; scale: 1; }
+}
+
+/* ── the grid ── */
+.ci-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.ci-row {
+  display: grid;
+  grid-template-columns: 138px 1fr 46px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px 0 8px;
+}
+
+.ci-cells {
+  display: grid;
+  grid-template-columns: repeat(var(--ci-days), 1fr);
+  justify-items: center;
+  align-items: center;
+}
+
+.ci-days {
+  height: 20px;
+}
+
+.ci-day,
+.ci-streak-head {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.ci-streak-head {
+  text-align: center;
+  line-height: 1;
+  white-space: nowrap;
+  translate: -4px 0;
+}
+
+.ci-day.is-today {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.ci-day-reveal {
+  color: var(--ink);
+}
+
+.ci-person {
+  height: 54px;
+  border: 2.5px solid var(--ink);
+  border-radius: 13px;
+  background: var(--c);
+  box-shadow: 3px 3px 0 var(--ink);
+  animation: ci-row-in var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(var(--i) * 45ms);
+}
+
+@keyframes ci-row-in {
+  from { opacity: 0; translate: -10px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+.ci-who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ci-who .member-face {
+  flex: none;
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
+}
+
+.ci-who b {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+}
+
+.ci-who i {
+  padding: 1px 7px 2px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--color-lime);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* a magnet: what one person logged on one day */
+.ci-cell {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  rotate: var(--t, 0deg);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ci-cell.is-in {
+  box-shadow: 1.5px 2px 0 var(--ink);
+}
+
+.ci-cell.is-missed {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--ink) 55%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+  font-size: 15px;
+}
+
+.ci-cell.is-waiting {
+  border-style: dashed;
+  background: transparent;
+}
+
+.ci-cell.is-ahead {
+  width: 8px;
+  height: 8px;
+  border: 0;
+  background: color-mix(in srgb, var(--ink) 30%, transparent);
+}
+
+.ci-cell-flag {
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 45%, transparent);
+  font-size: 17px;
+  rotate: 0deg;
+}
+
+.ci-cell-today {
+  cursor: pointer;
+  transition:
+    translate var(--dur-quick) var(--ease-glide),
+    box-shadow var(--dur-quick) var(--ease-glide);
+}
+
+.ci-cell-today.is-open {
+  width: 42px;
+  height: 42px;
+  background: var(--ink);
+  color: var(--color-lime);
+  box-shadow: 2px 3px 0 color-mix(in srgb, var(--ink) 40%, transparent);
+  font-size: 22px;
+  rotate: 0deg;
+}
+
+.ci-cell-today:hover {
+  translate: 0 -2px;
+}
+
+.ci-cell-today:active {
+  translate: 0 1px;
+  transition-duration: var(--dur-instant);
+}
+
+.is-logging .ci-cell-today {
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 5.5px var(--ink);
+}
+
+/* the stamp: a magnet slapped on, squashed at impact */
+.ci-cell-today.is-stamped {
+  animation: ci-stamp var(--dur-stage) var(--ease-snap) both;
+}
+
+@keyframes ci-stamp {
+  0% { scale: 2.1; rotate: -14deg; opacity: 0; }
+  45% { scale: 0.9 0.82; opacity: 1; }
+  100% { scale: 1; rotate: var(--t, 0deg); opacity: 1; }
+}
+
+.ci-streak {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--paper);
+  justify-self: end;
+}
+
+.ci-streak strong {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  animation: ci-count var(--dur-arrive) var(--ease-pop) both;
+}
+
+/* alive, but today isn't banked yet */
+.ci-streak.is-at-risk {
+  border: 2.5px dashed var(--ink);
+  background: transparent;
+  color: var(--ink);
+}
+
+.ci-streak.is-cold {
+  background: color-mix(in srgb, var(--ink) 22%, transparent);
+  color: var(--ink);
+}
+
+/* ── foot: one sentence, or the logger ── */
+.ci-foot {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.ci-status {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--color-muted);
+}
+
+.ci-status b {
+  color: var(--ink);
+}
+
+.ci-logger {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 6px 6px 6px 10px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--paper);
+  animation: ci-logger-in var(--dur-arrive) var(--ease-pop) both;
+}
+
+@keyframes ci-logger-in {
+  from { opacity: 0; translate: 0 10px; scale: 0.97; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+
+.ci-logger-who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ci-step {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--paper) 16%, transparent);
+  color: var(--paper);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background var(--dur-quick) var(--ease-glide);
+}
+
+.ci-step:hover {
+  background: color-mix(in srgb, var(--paper) 30%, transparent);
+}
+
+.ci-draft {
+  min-width: 62px;
+  color: var(--color-lime);
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  animation: ci-count var(--dur-quick) var(--ease-glide) both;
+}
+
+.ci-log,
+.st-lock-go {
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: translate var(--dur-quick) var(--ease-glide);
+}
+
+.ci-log:hover,
+.st-lock-go:hover {
+  translate: 0 -2px;
+}
+
+/* ── phone column: a row is two lines, name over magnets ── */
+@container checkin (max-width: 430px) {
+  .ci-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .ci-head h3 { font-size: 38px; }
+  .ci-total strong { font-size: 60px; }
+  .ci-total small { max-width: 130px; font-size: 12px; }
+
+  .ci-days {
+    display: none;
+  }
+
+  .ci-person {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    row-gap: 8px;
+    height: auto;
+    padding: 9px 10px 10px;
+  }
+
+  .ci-person .ci-cells {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-items: start;
+  }
+
+  .ci-person .ci-streak {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .ci-streak::after {
+    content: none;
+  }
+
+  .ci-cell { width: 38px; height: 38px; font-size: 16px; }
+  .ci-cell-today.is-open { width: 40px; height: 40px; }
+  .ci-who b { font-size: 21px; }
+
+  .ci-foot {
+    min-height: 0;
+    padding-top: 12px;
+  }
+
+  .ci-logger {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 10px;
+  }
+
+  .ci-logger-who { width: 100%; }
+  .ci-draft { font-size: 52px; flex: 1; }
+  .ci-step { min-width: 40px; height: 40px; }
+  .ci-log { width: 100%; height: 46px; font-size: 16px; }
+}
+
+/* ── STANDINGS ── */
+.widget-standings {
+  container: standings / inline-size;
+  padding: 16px 14px 12px;
+}
+
+.st-gap {
+  padding: 4px 10px 5px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  rotate: 2deg;
+}
+
+.st-gap strong {
+  color: var(--color-lime);
+  font-family: var(--font-display);
+  font-size: 17px;
+}
+
+.st-empty {
+  margin: 18px 0;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.st-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  perspective: 900px;
+}
+
+.st-row {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.st-rank {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.st-face,
+.st-back {
+  display: grid;
+  align-items: center;
+  min-height: 60px;
+  border: 2.5px solid var(--ink);
+  border-radius: 13px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.st-face {
+  grid-template-columns: auto 1fr auto;
+  column-gap: 10px;
+  padding: 7px 11px 8px 9px;
+  background: var(--c);
+}
+
+.st-face .member-face {
+  grid-row: 1 / 3;
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
+}
+
+.st-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.st-name i {
+  padding: 1px 7px 2px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--color-lime);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.st-total {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.st-line {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 22px;
+}
+
+.st-line small {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.st-row.is-first .st-rank {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-lime);
+  box-shadow: 0 0 0 2.5px var(--ink);
+  font-size: 20px;
+}
+
+.st-row.is-you .st-face {
+  box-shadow: 3px 3px 0 var(--ink), 0 0 0 3px var(--paper), 0 0 0 5.5px var(--ink);
+}
+
+/* the move: a black pill that opens your logger at the number to beat */
+.st-beat {
+  flex: none;
+  padding: 3px 10px 4px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--color-lime);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: translate var(--dur-quick) var(--ease-glide);
+}
+
+.st-beat::after {
+  content: " →";
+}
+
+.st-beat:hover {
+  translate: 0 -2px;
+}
+
+/* face down: you see how many slips there are, not what's on them */
+.st-back {
+  position: relative;
+  background: var(--ink);
+  rotate: calc((var(--i) - 1.5) * 0.7deg);
+}
+
+.st-back i {
+  position: absolute;
+  inset: 7px;
+  display: grid;
+  place-items: center;
+  border: 2px dashed color-mix(in srgb, var(--paper) 34%, transparent);
+  border-radius: 8px;
+  color: color-mix(in srgb, var(--paper) 46%, transparent);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.st-lock {
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: min(86%, 300px);
+  padding: 18px 16px 16px;
+  border: 2.5px solid var(--paper);
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 5px 6px 0 color-mix(in srgb, var(--ink) 35%, transparent);
+  text-align: center;
+  translate: -50% -50%;
+  rotate: -3deg;
+}
+
+.st-lock strong {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.st-lock small {
+  color: color-mix(in srgb, var(--paper) 78%, transparent);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.st-lock-go {
+  height: 44px;
+  margin-top: 8px;
+  padding: 0 22px;
+  font-size: 16px;
+}
+
+/* the flip, last place first, the leader last */
+.is-revealing .st-face {
+  transform-origin: 50% 0;
+  backface-visibility: hidden;
+  animation: st-flip var(--dur-stage) var(--ease-pop) both;
+  animation-delay: calc(var(--n) * 150ms + 80ms);
+}
+
+.is-revealing .st-row.is-first .st-face {
+  animation-timing-function: var(--ease-snap);
+}
+
+.is-revealing .st-gap {
+  animation: ci-logger-in var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: 620ms;
+}
+
+@keyframes st-flip {
+  0% { transform: rotateX(-88deg); background: var(--ink); }
+  40% { background: var(--ink); }
+  41% { background: var(--c); }
+  100% { transform: rotateX(0deg); background: var(--c); }
+}
+
+.st-stake {
+  margin: auto 0 0;
+  padding-top: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-muted);
+}
+
+.is-final .st-kicker {
+  color: var(--ink);
+}
+
+@container standings (max-width: 340px) {
+  .st-line { flex-wrap: wrap; }
+  .st-total { font-size: 28px; }
+  .st-lock strong { font-size: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ci-person,
+  .ci-total strong,
+  .ci-streak strong,
+  .ci-cell-today.is-stamped,
+  .ci-logger,
+  .ci-draft,
+  .is-revealing .st-face,
+  .is-revealing .st-gap {
+    animation: none;
+  }
+}

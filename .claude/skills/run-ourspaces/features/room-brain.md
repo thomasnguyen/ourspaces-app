@@ -11,6 +11,7 @@ states:
   draft: ?mock=1 #/space/crew/knows | wait room-knows | sleep 700 | type room-knows-tell Ash is vegetarian
   house: ?mock=1 #/space/house/knows | wait room-knows | sleep 900
   couple: ?mock=1 #/space/couple/knows | wait room-knows | sleep 900
+  family: ?mock=1 #/space/family/knows | wait room-knows | sleep 900
   empty: ?mock=1 #/space/league/knows | wait room-knows-empty | sleep 700
   live: ?enter=1 #/space/crew/knows | wait room-knows | sleep 1500
   livedoor: ?enter=1 | sleep 1500
@@ -85,7 +86,7 @@ its card. A line is `room-knows-line` with `data-key` (`day:Saturday`,
 `Face`) + `room-knows.css` · `src/lib/roomKnows.ts` (types,
 `applyCorrections`, `toldLines`) · `src/lib/routes.ts` (`knowsHash`,
 `spacePageFromHash`) · mock fixtures `src/data/roomKnows.ts` (crew, couple,
-house; any other mock room shows the empty state) · mounted in
+house, family; any other mock room shows the empty state) · mounted in
 `LiveSpace.tsx` and `App.tsx`; the door is `SpaceHeader`'s `knowsDoor` slot.
 
 **Gotchas:** the board stays mounted behind the page (that's how the camera

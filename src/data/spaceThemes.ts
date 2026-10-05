@@ -55,6 +55,12 @@ const SPACE_DEFAULT_THEMES: Record<string, SpaceThemeId> = {
   league: "mint",
   couple: "violet",
   house: "butter",
+  family: "cobalt",
+};
+
+/** A room whose wall is its own colour takes a second colour for tape, frames and pins. */
+const SPACE_DEFAULT_ACCENTS: Record<string, string> = {
+  family: "#ffb02e",
 };
 
 export function defaultSpaceCustomization(space: SpaceMeta): SpaceCustomization {
@@ -67,7 +73,7 @@ export function defaultSpaceCustomization(space: SpaceMeta): SpaceCustomization 
     kind: space.kind,
     theme,
     customBackground: "#211922",
-    accent: space.color,
+    accent: SPACE_DEFAULT_ACCENTS[space.id] ?? space.color,
   };
 }
 

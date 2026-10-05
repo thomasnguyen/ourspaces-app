@@ -115,6 +115,8 @@ export const WIDGET_SIZES: Partial<Record<WidgetType, { w: number; h: number }>>
   hotLinks: { w: 470, h: 300 },
   shipPost: { w: 250, h: 240 },
   roundtable: { w: 460, h: 250 },
+  checkIn: { w: 600, h: 420 },
+  standings: { w: 372, h: 430 },
 };
 
 export function getWidgetBlueprint(type: WidgetType): Widget | undefined {

@@ -213,6 +213,7 @@ with the `spaces-pop-email` prefix.
 `shipPost`, `roundtable`; also `ShipPreview`, the illustrated demo project
 captures shared with `ShipRoom`; all pure, fed one `BuildRoomFeed` prop threaded
 Canvas → WidgetCard) · `core.tsx` (sticker, frame, countdown, poll, note…) ·
+`challenge.tsx` + `challenge.css` (`CheckInWidget`, `StandingsWidget`, `BoardLinkContext` = the board's widgets and `onWidgetData`, provided by `Canvas`; maths and the `CheckInData` / `StandingsData` types in `src/lib/challenge.ts`; feature files `check-in.md`, `standings.md`) ·
 `extras.tsx` (rsvp, dailyQ, availability, Firecrawl link card, link shelf, playlist, expense,
 itinerary, quote, weather, sports, letter — kraft envelope that unfolds; buttons
 inside so WidgetCard's drag capture doesn't eat the click…) · `CozyColorWidget.tsx` (full-screen
@@ -332,7 +333,7 @@ shared by App.tsx mock drops and the arrival lab so the beat can't drift) ·
 **data/** — `buildroom.ts` (47 seeded links, dropped one at a time — `RAW`
 entries expand into `BUILD_ROOM_LINKS` with jitter-staggered `droppedAt`;
 covers are deliberately absent, rows render a flat monogram tile) · `types.ts` (`Widget`/`Space`) · `spaces.ts` (seeded spaces: crew,
-couple, house, league) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes.ts` ·
+couple, house, league, family) · `family.ts` + `family.css` (the family room: members, widgets, the week, its phone column; mock only) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes.ts` ·
 `templates.ts` (`WIDGET_CATALOG`) · `stickers.ts` (stable sticker ids → die-cut
 character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
 

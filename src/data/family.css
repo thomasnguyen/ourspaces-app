@@ -1,0 +1,32 @@
+/* The family on a phone: the board becomes one column, the challenge first.
+   Same move as the build room's phone stack; the two challenge cards then
+   recompose themselves through their own container queries. */
+@media (max-width: 800px) {
+  .paper-bg[data-space-id="family"] .space-scroll { padding-left: 16px; padding-right: 16px; overflow-x: hidden; }
+  .paper-bg[data-space-id="family"] .space-canvas {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  .paper-bg[data-space-id="family"] .widget-group {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    transform: none;
+    rotate: 0deg;
+  }
+  .paper-bg[data-space-id="family"] .widget-group:has(.widget-sticker) { display: none; }
+  .paper-bg[data-space-id="family"] .widget-frame-group { height: 26px !important; margin-top: 14px; }
+  .paper-bg[data-space-id="family"] .widget-frame { display: block; height: 0 !important; overflow: visible; }
+  .paper-bg[data-space-id="family"] .widget-frame svg { display: none; }
+  .paper-bg[data-space-id="family"] .frame-label { left: 0; top: 0; }
+  .paper-bg[data-space-id="family"] .widget-group:has(.widget-checkin),
+  .paper-bg[data-space-id="family"] .widget-group:has(.widget-standings) { height: auto !important; }
+  .paper-bg[data-space-id="family"] .widget-checkin,
+  .paper-bg[data-space-id="family"] .widget-standings { height: auto !important; }
+  .paper-bg[data-space-id="family"] .widget-standings { min-height: 400px; }
+}

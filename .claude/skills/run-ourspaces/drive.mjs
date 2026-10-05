@@ -31,7 +31,7 @@ const DIR = join(ROOT, ".context/drive");
 const SHOTS = join(DIR, "shots");
 const STATE = join(DIR, "state.json");
 const LOG = join(DIR, "daemon.log");
-const VITE_PORT = Number(process.env.DRIVE_VITE_PORT) || 5291;
+const VITE_PORT = Number(process.env.DRIVE_VITE_PORT) || 5291; // a second worktree sets its own pair
 const CTL_PORT = Number(process.env.DRIVE_CTL_PORT) || 5292;
 const rel = (p) => relative(ROOT, p);
 

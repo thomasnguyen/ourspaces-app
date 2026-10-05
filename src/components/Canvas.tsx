@@ -29,6 +29,7 @@ import type {
   CozyColorStroke,
 } from "../widgets/CozyColorWidget";
 import { playSound } from "../lib/sounds";
+import { BoardLinkContext } from "../widgets/challenge";
 import { inviteUrlForSpace } from "../lib/routes";
 
 type WidgetPlacement = Partial<Pick<Widget, "x" | "y" | "z" | "w" | "h">>;
@@ -117,6 +118,7 @@ export function Canvas({
   onWheelSpin,
   onPlaylistTune,
   onLetterOpen,
+  onWidgetData,
   buildRoomFeed,
   roundtableRepliesByWidget = {},
   paintStrokesByWidget = {},
@@ -189,6 +191,8 @@ export function Canvas({
   onClaim?: (widgetId: string, itemName: string) => void;
   claimantId?: string;
   onWheelSpin?: (widgetId: string, spin: { spinNonce: number; resultIndex: number }) => void;
+  /** A card stores its own new data (check-in logs). Mock: local overrides. */
+  onWidgetData?: (widgetId: string, data: Widget["data"]) => void;
   onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
   onLetterOpen?: (widgetId: string, open: boolean) => void;
   buildRoomFeed?: BuildRoomFeed;
@@ -489,7 +493,10 @@ export function Canvas({
     ],
   );
 
+  const boardLink = useMemo(() => ({ widgets, onWidgetData }), [widgets, onWidgetData]);
+
   return (
+    <BoardLinkContext.Provider value={boardLink}>
     <div
       className={`space-canvas ${entering ? "is-entering" : ""} ${
         focusedFrame ? "has-frame-focus" : ""
@@ -549,6 +556,7 @@ export function Canvas({
         />
       )}
     </div>
+    </BoardLinkContext.Provider>
   );
 }
 
