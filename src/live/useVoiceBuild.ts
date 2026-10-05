@@ -32,7 +32,7 @@ import type { Schema } from "../lib/deck/schema";
 import { expandRecipe, isRecipe, recipeLead, type RecipePart } from "../lib/deck/recipes";
 import { guessCards } from "../lib/deck/guess";
 import { shortlistDeck } from "../lib/deck/shortlist";
-import { answerFor, goFor, mineFor, routeVerb, type Answer, type MineAct, type Verb, type VerbPick } from "../lib/deck/verbs";
+import { answerFor, cardAnswer, goFor, mineFor, routeVerb, type Answer, type MineAct, type Verb, type VerbPick } from "../lib/deck/verbs";
 import type { VoiceEnd, VoiceHooks } from "../lib/voice";
 
 /**
@@ -1479,7 +1479,11 @@ export function useVoiceBuild({
       const out = await vh.retrieve(said).catch((e) => ({ answer: null, why: String(e).slice(0, 120), ms: 0, usage: null, snippets: [] }) as RetrieveOut);
       if (stale()) return;
       s.trace.calls.push({ text: said, ms: Math.round(t0 - s.t0), spec: false, used: true, card: "answer", usage: out.usage ? { model: "Ultra", ...out.usage } : null });
-      if (out.answer) answered({ ...out.answer, facts: out.snippets }, "retrieval", Math.round(performance.now() - t0));
+      // a poll the model read: code counts it instead
+      const counted = out.answer?.widgetId ? widgets.find((w) => w.id === out.answer!.widgetId) : undefined;
+      const byCode = counted ? cardAnswer(counted) : null;
+      if (byCode) answered({ ...byCode, facts: [...byCode.facts, `(retrieved; the model said “${out.answer!.text}”, code counted the card)`] }, "retrieval", Math.round(performance.now() - t0));
+      else if (out.answer) answered({ ...out.answer, facts: out.snippets }, "retrieval", Math.round(performance.now() - t0));
       else dontKnow("unknown", out.why, out.snippets);
     };
 

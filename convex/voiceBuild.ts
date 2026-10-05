@@ -2,7 +2,7 @@
 /// <reference types="vite/client" />
 import { v } from "convex/values";
 import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { chooseLetter, pingTokenFactory, streamChat } from "./nebius";
@@ -521,7 +521,21 @@ export const decide = action({
 /* ---------- Answer: "what did we decide for saturday?" when the room's facts don't cover it ---------- */
 
 const ASK_STOP = new Set("a an the of for to on in at is are was were be do does did who whos whose what whats when where which how our we us it this that and or with my me i you has have hasnt any anyone s".split(" "));
-const askWords = (x: string) => new Set(x.toLowerCase().replace(/['’]s\b/g, "").split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 1 && !ASK_STOP.has(w)).map((w) => w.replace(/(es|s)$/, "")));
+const DAY_SHORT: Record<string, string> = { monday: "mon", tuesday: "tue", wednesday: "wed", thursday: "thu", friday: "fri", saturday: "sat", sunday: "sun" };
+const askWords = (x: string) =>
+  new Set(x.toLowerCase().replace(/['’]s\b/g, "").split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 1 && !ASK_STOP.has(w)).map((w) => DAY_SHORT[w] ?? w.replace(/(es|s)$/, "")));
+/** A card the snapshot doesn't summarise (an itinerary, a note): its title and every short string in it. */
+const flatText = (data: unknown): string => {
+  const out: string[] = [];
+  const walk = (x: unknown) => {
+    if (out.join(" ").length > 220) return;
+    if (typeof x === "string" && x.length < 120 && !/^(https?:|\/|#)/.test(x)) out.push(x);
+    else if (Array.isArray(x)) x.forEach(walk);
+    else if (x && typeof x === "object") Object.values(x).forEach(walk);
+  };
+  walk(data);
+  return out.join(" · ").slice(0, 220);
+};
 
 /**
  * Ask the space, as a slip: the board's cards and the chat (the same snapshot
@@ -551,7 +565,12 @@ export const answer = action({
     const q = args.question.trim().slice(0, 200);
     const snap: { widgets: { id: string; type: string; summary: string }[]; chat: { from: string; text: string }[] } = await ctx.runQuery(internal.recap.snapshot, { spaceId: args.spaceId });
     const want = askWords(q);
+    const summarised = new Set(snap.widgets.map((w) => w.id));
+    const rest: { _id: string; type: string; data: unknown }[] = (await ctx.runQuery(api.widgets.listWidgets, { spaceId: args.spaceId })).filter(
+      (w: { _id: string; type: string }) => !summarised.has(w._id) && !["sticker", "media", "frame", "weather"].includes(w.type),
+    );
     const pool = [
+      ...rest.map((w) => ({ text: `${w.type}: ${flatText(w.data)}`, widgetId: w._id as string | undefined, source: `the ${w.type} card` })),
       ...snap.widgets.map((w) => ({ text: w.summary.slice(0, 220), widgetId: w.id as string | undefined, source: `the ${w.type} card` })),
       ...snap.chat.map((m) => ({ text: `${m.from}: ${m.text}`.slice(0, 220), widgetId: undefined, source: `${m.from.toLowerCase()} in the chat` })),
     ];

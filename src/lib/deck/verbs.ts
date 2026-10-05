@@ -114,11 +114,17 @@ const nice = (iso: string) => {
 };
 const titleOf = (w: W) => lower(w.data.title ?? w.data.question ?? w.data.event ?? w.data.label ?? w.data.kicker ?? "");
 
-/** The card among these that the words point at: by topic words, else the only one when the words name none. */
+/** Words that can't carry a match alone ("karaoke night" is not "game night"). */
+const WEAK = new Set("night day party dinner lunch week weekend trip plan time thing card list poll friday saturday sunday monday tuesday wednesday thursday".split(" "));
+
+/** The card among these that the words point at: by topic words (one that isn't weak), else the only one when the words name none. */
 function pick(ws: W[], q: Set<string>, extra: (w: W) => string = () => ""): W | null {
   let best: { w: W; n: number } | null = null;
   for (const w of ws) {
-    const n = shares(q, `${titleOf(w)} ${extra(w)}`).length;
+    const both = shares(q, `${titleOf(w)} ${extra(w)}`);
+    // a weak word alone ("night") is no match: one of the question's strong words must be on the card
+    const strong = [...q].filter((x) => !WEAK.has(x));
+    const n = !strong.length || strong.some((x) => both.includes(x)) ? both.length : 0;
     if (n && (!best || n > best.n)) best = { w, n };
   }
   if (best) return best.w;
@@ -219,17 +225,7 @@ export function answerFor(said: string, f: RoomFacts | null, widgets: W[], frame
     const dec = pick(of("decision"), q, (x) => lower(x.data.detail));
     if (dec) return { text: `${titleOf(dec)}: ${lower(dec.data.detail)}`, source: "the decision card", widgetId: dec.id, facts: [`decision "${titleOf(dec)}": ${lower(dec.data.detail)}`] };
     const w = pick(of("poll"), q, (x) => frames(x));
-    if (w) {
-      const opts = ((w.data.options as { label: string; votes?: number; voters?: string[] }[] | undefined) ?? []).map((o) => ({ label: lower(o.label), n: o.voters?.length ?? o.votes ?? 0 }));
-      const sorted = [...opts].sort((a, b) => b.n - a.n);
-      const total = opts.reduce((a, o) => a + o.n, 0);
-      const text = !total
-        ? "nobody's voted yet"
-        : sorted[1] && sorted[0].n === sorted[1].n
-          ? `it's tied: ${sorted.filter((o) => o.n === sorted[0].n).map((o) => `${o.label} ${o.n}`).join(", ")}`
-          : `${sorted[0].label} leads · ${sorted[0].n} of ${total} votes`;
-      return { text, source: `the ${titleOf(w)} poll`, widgetId: w.id, facts: opts.map((o) => `${o.label}: ${o.n}`) };
-    }
+    if (w) return pollAnswer(w);
   }
 
   // who's away
@@ -260,6 +256,27 @@ export function answerFor(said: string, f: RoomFacts | null, widgets: W[], frame
     }
   }
   return null;
+}
+
+/** A poll's standing, counted by code. */
+function pollAnswer(w: W): Answer {
+  const opts = ((w.data.options as { label: string; votes?: number; voters?: string[] }[] | undefined) ?? []).map((o) => ({ label: lower(o.label), n: o.voters?.length ?? o.votes ?? 0 }));
+  const sorted = [...opts].sort((a, b) => b.n - a.n);
+  const total = opts.reduce((a, o) => a + o.n, 0);
+  const text = !total
+    ? "nobody's voted yet"
+    : sorted[1] && sorted[0].n === sorted[1].n
+      ? `it's tied: ${sorted.filter((o) => o.n === sorted[0].n).map((o) => `${o.label} ${o.n}`).join(", ")}`
+      : `${sorted[0].label} leads · ${sorted[0].n} of ${total} votes`;
+  return { text, source: `the ${titleOf(w)} poll`, widgetId: w.id, facts: opts.map((o) => `${o.label}: ${o.n}`) };
+}
+
+/**
+ * Retrieval pointed at a card code can count itself: code's reading wins over
+ * the model's words (live, the model named the losing option of a poll).
+ */
+export function cardAnswer(w: W): Answer | null {
+  return w.type === "poll" ? pollAnswer(w) : null;
 }
 
 /* ---------- Go: a room, a card, the knows page ---------- */
