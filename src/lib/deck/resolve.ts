@@ -41,10 +41,11 @@ export type RoomFacts = {
 type Facts = RoomFacts & { subject?: string | null };
 
 export type TokenName =
-  | "home" | "coming" | "everyone-but" | "on-trip" | "payer" | "leader"
+  | "all" | "home" | "coming" | "everyone-but" | "on-trip" | "payer" | "leader"
   | "places" | "date" | "last" | "zones" | "call-times" | "headcount" | "chores";
 
 export const TOKENS: Record<TokenName, string> = {
+  all: "everyone in the room, away or not (a challenge for all of us)",
   home: "people not marked away",
   coming: "who said yes on the RSVP (optional arg: its title)",
   "everyone-but": "people minus the names given",
@@ -203,7 +204,7 @@ function expand(name: string, rawArgs: string | undefined, f: Facts, notes: Reso
   return v;
 }
 
-const PEOPLE_TOKENS = new Set(["home", "coming", "everyone-but", "on-trip"]);
+const PEOPLE_TOKENS = new Set(["all", "home", "coming", "everyone-but", "on-trip"]);
 
 function expandRaw(name: string, rawArgs: string | undefined, f: Facts, notes: ResolveNote[]): Value | null {
   const a = args(rawArgs).map((x) => {
@@ -214,6 +215,8 @@ function expandRaw(name: string, rawArgs: string | undefined, f: Facts, notes: R
   const flat = a.flat();
   const awayNames = f.away.map((x) => x.name);
   switch (name.toLowerCase() as TokenName) {
+    case "all":
+      return f.people;
     case "home":
       return without(f.people, awayNames);
     case "coming": {
@@ -307,7 +310,7 @@ function expandString(s: string, f: Facts, notes: ResolveNote[]): Value {
 }
 
 /** Settings that are lists in the deck; a list token there splices in. */
-const LIST_KEYS = new Set(["options", "items", "days", "jokes", "for", "among"]);
+const LIST_KEYS = new Set(["options", "items", "days", "jokes", "for", "among", "who"]);
 
 function expandValue(v: unknown, f: Facts, notes: ResolveNote[]): unknown {
   if (typeof v === "string") return expandString(v, f, notes);
@@ -339,6 +342,8 @@ const asPeople = (v: unknown, f: RoomFacts, key: string, notes: ResolveNote[]): 
   for (const n of list) {
     const m = member(f, n);
     if (m) kept.push(m);
+    // "me": whoever is speaking; code fills it in (the facts don't know who that is)
+    else if (/^(me|i|myself)$/i.test(n.trim())) kept.push("@me");
     else notes.push({ token: `${key}: ${n}`, kind: "unlisted-name", detail: `${n} is not in the room, left out` });
   }
   return kept;
@@ -382,11 +387,24 @@ export function resolveCard(raw: RawCard, room: RoomFacts, said: string): Resolv
   const notes: ResolveNote[] = [];
   const subject = giftSubject(said, room);
   const f: Facts = { ...room, subject };
-  const { for: forRaw, among: amongRaw, ...rest } = raw.settings ?? {};
+  const { for: forRaw, among: amongRaw, who: whoRaw, ...rest } = raw.settings ?? {};
   const settings = expandValue(rest, f, notes) as Record<string, unknown>;
   const out: Resolved = { card: raw.card, settings, notes };
 
   if (amongRaw !== undefined) out.people = asPeople(expandValue(amongRaw, f, notes), f, "among", notes);
+  // A recipe's `who` (the challenge): its people come from the room, never the model's spelling.
+  if (raw.card === "challenge") {
+    const who = whoRaw !== undefined ? asPeople(expandValue(whoRaw, f, notes), f, "who", notes) : [];
+    out.people = who.length ? who : f.people;
+    if (!who.length) notes.push({ token: "who", kind: "fallback", detail: `everyone in the room: ${f.people.join(", ")}` });
+    // Rule: "the four of us" is everyone when the room has four, away or not.
+    const n = COUNT_OF_US.exec(said)?.[1]?.toLowerCase();
+    const count = n ? (NUMBER_WORDS.indexOf(n) >= 0 ? NUMBER_WORDS.indexOf(n) : Number(n)) : 0;
+    if (count && count === f.people.length && out.people.length !== count) {
+      notes.push({ token: "who", kind: "rule", detail: `"the ${n} of us" = all ${count}: ${f.people.join(", ")}` });
+      out.people = f.people;
+    }
+  }
   let pool = forRaw !== undefined ? asPeople(expandValue(forRaw, f, notes), f, "for", notes) : undefined;
   if (typeof settings.paidBy === "string") {
     if (!settings.paidBy) delete settings.paidBy;
@@ -457,6 +475,9 @@ export function resolveCard(raw: RawCard, room: RoomFacts, said: string): Resolv
   }
   return out;
 }
+
+const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const COUNT_OF_US = /\b(?:the|all)\s+(two|three|four|five|six|seven|eight|nine|ten|\d+)\s+of\s+us\b/i;
 
 /** Every card of one answer. */
 export function resolveDeal(cards: RawCard[], f: RoomFacts, said: string): Resolved[] {

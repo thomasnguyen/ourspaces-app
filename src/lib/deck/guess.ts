@@ -31,6 +31,9 @@ const CUES: Array<[CardId, RegExp]> = [
   ["clocks", /\b(time ?zones?|clocks?)\b/],
   ["photos", /\b(photos?|pictures|pics|photo roll|album)\b/],
   ["radio", /\b(radio|music|station|songs?)\b/],
+  // a challenge is the recipe; its lead card (the check-in) is the skeleton while you talk
+  ["checkin", /\b(challenge|check-?ins?|streaks?)\b/],
+  ["standings", /\b(standings|leaderboard|rankings?|who'?s winning)\b/],
 ];
 
 /** The card the words point at, or null when nothing does yet. */

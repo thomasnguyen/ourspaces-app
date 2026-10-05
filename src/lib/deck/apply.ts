@@ -1,6 +1,7 @@
 import type { Widget } from "../../data/types";
 import { cardSize, getCard, CARD_IDS, type CardContext, type DealtCard } from "./catalog";
 import { checkSettings, type Schema } from "./schema";
+import { checkRecipe, isRecipe } from "./recipes";
 
 const POLL_ROW = 42; // one poll option row, in canvas px
 
@@ -16,6 +17,11 @@ export function checkCard(raw: unknown): CardCheck {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { ok: false, reason: "not an object" };
   const { card: id, settings, ...flat } = raw as Record<string, unknown>;
   if (typeof id !== "string") return { ok: false, reason: "no card id" };
+  if (isRecipe(id.trim().toLowerCase())) {
+    const r = checkRecipe(id.trim().toLowerCase(), settings ?? flat);
+    if (!r.ok) return { ok: false, reason: `${id}: ${r.reason}` };
+    return { ok: true, card: { card: id.trim().toLowerCase() as "challenge", settings: r.value as Record<string, unknown> }, notes: r.notes };
+  }
   const def = getCard(id.trim().toLowerCase());
   if (!def) return { ok: false, reason: `unknown card ${id} (deck: ${CARD_IDS.join(", ")})` };
   const r = checkSettings(def.settings as Schema, settings ?? flat);
@@ -39,6 +45,8 @@ export function applyCard(
 ): Applied {
   const checked = checkCard(card);
   if (!checked.ok) return checked;
+  // A recipe is several cards: `expandRecipe` makes them, each applied on its own.
+  if (isRecipe(checked.card.card)) return { ok: false, reason: `${checked.card.card} is a recipe: expand it` };
   const def = getCard(checked.card.card)!;
   const size = cardSize(def);
   // `build` is typed per card; the union lookup loses the pairing, the check above restores it.

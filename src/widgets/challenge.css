@@ -695,6 +695,24 @@
   font-size: 16px;
 }
 
+/* a card waiting on another (a recipe's link): one black sticker over it */
+.card-waiting {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  translate: -50% -50%;
+  rotate: -3deg;
+  padding: 7px 14px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--color-lime);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* the face and, while it flips, the slip it was, in one cell */
 .st-slot {
   display: grid;

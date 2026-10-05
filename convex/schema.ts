@@ -130,6 +130,11 @@ export default defineSchema({
 
   // A voice ask's receipt numbers, JSON (voiceBuild.ts).
   deals: defineTable({ spaceId: v.id("spaces"), run: v.string() }).index("by_space", ["spaceId"]),
+  // A card that waits on another and fills itself from it (links.ts). when: always|closed|winner|time|threshold.
+  links: defineTable({
+    spaceId: v.id("spaces"), from: v.id("widgets"), to: v.id("widgets"), when: v.string(), fill: v.string(), value: v.string(),
+    at: v.optional(v.number()), resolvedAt: v.optional(v.number()),
+  }).index("by_from", ["from"]).index("by_space", ["spaceId"]),
   // Room brief for voice asks (roomBrief.ts); facts = evidence JSON.
   briefs: defineTable({ spaceId: v.id("spaces"), text: v.string(), facts: v.string(), at: v.number() }).index("by_space", ["spaceId"]),
 

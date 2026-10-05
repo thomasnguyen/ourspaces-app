@@ -515,13 +515,16 @@ export default function App() {
   const voiceCtx = () => {
     const today = new Date();
     const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const people = [voiceMaker.name, ...getSpace(spaceId).members.map((m) => m.name)];
-    return { by: voiceMaker.name, people: [...new Set(people)], today: iso };
+    const members = getSpace(spaceId).members;
+    const people = [voiceMaker.name, ...members.map((m) => m.name)];
+    return { by: voiceMaker.name, people: [...new Set(people)], today: iso, colors: Object.fromEntries(members.map((m) => [m.name, m.color])) };
   };
   // The room's facts, read off the mock board: the real route/resolve path runs on them.
   const voiceFacts = () => {
     const ctx = voiceCtx();
-    return mockFacts({ room: getSpace(spaceId).name, widgets: visibleWidgetsRef.current, people: ctx.people, today: ctx.today });
+    // the room's people are its cast, as the live brief has them (a visitor isn't "the four of us")
+    const cast = getSpace(spaceId).members.map((m) => m.name);
+    return mockFacts({ room: getSpace(spaceId).name, widgets: visibleWidgetsRef.current, people: cast.length ? cast : ctx.people, today: ctx.today });
   };
   // What the room can offer for a card named with nothing in it (the voice stage asks).
   setVoiceStageOffers((card) => offersFor(voiceFacts(), card));
@@ -542,7 +545,9 @@ export default function App() {
     board: () => boardItems([...getSpace(spaceId).widgets, ...(addedWidgets[spaceId] ?? [])]),
     commit: async ({ cards }) => {
       await new Promise((r) => setTimeout(r, beat("commit")));
-      const dealt = cards.map((c, i) => ({ ...c.widget, id: `voice-standin-${Date.now().toString(36)}-${i}` }));
+      const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+      // a recipe's link, applied here as convex/links.ts does live (only "always" + "id" in mock)
+      const dealt = cards.map((c, i) => ({ ...c.widget, id: `voice-standin-${stamp}-${i}`, ...(c.link?.value === "id" ? { data: { ...c.widget.data, [c.link.fill]: c.link.from } } : {}) }));
       setAddedWidgets((current) => ({ ...current, [spaceId]: [...(current[spaceId] ?? []), ...dealt] }));
       return dealt.map((w) => w.id);
     },

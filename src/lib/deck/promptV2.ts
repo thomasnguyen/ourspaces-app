@@ -13,16 +13,19 @@
 import { catalogJson, parseDeal } from "./prompt";
 import { checkCard } from "./apply";
 import { CATALOG, type DealtCard } from "./catalog";
+import { RECIPES } from "./recipes";
 import { callTimes, choresOf, resolveCard, type Resolved, type RoomFacts } from "./resolve";
 
 const EXTRA: Record<string, Record<string, string>> = {
   checklist: { for: "people token?" },
   split: { among: "people token?" },
+  challenge: { who: "people token?" },
 };
 
 const TOKEN_RULES = `ROOM FACTS
 The user turn lists this room's facts as @token = value. To use a fact, write the token itself in a setting, never its value: code fills it in, so it is always current.
-- A people token (@home, @coming, @everyone-but(Name), @on-trip(title)) can be a wheel's or poll's options item, a checklist's "for", a split's "among".
+- A people token (@all, @home, @coming, @everyone-but(Name), @on-trip(title)) can be a wheel's or poll's options item, a checklist's "for", a split's "among", a challenge's "who".
+- A challenge between people is the challenge recipe, one line: fill activity, unit, days and stake only when said, and who. Never deal its cards one by one.
 - Picking one person (who's driving, who cooks, whose turn) is a wheel of those people. A poll is for choosing between options.
 - A checklist's "for" hands out every item; leave it out for a sign-up where people claim their own (who's bringing what, packing).
 - A token can sit inside text: "matcha cake" can be "@leader(cake flavor?) cake".
@@ -36,6 +39,7 @@ The user turn lists this room's facts as @token = value. To use a fact, write th
    none of the eval rooms. The note is the control: room facts don't touch it. */
 const EXAMPLE_ROOM = `Room: the group chat · today Sun 2026-10-04 · people: Thomas, Holly, Priya, Dev
 @home = Thomas, Holly, Priya (away: Dev)
+@all = Thomas, Holly, Priya, Dev
 @chores = dishes, bins
 @coming(game night) = Thomas, Holly, Priya
 @leader(dessert?) = tiramisu (2 of 3 votes)
@@ -64,6 +68,8 @@ Said: "bake the winning dessert, done 2 days before the graduation"
 {"card":"checklist","settings":{"title":"@leader(dessert?) by @date(holly's graduation, -2d)","items":["buy what it needs","bake it","bring it"]}}
 Said: "countdown to Holly's graduation"
 {"card":"countdown","settings":{"event":"holly's graduation","date":"@date(holly's graduation)"}}
+Said: "plank challenge for all of us this week, loser makes dinner"
+{"card":"challenge","settings":{"activity":"planks","unit":"seconds","days":7,"stake":"loser makes dinner","who":"@all"}}
 Said: "note: the door code is 4417"
 {"card":"note","settings":{"text":"door code is 4417","label":"door"}}`;
 
@@ -96,7 +102,7 @@ const overlaps = (said: Set<string>, title: string) => [...wordsOf(title)].some(
 
 /** Which fact groups the words point at. Cheap and loose on purpose: a missed group only costs a fact. */
 const WANTS = {
-  people: /\b(who|who's|whose|driv\w*|chores?|jobs?|tasks?|assign|surprise|split|spin|turns?|bring\w*|host\w*|help|everyone)\b/i,
+  people: /\b(who|who's|whose|driv\w*|chores?|jobs?|tasks?|assign|surprise|split|spin|turns?|bring\w*|host\w*|help|everyone|challenge)\b|\bof us\b/i,
   // A bare number is money only from three digits ("640"), so "November 14" or "at 7" isn't.
   money: /\b(split|pay|paid|cost|owe|bill|rent|cabin|airbnb|tickets?|dollars|bucks)\b|\$|\b\d{3,}\b/i,
   place: /\b(eat|dinner|lunch|brunch|breakfast|restaurants?|where|spot|places?|bar|coffee)\b/i,
@@ -116,6 +122,8 @@ export function tokenMenu(f: RoomFacts, said?: string): string {
   const about = (title: string) => !said || overlaps(sw!, title);
   const lines: string[] = [`Room: ${f.room} · today ${dow(f.today)} ${f.today} · people: ${f.people.join(", ")}`];
   const awayNote = f.away.length ? ` (away: ${f.away.map((a) => a.name).join(", ")})` : "";
+  // Everyone, away or not: only when the words ask for the whole group (a challenge, "the four of us").
+  if (said === undefined || ALL_OF_US.test(said)) lines.push(`@all = ${f.people.join(", ")}`);
   if (want("people")) lines.push(`@home = ${f.people.filter((p) => !f.away.some((a) => a.name === p)).join(", ")}${awayNote}`);
   for (const r of f.rsvps.slice(0, 2)) {
     if (!want("people", r.title)) continue;
@@ -172,7 +180,9 @@ export const cardLine = (card: string) => `Deal one ${card} card.`;
 /* ---------- Route by need: the brain only when the words point at a room fact ---------- */
 
 /** Words that ask for the room's people. "everyone" alone ("remind everyone…") doesn't. */
-const ASKS_WHO = /\b(who|who's|whose|driv\w*|chores?|jobs?|tasks?|assign\w*|surprise|split|spin|turns?|bring\w*|host\w*)\b/i;
+const ASKS_WHO = /\b(who|who's|whose|driv\w*|chores?|jobs?|tasks?|assign\w*|surprise|split|spin|turns?|bring\w*|host\w*|challenge)\b|\bof us\b/i;
+/** Words that ask for the whole group, away or not. */
+const ALL_OF_US = /\b(challenge|all of us|(two|three|four|five|six|seven|eight|\d+) of us|whole (family|house|group|crew))\b/i;
 
 export type AskRoute = {
   route: "fast" | "brain";
@@ -199,7 +209,7 @@ export function routeAsk(f: RoomFacts | null, said: string): AskRoute {
   // Told facts ride along with a brain ask; alone they don't make one.
   const told = lines.filter((l) => l.startsWith(TOLD_LEAD));
   let facts = lines.filter((l) => !l.startsWith(TOLD_LEAD));
-  if (!ASKS_WHO.test(said)) facts = facts.filter((l) => !/^@(home|coming)\b/.test(l));
+  if (!ASKS_WHO.test(said)) facts = facts.filter((l) => !/^@(home|coming|all)\b/.test(l));
   return facts.length
     ? { route: "brain", why: `the words point at ${facts.map(factName).join(", ")}`, menu, facts: [...facts, ...told] }
     : { route: "fast", why: "no room fact in the words", menu, facts };
@@ -245,7 +255,7 @@ export function scrubTokens<T>(v: T): T {
 /* ---------- The decide pass: one letter from the big model, while you talk ---------- */
 
 /** Deck cards A…Q, then none and several. "several" is the one-vs-several question (the separate count question was dropped: nebius/eval/decide). */
-export const DECIDE_CHOICES: string[] = [...CATALOG.map((c) => c.id), "none", "several"];
+export const DECIDE_CHOICES: string[] = [...CATALOG.map((c) => c.id), ...RECIPES.map((r) => r.id), "none", "several"];
 export const DECIDE_LETTERS = DECIDE_CHOICES.map((_, i) => String.fromCharCode(65 + i));
 
 const DECIDE_SYSTEM =
@@ -269,7 +279,7 @@ export function decideMessages(r: { context: string; board: string[]; said: stri
           ? "none: no card fits, or it isn't a request for a card"
           : id === "several"
             ? "several: it asks for two or more different cards (a plan with parts)"
-            : `${id}: ${CATALOG.find((c) => c.id === id)!.use}`;
+            : `${id}: ${(CATALOG.find((c) => c.id === id) ?? RECIPES.find((r) => r.id === id))!.use}`;
       return `${DECIDE_LETTERS[i]} ${what}`;
     }).join("\n");
   const board = r.board.length ? `\nOn the board: ${r.board.join(" · ")}` : "";

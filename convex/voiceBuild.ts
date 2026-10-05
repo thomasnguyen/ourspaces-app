@@ -7,6 +7,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { chooseLetter, pingTokenFactory, streamChat } from "./nebius";
 import { touchSpace } from "./activity";
+import { addLink } from "./links";
 import { widgetsCounter } from "./stats";
 import {
   applyCard,
@@ -272,13 +273,19 @@ export const commit = mutation({
         people: v.optional(v.array(v.string())),
         /** Room tokens: one person per checklist item (`for`). */
         assignees: v.optional(v.array(v.string())),
+        /** A recipe's link (convex/links.ts): this card waits on `from`, written earlier in the same ask, and fills `fill` from it. */
+        link: v.optional(v.object({ from: v.string(), when: v.string(), fill: v.string(), value: v.string() })),
+        /** A recipe part's own size and tilt inside its group (code's layout, src/lib/deck/recipes.ts). */
+        w: v.optional(v.number()),
+        h: v.optional(v.number()),
+        rotate: v.optional(v.number()),
       }),
     ),
   },
   returns: v.array(v.id("widgets")),
   handler: async (ctx, args) => {
     const people = args.people.slice(0, 12);
-    const cardCtx = { by: args.by, people: people.length ? people : [args.by], today: args.today };
+    const cardCtx = { by: args.by, people: people.length ? people : [args.by], today: args.today, colors: await colorsFor(ctx, args.spaceId, args.cards) };
     const ids: Id<"widgets">[] = [];
     const now = Date.now();
     for (const c of args.cards.slice(0, 8)) {
@@ -288,27 +295,33 @@ export const commit = mutation({
       } catch {
         continue;
       }
-      const applied = applyCard(raw, c.people?.length ? { ...cardCtx, people: c.people.slice(0, 12) } : cardCtx, {
+      // A standings card alone ranks the newest check-in; in a recipe, its link fills `source` below.
+      const source = /"standings"/.test(c.card) && !c.link ? await checkInFor(ctx, args.spaceId) : undefined;
+      const applied = applyCard(raw, { ...(c.people?.length ? { ...cardCtx, people: c.people.slice(0, 12) } : cardCtx), ...(source ? { source } : {}) }, {
         z: c.z,
         assignees: c.assignees?.slice(0, 8),
       });
       if (!applied.ok) continue;
       const w = applied.widget;
+      const rotate = c.rotate ?? w.rotate;
       // What widgets.createWidget does, without a nested mutation in the hot path.
       const id = await ctx.db.insert("widgets", {
         spaceId: args.spaceId,
         type: w.type,
         x: Math.round(c.x),
         y: Math.round(c.y),
-        w: w.w,
-        h: w.h,
+        w: Math.round(Math.min(1600, Math.max(80, c.w ?? w.w))),
+        h: Math.round(Math.min(1200, Math.max(60, c.h ?? w.h))),
         z: w.z,
-        ...(w.rotate !== undefined ? { rotate: w.rotate } : {}),
+        ...(rotate !== undefined ? { rotate: Math.max(-6, Math.min(6, rotate)) } : {}),
         data: w.data as never,
         createdBy: args.createdBy,
         createdAt: now,
       });
       ids.push(id);
+      const from = c.link ? ctx.db.normalizeId("widgets", c.link.from) : null;
+      const fromRow = from ? await ctx.db.get(from) : null;
+      if (c.link && fromRow && fromRow.spaceId === args.spaceId) await addLink(ctx, args.spaceId, fromRow._id, id, { when: c.link.when, fill: c.link.fill, value: c.link.value });
     }
     // The rest goes in its own transaction right after: the counter, the
     // room's activity stamp (every query reading the space doc would re-run
@@ -325,6 +338,21 @@ export const commit = mutation({
     return ids;
   },
 });
+
+/** Each person's colour by name, the seeded cast first (only when a check-in is written). */
+async function colorsFor(ctx: MutationCtx, spaceId: Id<"spaces">, cards: { card: string }[]): Promise<Record<string, string> | undefined> {
+  if (!cards.some((c) => /"checkin"/.test(c.card))) return undefined;
+  const rows = await ctx.db.query("members").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).take(300);
+  const out: Record<string, string> = {};
+  for (const m of [...rows].sort((a, b) => Number(b.userId.startsWith("seed:")) - Number(a.userId.startsWith("seed:")))) out[m.name] ??= m.color;
+  return out;
+}
+
+/** The check-in a standings card dealt on its own ranks: the newest on the board. */
+async function checkInFor(ctx: MutationCtx, spaceId: Id<"spaces">): Promise<string | undefined> {
+  const all = await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(300);
+  return all.find((w) => w.type === "checkIn")?._id;
+}
 
 export const noteCommitted = internalMutation({
   args: {

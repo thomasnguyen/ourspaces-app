@@ -24,7 +24,7 @@ import { MemberFace } from "./MemberFace";
 import { WIDGET_CATALOG } from "../data/templates";
 import { widgetLabel } from "../lib/widgetLabels";
 import { widgetSupportsThread } from "../lib/widgetThreads";
-import { CheckInWidget, StandingsWidget } from "../widgets/challenge";
+import { CheckInWidget, StandingsWidget, WaitingOn } from "../widgets/challenge";
 import {
   HotLinksWidget,
   LinkPileWidget,
@@ -1141,6 +1141,7 @@ function WidgetCardComponent({
         aria-pressed={managed}
       >
         {content}
+        <WaitingOn widgetId={widget.id} />
       </div>
       {/* role="group" so the aria-label below is actually exposed — a bare div
           is role=generic and AT drops its name. Not role="toolbar": the drag

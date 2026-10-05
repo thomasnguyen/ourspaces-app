@@ -147,6 +147,35 @@ export const FILL_PLANS: FillPlan[] = [
     ],
   },
   {
+    // the title from your words, then what's counted, then each person's row (from the room), then the length
+    card: "checkin",
+    ask: "a check-in for what?",
+    steps: [
+      field("title", "title", "title", 0, "words"),
+      field("unit", "unit", "unit", 1, "answer"),
+      {
+        ...list("person", "person", "people", "name", 2, "room", { color: "#d8d2c4" }),
+        // a row with no name yet stays out: the card draws its people, not blanks
+        write: (d, shown) => ({ ...d, people: rows(d.people).filter((_, i) => shown[i] != null) }),
+      },
+      {
+        id: "days",
+        label: "days",
+        wave: 3,
+        from: "answer",
+        tick: true,
+        read: (d, complete) => [complete && typeof d.days === "number" ? d.days : null],
+        write: (d, [v]) => ({ ...d, days: typeof v === "number" ? Math.max(1, Math.round(v)) : d.days }),
+      },
+    ],
+  },
+  {
+    // the title, then the stake; the rows are its check-in's (face down until you log)
+    card: "standings",
+    ask: "standings for which check-in?",
+    steps: [field("title", "title", "title", 0, "words"), field("stake", "stake", "stake", 1, "answer")],
+  },
+  {
     // anything else: its title, then everything under it at once
     card: "*",
     ask: "what's it about?",

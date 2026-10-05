@@ -1,7 +1,7 @@
 ---
 route: #/space/family
 ready: standings
-testids: standings standings-row standings-lock standings-log standings-gap standings-beat
+testids: standings standings-row standings-lock standings-log standings-gap standings-beat standings-waiting card-waiting
 states:
   locked: ?mock=1 | wait standings-lock | sleep 600
   open: ?mock=1&challenge=logged | wait standings-gap | sleep 600
@@ -41,9 +41,11 @@ so it can't disagree with the check-in. No model writes the lines. Locked
 = not after the reveal, and (you aren't in `people`, or you have nothing
 today). Someone outside the challenge sees "only the people in it can look".
 
-**For the voice deck (next task):** the model gives `{ title, stake? }`;
-code sets `source` to the check-in dealt in the same answer (the
-"challenge" recipe), or `existingFor` a check-in already on the board.
+**Voice deck:** `standings` in `src/lib/deck/catalog.ts`; the model gives
+`{ title, stake? }`. In the challenge recipe a link fills `source` with the
+check-in's id (`convex/links.ts`); dealt alone, the commit points it at the
+newest check-in on the board. Without a source it reads "waiting on a
+check-in" (`standings-waiting`).
 
 **Drive:** `drive sheet standings:locked standings:open standings:final --w 1440,390`
 · `drive take standings:unlock` (log → the flip) · `standings:beat`.

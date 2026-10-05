@@ -2,6 +2,7 @@ import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { touchSpace } from "./activity";
+import { applyLinks } from "./links";
 import type { CheckInWidgetData } from "./widgetData";
 
 /**
@@ -42,6 +43,7 @@ export const log = mutation({
     const row = Array.from({ length: data.days }, (_, i) => data.logs[person.name]?.[i] ?? null);
     row[day] = v;
     await ctx.db.patch(widgetId, { data: { ...data, logs: { ...data.logs, [person.name]: row } } });
+    await applyLinks(ctx, widgetId);
     await touchSpace(ctx, spaceId);
     return { name: person.name, day, value: v };
   },

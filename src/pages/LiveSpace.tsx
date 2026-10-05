@@ -1549,6 +1549,9 @@ export function LiveSpacePage({
      so the facts above change with it and the next ask is routed by them. */
   const roomKnows = useQuery(api.roomBrief.knows, mode === "live" && space ? { spaceId: space._id } : "skip");
   const correctKnows = useMutation(api.roomBrief.correct);
+  /* Cards waiting on another (a recipe's open links, convex/links.ts). */
+  const openLinks = useQuery(api.links.waiting, mode === "live" && space ? { spaceId: space._id } : "skip");
+  const waitingOn = useMemo(() => Object.fromEntries((openLinks ?? []).map((l) => [String(l.to), String(l.from)])), [openLinks]);
   const voicePeople = () =>
     [...new Set([identity.name, ...presence.peers.map((peer) => peer.name), ...members.map((m) => m.name)])].slice(0, 8);
   const voiceToday = () => {
@@ -1562,7 +1565,13 @@ export function LiveSpacePage({
   setVoiceStageBoard((id) => adaptedWidgets.find((widget) => widget.id === id));
   const voiceBuild = useVoiceBuild({
     scrollerRef: viewportRef,
-    cardContext: () => ({ by: identity.name, people: voicePeople(), today: voiceToday() }),
+    cardContext: () => ({
+      by: identity.name,
+      people: voicePeople(),
+      today: voiceToday(),
+      // the cast's own colours (a check-in paints its rows with them)
+      colors: Object.fromEntries((roomKnows?.people ?? []).filter((p) => p.color).map((p) => [p.name, p.color])),
+    }),
     selectedId: voiceSelectedId,
     warm: () => void warmDeal({}).catch(() => {}),
     facts: () => roomBrief?.room ?? null,
@@ -1645,6 +1654,8 @@ export function LiveSpacePage({
           z: c.widget.z,
           ...(c.people ? { people: c.people } : {}),
           ...(c.assignees ? { assignees: c.assignees } : {}),
+          ...(c.link ? { link: c.link } : {}),
+          ...(c.part ? { w: c.widget.w, h: c.widget.h, ...(c.widget.rotate !== undefined ? { rotate: c.widget.rotate } : {}) } : {}),
         })),
       });
       return ids.map(String);
@@ -2767,6 +2778,7 @@ export function LiveSpacePage({
                 onPollVote={handlers.onVote}
                 onWheelSpin={handlers.onWheelSpin}
                 onCheckIn={handlers.onCheckIn}
+                waiting={waitingOn}
                 onPlaylistTune={handlers.onPlaylistTune}
                 onLetterOpen={handlers.onLetterOpen}
                 buildRoomFeed={buildRoomFeed}

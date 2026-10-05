@@ -49,11 +49,12 @@ screen, reactive everywhere else. Validators: `checkInData` /
 `standingsData` in `convex/widgetData.ts`. With neither handler the card is
 read-only (no ＋).
 
-**For the voice deck (next task):** a catalog entry needs only
-`{ title, kind, unit, days, revealAt?, goal? }` from the model; code fills
-`start` = today, `people` = `@everyone` (or `@coming`), `logs` = `{}`. The
-"challenge" recipe = rsvp + this + [standings](standings.md) with
-`source` = this card's id + a countdown to `revealAt`.
+**Voice deck:** `checkin` in `src/lib/deck/catalog.ts`; the model gives
+`{ title, unit?, kind, days?, goal? }`, code fills `start` = today,
+`revealAt` = the morning after the last day at 9:00, `people` = the ask's
+people with the room's colours, `logs` = `{}`. The skeleton shows while you
+talk on "challenge", "check-in", "streak"; fill plan: title → unit → each
+person's row → days. The challenge recipe: see [voice-build](voice-build.md).
 
 **Drive:** `drive sheet check-in:open check-in:logging check-in:logged --w 1440,390`.
 Whose seat: live = your name if it is in `people`; mock = `?as=<name>`,

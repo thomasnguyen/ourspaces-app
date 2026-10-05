@@ -31,6 +31,7 @@ import {
 } from "../lib/voiceStage";
 import { beat, timingCounts, VOICE_TIMINGS, voiceSlow } from "../lib/voiceTimings";
 import { VoiceOrb } from "./VoiceOrb";
+import { BoardLinkContext } from "../widgets/challenge";
 import { WidgetCard } from "./WidgetCard";
 import "./voice-stage.css";
 
@@ -362,6 +363,28 @@ function stageScale(w: number, h: number) {
   return Math.max(0.7, Math.round(scale * 100) / 100);
 }
 
+/** A recipe's group on the stage: the frame and each card in it at its own
+    spot, each one arriving as it is written (the same order every screen
+    gets them in). Fits the right half. */
+function StageCluster({ cluster }: { cluster: NonNullable<StageBuild["cluster"]> }) {
+  const { box, cards } = cluster;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const scale = vw <= 640 ? Math.min((vw - 40) / box.w, (vh * 0.34) / box.h) : Math.min((vw * 0.42) / box.w, (vh * 0.6) / box.h);
+  const link = useMemo(() => ({ widgets: cards }), [cards]);
+  return (
+    <BoardLinkContext.Provider value={link}>
+    <div className="voice-two-card-body voice-two-cluster" data-testid="voice-stage-cluster" data-cards={cards.length} style={{ zoom: scale, width: box.w, height: box.h }}>
+      {cards.map((w, i) => (
+        <div key={w.id} className="voice-two-cluster-card" data-type={w.type} style={{ "--i": i } as CSSProperties}>
+          <WidgetCard widget={{ ...w, x: w.x - box.x, y: w.y - box.y, z: w.type === "frame" ? 0 : 2 + i }} spaceId={spaceInHash()} canvasScale={scale} />
+        </div>
+      ))}
+    </div>
+    </BoardLinkContext.Provider>
+  );
+}
+
 /** The card on the right half: the build's real widget, larger than on the
     board, in a dashed ring of the maker's colour until it is whole. */
 function StageCard({
@@ -441,9 +464,13 @@ function StageCard({
         <svg className="voice-two-ring" aria-hidden="true">
           <rect x="1.5" y="1.5" rx="28" />
         </svg>
-        <div className="voice-two-card-body" ref={body} style={{ zoom: scale }}>
-          <WidgetCard widget={{ ...widget, x: 0, y: 0, z: 1, rotate: 0 }} spaceId={spaceInHash()} canvasScale={scale} />
-        </div>
+        {build.cluster ? (
+          <StageCluster cluster={build.cluster} />
+        ) : (
+          <div className="voice-two-card-body" ref={body} style={{ zoom: scale }}>
+            <WidgetCard widget={{ ...widget, x: 0, y: 0, z: 1, rotate: 0 }} spaceId={spaceInHash()} canvasScale={scale} />
+          </div>
+        )}
       </div>
       {asking && !found && offers.length > 0 && (
         <div className="voice-two-offers" data-testid="voice-stage-offers" onClick={(event) => event.stopPropagation()}>
@@ -566,8 +593,10 @@ function flyCard(card: HTMLElement, placed: () => StageBuild["placed"], draftId:
   const find = () => {
     const p = placed();
     if (!p) return null;
-    const draft = p.host.querySelector<HTMLElement>(`[data-widget-id="${draftId}"]`);
-    const synced = p.host.querySelector<HTMLElement>(`[data-widget-id="${p.widgetId}"]`);
+    // a recipe lands on its frame (frames carry data-frame-id)
+    const at = (id: string) => p.host.querySelector<HTMLElement>(`[data-widget-id="${id}"], [data-frame-id="${id}"]`);
+    const draft = at(draftId);
+    const synced = at(p.widgetId);
     for (const el of [draft, synced]) {
       if (!el || hidden.has(el)) continue;
       el.style.visibility = "hidden";

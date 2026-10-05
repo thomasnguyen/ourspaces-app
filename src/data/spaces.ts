@@ -1,6 +1,9 @@
 import type { Space, SpaceMeta, Widget } from "./types";
 import { BUILD_ROOM_CANVAS, withBuildRoomLayout } from "../lib/buildRoomPresentation";
-import { FAMILY_MEMBERS, FAMILY_WIDGETS } from "./family";
+import { FAMILY_CHALLENGE_IDS, FAMILY_MEMBERS, FAMILY_WIDGETS } from "./family";
+
+/** `?family=hero` (mock): the family board with its challenge corner cleared, for the hero ask to build into. */
+const familyHero = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("family") === "hero";
 
 export type { Widget, Space, SpaceMeta, WidgetType } from "./types";
 
@@ -1355,7 +1358,7 @@ export const SPACES_BY_ID: Record<string, Space> = {
   family: {
     ...meta("family"),
     members: FAMILY_MEMBERS,
-    widgets: FAMILY_WIDGETS,
+    widgets: familyHero ? FAMILY_WIDGETS.filter((w) => !FAMILY_CHALLENGE_IDS.includes(w.id)) : FAMILY_WIDGETS,
   },
   house: {
     ...meta("house"),

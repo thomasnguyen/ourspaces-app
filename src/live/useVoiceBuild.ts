@@ -29,6 +29,7 @@ import {
   type Rect,
 } from "../lib/deck";
 import type { Schema } from "../lib/deck/schema";
+import { expandRecipe, isRecipe, recipeLead, type RecipePart } from "../lib/deck/recipes";
 import type { VoiceEnd, VoiceHooks } from "../lib/voice";
 
 /**
@@ -215,7 +216,7 @@ export type AskTrace = {
   ok: boolean | null;
 };
 
-const STAGES = ["pause", "decided", "found", "skeleton", "tentative", "card-full", "first-field", "card-local", "committed", "card-on-screen"] as const;
+const STAGES = ["pause", "decided", "found", "skeleton", "tentative", "card-full", "first-field", "card-local", "committed", "card-on-screen", "cluster-local", "cluster-on-screen"] as const;
 export type StageName = (typeof STAGES)[number];
 
 /** The ring in the maker's colour around the card being built (or, before
@@ -381,7 +382,16 @@ type Spec = {
 };
 
 /** A card kept for the board: the checked card, its widget, and (room tokens) who it's among / for. */
-export type Kept = { card: DealtCard; widget: Widget; people?: string[]; assignees?: string[] };
+export type Kept = {
+  card: DealtCard;
+  widget: Widget;
+  people?: string[];
+  assignees?: string[];
+  /** A recipe's part: its spot in the group, which write it goes in, its link. */
+  part?: RecipePart;
+  /** A recipe link, its source already written: the server links this card to it (convex/links.ts). */
+  link?: { from: string; when: string; fill: string; value: string };
+};
 
 type Dec = {
   seq: number;
@@ -621,6 +631,12 @@ export function useVoiceBuild({
   );
 
   const ctxNow = useCallback(() => room.current.cardContext(), []);
+  /** A check-in's skeleton draws the room's people (the brief's cast), not whoever is on the page. */
+  const skelCtx = useCallback((card: CardId) => {
+    const c = room.current.cardContext();
+    const people = card === "checkin" ? room.current.facts?.()?.people : undefined;
+    return people?.length ? { ...c, people } : c;
+  }, []);
 
   /** The words' guess, as a skeleton (only while no model answer is filling it). */
   const showGuess = useCallback(
@@ -639,10 +655,10 @@ export function useVoiceBuild({
         if (dec) s.trace.decideMoves++;
       }
       s.shown = card;
-      const { widget } = skeletonWidget(card, { id: `${DRAFT}${s.key}-0`, ctx: ctxNow(), said: s.text });
+      const { widget } = skeletonWidget(card, { id: `${DRAFT}${s.key}-0`, ctx: skelCtx(card), said: s.text });
       show(s, [widget]);
     },
-    [ctxNow, show],
+    [show, skelCtx],
   );
 
   /** Note what a fill changed (fields that already had a model value count as flicker). */
@@ -673,12 +689,14 @@ export function useVoiceBuild({
       if (first?.ok) {
         // After the end, the final card is drawn by `ask` (placed, then committed).
         if (s.ended) return;
-        card = first.card.card;
-        settings = first.card.settings as Record<string, unknown>;
-        whole = true;
+        const lead = isRecipe(first.card.card) ? recipeLead(first.card.card, first.card.settings as Record<string, unknown>) : null;
+        card = (lead?.card ?? first.card.card) as CardId;
+        settings = lead?.settings ?? (first.card.settings as Record<string, unknown>);
+        whole = !lead;
       } else {
         const p = parsePartialCard(sp.streamed);
-        if (!p || !getCard(p.card)) return;
+        if (!p || !(getCard(p.card) || isRecipe(p.card))) return;
+        if (isRecipe(p.card)) Object.assign(p, recipeLead(p.card, p.settings));
         card = p.card as CardId;
         // Only closed fields show: the last key may be a list still being written.
         settings = { ...p.settings };
@@ -707,7 +725,7 @@ export function useVoiceBuild({
       if (card !== s.shown) s.trace.skeletons.push({ card, by: "model", ms: Math.round(performance.now() - s.t0) });
       s.shown = card;
       s.fromModel = true;
-      const { widget } = skeletonWidget(card, { id: `${DRAFT}${s.key}-0`, ctx: ctxNow(), said: s.text, partial: settings });
+      const { widget } = skeletonWidget(card, { id: `${DRAFT}${s.key}-0`, ctx: skelCtx(card), said: s.text, partial: settings });
       show(s, [widget], undefined, "skeleton", hasField);
       if (hasField) {
         markNext(s, "tentative");
@@ -718,7 +736,7 @@ export function useVoiceBuild({
       }
       if (filledIn(card, settings)) markNext(s, "card-full");
     },
-    [ctxNow, markNext, note, show],
+    [markNext, note, show, skelCtx],
   );
 
   /** The stream moved (or the call returned): keep the newest text, settle `ready`, fill. */
@@ -1116,6 +1134,141 @@ export function useVoiceBuild({
     s.trace.modelMs = answer?.modelMs ?? null;
   }, []);
 
+  /**
+   * A recipe's cards: placed as one group (the frame's footprint, by
+   * `placeCards`; each part at its spot inside it), then written one batch at
+   * a time in the recipe's order, each batch drawn on this screen as it goes
+   * out, so the group builds card by card here and lands the same way on
+   * every other screen. A standings card is written after its check-in and
+   * points at that check-in's id.
+   */
+  const buildRecipe = useCallback(
+    async (s: Session, sp: Spec, kept: Kept[], cards: AskTrace["cards"]) => {
+      const fail = (reason: string) => {
+        if (session.current !== s) return;
+        s.trace.error = s.trace.error ?? reason;
+        setShell(null);
+        setDrafts([]);
+        setReceipt({ ok: false, key: s.key });
+        s.trace.done = true;
+        s.trace.ok = false;
+        publish(s);
+        leave();
+      };
+      s.trace.cards = cards;
+      s.shown = "checkin";
+      const m = measure(scrollerRef.current) ?? s.m;
+      if (!m) return fail("no canvas");
+      // the group is placed by its frame (the first part), the rest sit inside it
+      const size = { ...kept[0].part!.size };
+      const placeRoom = { widgets: m.board, view: m.view, bounds: m.bounds, selected: room.current.selectedId?.() ?? null };
+      const [spot] = placeCards([size], placeRoom);
+      s.trace.place = `recipe group ${size.w}×${size.h}: ${placeReason([size], [spot], placeRoom)}`;
+      const placed = kept.map((k) => ({ ...k, widget: { ...k.widget, x: spot.x + k.part!.at.x, y: spot.y + k.part!.at.y } }));
+      // on this screen, before anything is written, a linked part already points at its source's draft
+      for (const k of placed) {
+        const l = k.part!.link;
+        const from = l?.value === "id" ? placed.find((x) => x.part!.key === l.from) : undefined;
+        if (l && from) k.widget = { ...k.widget, data: { ...k.widget.data, [l.fill]: from.widget.id } };
+      }
+      const group = { ...spot, ...size };
+      if (!inView(group, m.view)) {
+        const pan = panFor(group, m.view);
+        glideScroll(m.scroller, pan.dx * m.scale, pan.dy * m.scale);
+      }
+      setShell(null);
+      s.lifted = false;
+      const batches = [...new Set(placed.map((k) => k.part!.batch))].sort((a, b) => a - b);
+      const ids: string[] = [];
+      // part key → its written id, for the links
+      const written = new Map<string, string>();
+      let resolveAll: (v: string[]) => void = () => {};
+      s.commitP = new Promise<string[]>((r) => (resolveAll = r));
+      s.committedCard = JSON.stringify(kept.map((k) => k.card));
+      /* The writes go out back to back, in the recipe's order (a client's
+         mutations run in the order sent), so every screen gets them one at a
+         time. Only a linked part waits: it goes once its source has an id.
+         This screen draws each batch as its write comes back. */
+      const onScreen = (id: string | undefined) => !!id && !!m.canvas.querySelector(`[data-widget-id="${id}"], [data-frame-id="${id}"]`);
+      let failed = false;
+      const pending: Promise<void>[] = [];
+      setDrafts(placed.filter((k) => k.part!.batch === batches[0]).map((k) => k.widget));
+      markNext(s, "card-local");
+      markNext(s, "cluster-local");
+      playSound("place");
+      for (const [bi, b] of batches.entries()) {
+        if (session.current !== s || failed) return;
+        const idx = placed.flatMap((k, i) => (k.part!.batch === b ? [i] : []));
+        if (idx.some((i) => placed[i].part!.link && !written.has(placed[i].part!.link!.from))) await Promise.all(pending);
+        if (session.current !== s || failed) return;
+        const cardsOut = idx.map((i) => {
+          const l = placed[i].part!.link;
+          const from = l ? written.get(l.from) : undefined;
+          return { ...placed[i], ...(l && from ? { link: { from, when: l.when, fill: l.fill, value: l.value } } : {}) };
+        });
+        pending.push(
+          room.current
+            .commit({ dealId: sp.answer?.dealId ?? null, nonce: sp.nonce, cards: cardsOut })
+            .catch(() => [] as string[])
+            .then((got) => {
+              if (session.current !== s) return;
+              if (!got.length) {
+                failed = true;
+                return;
+              }
+              idx.forEach((i, k) => {
+                ids[i] = got[k];
+                written.set(placed[i].part!.key, got[k]);
+              });
+              if (bi === 0) mark(s, "committed");
+              setDrafts((d) => {
+                const have = new Set(d.map((w) => w.id));
+                return [...d, ...placed.filter((k, i) => k.part!.batch <= b && !have.has(k.widget.id) && i >= 0).map((k) => k.widget)];
+              });
+              setSynced((all) => ({ ...all, ...Object.fromEntries(idx.map((i, k) => [`${DRAFT}${s.key}-${i}`, got[k]])) }));
+              if (bi > 0) playSound("tap");
+            }),
+        );
+      }
+      // first card of the group on screen (synced), then the whole group, watched while the writes land
+      const watch = (async () => {
+        for (let i = 0; i < 400 && !onScreen(ids[0]); i++) await new Promise((r) => setTimeout(r, 8));
+        if (onScreen(ids[0])) mark(s, "card-on-screen");
+        for (let i = 0; i < 600 && !(ids.length === placed.length && placed.every((_, k) => onScreen(ids[k]))); i++) await new Promise((r) => setTimeout(r, 8));
+        if (placed.every((_, k) => onScreen(ids[k]))) mark(s, "cluster-on-screen");
+      })();
+      await Promise.all(pending);
+      resolveAll(ids);
+      if (failed || session.current !== s) return fail("the commit wrote nothing");
+      s.trace.cards.filter((c) => c.ok).forEach((c, i) => (c.widgetId = ids[i]));
+      await watch;
+      const lead = placed.findIndex((k) => k.card.card === "checkin");
+      setLanded({ widgetId: ids[0], x: spot.x, y: spot.y, host: m.canvas, traceKey: s.key });
+      window.setTimeout(() => {
+        if (session.current === s) setDrafts([]);
+      }, 50);
+      const answer = await sp.promise;
+      if (session.current !== s) return;
+      traceAnswer(s, answer);
+      s.trace.done = true;
+      s.trace.ok = true;
+      publish(s);
+      const local = s.marks["card-local"];
+      const t = s.marks["cluster-on-screen"] ?? s.marks["card-on-screen"];
+      setReceipt({
+        ok: true,
+        key: s.key,
+        cards: kept.map((k) => k.card.card),
+        model: answer?.model ?? null,
+        ms: answer?.model && local !== undefined ? Math.round(local - s.lastWordAt) : null,
+        widgetId: ids[Math.max(0, lead)],
+      });
+      if (answer?.dealId && t !== undefined) room.current.onLanded?.(answer.dealId, t - s.lastWordAt, s.trace);
+      leave();
+    },
+    [leave, mark, markNext, publish, scrollerRef, traceAnswer],
+  );
+
   const ask = useCallback(
     async (said: string, end: VoiceEnd) => {
       const s = session.current;
@@ -1231,6 +1384,19 @@ export function useVoiceBuild({
           }
           notes.push(...item.notes);
           const people = item.people?.length ? item.people : undefined;
+          if (isRecipe(item.card.card)) {
+            // Code lays out and links the recipe's cards; the model only gave the slots.
+            // "me" is the speaker
+            const who = people?.map((p) => (p === "@me" ? ctx.by : p)).filter((p, i, all) => all.indexOf(p) === i);
+            const c = who ? { ...ctx, people: who } : ctx;
+            for (const part of expandRecipe(item.card.card, item.card.settings as Record<string, unknown>, c)) {
+              const raw = { card: part.card, settings: part.settings };
+              const r = applyCard(raw, c, { id: `${DRAFT}${s.key}-${kept.length}`, z: part.z });
+              if (r.ok) kept.push({ card: raw as DealtCard, widget: { ...r.widget, w: part.size.w, h: part.size.h, ...(part.rotate !== undefined ? { rotate: part.rotate } : {}) }, people: c.people, part });
+              cards.push(r.ok ? { card: part.card, ok: true } : { card: part.card, ok: false, reason: r.reason });
+            }
+            continue;
+          }
           const r = applyCard(item.card, people ? { ...ctx, people } : ctx, {
             id: `${DRAFT}${s.key}-${kept.length}`,
             z: 1000 + kept.length,
@@ -1272,10 +1438,14 @@ export function useVoiceBuild({
         return;
       }
 
+      // A recipe: its own path (one group, written part by part).
+      if (kept[0].part) return buildRecipe(s, sp, kept, got.cards);
+
       // Final: the answer for exactly these words, on this screen.
-      if (kept[0].card.card !== s.shown) s.trace.skeletons.push({ card: kept[0].card.card, by: "model", ms: Math.round(performance.now() - s.t0) });
-      s.shown = kept[0].card.card;
-      note(s, sp, kept[0].card.card, kept[0].card.settings as Record<string, unknown>, true, true);
+      const firstCardId = kept[0].card.card as CardId;
+      if (firstCardId !== s.shown) s.trace.skeletons.push({ card: firstCardId, by: "model", ms: Math.round(performance.now() - s.t0) });
+      s.shown = firstCardId;
+      note(s, sp, firstCardId, kept[0].card.settings as Record<string, unknown>, true, true);
       s.trace.cards = got.cards;
       s.trace.guessAgreed = s.guess ? kept[0].card.card === s.guess : null;
       const m = measure(scrollerRef.current) ?? s.m;
@@ -1378,7 +1548,7 @@ export function useVoiceBuild({
       if (answer?.dealId && t !== undefined) room.current.onLanded?.(answer.dealId, t - s.lastWordAt, s.trace);
       leave();
     },
-    [ctxNow, fill, fire, leave, mark, markNext, note, pointAt, publish, scrollerRef, show, traceAnswer],
+    [buildRecipe, ctxNow, fill, fire, leave, mark, markNext, note, pointAt, publish, scrollerRef, show, traceAnswer],
   );
 
   /** The board as this screen should draw it: the synced widgets plus any

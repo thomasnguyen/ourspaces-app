@@ -29,9 +29,13 @@ states:
   dishessay: ?stage=0&enter=1&timing=1&voicePace=talk&voice=who's on dishes tonight #/space/house | sleep 1400
   dishesspin: ?stage=0&enter=1&timing=1&voicePace=talk&voice=who's on dishes tonight #/space/house | sleep 1200 | click dock-voice-orb | wait voice-found-spin | sleep 900 | click voice-found-spin | sleep 2500
   mockalready: ?stage=0&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-found | sleep 1600
+  hero: ?enter=1&timing=1&voicePace=talk&voice=set up a push-up challenge for the four of us #/space/family | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 1800
+  herosay: ?enter=1&timing=1&voicePace=talk&voice=set up a push-up challenge for the four of us #/space/family | sleep 1400
+  mockhero: ?family=hero&stage=0&voicePace=talk&voice=set up a push-up challenge for the four of us #/space/family | click dock-voice-orb | wait voice-landed | sleep 2600
   mockalreadydrawer: ?stage=0&timing=1&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-found | sleep 1200 | click dev-readout | wait dev-context-found | sleep 300
 take:
   ask: say real 30fps 165f | 3 click dock-voice-orb
+  hero: herosay real 30fps 210f | 3 click dock-voice-orb
   driving: drivingsay real 30fps 150f | 3 click dock-voice-orb
   already: alreadysay real 30fps 150f | 3 click dock-voice-orb
   dishes: dishessay real 30fps 150f | 3 click dock-voice-orb
@@ -162,3 +166,34 @@ the board (`data-voice-draft="lifted"`) until placed; tentative fills carry
 `data-voice-tentative` (a wash, not opacity: a floating draft must not show
 the card under it). Speculative calls
 cost tokens even when ignored.
+
+## Recipes: the challenge (the hero ask)
+
+"set up a push-up challenge for the four of us" in the family room builds a
+linked group: a frame, who's in (filled with the four of them), the check-in,
+standings bound to it (face down), the deal (a note) and a countdown to the
+reveal. The model answers one line, `{"card":"challenge","settings":{activity,
+unit?, days?, stake?, who}}`; `who` is a people token (`@all` = everyone in
+the room, away or not; "the four of us" with four in the room is all four,
+a code rule) resolved by `resolve.ts`. Code does the rest
+(`src/lib/deck/recipes.ts`): the parts, their spots inside the frame
+(`placeCards` places the frame), the order they are written in (`batch`) and
+the links between them. `useVoiceBuild` `buildRecipe` writes the batches back
+to back (a linked part waits for its source's id), draws each as its write
+comes back, and marks `cluster-local` / `cluster-on-screen`. On the stage the
+group builds card by card (`voice-stage-cluster`). **Live (lane) needs the
+family's challenge corner cleared first:** `.context/f2/seed.sh hero`
+(`seed:seedFamily {hero:true}`); with the seeded challenge on the board the
+ask is "already here". Mock: `?family=hero`.
+
+**A second recipe** is one entry in `RECIPES`: `slots` (a schema, like a
+card's settings), `size`, `lead` (the card the stage shows while it streams),
+`parts` (key, deck card, settings, spot, batch) and `links`.
+**A link** is data: `{from, to, when, fill, value}` (part keys; when =
+always | closed | winner | time | threshold; value = id | winner | yes | …).
+The commit stores it as a `links` row and `convex/links.ts` applies it in a
+mutation when the source changes (`applyLinks`, called from
+`updateWidgetData` and `checkIns.log`), every write through `writeLinked`
+(where Right of Way goes). Until it resolves, the target shows "waiting on
+<card>" (`card-waiting`, from `links.waiting`). Only `always` + `id` exist
+today (standings → its check-in).

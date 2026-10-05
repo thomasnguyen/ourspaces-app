@@ -66,6 +66,8 @@ export type StageBuild = {
   failed: boolean;
   /** The room facts this card used, in a person's words ("saved places"). */
   sources: string[];
+  /** A recipe (lib/deck/recipes.ts): its group as written so far, in board coordinates, and the frame round it. */
+  cluster: { box: { x: number; y: number; w: number; h: number }; cards: Widget[] } | null;
   /** The ask pointed at a card the board already has instead of dealing one: that card. */
   found: { widgetId: string; host: HTMLElement; title: string } | null;
   maker: { name: string; color: string };
@@ -121,7 +123,9 @@ let current: StageBuild | null = null;
 const watchers = new Set<() => void>();
 
 export function feedVoiceStage(feed: StageFeed) {
-  const draft = feed.drafts[0] ?? null;
+  // a recipe's group: a frame and the cards inside it, one more each time a part is written
+  const frame = feed.drafts.length > 1 ? feed.drafts.find((d) => d.type === "frame") : undefined;
+  const draft = (frame ? feed.drafts.find((d) => d.type === "checkIn") : feed.drafts[0]) ?? feed.drafts[0] ?? null;
   const draftKey = draft ? Number(/^voice-draft-(\d+)-/.exec(draft.id)?.[1]) : NaN;
   const key = Number.isFinite(draftKey) ? draftKey : (feed.found?.traceKey ?? feed.landed?.traceKey ?? feed.receipt?.key ?? (feed.shell ? feed.traces[0]?.key : undefined));
   let next: StageBuild | null = null;
@@ -151,7 +155,9 @@ export function feedVoiceStage(feed: StageFeed) {
         });
       }
     }
+    const cluster = frame ? { box: { x: frame.x, y: frame.y, w: frame.w, h: frame.h }, cards: feed.drafts } : (same?.cluster ?? null);
     next = {
+      cluster,
       key,
       said: trace?.said || feed.shell?.said || same?.said || "",
       kind,

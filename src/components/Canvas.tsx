@@ -120,6 +120,7 @@ export function Canvas({
   onLetterOpen,
   onWidgetData,
   onCheckIn,
+  waiting,
   buildRoomFeed,
   roundtableRepliesByWidget = {},
   paintStrokesByWidget = {},
@@ -196,6 +197,8 @@ export function Canvas({
   onWidgetData?: (widgetId: string, data: Widget["data"]) => void;
   /** Live: log a check-in for yourself only (convex/checkIns.ts). */
   onCheckIn?: (widgetId: string, day: number, value: number | null) => void;
+  /** Open links: target id → the card it waits on (convex/links.ts `waiting`). */
+  waiting?: Record<string, string>;
   onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
   onLetterOpen?: (widgetId: string, open: boolean) => void;
   buildRoomFeed?: BuildRoomFeed;
@@ -496,7 +499,7 @@ export function Canvas({
     ],
   );
 
-  const boardLink = useMemo(() => ({ widgets, onWidgetData, onCheckIn }), [widgets, onWidgetData, onCheckIn]);
+  const boardLink = useMemo(() => ({ widgets, onWidgetData, onCheckIn, waiting }), [widgets, onWidgetData, onCheckIn, waiting]);
 
   return (
     <BoardLinkContext.Provider value={boardLink}>

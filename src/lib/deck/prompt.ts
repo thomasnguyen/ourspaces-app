@@ -4,13 +4,18 @@
  * example, and an answer of one compact `{"card":"id","settings":{…}}` per line.
  */
 import { CATALOG } from "./catalog";
+import { RECIPES } from "./recipes";
 import { checkCard } from "./apply";
 import { describeSettings, type Schema } from "./schema";
 import type { DealtCard } from "./catalog";
 
 /** The catalog as the prompt carries it: id, use, settings shapes. */
+/** The catalog as the prompt carries it: id, use, settings shapes. Recipes come last: one line deals a linked group. */
 export function catalogJson() {
-  return CATALOG.map((c) => ({ id: c.id, use: c.use, settings: describeSettings(c.settings as Schema) }));
+  return [
+    ...CATALOG.map((c) => ({ id: c.id, use: c.use, settings: describeSettings(c.settings as Schema) })),
+    ...RECIPES.map((r) => ({ id: r.id, use: r.use, settings: describeSettings(r.slots as Schema) })),
+  ];
 }
 
 const EXAMPLE = `EXAMPLE
@@ -27,7 +32,7 @@ export function deckPrompt(): string {
   return `You place cards in a shared space for a group of friends. You never write UI, layout or prose.
 Pick cards from the deck below and fill their settings. Answer with one card per line, each line compact JSON:
 {"card":"<id>","settings":{...}}
-A chain of related cards (a trip, a party, a challenge) is several lines, most important first. Keep settings short. A field marked ? can be left out.
+A chain of related cards (a trip, a party) is several lines, most important first. A challenge between people is the challenge recipe: one line. Keep settings short. A field marked ? can be left out.
 If no card fits, answer exactly {"card":"none"}.
 
 DECK

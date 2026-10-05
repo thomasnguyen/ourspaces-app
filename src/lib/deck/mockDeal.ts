@@ -19,7 +19,7 @@ import { beat } from "../voiceTimings";
 import type { CardId } from "./catalog";
 import { guessCard, titleFromWords } from "./guess";
 
-type StandIn = { card: CardId; settings: Record<string, string | number | string[]> };
+type StandIn = { card: CardId | "challenge"; settings: Record<string, string | number | string[]> };
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
@@ -84,6 +84,13 @@ export const SCRIPTED_ASKS: Array<{ id: string; say: string; label: string; answ
     label: "No card word",
     answer: { card: "poll", settings: { question: "dinner saturday?", options: ["tacos", "pho"] } },
   },
+  {
+    // the hero ask: a recipe, one line; code builds the linked group
+    id: "challenge",
+    say: "set up a push-up challenge for the four of us",
+    label: "A challenge (recipe)",
+    answer: { card: "challenge", settings: { activity: "push-ups", unit: "push-ups", who: "@all" } },
+  },
 ];
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
@@ -105,12 +112,19 @@ export function standInFor(said: string, menu?: string): StandIn | null {
   const named = listFromWords(said);
   const card = scripted?.answer.card ?? guessCard(said) ?? (named.length ? "poll" : "note");
   if (isBare(said)) return null;
-  const title = lower(titleFromWords(said, card)) || lower(said);
+  const title = lower(titleFromWords(said, card as CardId)) || lower(said);
   const places = offered(menu, "places");
   const date = offered(menu, "date");
   const coming = offered(menu, "coming");
   const trip = offered(menu, "on-trip");
+  const all = offered(menu, "all");
   const base = scripted?.answer.settings ?? {};
+  // a challenge between people: the recipe, its activity from the words
+  if (card === "challenge" || /\bchallenge\b/i.test(said)) {
+    const activity = (base.activity as string) ?? (/(?:\b(?:a|an|the)\s+)?([\w-]+)\s+challenge/i.exec(said)?.[1] ?? "steps").toLowerCase();
+    const days = Number(/(\d+|a)\s*(day|week)/i.exec(said)?.[0].replace(/^a/, "1").replace(/\s*week/, "*7").replace(/\s*days?/, "").split("*").reduce((a, b) => String(Number(a) * Number(b)))) || undefined;
+    return { card: "challenge", settings: { activity: activity.replace(/^push-?up$/, "push-ups"), ...(days ? { days } : {}), ...(all && !base.who ? { who: all } : base.who ? { who: base.who } : {}) } };
+  }
   switch (card) {
     case "poll": {
       const question = (base.question as string) ?? `${title.replace(/\?$/, "")}?`.slice(0, 80);

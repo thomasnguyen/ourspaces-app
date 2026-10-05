@@ -84,6 +84,8 @@ const STAGE_LABEL: Record<StageName, string> = {
   "card-local": "final card on this screen",
   committed: "committed",
   "card-on-screen": "synced card on screen",
+  "cluster-local": "recipe: first card of the group on this screen",
+  "cluster-on-screen": "recipe: the whole group synced on screen",
 };
 
 /** $ per 1M tokens in / out (Token Factory GET /v1/models). */

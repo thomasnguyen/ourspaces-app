@@ -700,6 +700,21 @@
   filter: drop-shadow(0 18px 26px color-mix(in oklab, var(--color-sticker) 60%, transparent));
 }
 
+/* a recipe's group: the cards keep their board spots inside the frame */
+.voice-two-cluster {
+  position: relative;
+}
+
+.voice-two-cluster-card {
+  position: absolute;
+  inset: 0;
+  animation: voice-card-in calc(var(--dur-arrive) * var(--slow)) var(--ease-pop) backwards;
+}
+
+.voice-two-cluster-card > .widget-group {
+  pointer-events: none;
+}
+
 /* the real widget, out of the board's coordinates */
 .voice-two-card-body > .widget-group.widget-group {
   position: relative;

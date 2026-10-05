@@ -21,7 +21,19 @@ export type CardContext = {
   people: string[];
   /** The speaker's today, YYYY-MM-DD. Countdowns start here. */
   today: string;
+  /** Each person's colour, by name (a check-in paints its rows with them). */
+  colors?: Record<string, string>;
+  /** The check-in a standings card ranks (its widget id), when code knows it. */
+  source?: string;
 };
+
+const FALLBACK_COLORS = ["#ff7c42", "#e9369d", "#13b8a6", "#ffb02e", "#7c5cff", "#3d6eff", "#c6f750", "#ff3b5c"];
+const isoPlus = (iso: string, days: number) => new Date(Date.parse(`${iso}T12:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+/** A challenge's reveal: the morning after its last day, 9:00 (local). */
+export const revealOf = (start: string, days: number) => `${isoPlus(start, days)}T09:00`;
+/** Who a card is among, as people with colours, in the room's order. */
+export const peopleOf = (ctx: CardContext) =>
+  ctx.people.map((name, i) => ({ name, color: ctx.colors?.[name] ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length] }));
 
 type CardDef<Id extends string, S extends Schema> = {
   id: Id;
@@ -195,6 +207,39 @@ export const CATALOG = [
     build: (s) => ({ title: s.title, tone: "blush", photos: [] }),
   }),
   card({
+    id: "checkin",
+    use: "a daily check-in: each person logs a number (or a tick) every day for a few days, with streaks; a habit or a challenge",
+    type: "checkIn",
+    settings: {
+      title: text(32),
+      unit: text(20, { optional: true }),
+      kind: oneOf(["number", "done"], { default: "number" }),
+      days: num(1, 14, { optional: true }),
+      goal: num(1, 100000, { optional: true }),
+    },
+    build: (s, ctx) => {
+      const days = s.days ?? 7;
+      return {
+        title: s.title,
+        kind: s.kind,
+        unit: s.unit ?? (s.kind === "done" ? "done" : s.title),
+        start: ctx.today,
+        days,
+        revealAt: revealOf(ctx.today, days),
+        ...(s.goal ? { goal: s.goal } : {}),
+        people: peopleOf(ctx),
+        logs: {},
+      };
+    },
+  }),
+  card({
+    id: "standings",
+    use: "ranks the people on a check-in already on the board, face down until you log yours",
+    type: "standings",
+    settings: { title: text(32, { default: "standings" }), stake: text(90, { optional: true }) },
+    build: (s, ctx) => ({ title: s.title, source: ctx.source ?? "", ...(s.stake ? { stake: s.stake } : {}) }),
+  }),
+  card({
     id: "radio",
     use: "a radio station the whole room listens to together",
     type: "playlist",
@@ -210,16 +255,41 @@ export const CATALOG = [
   }),
 ] as const;
 
-export type Card = (typeof CATALOG)[number];
+/**
+ * Cards only code deals: parts of a recipe (`recipes.ts`), never listed in a
+ * prompt. A frame round a cluster, and a sign-up that arrives already filled
+ * with the people the ask named.
+ */
+export const INTERNAL = [
+  card({
+    id: "frame",
+    use: "a labelled area round a group of cards",
+    type: "frame",
+    settings: { title: text(40), subtitle: text(40, { optional: true }) },
+    build: (s) => ({ title: s.title, ...(s.subtitle ? { subtitle: s.subtitle } : {}) }),
+  }),
+  card({
+    id: "signup",
+    use: "who's in, already filled with the people the ask named",
+    type: "rsvp",
+    settings: { title: text(40) },
+    build: (s, ctx) => ({ title: s.title, responses: ctx.people.map((name) => ({ name, status: "yes" as const })), waitingOn: [] }),
+  }),
+] as const;
+
+export type Card = (typeof CATALOG)[number] | (typeof INTERNAL)[number];
 export type CardId = Card["id"];
 type CardById<I extends CardId> = Extract<Card, { id: I }>;
 
 /** A card the model dealt, after its settings passed the schema. */
-export type DealtCard = {
-  [I in CardId]: { card: I; settings: Infer<CardById<I>["settings"]> };
-}[CardId];
+export type DealtCard =
+  | {
+      [I in CardId]: { card: I; settings: Infer<CardById<I>["settings"]> };
+    }[CardId]
+  /** A recipe (`recipes.ts`): its slots, expanded into cards by code. */
+  | { card: "challenge"; settings: Record<string, unknown> };
 
-const BY_ID = new Map<string, Card>(CATALOG.map((c) => [c.id, c]));
+const BY_ID = new Map<string, Card>([...CATALOG, ...INTERNAL].map((c) => [c.id, c]));
 export const getCard = (id: string): Card | undefined => BY_ID.get(id);
 export const CARD_IDS = CATALOG.map((c) => c.id) as CardId[];
 

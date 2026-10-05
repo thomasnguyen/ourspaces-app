@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
 ready: dock-voice-orb
-testids: dock-voice-orb voice-stage voice-stage-left voice-stage-right voice-stage-text voice-stage-status voice-stage-wave voice-stage-card voice-stage-parts voice-stage-part-question voice-stage-part-option-0 voice-stage-part-option-1 voice-stage-part-option-2 voice-stage-part-title voice-stage-part-item-0 voice-stage-part-who voice-stage-part-event voice-stage-part-date voice-stage-part-days voice-stage-part-total voice-stage-part-person-0 voice-stage-chip-0 voice-stage-chip-3 voice-stage-mute voice-stage-finish voice-stage-beats voice-stage-ask voice-stage-offers voice-stage-offer-0 voice-stage-sources voice-stage-found voice-found-pulse voice-landed
+testids: dock-voice-orb voice-stage voice-stage-left voice-stage-right voice-stage-text voice-stage-status voice-stage-wave voice-stage-card voice-stage-parts voice-stage-part-question voice-stage-part-option-0 voice-stage-part-option-1 voice-stage-part-option-2 voice-stage-part-title voice-stage-part-item-0 voice-stage-part-who voice-stage-part-event voice-stage-part-date voice-stage-part-days voice-stage-part-total voice-stage-part-person-0 voice-stage-chip-0 voice-stage-chip-3 voice-stage-mute voice-stage-finish voice-stage-beats voice-stage-ask voice-stage-offers voice-stage-offer-0 voice-stage-sources voice-stage-found voice-found-pulse voice-landed voice-stage-cluster
 states:
   poll: ?voicePace=talk&voice=add a poll for Saturday dinner
   countdown: ?voicePace=talk&voice=countdown to Holly's birthday on November 14
@@ -25,6 +25,7 @@ states:
   ask-answered: ?voicePace=talk&voice=add a poll … … … for Saturday dinner
   ask-offer: ?voicePace=talk&voice=add a poll | click dock-voice-orb | wait voice-stage-offer-0 | sleep 500 | click voice-stage-offer-0 | wait voice-stage-sources | sleep 500
   room: ?stageFreeze=complete&voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-stage-sources | sleep 600
+  cluster: ?family=hero&voicePace=talk&voice=set up a push-up challenge for the four of us #/space/family | click dock-voice-orb | wait voice-stage-cluster | sleep 900
   already: ?voicePace=talk&voice=add a poll for cake flavor
   already-found: ?voicePace=talk&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-stage-found | sleep 300
   already-landed: ?voicePace=talk&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-stage-found | sleep 2600

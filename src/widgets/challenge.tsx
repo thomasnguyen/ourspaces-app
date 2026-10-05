@@ -35,7 +35,30 @@ export type BoardLink = {
   onWidgetData?: (widgetId: string, data: Widget["data"]) => void;
   /** Live: log today for yourself only (convex/checkIns.ts `log`); the server picks the row. */
   onCheckIn?: (widgetId: string, day: number, value: number | null) => void;
+  /** Open links (convex/links.ts): target widget id → the card it waits on. */
+  waiting?: Record<string, string>;
 };
+
+const titleOf = (w: Widget | undefined) => {
+  const d = (w?.data ?? {}) as Record<string, unknown>;
+  return String(d.title ?? d.question ?? d.event ?? "the card before it").toLowerCase();
+};
+
+/**
+ * A card that exists before its content does: it waits on another card
+ * (a recipe's link, filled by code when the source resolves). The same
+ * family as standings' "log yours to see", with another card as the key.
+ */
+export function WaitingOn({ widgetId }: { widgetId: string }) {
+  const { waiting, widgets } = useContext(BoardLinkContext);
+  const from = waiting?.[widgetId];
+  if (!from) return null;
+  return (
+    <span className="card-waiting" data-testid="card-waiting" data-from={from}>
+      waiting on {titleOf(widgets.find((w) => w.id === from))}
+    </span>
+  );
+}
 export const BoardLinkContext = createContext<BoardLink>({ widgets: [] });
 
 /** "beat 40" on the standings opens the check-in's logger at 41. */
@@ -318,7 +341,7 @@ export function StandingsWidget({ widget, style }: { widget: Widget; style: Styl
       </header>
 
       {!source ? (
-        <p className="st-empty">point this at a check-in and it ranks it</p>
+        <p className="st-empty" data-testid="standings-waiting">waiting on a check-in</p>
       ) : (
         <ol className="st-rows">
           {rows.map((row, i) => {
