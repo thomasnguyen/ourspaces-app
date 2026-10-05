@@ -88,6 +88,10 @@ export const deal = action({
     menu: v.optional(v.string()),
     /** The card the decide pass picked, when it had: the fill deals that one. */
     card: v.optional(v.string()),
+    /** The deck cards this ask could mean (the asker's shortlist, src/lib/deck/shortlist.ts); the prompt shows only these. */
+    deck: v.optional(v.array(v.string())),
+    /** The shortlisted cards the words point at (not just common): only their worked examples go in. */
+    focus: v.optional(v.array(v.string())),
   },
   returns: v.object({
     dealId: v.union(v.id("deals"), v.null()),
@@ -116,11 +120,13 @@ export const deal = action({
           people: args.people.slice(0, 12),
           selected: args.selected,
         });
+    // Only the shortlisted cards (and the told card) go in the prompt; without a list, the whole deck.
+    const deck = args.deck?.length ? [...new Set([...args.deck.slice(0, 10), ...(card ? [card] : [])])] : undefined;
     const user = brain ? dealTurnV2({ menu: context, said, card }) : `${dealTurn({ context, said })}${card ? `\n${cardLine(card)}` : ""}`;
     // The row opens alongside the model call, never in front of it.
     const opened: Promise<Id<"deals">> = ctx.runMutation(internal.voiceBuild.record, {
       spaceId: args.spaceId,
-      run: JSON.stringify({ at: t0, nonce: args.nonce, said, spec: args.spec, model: M.name, route: brain ? "brain" : "fast", card: card ?? null, context, answer: "", done: false }),
+      run: JSON.stringify({ at: t0, nonce: args.nonce, said, spec: args.spec, model: M.name, route: brain ? "brain" : "fast", card: card ?? null, deck: deck ?? null, context, answer: "", done: false }),
     });
 
     /* Mirror the answer into the row as it grows: one write in flight at a
@@ -145,7 +151,7 @@ export const deal = action({
       model: M.model,
       maxTokens: M.maxTokens,
       messages: [
-        { role: "system", content: brain ? deckPromptV2() : deckPrompt() },
+        { role: "system", content: brain ? deckPromptV2({ cards: deck, ...(deck && args.focus ? { focus: [...args.focus, ...(card ? [card] : [])] } : {}) }) : deckPrompt({ cards: deck }) },
         { role: "user", content: user },
       ],
       onText: (content) => {
@@ -436,6 +442,8 @@ export const decide = action({
     onBoard: v.optional(v.boolean()),
     /** That widget, `poll "cake flavor?"`: the yes/no asks about it by name (the plain question drowned it in a long board, nebius/eval/b3-existing.md). */
     match: v.optional(v.string()),
+    /** Ask the card letter (default). False when code's guess is already sure: only the yes/no goes out. */
+    card: v.optional(v.boolean()),
   },
   returns: v.object({
     onBoard: v.union(
@@ -458,8 +466,9 @@ export const decide = action({
   handler: async (_ctx, args) => {
     const context = roomContext({ room: args.room, today: args.today, people: args.people.slice(0, 12) });
     const prefix = { context, board: args.board.slice(0, 24).map((t) => t.slice(0, 40)), said: args.said.trim().slice(0, 240) };
+    const skipped: Awaited<ReturnType<typeof chooseLetter>> = { status: 0, letter: null, conf: null, top: [], usage: null, ms: 0 };
     const [r, b] = await Promise.all([
-      chooseLetter({ model: "ultra", messages: decideMessages(prefix), letters: DECIDE_LETTERS }),
+      args.card === false ? skipped : chooseLetter({ model: "ultra", messages: decideMessages(prefix), letters: DECIDE_LETTERS }),
       args.onBoard && prefix.board.length
         ? chooseLetter({
             model: "ultra",

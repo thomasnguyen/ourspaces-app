@@ -24,15 +24,16 @@ Said: "potluck at Sam's on the 18th, who's bringing what, and a countdown"
 {"card":"checklist","settings":{"title":"Potluck at Sam's","items":["mains","salad","dessert","drinks"]}}
 {"card":"countdown","settings":{"event":"Potluck at Sam's","date":"2026-10-18"}}`;
 
-/** The fixed system prompt. Same text every call, so it can sit as a cached prefix. */
-export function deckPrompt(): string {
+/** The system prompt. `cards`: only these deck cards (the per-ask shortlist, `shortlist.ts`); without, the whole deck. */
+export function deckPrompt(opts: { cards?: string[] } = {}): string {
   const deck = catalogJson()
+    .filter((c) => !opts.cards || opts.cards.includes(c.id))
     .map((c) => `${c.id}: ${c.use}. settings ${JSON.stringify(c.settings)}`)
     .join("\n");
   return `You place cards in a shared space for a group of friends. You never write UI, layout or prose.
 Pick cards from the deck below and fill their settings. Answer with one card per line, each line compact JSON:
 {"card":"<id>","settings":{...}}
-A chain of related cards (a trip, a party) is several lines, most important first. A challenge between people is the challenge recipe: one line. Keep settings short. A field marked ? can be left out.
+A chain of related cards (a trip, a party) is several lines, most important first.${!opts.cards || opts.cards.includes("challenge") ? " A challenge between people is the challenge recipe: one line." : ""} Keep settings short. A field marked ? can be left out.
 If no card fits, answer exactly {"card":"none"}.
 
 DECK

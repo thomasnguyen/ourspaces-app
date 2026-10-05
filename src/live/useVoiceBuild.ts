@@ -30,6 +30,8 @@ import {
 } from "../lib/deck";
 import type { Schema } from "../lib/deck/schema";
 import { expandRecipe, isRecipe, recipeLead, type RecipePart } from "../lib/deck/recipes";
+import { guessCards } from "../lib/deck/guess";
+import { shortlistDeck } from "../lib/deck/shortlist";
 import type { VoiceEnd, VoiceHooks } from "../lib/voice";
 
 /**
@@ -95,6 +97,9 @@ export type DealCall = {
   menu?: string;
   /** The decide pass's card, when it was sure. */
   card?: string;
+  /** The deck cards the prompt shows (the per-ask shortlist, lib/deck/shortlist.ts), and those with worked examples. */
+  deck?: string[];
+  focus?: string[];
 };
 export type BoardVerdict = { yes: boolean; conf: number | null; ms: number; usage: { prompt: number; completion: number } | null; error: string | null };
 export type DecideAnswer = {
@@ -155,6 +160,8 @@ export type AskTrace = {
     route?: "fast" | "brain";
     /** The decided card this call was told to deal. */
     card?: string | null;
+    /** The shortlist its prompt showed. */
+    deck?: string[];
     /** Tokens in and out, once the call returned (for the cost line). */
     usage?: { model: string; prompt: number; completion: number } | null;
   }[];
@@ -171,6 +178,8 @@ export type AskTrace = {
     usage: { prompt: number; completion: number } | null;
     /** Code's match when this decide went out, and the yes/no it asked. */
     match?: string | null;
+    /** The card letter was asked (code's guess was empty or named two cards); false = only the yes/no went out. */
+    cardAsked?: boolean;
     onBoard?: BoardVerdict | null;
   }[];
   /** The "already here" answer: code's check at the pause, the model's yes/no, and what was done. */
@@ -379,6 +388,8 @@ type Spec = {
   facts: RoomFacts | null;
   /** The decided card it was told to deal. */
   hint: string | null;
+  /** The deck cards its prompt showed. */
+  deck: string[];
   /** Resolves once a valid card has closed in the stream, or the call ended without one. */
   ready: Promise<void>;
   settle: () => void;
@@ -403,6 +414,7 @@ type Dec = {
   norm: string;
   card: string | null;
   conf: number | null;
+  top: { card: string; p: number }[];
   back: boolean;
   /** The widget code matched when it went out (the yes/no was asked about it). */
   matchId: string | null;
@@ -442,13 +454,28 @@ function itemsOf(sp: Spec, text: string, whole: boolean): { items: Item[]; none:
  * checklist), so it picks its own card.
  */
 function hintFor(s: Session, f: RoomFacts | null, said: string): string | null {
-  return sure(s.decided) && routeAsk(f, said).route === "fast" ? s.decided!.card : null;
+  if (sure(s.decided) && routeAsk(f, said).route === "fast") return s.decided!.card;
+  // Code's one guess is the card on either route (v1-verbs: where it named one, it was right every time; the
+  // decide's misses on the brain route were cards the guess had right). A challenge is the recipe, never a hint.
+  const g = guessCards(said);
+  return g.length === 1 && getCard(g[0]) && !/\bchallenge\b/i.test(said) ? g[0] : null;
+}
+
+/** The decide's card letter is worth a call only when code's guess is empty or names two cards. */
+const needsCardDecide = (said: string) => new Set(guessCards(said)).size !== 1;
+
+/** The deck this call's prompt shows: the cards the words, the decide, the facts and the board point at. */
+function deckFor(s: Session, f: RoomFacts | null, route: AskRoute, said: string, hint: string | null) {
+  const decided = s.decides.filter((d) => d.back && d.card).at(-1);
+  const picks = decided ? [decided.card!, ...decided.top.filter((t) => t.p >= 0.15).map((t) => t.card)] : [];
+  return shortlistDeck({ said, decided: [...(hint ? [hint] : []), ...picks], facts: route.facts, board: f?.board });
 }
 
 /** The call to finish on for these words: the one told the decided card, else the newest. */
 function pickFinal(s: Session, said: string, f: RoomFacts | null): Spec | undefined {
   const want = hintFor(s, f, said);
-  const all = s.specs.filter((sp) => sp.norm === norm(said));
+  // A call whose prompt didn't show the sure decide's card can't deal it.
+  const all = s.specs.filter((sp) => sp.norm === norm(said) && (!sure(s.decided) || sp.deck.includes(s.decided!.card!)));
   return all.find((sp) => sp.hint === want) ?? all.at(-1);
 }
 
@@ -526,7 +553,7 @@ export function useVoiceBuild({
   /** Do my part: "i did 40" logs the speaker's own number on a running check-in (code, no model). Returns the card, or null. */
   myPart?: (said: string) => { item: BoardItem; text: string } | null;
   /** The one-letter card pick (live only); `onBoard` also asks the "already on the board?" yes/no. */
-  decide?: (said: string, opts: { onBoard: string | null }) => Promise<DecideAnswer>;
+  decide?: (said: string, opts: { onBoard: string | null; card: boolean }) => Promise<DecideAnswer>;
   /** The widgets on the board now, for the "already here" check. Without `decide` (mock), code's check alone answers, as a stand-in. */
   board?: () => BoardItem[];
   cardContext: () => CardContext;
@@ -778,6 +805,7 @@ export function useVoiceBuild({
       const facts = room.current.facts?.() ?? null;
       const route = routeAsk(facts, text);
       const hint = hintFor(s, facts, text);
+      const { cards: deck, focus } = deckFor(s, facts, route, text, hint);
       let settle = () => {};
       const ready = new Promise<void>((r) => (settle = r));
       const sp: Spec = {
@@ -789,6 +817,7 @@ export function useVoiceBuild({
         route,
         facts,
         hint,
+        deck,
         streamed: "",
         whole: false,
         cardOk: false,
@@ -799,7 +828,7 @@ export function useVoiceBuild({
         promise: Promise.resolve(null),
       };
       s.specs.push(sp);
-      s.trace.calls.push({ text, ms: Math.round(performance.now() - s.t0), spec, used: false, route: route.route, card: hint });
+      s.trace.calls.push({ text, ms: Math.round(performance.now() - s.t0), spec, used: false, route: route.route, card: hint, deck });
       // A speculative call holds a slot until its card is in (or it ends).
       let held = spec;
       const release = () => {
@@ -824,6 +853,8 @@ export function useVoiceBuild({
             spec,
             ...(route.route === "brain" && route.menu ? { route: "brain" as const, menu: route.menu } : {}),
             ...(hint ? { card: hint } : {}),
+            deck,
+            focus,
           },
           (a, done) => stream(s, sp, a, done === true),
         )
@@ -852,7 +883,7 @@ export function useVoiceBuild({
     const n = text.split(/\s+/).length;
     if (!(guessCard(text) || sure(s.decided) ? n >= 2 : n >= SPEC_MIN_WORDS)) return;
     const hint = hintFor(s, room.current.facts?.() ?? null, text);
-    if (s.specs.some((sp) => sp.norm === norm(text) && sp.hint === hint)) return;
+    if (s.specs.some((sp) => sp.norm === norm(text) && sp.hint === hint && (!sure(s.decided) || sp.deck.includes(s.decided!.card!)))) return;
     if (s.specs.filter((sp) => sp.spec).length >= SPEC_MAX_CALLS) return;
     if (s.inFlight >= SPEC_IN_FLIGHT) {
       s.queued = true;
@@ -864,6 +895,7 @@ export function useVoiceBuild({
   /** One decide call for these words (the yes/no too when code matched a widget). */
   const sendDecide = (s: Session, text: string, ask: NonNullable<typeof decide>): Dec => {
     const match = existingFor(text, room.current.board?.() ?? []);
+    const cardAsked = needsCardDecide(text);
     let done = () => {};
     const d: Dec = {
       seq: s.decides.length,
@@ -871,6 +903,7 @@ export function useVoiceBuild({
       norm: norm(text),
       card: null,
       conf: null,
+      top: [],
       back: false,
       matchId: match.ok ? match.item.id : null,
       onBoard: null,
@@ -888,13 +921,14 @@ export function useVoiceBuild({
       error: null,
       usage: null,
       match: match.ok ? `${match.item.card} "${match.item.title}"` : null,
+      cardAsked,
     };
     s.trace.decides.push(row);
-    void ask(text, { onBoard: match.ok ? `${match.item.card} "${match.item.title}"` : null })
+    void ask(text, { onBoard: match.ok ? `${match.item.card} "${match.item.title}"` : null, card: cardAsked })
       .then(
         (a) => {
           Object.assign(row, { back: Math.round(performance.now() - s.t0), card: a.card, conf: a.conf, top: a.top, error: a.error, usage: a.usage, onBoard: a.onBoard ?? null });
-          Object.assign(d, { back: true, card: a.card, conf: a.conf, onBoard: a.onBoard ?? null });
+          Object.assign(d, { back: true, card: a.card, conf: a.conf, top: a.top, onBoard: a.onBoard ?? null });
           if (session.current !== s || !sure(d) || (s.decided && s.decided.seq > d.seq)) return;
           s.decided = d;
           mark(s, "decided");
@@ -928,6 +962,8 @@ export function useVoiceBuild({
     if (text.split(/\s+/).length < 2) return;
     const n = norm(text);
     if (s.decides.some((d) => d.norm === n) || s.decides.length >= DECIDE_MAX) return;
+    // Only when code can't say the card (no cue, or two), or the words match a card already here (the yes/no).
+    if (!needsCardDecide(text) && !existingFor(text, room.current.board?.() ?? []).ok) return;
     if (s.decInFlight >= DECIDE_IN_FLIGHT) {
       s.decQueued = true;
       return;

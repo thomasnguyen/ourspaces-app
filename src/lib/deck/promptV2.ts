@@ -22,13 +22,17 @@ const EXTRA: Record<string, Record<string, string>> = {
   challenge: { who: "people token?" },
 };
 
-const TOKEN_RULES = `ROOM FACTS
+/** Rules that only matter when their card is in the deck shown. */
+const CARD_RULES: Array<[string, string]> = [
+  ["challenge", "- A challenge between people is the challenge recipe, one line: fill activity, unit, days and stake only when said, and who. Never deal its cards one by one."],
+  ["wheel", "- Picking one person (who's driving, who cooks, whose turn) is a wheel of those people. A poll is for choosing between options."],
+  ["checklist", "- A checklist's \"for\" hands out every item; leave it out for a sign-up where people claim their own (who's bringing what, packing)."],
+];
+
+const tokenRules = (has: (id: string) => boolean) => `ROOM FACTS
 The user turn lists this room's facts as @token = value. To use a fact, write the token itself in a setting, never its value: code fills it in, so it is always current.
 - A people token (@all, @home, @coming, @everyone-but(Name), @on-trip(title)) can be a wheel's or poll's options item, a checklist's "for", a split's "among", a challenge's "who".
-- A challenge between people is the challenge recipe, one line: fill activity, unit, days and stake only when said, and who. Never deal its cards one by one.
-- Picking one person (who's driving, who cooks, whose turn) is a wheel of those people. A poll is for choosing between options.
-- A checklist's "for" hands out every item; leave it out for a sign-up where people claim their own (who's bringing what, packing).
-- A token can sit inside text: "matcha cake" can be "@leader(cake flavor?) cake".
+${CARD_RULES.filter(([id]) => has(id)).map(([, line]) => `${line}\n`).join("")}- A token can sit inside text: "matcha cake" can be "@leader(cake flavor?) cake".
 - Only the tokens listed in the user turn exist; never write another one (there is no @everyone).
 - Use a fact only when the words need it: who takes part, the group's own options, who pays, when. Words that already say everything (a note, a code, a station, a place they named) get no tokens and nothing from the room.
 - Never make up a name, place or date about this room. A date the words give or everyone knows (a holiday) is written plainly, YYYY-MM-DD. A fact marked past is not a date to use.
@@ -49,36 +53,43 @@ const EXAMPLE_ROOM = `Room: the group chat · today Sun 2026-10-04 · people: Th
 @zones = Thomas London · Holly NY · @call-times = Mon 7p·2p, Tue 7p·2p, Wed 7p·2p, Thu 7p·2p, Fri 7p·2p
 titles: lowercase`;
 
-const EXAMPLES = `EXAMPLES (room above)
-Said: "prep list for the bbq, give everyone a job"
-{"card":"checklist","settings":{"title":"bbq prep","items":["grill","salads","drinks","ice"],"for":"@home"}}
-Said: "who's driving to game night"
-{"card":"wheel","settings":{"title":"who drives to game night","options":["@coming(game night)"]}}
-Said: "chores for the week"
-{"card":"checklist","settings":{"title":"chores this week","items":["@chores","vacuum"],"for":"@home"}}
-Said: "poll on what we do friday"
-{"card":"poll","settings":{"question":"friday plans?","options":["movie night","bowling","stay in"]}}
-Said: "poll for brunch spots"
-{"card":"poll","settings":{"question":"brunch where?","options":["@places","somewhere new"]}}
-Said: "split the lake house, 300"
-{"card":"split","settings":{"title":"lake house","total":300,"paidBy":"@payer","among":"@on-trip(lake weekend)"}}
-Said: "find a night for a movie call"
-{"card":"availability","settings":{"title":"movie call · @zones","days":["@call-times"]}}
-Said: "bake the winning dessert, done 2 days before the graduation"
-{"card":"checklist","settings":{"title":"@leader(dessert?) by @date(holly's graduation, -2d)","items":["buy what it needs","bake it","bring it"]}}
-Said: "countdown to Holly's graduation"
-{"card":"countdown","settings":{"event":"holly's graduation","date":"@date(holly's graduation)"}}
-Said: "plank challenge for all of us this week, loser makes dinner"
-{"card":"challenge","settings":{"activity":"planks","unit":"seconds","days":7,"stake":"loser makes dinner","who":"@all"}}
-Said: "note: the door code is 4417"
-{"card":"note","settings":{"text":"door code is 4417","label":"door"}}`;
+/** One worked example per card kind (the note is the control: room facts don't touch it); only the shown cards' go out. */
+const EXAMPLES: Array<[string, string]> = [
+  ["checklist", "Said: \"prep list for the bbq, give everyone a job\"\n{\"card\":\"checklist\",\"settings\":{\"title\":\"bbq prep\",\"items\":[\"grill\",\"salads\",\"drinks\",\"ice\"],\"for\":\"@home\"}}"],
+  ["wheel", "Said: \"who's driving to game night\"\n{\"card\":\"wheel\",\"settings\":{\"title\":\"who drives to game night\",\"options\":[\"@coming(game night)\"]}}"],
+  ["checklist", "Said: \"chores for the week\"\n{\"card\":\"checklist\",\"settings\":{\"title\":\"chores this week\",\"items\":[\"@chores\",\"vacuum\"],\"for\":\"@home\"}}"],
+  ["poll", "Said: \"poll on what we do friday\"\n{\"card\":\"poll\",\"settings\":{\"question\":\"friday plans?\",\"options\":[\"movie night\",\"bowling\",\"stay in\"]}}"],
+  ["poll", "Said: \"poll for brunch spots\"\n{\"card\":\"poll\",\"settings\":{\"question\":\"brunch where?\",\"options\":[\"@places\",\"somewhere new\"]}}"],
+  ["split", "Said: \"split the lake house, 300\"\n{\"card\":\"split\",\"settings\":{\"title\":\"lake house\",\"total\":300,\"paidBy\":\"@payer\",\"among\":\"@on-trip(lake weekend)\"}}"],
+  ["availability", "Said: \"find a night for a movie call\"\n{\"card\":\"availability\",\"settings\":{\"title\":\"movie call · @zones\",\"days\":[\"@call-times\"]}}"],
+  ["checklist", "Said: \"bake the winning dessert, done 2 days before the graduation\"\n{\"card\":\"checklist\",\"settings\":{\"title\":\"@leader(dessert?) by @date(holly's graduation, -2d)\",\"items\":[\"buy what it needs\",\"bake it\",\"bring it\"]}}"],
+  ["countdown", "Said: \"countdown to Holly's graduation\"\n{\"card\":\"countdown\",\"settings\":{\"event\":\"holly's graduation\",\"date\":\"@date(holly's graduation)\"}}"],
+  ["challenge", "Said: \"plank challenge for all of us this week, loser makes dinner\"\n{\"card\":\"challenge\",\"settings\":{\"activity\":\"planks\",\"unit\":\"seconds\",\"days\":7,\"stake\":\"loser makes dinner\",\"who\":\"@all\"}}"],
+  ["note", "Said: \"note: the door code is 4417\"\n{\"card\":\"note\",\"settings\":{\"text\":\"door code is 4417\",\"label\":\"door\"}}"],
+];
 
-/** The fixed system prompt (a cacheable prefix, like `deckPrompt`). `examples: false` is the ablation. */
-export function deckPromptV2(opts: { examples?: boolean } = {}): string {
+/**
+ * The system prompt. `cards`: only these deck cards, their rules and their
+ * examples (the per-ask shortlist, `shortlist.ts`); without, the whole deck.
+ * `examples: false` is the ablation.
+ */
+export function deckPromptV2(opts: { examples?: boolean; cards?: string[]; focus?: string[] } = {}): string {
+  const has = (id: string) => !opts.cards || opts.cards.includes(id);
   const deck = catalogJson()
+    .filter((c) => has(c.id))
     .map((c) => `${c.id}: ${c.use}. settings ${JSON.stringify({ ...c.settings, ...EXTRA[c.id] })}`)
     .join("\n");
-  const examples = opts.examples === false ? "" : `\n\n${EXAMPLE_ROOM}\n\n${EXAMPLES}`;
+  // Worked examples only for the cards the ask points at (`focus`), the note always (the control).
+  const showEx = (id: string) => id === "note" || (opts.focus ? opts.focus.includes(id) : has(id));
+  const shown = EXAMPLES.filter(([id]) => showEx(id)).map(([, ex]) => ex);
+  // The example room carries only the facts those examples use.
+  const room = EXAMPLE_ROOM.split("\n").filter((line, i) => {
+    if (i === 0 || line.startsWith("titles:")) return true;
+    const toks = [...line.matchAll(/@([a-z-]+)/g)].map((m) => m[1]);
+    return toks.some((t) => shown.some((ex) => ex.includes(`@${t}`)));
+  });
+  const examples = opts.examples === false ? "" : `\n\n${room.join("\n")}\n\nEXAMPLES (room above)\n${shown.join("\n")}`;
+  const TOKEN_RULES = tokenRules(has);
   return `You place cards in a shared space for a group of friends. You never write UI, layout or prose.
 Pick cards from the deck below and fill their settings. Answer with one card per line, each line compact JSON:
 {"card":"<id>","settings":{...}}

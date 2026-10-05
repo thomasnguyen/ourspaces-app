@@ -1583,9 +1583,10 @@ export function LiveSpacePage({
     },
     warm: () => void warmDeal({}).catch(() => {}),
     facts: () => roomBrief?.room ?? null,
-    decide: (said, { onBoard }) =>
+    decide: (said, { onBoard, card }) =>
       decideCard({
         said,
+        card,
         room: space?.name ?? "",
         today: voiceToday(),
         people: voicePeople(),
@@ -1626,6 +1627,7 @@ export function LiveSpacePage({
           ...(call.route ? { route: call.route } : {}),
           ...(call.menu ? { menu: call.menu } : {}),
           ...(call.card ? { card: call.card } : {}),
+          ...(call.deck ? { deck: call.deck, focus: call.focus } : {}),
           room: space.name,
           today: voiceToday(),
           people: voicePeople(),

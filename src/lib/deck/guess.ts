@@ -47,6 +47,17 @@ export function guessCard(said: string): CardId | null {
   return best?.id ?? null;
 }
 
+/** Every card the words point at, in sentence order (one = the guess is sure; two or more = ambiguous). */
+export function guessCards(said: string): CardId[] {
+  const words = said.toLowerCase();
+  const hits: { id: CardId; at: number }[] = [];
+  for (const [id, re] of CUES) {
+    const m = re.exec(words);
+    if (m) hits.push({ id, at: m.index });
+  }
+  return hits.sort((a, b) => a.at - b.at).map((h) => h.id);
+}
+
 /** Words a sentence doesn't end on: "add a poll for…" is still going. */
 const DANGLING = new Set(
   "a an the for to of and or but with about on at in into from by my our your their his her some any is are was be that this which who what where when how should can could let's lets um uh like called named add make put start create set give get plus than".split(" "),
