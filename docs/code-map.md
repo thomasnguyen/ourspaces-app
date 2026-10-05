@@ -421,7 +421,7 @@ look + widgets + votes + paint + messages, remapping every id on the way in;
 never touches `members`, the inbox, the slug or `ownerId`; clears recaps,
 ask streams, work, cursors and post-baseline mail. Schedules
 `rag.reindexSpace` + `similar.backfillSpace` after, since every id changed) ·
-`schema.ts` (spaces — carries `inboxId`/`inboxAddress`/`askThreadId`/
+`schema.ts` (a one-screen list of every table, one comment each; the fields and indexes live in `tables/` by area: `rooms.ts`, `mail.ts`, `voice.ts`, `rightOfWay.ts`, `games.ts`. Tables: spaces — carries `inboxId`/`inboxAddress`/`askThreadId`/
 `ragIndexedAt` — plus emailEvents, members, widgets [`data`: typed
 discriminated union, see `widgetData.ts`], messages [+ full-text search
 index], votes, paintMarks, recaps, presence, `baselines` [one frozen board per slug,
