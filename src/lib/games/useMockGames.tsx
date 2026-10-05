@@ -325,6 +325,9 @@ export function useMockGames(o: {
     let game = deal(roomId, mine ? me : { name: starter.name, color: starter.color }, at, play);
     const upTo = Math.min(game.rounds.length, Math.max(1, Number(q.get("round") ?? (want === "late" ? 3 : 1)))) - 1;
     for (const sim of sims) game = joinGame(game, { name: sim.name, color: sim.color }, at);
+    /* one stream per simulated player, so who knows what doesn't depend on who else is in */
+    const streams: Record<string, () => number> = {};
+    const randOf = (name: string) => (play ? (streams[name] ??= seeded(7 + name.length * 131 + name.charCodeAt(0) * 17)) : rand);
     const playRound = (skip: string[] = []) => {
       const round = currentRound(game)!;
       for (const player of roundPlayers(game)) {
@@ -332,7 +335,7 @@ export function useMockGames(o: {
         const ask = askFor(round, player.name);
         /* you: the room's pick, or the right answer (but nobody gets them all) */
         const top = ask ? (round.n === 2 && ask.form === "choice" ? (ask.options.find((o) => !same(o, ask.right)) ?? ask.right) : ask.right) : Object.entries((round.prompt as MockPrompt).lean).sort((a, b) => b[1] - a[1])[0][0];
-        game = answer(game, player.name, same(player.name, me.name) ? top : simAnswer(game, round, player.name, rand), at - 9000 + game.players.indexOf(player) * 700);
+        game = answer(game, player.name, same(player.name, me.name) ? top : simAnswer(game, round, player.name, randOf(player.name)), at - 9000 + game.players.indexOf(player) * 700);
       }
     };
     /* hot seat: the reactions a finished round already has */

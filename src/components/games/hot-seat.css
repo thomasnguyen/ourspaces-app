@@ -528,7 +528,7 @@ button.hs-opt:not(:disabled):active {
   line-height: 1;
   padding: 8px 13px 8px 9px;
   rotate: 9deg;
-  animation: gm-stamp var(--dur-stage) var(--ease-snap) both;
+  animation: hs-stamp var(--dur-arrive) var(--ease-snap) both;
   animation-delay: calc(var(--t0) + 900ms);
 }
 
@@ -644,36 +644,69 @@ button.hs-opt:not(:disabled):active {
   margin-left: auto;
 }
 
-/* where it came from: tap to go to the card */
+/* where it came from: a black strip under the receipt, and the way to the card */
 .hs-fact {
   display: flex;
-  width: 100%;
+  align-self: stretch;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: var(--color-muted);
+  border-radius: 13px;
+  background: var(--color-sticker);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.35);
+  color: white;
   cursor: pointer;
-  font-size: 11.5px;
-  font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.15;
+  margin: 8px 0 auto;
+  padding: 8px 9px 8px 12px;
+  rotate: -0.6deg;
   text-align: left;
+  transition: translate var(--dur-quick) var(--ease-glide);
+  animation: gm-deal var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(var(--t0) + 900ms);
+}
+
+.hs-fact:hover {
+  translate: 0 -2px;
+}
+
+.hs-fact span {
+  display: grid;
+  min-width: 0;
+}
+
+.hs-fact b {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.hs-fact b::before {
+  color: var(--color-lime);
+  content: "↳ ";
+}
+
+.hs-fact em {
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+  opacity: 0.75;
 }
 
 .hs-fact i {
   flex: none;
   border-radius: var(--radius-pill);
-  background: var(--color-sticker);
-  color: var(--color-lime);
+  background: var(--color-lime);
+  color: var(--color-ink);
   font-family: var(--font-display);
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-style: normal;
   font-weight: 800;
-  padding: 4px 8px;
-  transition: translate var(--dur-quick) var(--ease-glide);
+  padding: 6px 10px;
 }
 
-.hs-fact:hover i {
-  translate: 2px 0;
+.hs-flood .gm-receipt {
+  margin-bottom: 0;
 }
 
 /* two people: one question each, both answers on the one flood */
@@ -704,6 +737,11 @@ button.hs-opt:not(:disabled):active {
 
 .hs-rv.is-duo .hs-flood .gm-receipt {
   margin: 6px 0 0;
+}
+
+.hs-rv.is-duo .hs-fact {
+  margin: 6px 0 0;
+  padding: 5px 7px 5px 10px;
 }
 
 .hs-rv.is-duo .hs-react.is-landed {
@@ -1162,8 +1200,20 @@ button.hs-opt:not(:disabled):active {
   }
 
   .gm.is-sheet .hs-podium {
-    gap: 12px;
-    margin-top: 12px;
+    gap: 14px;
+    margin: auto 0 14px;
+  }
+
+  .gm.is-sheet .hs-said {
+    margin-bottom: auto;
+  }
+
+  .gm.is-sheet .hs-fact {
+    padding: 11px 11px 11px 14px;
+  }
+
+  .gm.is-sheet .hs-fact b {
+    font-size: 16px;
   }
 
   .gm.is-sheet .hs-podium li {
@@ -1174,6 +1224,15 @@ button.hs-opt:not(:disabled):active {
   .gm.is-sheet .hs-podium li:first-child {
     padding: 14px 16px 14px 10px;
     --face: 64px;
+  }
+}
+
+/* small and opaque all the way in: it must never cover the face it lands by */
+@keyframes hs-stamp {
+  from {
+    rotate: -8deg;
+    scale: 1.5;
+    translate: 14px -18px;
   }
 }
 

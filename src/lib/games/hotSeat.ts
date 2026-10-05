@@ -68,8 +68,9 @@ export type SeatFact = Base &
     | { kind: "date"; title: string; days: number }
   );
 
-/** The order a game asks in; a second fact of a kind waits for a second pass. */
-const ORDER: SeatFact["kind"][] = ["lead", "said", "vote", "free", "claim", "wrote", "back", "clock", "count", "date"];
+/** Which facts a game reaches for first; a second fact of a kind waits for a
+    second pass. Their own day comes before the room's general lines. */
+const ORDER: SeatFact["kind"][] = ["lead", "said", "vote", "free", "claim", "wrote", "date", "back", "clock", "count"];
 
 function placesOf(room: SeatRoom): string[] {
   const line = room.lines.find((l) => l.key === "places");
@@ -268,11 +269,12 @@ export function questionsFor(room: SeatRoom, about: string, rand: () => number, 
   const seen: Record<string, number> = {};
   for (const fact of facts) {
     const nth = seen[fact.kind] ?? 0;
-    if (nth > 1 || (fact.card && cards.has(fact.card))) continue;
+    /* the habit line counts across cards, so it may share one */
+    if (nth > 1 || (fact.kind !== "count" && fact.card && cards.has(fact.card))) continue;
     const ask = askFrom(fact, about, rand, now);
     if (!ask) continue;
     seen[fact.kind] = nth + 1;
-    if (fact.card) cards.add(fact.card);
+    if (fact.card && fact.kind !== "count") cards.add(fact.card);
     passes[nth].push(ask);
   }
   return passes.flat();

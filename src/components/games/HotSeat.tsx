@@ -398,13 +398,15 @@ function SeatReveal({ api, game, round }: { api: GamesApi; game: Game; round: Ga
                     {g.ok && <i aria-hidden="true">✓</i>}
                   </li>
                 ))}
-                <li className="hs-fact-row">
-                  <button type="button" className="hs-fact" data-testid="hot-seat-fact" data-card={ask.fact.card} data-key={ask.fact.key} onClick={() => goToFact(api, ask.fact.card)}>
-                    <span>↳ {ask.fact.from}</span>
-                    {ask.fact.card && <i>see it →</i>}
-                  </button>
-                </li>
               </ul>
+              {/* where it came from: its own strip, and a way to the card */}
+              <button type="button" className="hs-fact" data-testid="hot-seat-fact" data-card={ask.fact.card} data-key={ask.fact.key} onClick={() => goToFact(api, ask.fact.card)}>
+                <span>
+                  <b>{ask.fact.from.split(" · ")[0]}</b>
+                  {ask.fact.from.includes(" · ") && <em>{ask.fact.from.split(" · ").slice(1).join(" · ")}</em>}
+                </span>
+                {ask.fact.card && <i>the card ↗</i>}
+              </button>
             </section>
           );
         })}

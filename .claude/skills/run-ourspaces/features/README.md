@@ -18,6 +18,7 @@ id named here exists in `src/`.
 | [most-likely-to](most-likely-to.md) | crew, house, couple | round · reveal · split · awards · house · two · two-match |
 | [scoreboard](scoreboard.md) | crew, house | locked · open · after · house |
 | [jigsaw](jigsaw.md) | crew | start · playing · ghost · late · last · done (+ takes: start · work · yield · nod · reach · hold · finish) |
+| [hot-seat](hot-seat.md) | crew, house, couple | lobby · round · reveal · slider · done · keepsake · seat-* (Maya's view) · other · house · two (+ takes: reveal · seat, and -phone) |
 | [room-brain](room-brain.md) | crew, house, couple | door · open · visit · forget · told · empty · live |
 
 ## Header format
