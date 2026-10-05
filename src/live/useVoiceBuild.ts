@@ -1,3 +1,4 @@
+import { playSound } from "../lib/sounds";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { Widget } from "../data/types";
 import {
@@ -1298,6 +1299,7 @@ export function useVoiceBuild({
       if (sp.firstFieldAt && sp.firstFieldAt > 0) mark(s, "first-field", sp.firstFieldAt);
       markNext(s, "first-field");
       markNext(s, "card-local");
+      playSound("place"); // the card the agent built lands like anything else placed on the board
       markNext(s, "card-full");
       // The camera follows only when the spot is off-screen.
       const cluster = {

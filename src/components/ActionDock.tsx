@@ -215,7 +215,8 @@ function DockVoice({ hooks }: { hooks?: VoiceHooks }) {
   const listening = voice.state === "listening";
   const text = voice.transcript.length > 46 ? `…${voice.transcript.slice(-45)}` : voice.transcript;
   const toggle = () => {
-    playSound("tap");
+    // The agent has its own cue: promote wakes it, tap finishes by hand.
+    playSound(listening ? "tap" : "promote");
     if (listening) voice.finish("done");
     else void voice.start();
   };
