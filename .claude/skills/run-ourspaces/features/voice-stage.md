@@ -29,6 +29,10 @@ states:
   already-found: ?voicePace=talk&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-stage-found | sleep 300
   already-landed: ?voicePace=talk&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-stage-found | sleep 2600
   center: ?stage=center&voice=Make a space for our Tahoe weekend | click dock-voice-orb | wait voice-stage | sleep 1500
+  live: ?enter=1&timing=1&voicePace=talk&voice=poll on what we do this weekend | sleep 1400
+  livefacts: ?enter=1&timing=1&voicePace=talk&voice=who's driving to Maya's | sleep 1400
+  livealready: ?enter=1&timing=1&voicePace=talk&voice=add a poll for cake flavor | sleep 1400
+  livehesitate: ?enter=1&timing=1&voicePace=talk&voice=add a poll for … Saturday dinner | sleep 1400
 take:
   poll: poll real 60fps 300f warmup 1200 | 20 click dock-voice-orb
   countdown: countdown real 60fps 340f warmup 1200 | 20 click dock-voice-orb
@@ -39,6 +43,10 @@ take:
   poll-slow: poll-slow real 30fps 400f warmup 1200 | 10 click dock-voice-orb
   ask-answered: ask-answered real 60fps 480f warmup 1200 | 20 click dock-voice-orb
   already: already real 60fps 360f warmup 1200 | 20 click dock-voice-orb
+  live: live real 30fps 180f | 3 click dock-voice-orb
+  livefacts: livefacts real 30fps 180f | 3 click dock-voice-orb
+  livealready: livealready real 30fps 180f | 3 click dock-voice-orb
+  livehesitate: livehesitate real 30fps 200f | 3 click dock-voice-orb
 ---
 # Voice stage (two parts: you speak, it builds)
 

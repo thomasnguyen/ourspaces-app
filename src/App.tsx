@@ -42,7 +42,7 @@ import { dealDemo, deckLabRequested } from "./lib/deck/lab";
 import { mockDeal } from "./lib/deck/mockDeal";
 import { mockFacts } from "./lib/deck/mockFacts";
 import { offersFor } from "./lib/deck/suggest";
-import { setVoiceStageOffers } from "./lib/voiceStage";
+import { setVoiceStageBoard, setVoiceStageOffers } from "./lib/voiceStage";
 import { beat } from "./lib/voiceTimings";
 import { boardItems } from "./lib/deck/existing";
 import { useVoiceBuild } from "./live/useVoiceBuild";
@@ -525,6 +525,7 @@ export default function App() {
   };
   // What the room can offer for a card named with nothing in it (the voice stage asks).
   setVoiceStageOffers((card) => offersFor(voiceFacts(), card));
+  setVoiceStageBoard((id) => visibleWidgetsRef.current.find((widget) => widget.id === id));
   const voiceBuild = useVoiceBuild({
     scrollerRef: canvasViewportRef,
     cardContext: voiceCtx,
@@ -546,6 +547,11 @@ export default function App() {
       return dealt.map((w) => w.id);
     },
   });
+  // a voice ask tucks catch me up (and its tickets) away: the card it builds lands where the panel was
+  const voiceHooks = useMemo(
+    () => ({ ...voiceBuild.voice, start: () => { setRecapOpen(false); voiceBuild.voice.start?.(); } }),
+    [voiceBuild.voice],
+  );
   const voiceAddedWidgets = useMemo(
     () => voiceBuild.withDrafts(addedWidgets[spaceId] ?? []),
     [voiceBuild.withDrafts, addedWidgets, spaceId],
@@ -2626,7 +2632,7 @@ export default function App() {
         onDays={addMyDays}
       />
       <ActionDock
-        voice={voiceBuild.voice}
+        voice={voiceHooks}
         recapOpen={recapOpen}
         recapRunId={recapRunId}
         recapTurns={recapTurns}

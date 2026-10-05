@@ -22,7 +22,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock, radioRoomOf } from "../components/ActionDock";
 import { VoiceBuildLayer } from "../components/VoiceBuildLayer";
 import { offersFor } from "../lib/deck/suggest";
-import { setVoiceStageOffers } from "../lib/voiceStage";
+import { setVoiceStageBoard, setVoiceStageOffers } from "../lib/voiceStage";
 import { RoomKnowsDoor, RoomKnowsPage } from "../components/RoomKnows";
 import { standing } from "../lib/roomKnows";
 import { useVoiceBuild } from "../live/useVoiceBuild";
@@ -811,9 +811,36 @@ export function LiveSpacePage({
     });
     return { widgets, rsvpSelections, dailyAnswers, dailyReactions };
   }, [boardWidgets, identity.userId, revealingAnswers]);
-  /* "your turn": computed from what this page already holds. A guest has
-     nothing waiting on them, so they get where the room is at instead. Only
-     the first poll has its votes loaded here, so only that poll can be read. */
+  /* "your turn": computed from what this page already holds, plus every
+     poll's votes (the board itself only subscribes to the first poll's). A
+     joined member gets everything waiting on them; a silent guest (not
+     email-joined) has nothing on them, so they get three places to jump in. */
+  const roomVotes = useQuery(api.votes.inSpace, mode === "live" && space ? { spaceId: space._id } : "skip");
+  const turnPolls = useMemo(() => {
+    const voted: Record<string, string> = {};
+    const byPoll = new Map<string, Map<string, string[]>>();
+    for (const row of roomVotes ?? []) {
+      if (row.userId === identity.userId) { voted[row.widgetId] = row.optionId; continue; }
+      const options = byPoll.get(row.widgetId) ?? new Map<string, string[]>();
+      options.set(row.optionId, [...(options.get(row.optionId) ?? []), row.voterName]);
+      byPoll.set(row.widgetId, options);
+    }
+    const widgets = adaptedWidgets.map((widget) => {
+      if (widget.type !== "poll" || !Array.isArray(widget.data.options)) return widget;
+      const options = byPoll.get(widget.id);
+      return {
+        ...widget,
+        data: {
+          ...widget.data,
+          options: (widget.data.options as Record<string, unknown>[]).map((option) => ({
+            ...option,
+            voters: options?.get(String(option.id)) ?? [],
+          })),
+        },
+      };
+    });
+    return { widgets, voted };
+  }, [adaptedWidgets, identity.userId, roomVotes]);
   const turnViewer = useMemo<TurnViewer>(
     () => ({
       name: identity.name,
@@ -824,14 +851,15 @@ export function LiveSpacePage({
   );
   const turnItems = useMemo(
     () => yourTurn({
-      widgets: adaptedWidgets,
+      widgets: turnPolls.widgets,
       members: members.map((member) => member.name),
       viewer: turnViewer,
-      mine: { polls: pollSelections, rsvps: rsvpSelections, answers: dailyAnswers },
-      knownPolls: livePoll.id ? [livePoll.id] : [],
+      mine: { polls: { ...pollSelections, ...turnPolls.voted }, rsvps: rsvpSelections, answers: dailyAnswers },
+      // until the room's votes load, no poll can be read
+      knownPolls: roomVotes ? undefined : [],
       sharedSeals: true,
     }),
-    [adaptedWidgets, dailyAnswers, livePoll.id, members, pollSelections, rsvpSelections, turnViewer],
+    [dailyAnswers, members, pollSelections, roomVotes, rsvpSelections, turnPolls, turnViewer],
   );
   /* `/?peers=3#/space/house` — the peers lab (src/live/labPeers.ts) on a real
      space: the fixture's roster gets a cursor each, moving the way people do
@@ -1530,6 +1558,8 @@ export function LiveSpacePage({
   const voiceSelectedId = () => (focusedTarget?.kind === "widget" ? focusedTarget.id : selectedWidgetId) ?? null;
   // What the room can offer for a card named with nothing in it (the voice stage asks; lib/deck/suggest.ts).
   setVoiceStageOffers((card) => offersFor(roomBrief?.room ?? null, card));
+  // "already here": the stage shows the card that is there
+  setVoiceStageBoard((id) => adaptedWidgets.find((widget) => widget.id === id));
   const voiceBuild = useVoiceBuild({
     scrollerRef: viewportRef,
     cardContext: () => ({ by: identity.name, people: voicePeople(), today: voiceToday() }),
@@ -1647,6 +1677,11 @@ export function LiveSpacePage({
           notes: trace.notes,
         }) }).catch(() => {}),
   });
+  // a voice ask tucks catch me up (and its tickets) away: the card it builds lands where the panel was
+  const voiceHooks = useMemo(
+    () => ({ ...voiceBuild.voice, start: () => { setRecapOpen(false); voiceBuild.voice.start?.(); } }),
+    [voiceBuild.voice],
+  );
   const canvasWidgets = useMemo(() => voiceBuild.withDrafts(adaptedWidgets), [voiceBuild.withDrafts, adaptedWidgets]);
   /* The header always needs a number to print, so an unloaded count reads as
      quiet rather than falling through to the seeded roster. The strip can
@@ -3053,7 +3088,7 @@ export function LiveSpacePage({
         />
       )}
       <ActionDock
-        voice={voiceBuild.voice}
+        voice={voiceHooks}
         recapOpen={recapOpen}
         recapRunId={recapRunId}
         recapLines={recapLines}

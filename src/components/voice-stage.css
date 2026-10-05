@@ -908,7 +908,12 @@ body.voice-stage-up .voice-slip {
     }
   }
 
+  /* the phone stage stacks orb, words and card from the top: the dev beats go under the card */
   .voice-stage-beats {
+    top: auto;
+    bottom: 8px;
+    max-height: 21vh;
+    overflow: hidden;
     font-size: 8.5px;
   }
 

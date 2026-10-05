@@ -86,13 +86,14 @@ export const CATALOG = [
     use: "spin to pick one option or person at random",
     type: "wheel",
     settings: { title: text(32), options: list(2, 8, { itemMax: 18 }) },
-    build: (s, ctx) => ({
+    build: (s) => ({
       title: s.title,
       tone: "mint",
       slices: s.options.map((label, i) => ({ id: LETTERS[i], label })),
       spinNonce: 0,
       resultIndex: 0,
-      spunBy: ctx.by,
+      // nobody has spun it yet ("" = not spun; the maker's name here read as "landed on you" in your turn)
+      spunBy: "",
     }),
   }),
   card({

@@ -107,3 +107,33 @@ export const vote = mutation({
     return id;
   },
 });
+
+/** Every poll's votes in one room, for "your turn" (src/lib/yourTurn.ts): the
+    board subscribes to one poll's results, but a ticket needs to know, for
+    every poll, whether you voted and who else has. Same scoping and the same
+    rows as getResults, one subscription for the room. */
+export const inSpace = query({
+  args: { spaceId: v.id("spaces") },
+  returns: v.array(v.object({ widgetId: v.id("widgets"), userId: v.string(), optionId: v.string(), voterName: v.string() })),
+  handler: async (ctx, { spaceId }) => {
+    const polls = (
+      await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).collect()
+    ).filter((widget) => widget.type === "poll");
+    const rows = (
+      await Promise.all(
+        polls.map((poll) =>
+          ctx.db.query("votes").withIndex("by_widget", (q) => q.eq("widgetId", poll._id)).collect(),
+        ),
+      )
+    ).flat();
+    const names = new Map<string, string>();
+    for (const userId of new Set(rows.map((row) => row.userId))) {
+      const member = await ctx.db
+        .query("members")
+        .withIndex("by_space_user", (q) => q.eq("spaceId", spaceId).eq("userId", userId))
+        .unique();
+      names.set(userId, member?.name ?? "Guest");
+    }
+    return rows.map((row) => ({ widgetId: row.widgetId, userId: row.userId, optionId: row.optionId, voterName: names.get(row.userId) ?? "Guest" }));
+  },
+});

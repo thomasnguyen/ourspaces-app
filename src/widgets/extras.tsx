@@ -228,7 +228,7 @@ export function WheelWidget({
         {isSpinning ? "landing…" : disabled ? "preview only" : "spin it →"}
       </button>
       <p className="wheel-result" aria-live="polite">
-        {slices[shownResultIndex] ? <><strong>{String(widget.data.spunBy ?? "someone")}</strong> spun → {slices[shownResultIndex].label.toLowerCase()}</> : "add a few slices first"}
+        {!slices[shownResultIndex] ? "add a few slices first" : widget.data.spunBy || isSpinning ? <><strong>{String(widget.data.spunBy ?? "someone")}</strong> spun → {slices[shownResultIndex].label.toLowerCase()}</> : "nobody's spun it yet"}
       </p>
     </section>
   );

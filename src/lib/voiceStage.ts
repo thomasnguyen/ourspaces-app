@@ -110,6 +110,13 @@ function sourceName(token: string) {
   }
 }
 
+/** The board, by widget id: on "already here" the stage shows the card that is
+    there, not the guess it had been filling (LiveSpace / App set it). */
+let boardWidget: ((id: string) => Widget | undefined) | null = null;
+export function setVoiceStageBoard(lookup: (id: string) => Widget | undefined) {
+  boardWidget = lookup;
+}
+
 let current: StageBuild | null = null;
 const watchers = new Set<() => void>();
 
@@ -120,8 +127,10 @@ export function feedVoiceStage(feed: StageFeed) {
   let next: StageBuild | null = null;
   if (key !== undefined) {
     const same = current?.key === key ? current : null;
+    const foundHere = feed.found?.traceKey === key ? feed.found : null;
+    const there = foundHere ? (boardWidget?.(foundHere.widgetId) ?? null) : null;
     // the draft is dropped once its synced copy is on the board: keep showing the last one
-    const widget = draft ?? same?.widget ?? null;
+    const widget = there ?? draft ?? same?.widget ?? null;
     const kind = widget ? (CATALOG.find((c) => c.type === widget.type)?.id ?? null) : null;
     const trace = feed.traces.find((t) => t.key === key);
     const placed = feed.landed?.traceKey === key ? { widgetId: feed.landed.widgetId, host: feed.landed.host } : null;
@@ -136,7 +145,7 @@ export function feedVoiceStage(feed: StageFeed) {
     if (widget) {
       for (const step of fillPlan(kind).steps) {
         step.read(widget.data as Record<string, unknown>, complete).forEach((value, i) => {
-          const status = value === null ? "pending" : complete || (ended && step.from !== "words") ? "final" : "tentative";
+          const status = value === null ? "pending" : complete || there || (ended && step.from !== "words") ? "final" : "tentative";
           const room = value === null ? null : (fromRoom.get(String(value).toLowerCase()) ?? null);
           parts.push({ id: partId(step, i), label: step.label, wave: step.wave, status, value, tick: Boolean(step.tick), room });
         });
