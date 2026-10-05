@@ -79,6 +79,8 @@ export type GamesApi = {
   notice?: string;
   /** a running challenge in this room, ranked on the same card (face down until you log) */
   challenge?: ChallengeBoard | null;
+  /** a spoken start ("let's play most likely to", "how well do you know maya"): the slip's line */
+  voice?: (said: string) => Promise<string>;
   /** mock only: the people the tab is pretending to be, for the dev readout */
   simulated?: string[];
 };

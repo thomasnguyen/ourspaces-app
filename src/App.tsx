@@ -122,7 +122,8 @@ import { GAME_WIDGET_ID, GamesProvider, KEEPSAKE_WIDGET_ID, SCOREBOARD_WIDGET_ID
 import { KEEPSAKE_SPOTS, hasGames } from "./data/games";
 import { JigsawDev, JigsawInvite, JigsawSheet, JigsawWorld } from "./components/games/Jigsaw";
 import { JigsawProvider, useMockJigsaw, withJigsaw, JIGSAW_WIDGET_ID } from "./lib/jigsaw/useMockJigsaw";
-import { hasJigsaw } from "./data/jigsaw";
+import { hasJigsaw, ROOM_JIGSAW } from "./data/jigsaw";
+import { gameAsk } from "./lib/deck/verbs";
 import { mockViewer, mockWaitingByRoom, playAsOverrides, yourTurn } from "./lib/yourTurn";
 
 const CursorLab = lazy(() =>
@@ -539,7 +540,7 @@ export default function App() {
   setVoiceStageOffers((card) => offersFor(voiceFacts(), card));
   setVoiceStageBoard((id) => visibleWidgetsRef.current.find((widget) => widget.id === id));
   // the mock writes, defined further down, for the voice router
-  const voiceVerbRef = useRef<{ recap: () => void; act: (a: MineAct) => void }>({ recap: () => {}, act: () => {} });
+  const voiceVerbRef = useRef<{ recap: () => void; act: (a: MineAct) => void; game: (said: string) => string }>({ recap: () => {}, act: () => {}, game: () => "" });
   const voiceBuild = useVoiceBuild({
     scrollerRef: canvasViewportRef,
     cardContext: voiceCtx,
@@ -576,6 +577,7 @@ export default function App() {
         window.location.hash = knowsHash(spaceId);
       },
       act: (a) => voiceVerbRef.current.act(a),
+      game: (said) => voiceVerbRef.current.game(said),
     },
     deal: async (call, onPartial) => {
       // `?voiceHold=1` keeps the skeleton up for a still (drive voice-build:shell).
@@ -1863,6 +1865,7 @@ export default function App() {
   }, [recapOpen]);
 
   voiceVerbRef.current = {
+    ...voiceVerbRef.current,
     recap: () => openRecap(),
     act: (a) => {
       if (a.kind === "rsvp") respondToRsvp(a.widgetId, a.status);
@@ -2113,6 +2116,23 @@ export default function App() {
   /* the jigsaw: its own mat on the board; what it leaves joins the same scoreboard */
   const jigsaw = useMockJigsaw({ room: spaceId, meOf: gameMeOf, castOf: gameCastOf, flyTo: goToTurnWidget });
   const games = withJigsaw(gamesOnly, jigsaw);
+  /* by voice, mock: the same starts a tap makes; the players who answer are simulated (the dev readout says so) */
+  voiceVerbRef.current.game = (said) => {
+    if (!hasGames(spaceId)) return "no games in this room";
+    const ask = gameAsk(said, gameMeOf(spaceId).name);
+    if (ask.kind === "jigsaw") {
+      if (!hasJigsaw(spaceId)) return "no photo to make a puzzle of here";
+      const photo = ROOM_JIGSAW[spaceId].photos.find((p) => ask.photo && p.caption.includes(ask.photo.split(" ")[0])) ?? ROOM_JIGSAW[spaceId].photos[0];
+      jigsaw.start(photo.key);
+      return `a puzzle of ${photo.caption}. pieces on the mat`;
+    }
+    if (ask.kind === "hot-seat") {
+      games.startSeat(ask.about);
+      return `started ${ask.about ? `how well do you know ${ask.about}` : games.seatName}. simulated players in mock`;
+    }
+    games.start();
+    return `started ${games.gameName}. simulated players in mock`;
+  };
   const jigsawOverlay = useMemo(() => <JigsawWorld />, []);
   /* the games corner is placed like any card, inside the board (lib/games/place.ts) */
   const gameSpot = gameSpots(spaceId, getSpace(spaceId).widgets, { w: canvasSizeFor(spaceId).width, h: canvasSizeFor(spaceId).height });

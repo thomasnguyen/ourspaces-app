@@ -17,6 +17,7 @@ import type { Award, Game, ScoreRow } from "../lib/games/types";
 import { isIn } from "../lib/games/engine";
 import { keepsakeOf, seatName } from "../lib/games/hotSeat";
 import { GAME_WIDGET_ID, type ChallengeBoard, type GamesApi } from "../lib/games/useMockGames";
+import { gameAsk } from "../lib/deck/verbs";
 
 const PHONE = "(max-width: 800px)";
 
@@ -83,6 +84,17 @@ export function useLiveGames(o: {
     enter();
   }, [enter, gameId, identity.userId, joinGame]);
 
+  /* by voice: the router hands the words here; the start goes through the same mutation (and the one door) */
+  const voice = async (said: string): Promise<string> => {
+    if (!spaceId) return "no games in this room";
+    const ask = gameAsk(said, me.name);
+    if (ask.kind === "jigsaw") return "the puzzle starts from the scoreboard in live rooms";
+    const res = await startGame({ spaceId, userId: identity.userId, kind: ask.kind, said, ...(ask.about ? { about: ask.about } : {}) });
+    if (!res.ok) return res.reason ?? "couldn't start it";
+    enter();
+    return res.reason === "already on" ? `${res.name} is already on. jump in` : `started ${res.name}. everyone here gets the invite`;
+  };
+
   if (!enabled || !spaceId) return null;
   const picks = (offer ?? []).map((p) => ({ ...p, color: p.color }));
   const started = game?.startedAt ?? 0;
@@ -117,6 +129,7 @@ export function useLiveGames(o: {
     closeSheet: () => setSheetOpen(false),
     openSheet: () => setSheetOpen(true),
     live: true,
+    voice,
     notice,
     challenge: data?.challenge ?? null,
   };

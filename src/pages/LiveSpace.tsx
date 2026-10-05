@@ -861,6 +861,8 @@ export function LiveSpacePage({
     enabled: mode === "live" && roomEntered && LIVE_GAME_ROOMS.has(slug),
     flyTo: goToTurnWidget,
   });
+  const gamesRef = useRef(games);
+  gamesRef.current = games;
   const gameWidgets = useMemo<Widget[]>(() => {
     if (!games || adaptedWidgets.length === 0) return [];
     const spot = gameSpots(slug, adaptedWidgets, { w: space?.canvasW ?? snapshot?.canvasW ?? 1640, h: space?.canvasH ?? snapshot?.canvasH ?? 1080 });
@@ -1719,6 +1721,7 @@ export function LiveSpacePage({
         return await answerAsk({ spaceId: space._id, question: said });
       },
       today: () => voiceToday(),
+      game: (said) => gamesRef.current?.voice?.(said) ?? "no games in this room",
       edit: async (widgetId, op) => {
         if (!space) throw new Error("no space");
         return await applyVoiceEdit({ spaceId: space._id, widgetId: widgetId as Id<"widgets">, op, by: identity.name, byUserId: identity.userId, today: voiceToday() });

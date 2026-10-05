@@ -31,7 +31,21 @@ const clean = (s: string) =>
     .replace(/^((hey|ok|okay|so|um|uh|yeah|yes|please|alright|orb),?\s+)+/, "");
 
 const RECAP = /\b(catch me up|catch up|what did i miss|what have i missed|what'?s new|what'?s been (happening|going on)|what happened|fill me in|recap|bring me up to (speed|date))\b/;
-const GAME = /\b(let'?s play|play (a |some )?(game|most likely|would you rather|two truths|never have i ever|trivia)|start a game|most likely to|would you rather|truth or dare|never have i ever|two truths)\b/;
+const GAME = /\b(let'?s play|play (a |some )?(game|most likely|would you rather|two truths|never have i ever|trivia)|start a game|most likely to|would you rather|truth or dare|never have i ever|two truths|how well do (you|we|y'?all) know|hot ?seat|(do|start|make) a (jigsaw|puzzle)|(jigsaw|puzzle) of)\b/;
+
+/** Which game the words ask for, and who or what it's about. Code only. */
+export type GameAsk = { kind: "most-likely" | "hot-seat" | "jigsaw"; about?: string; photo?: string };
+export function gameAsk(said: string, me = ""): GameAsk {
+  const t = clean(said);
+  const seat = /\bhow well do (?:you|we|y'?all) (?:all )?know ([a-z][a-z'-]*)|\bhot ?seat(?: (?:for|with|on) ([a-z][a-z'-]*))?/.exec(t);
+  if (seat) {
+    const who = (seat[1] ?? seat[2] ?? "").replace(/'s$/, "");
+    return { kind: "hot-seat", ...(who === "me" ? { about: me } : who && !["each", "us", "everyone"].includes(who) ? { about: who } : {}) };
+  }
+  const puz = /\b(?:jigsaw|puzzle)\b(?: (?:of|with|from) (?:the |our |that )?(.+?)(?: (?:photo|picture|pic))?$)?/.exec(t);
+  if (puz) return { kind: "jigsaw", ...(puz[1] ? { photo: puz[1] } : {}) };
+  return { kind: "most-likely" };
+}
 const GO = /^(take me (to|back to)|go (back )?to|show me|open( up)?|bring up|jump to|switch to|head to|find me)\b/;
 const MINE =
   /^(i'?m (in|out|down|coming|not coming|not going|going|bringing|game)\b|i am (in|out|coming|not coming)\b|count me (in|out)\b|put me (down )?(for|on|in)\b|sign me up\b|i'?ll (bring|take|do|grab|handle|cover|be there|come)\b|i (can'?t|cannot|won'?t) (make it|come|go|do)\b|i (did|ran|walked|swam|logged|got) \d|i did it\b|i vote\b|my vote\b|vote$|vote (?!on\b|about\b|for (a|an|the|what|where|which|who)\b)(for )?\w|i (pick|choose)\b|i can (make it|come)\b)/;

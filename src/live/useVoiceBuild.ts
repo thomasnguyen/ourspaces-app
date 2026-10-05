@@ -586,16 +586,16 @@ export type VerbHooks = {
   act: (a: MineAct) => void;
   /** Ask the space (retrieval + one small model call); absent in mock. */
   retrieve?: (said: string) => Promise<RetrieveOut>;
-  /** Start a game (games aren't on main yet: a later task replaces this). */
-  game?: (said: string) => string;
+  /** Start a game (lib/games; live: convex/games.ts through the one door). Returns the slip's line. */
+  game?: (said: string) => string | Promise<string>;
   /** An edit through convex/edits.ts (optimistic on this screen); absent in mock. */
   edit?: (widgetId: string, op: EditOp) => Promise<EditOut>;
   undo?: (writeId: string) => Promise<EditOut>;
   today?: () => string;
 };
 
-/** Games aren't on main yet: the one place a later task plugs them in. */
-export const startGame = (_said: string) => "games are coming";
+/** Where no room hands in a game starter (a room without games). */
+export const startGame = (_said: string) => "no games in this room";
 
 export function useVoiceBuild({
   scrollerRef,
@@ -1518,9 +1518,11 @@ export function useVoiceBuild({
         say(s, { verb: "recap", text: "catching you up", by: "code" });
         vh.recap(said);
         return true;
-      case "game":
-        say(s, { verb: "game", text: (vh.game ?? startGame)(said), by: "code" });
+      case "game": {
+        const text = await Promise.resolve((vh.game ?? startGame)(said)).catch((e) => `couldn't start it: ${String(e).slice(0, 60)}`);
+        if (!stale()) say(s, { verb: "game", text, by: "code" });
         return true;
+      }
       case "edit": {
         const today = vh.today?.() ?? new Date().toISOString().slice(0, 10);
         const nameOf = (w: BoardW) => titleOfWidget(w as never) || w.type;

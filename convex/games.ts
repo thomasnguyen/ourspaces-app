@@ -46,10 +46,16 @@ async function caller(ctx: QueryCtx, spaceId: Id<"spaces">, tabId: string): Prom
   const row = (authId ? await seat(authId) : null) ?? (tabId && !tabId.startsWith("seed:") && !authId ? await seat(tabId) : null);
   if (!row) return null;
   const user = authId ? await ctx.db.get("users", authId) : null;
-  /* games know players by name: a second "juno" in the room plays as "juno 2" */
-  const twins = (await ctx.db.query("members").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).take(500)).filter((m) => same(m.name, row.name) && !m.userId.startsWith("seed:"));
-  const nth = twins.findIndex((m) => m._id === row._id);
-  return { userId: row.userId, name: nth > 0 ? `${row.name} ${nth + 1}` : row.name, color: row.color, guest: !user || user.isAnonymous === true };
+  return { userId: row.userId, name: row.name, color: row.color, guest: !user || user.isAnonymous === true };
+}
+
+/** Games know players by name: the name you play under in this game (a second "juno" in it plays as "juno 2"). */
+async function asPlayer(ctx: QueryCtx, gameId: Id<"games">, me: Who): Promise<Who> {
+  const players = await ctx.db.query("gamePlayers").withIndex("by_game", (q) => q.eq("gameId", gameId)).take(40);
+  const mine = players.find((p) => p.userId === me.userId);
+  if (mine) return { ...me, name: mine.name };
+  const twins = players.filter((p) => same(p.name, me.name) || same(p.name.replace(/ \d+$/, ""), me.name)).length;
+  return twins ? { ...me, name: `${me.name} ${twins + 1}` } : me;
 }
 
 type Loaded = { doc: Doc<"games">; game: Game; rounds: Doc<"gameRounds">[] };
@@ -215,6 +221,7 @@ export const forRoom = query({
     for (const row of rows) row.awards = awards.filter((a) => same(a.to, row.name));
     const latest = recent.find((g) => g.kind !== "jigsaw");
     const game = latest ? (loaded.find((l) => l.doc._id === latest._id) ?? (await load(ctx, latest))).game : null;
+    const meIn = me && latest ? await asPlayer(ctx, latest._id, me) : me;
     /* the family's push-ups (any running check-in) ride on the same card */
     const checkIn = (await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).take(300)).find((w) => w.type === "checkIn");
     let challenge = null;
@@ -225,7 +232,7 @@ export const forRoom = query({
       const open = seeState(LOCKS.standings, { mine: mine != null, answered: 0, of: data.people.length, now, resolved: isRevealed(data, new Date(now)), player: Boolean(me && data.people.some((p) => same(p.name, me.name))) }).open;
       challenge = { widgetId: String(checkIn._id), title: data.title, unit: data.unit, day: Math.min(day, data.days - 1) + 1, days: data.days, open, rows: open ? rank(data, Math.max(0, day)).map((r) => ({ name: r.name, color: r.color, total: r.total, streak: r.streak })) : data.people.map(() => null) };
     }
-    return { game: game ? redact(game, me?.name ?? null) : null, rows, awards, challenge, me, played: Boolean(me && loaded.some((l) => isIn(l.game, me.name) && l.game.rounds.some((r) => r.revealedAt !== undefined))) };
+    return { game: game ? redact(game, meIn?.name ?? null) : null, rows, awards, challenge, me: meIn, played: Boolean(me && loaded.some((l) => isIn(l.game, me.name) && l.game.rounds.some((r) => r.revealedAt !== undefined))) };
   },
 });
 
@@ -307,8 +314,9 @@ export const join = mutation({
   handler: async (ctx, { gameId, userId }) => {
     const doc = await ctx.db.get("games", gameId);
     if (!doc) return false;
-    const me = await caller(ctx, doc.spaceId, userId);
-    if (!me) return false;
+    const seat = await caller(ctx, doc.spaceId, userId);
+    if (!seat) return false;
+    const me = await asPlayer(ctx, gameId, seat);
     return await step(ctx, gameId, (g, now) => {
       const joined = joinGame(g, { name: me.name, color: me.color }, now);
       if (joined === g) return g;
@@ -323,8 +331,9 @@ export const begin = mutation({
   returns: v.boolean(),
   handler: async (ctx, { gameId, userId }) => {
     const doc = await ctx.db.get("games", gameId);
-    const me = doc && (await caller(ctx, doc.spaceId, userId));
-    if (!me) return false;
+    const seat = doc && (await caller(ctx, doc.spaceId, userId));
+    if (!seat) return false;
+    const me = await asPlayer(ctx, gameId, seat);
     return await step(ctx, gameId, (g, now) => (g.phase === "invite" && isIn(g, me.name) && g.players.length >= 2 ? beginRound(g, now, 0) : g));
   },
 });
@@ -335,8 +344,9 @@ export const pick = mutation({
   returns: v.boolean(),
   handler: async (ctx, { gameId, userId, pick }) => {
     const doc = await ctx.db.get("games", gameId);
-    const me = doc && (await caller(ctx, doc.spaceId, userId));
-    if (!me) return false;
+    const seat = doc && (await caller(ctx, doc.spaceId, userId));
+    if (!seat) return false;
+    const me = await asPlayer(ctx, gameId, seat);
     return await step(ctx, gameId, (g, now) => {
       const a = answer(g, me.name, pick.slice(0, 80), now);
       return a !== g && everyoneIn(a) ? reveal(a, now) : a;
@@ -350,8 +360,9 @@ export const next = mutation({
   returns: v.boolean(),
   handler: async (ctx, { gameId, userId }) => {
     const doc = await ctx.db.get("games", gameId);
-    const me = doc && (await caller(ctx, doc.spaceId, userId));
-    if (!doc || !me || doc.phase !== "reveal") return false;
+    const seat = doc && (await caller(ctx, doc.spaceId, userId));
+    if (!doc || !seat || doc.phase !== "reveal") return false;
+    const me = await asPlayer(ctx, gameId, seat);
     const row = await ctx.db.query("gameRounds").withIndex("by_game", (q) => q.eq("gameId", gameId).eq("n", doc.round)).unique();
     if (!row) return false;
     const ready = [...new Set([...(row.ready ?? []), me.name])];
@@ -368,8 +379,9 @@ export const react = mutation({
   returns: v.boolean(),
   handler: async (ctx, { gameId, userId, kind }) => {
     const doc = await ctx.db.get("games", gameId);
-    const me = doc && (await caller(ctx, doc.spaceId, userId));
-    if (!me) return false;
+    const seat = doc && (await caller(ctx, doc.spaceId, userId));
+    if (!seat) return false;
+    const me = await asPlayer(ctx, gameId, seat);
     return await step(ctx, gameId, (g, now) => reactTo(g, me.name, kind as SeatReaction, now));
   },
 });
