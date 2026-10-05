@@ -30,6 +30,7 @@ function canned(seed: string) {
 
 async function askOpenAi(title: string, description: string) {
   const parsed = await completeJson({
+    job: "questions",
     temperature: 0.9,
     system:
       "You write conversation starters for a friend group's shared board. " +

@@ -1,10 +1,14 @@
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
+import { api, internal } from "./_generated/api";
+import { chatTarget, type AiJob } from "./ai";
+import { decideFiling } from "./inboxRouting";
 
 /**
  * Nebius Token Factory: NVIDIA Nemotron behind an OpenAI-compatible API.
- * This is the client the voice hot path will move onto; convex/ai.ts keeps
- * the existing calls until then.
+ * When NEBIUS_API_KEY is set, convex/ai.ts routes every chat feature here
+ * (its NEMOTRON_BY_JOB table picks the model per feature); streamChat below
+ * is the streaming client for the voice hot path.
  *
  * Thinking is on by default for every Nemotron model here, and a capped
  * answer then spends all its tokens reasoning. `chat_template_kwargs:
@@ -20,6 +24,11 @@ import { internalAction } from "./_generated/server";
 declare const process: { env: Record<string, string | undefined> };
 
 export const NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1";
+
+/** The Token Factory key, or undefined when this deployment has none (prod). */
+export function nebiusKey(): string | undefined {
+  return process.env.NEBIUS_API_KEY?.trim() || undefined;
+}
 
 export const NEMOTRON = {
   nano: "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
@@ -72,7 +81,7 @@ export async function streamChat(opts: {
     firstLineMs: null,
     totalMs: 0,
   };
-  const key = process.env.NEBIUS_API_KEY?.trim();
+  const key = nebiusKey();
   if (!key) {
     out.error = "NEBIUS_API_KEY is not set";
     return out;
@@ -173,5 +182,47 @@ export const timeChat = internalAction({
       thinking: args.thinking,
     });
     return { ...result, usage: result.usage ? JSON.stringify(result.usage) : null };
+  },
+});
+
+const JOBS: AiJob[] = ["recap", "ask", "mail", "questions", "digest"];
+
+/** Where each AI job's chat call goes on this deployment: host, model and
+ * thinking, never the key. With NEBIUS_API_KEY set every row should read
+ * api.tokenfactory.nebius.com and a Nemotron model. */
+export const routes = internalAction({
+  args: {},
+  returns: v.array(
+    v.object({ job: v.string(), kind: v.string(), host: v.string(), model: v.string(), thinking: v.boolean() }),
+  ),
+  handler: async () =>
+    JOBS.map((job) => {
+      const target = chatTarget(job);
+      return {
+        job,
+        kind: target?.kind ?? "none",
+        host: target ? new URL(target.url).host : "",
+        model: target?.model ?? "",
+        thinking: target?.kind === "nebius" ? target.thinking : false,
+      };
+    }),
+});
+
+/** Runs the mail brain on a synthetic email against a real space's board and
+ * returns its decision and how long the model took. Writes nothing. */
+export const fileDryRun = internalAction({
+  args: { slug: v.string(), from: v.string(), subject: v.string(), body: v.string() },
+  returns: v.object({ ms: v.number(), decision: v.union(v.string(), v.null()) }),
+  handler: async (ctx, { slug, from, subject, body }) => {
+    const space = await ctx.runQuery(internal.agentmail.getSpaceBySlug, { slug });
+    if (!space) throw new Error(`no space ${slug}`);
+    const widgets = await ctx.runQuery(api.widgets.listWidgets, { spaceId: space._id });
+    const t0 = Date.now();
+    const decision = await decideFiling({
+      event: { from, subject, body, summary: body.slice(0, 200), attachments: [], createdAt: Date.now() },
+      space,
+      widgets,
+    });
+    return { ms: Date.now() - t0, decision: decision ? JSON.stringify(decision) : null };
   },
 });

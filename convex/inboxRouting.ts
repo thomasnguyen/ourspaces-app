@@ -288,6 +288,7 @@ export async function decideFiling({
 }): Promise<Record<string, unknown> | null> {
   const today = new Date(event.createdAt).toISOString().slice(0, 10);
   return await completeJson({
+    job: "mail",
     system: [
       `You are the mail sorter for "${space.name}", a friend group's shared canvas.`,
       "An email arrived at the group's inbox. Decide where it belongs on the canvas.",

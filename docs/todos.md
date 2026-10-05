@@ -9,8 +9,13 @@ Backward-looking history lives in `hackathon.md`.
   (`nebius/refs/voice/01`) now leads the bottom dock in every space. Code,
   not an image: a WebGL shader in the crew/couple/trip colours. Tap → it lifts,
   swells with your mic level, and your words (browser speech) run beside it;
-  `done` → a short working spin. Phone: the strip takes the whole dock while
-  you talk; the radio keeps only its play key. **Next:** send the ask to
+  `done` → a short working spin. **Dock redo (2026-10-04, late):** the bar is
+  now orb + "say what to add", a divider, then three icon keys (`✦` recap,
+  chat + count, `♪`); the radio and the sounds switch moved into the `♪`
+  menu; while you talk the other keys step out and the sentence takes the bar
+  (two lines on phone). The orb shader is now clear glass with liquid light
+  inside (the clay strands are gone). Before/after in
+  `.context/taste/dock-redo/`. **Next:** send the ask to
   Nemotron on Token Factory and land a widget. `?voice=<sentence>` scripts an
   ask for capture takes. `npm run build` passed.
 
@@ -74,8 +79,17 @@ Backward-looking history lives in `hackathon.md`.
 
 - **Nebius × NVIDIA hackathon (due Fri Oct 30 2026, 10:00 PT):** the current
   focus. Everything for the entry lives in the local-only `nebius/` folder;
-  start at `nebius/README.md` (dates, status, open decisions). Nothing built
-  in the app yet: every model call is still OpenAI, and there is no LICENSE.
+  start at `nebius/README.md` (dates, status, open decisions). There is no
+  LICENSE yet.
+
+- **Nemotron behind every AI feature, dev only (2026-10-04):** with
+  `NEBIUS_API_KEY` set (dev `dusty-condor-648` only), `convex/ai.ts` sends
+  recap, ask (streamed and not), mail filing, link-card questions and the
+  weekly digest to Token Factory; `NEMOTRON_BY_JOB` there is the model table
+  (Ultra for recap/ask/mail, Lightning for questions, Super with thinking on
+  for the digest). Each ran once on dev and parsed. Prod has no key and is
+  unchanged. Embeddings stay on the gateway (Token Factory serves only
+  Qwen3-Embedding-8B). `nebius:routes` / `nebius:fileDryRun` check it.
 
 - **Google sign-in — code shipped 2026-09-21, keys pending.** "continue with
   Google" on the join form (gate, popover, sheet, `#/me`) once

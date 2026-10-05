@@ -251,7 +251,7 @@ async function askOpenAi(
   // Loud, not silent: a swallowed model error here reads as a real answer
   // downstream (cannedRecap / cannedAsk), which is exactly how the gateway's
   // json_schema downgrade hid for hours.
-  const parsed = await completeJson({ system, user }).catch((error) => {
+  const parsed = await completeJson({ job: kind, system, user }).catch((error) => {
     console.error(`recap.askOpenAi(${kind}) failed:`, error);
     return null;
   });

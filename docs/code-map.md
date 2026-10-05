@@ -67,7 +67,7 @@ remember the current room before
 navigating, including the default `#/` room; `OnlineCountSuffix` shows "· N here" per space via the
 presence component's `roomPresence.onlineCountForSpace`, mounted by
 `LiveSpace.tsx`'s `RoomPresenceHeartbeat` once a room is entered) ·
-`ActionDock.tsx` (bottom dock, led by `DockVoice`: the voice orb — tap it and it lifts, listens and runs your words beside it in the dock; `done` sends; nothing acts on the ask yet. Orb = `VoiceOrb.tsx` canvas over `lib/orbShader.ts` (WebGL, three strands in the crew/couple/trip tokens, mic level swells it); mic + browser transcript = `lib/voice.ts` `useVoice`, and `?voice=<sentence>` plays a scripted ask with no mic for capture takes; + catch-me-up panel — a briefing, not a
+`ActionDock.tsx` (bottom dock, led by `DockVoice`: the voice orb, bigger than the bar, with a "say what to add" prompt — tap either and the orb lifts and listens, the other keys step out and your words take the bar; `done` sends; nothing acts on the ask yet. After a divider: three icon keys, `✦` recap, chat + count, and `♪` (`DockSound`). Orb = `VoiceOrb.tsx` canvas over `lib/orbShader.ts` (WebGL, clear glass with liquid light in the crew/couple/trip tokens, mic level stirs and brightens it); mic + browser transcript = `lib/voice.ts` `useVoice`, and `?voice=<sentence>` plays a scripted ask with no mic for capture takes; + catch-me-up panel — a briefing, not a
 chat box: display title `what moved` + quiet `since friday` pill (or
 `reading the board` while generating), lime numerals, a white sticker chip
 per line naming the card (`recapTargets`, click = `onRecapJumpWidget` pans
@@ -77,11 +77,13 @@ thread has a turn, answers wearing chips for the cards they name
 (`citesIn`); ↻ refresh, follow-up composer — a turn marked `streaming`
 (live mode: text arriving over `/api/ask-stream`) renders as it lands, with the
 thinking dots inside its own bubble until the first characters, and is kept out
-of the canned mock reveal; also the room radio chip `DockRadio` —
-always mounted once the board has a playlist widget with a station, via
-`radioRoomOf(widgets)` from both App.tsx and LiveSpace.tsx. Play key + label:
-idle "tap play", live = dancing bars + track, `is-join` when `data.playing`
-is true but you're not tuned; the label pans the canvas to the card with
+of the canned mock reveal; also `DockSound`, the `♪` key — its menu holds
+the room radio row and the interface sounds switch; the radio row shows once
+the board has a playlist widget with a station, via
+`radioRoomOf(widgets)` from both App.tsx and LiveSpace.tsx (no radio = the key
+is the sounds switch itself). Play key + label:
+idle "tap play", live = dancing bars + track (and on the `♪` key), `is-join`
+(lime dot on the key) when `data.playing` is true but you're not tuned; the label pans the canvas to the card with
 `scrollIntoView` on `[data-widget-id]`; playing from the dock goes through the
 same tune handler as the widget so `playedBy`/`playing` sync) ·
 `CanvasNavigator.tsx` (minimap) · `CanvasEdgePan.tsx` · `SpaceEditorPanel.tsx`
@@ -509,12 +511,21 @@ callers see one plain action. Plus `searchTopic` [web search → pile cards],
 `crawlSite` [durable startCrawl] + `getCrawlStatus`/`listCrawlPages` reactive
 wrappers + `crawlComplete` onComplete) ·
 `questions.ts` (`sparkQuestions`: action-cache-wrapped [by title+description]
-OpenAI → 2 conversation starters on a link card, canned fallback) ·
-`ai.ts` (**Convex AI Gateway** first for chat *and* embeddings — the
+LLM → 2 conversation starters on a link card, canned fallback) ·
+`ai.ts` (**NVIDIA Nemotron on Nebius Token Factory** for every chat call when
+`NEBIUS_API_KEY` is set — dev only today; `NEMOTRON_BY_JOB` picks the model
+per `AiJob` [recap/ask/mail Ultra, questions Lightning, digest Super with
+thinking on] and every caller of `completeJson` names its job. Without the
+key: **Convex AI Gateway** first for chat *and* embeddings — the
 deployment is the credential, via `getServiceToken("ai-gateway")`; Cloudflare
-`ai-proxy` then OpenAI only when `AI_GATEWAY_DISABLED` is set.
+`ai-proxy` then OpenAI only when `AI_GATEWAY_DISABLED` is set. Embeddings
+never go to Nebius.
 `languageModel()`/`embeddingModel()` wrap whichever target won as AI SDK
 models for `agent.ts`/`rag.ts`/`similar.ts`) ·
+`nebius.ts` (Token Factory base URL, `NEMOTRON` model ids, `nebiusKey()`,
+`streamChat` line-streaming client for the voice path; dev checks
+`routes` [each job's host + model] and `fileDryRun` [mail brain on a
+synthetic email, writes nothing]) ·
 `agent.ts` (`askAgent`: `@convex-dev/agent` thread per space, backs
 `recap.ask`'s conversational memory) ·
 `rag.ts` (`@convex-dev/rag`: indexes a space's widgets + recent chat,

@@ -11,7 +11,7 @@ take:
 ---
 # Catch me up (recap)
 
-**For a user:** `✦ catch me up` in the dock opens "what moved", a short
+**For a user:** the `✦` key in the dock (catch me up) opens "what moved", a short
 numbered briefing of what changed on the board. Each line lights and pans to
 its card as it lands; a follow-up box lets you ask about the board.
 

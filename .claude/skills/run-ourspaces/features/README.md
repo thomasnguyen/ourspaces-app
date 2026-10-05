@@ -9,6 +9,7 @@ id named here exists in `src/`.
 | [voice-orb](voice-orb.md) | crew dock | idle · listening · working |
 | [wheel](wheel.md) | house | idle · spinning · landed |
 | [recap](recap.md) | crew dock | closed · open · landed |
+| [dock](dock.md) | crew dock | idle · sound · recap |
 
 ## Header format
 

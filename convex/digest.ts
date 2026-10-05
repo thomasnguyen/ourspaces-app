@@ -67,6 +67,7 @@ export const composeDigestText = internalAction({
   returns: digestTextValidator,
   handler: async (_ctx, { spaceName, slug, summaries }) => {
     const generated = await completeJson({
+      job: "digest",
       system: [
         `You write the once-a-week email from "${spaceName}", a friend group's shared canvas, to its members.`,
         "Voice: warm, plain, lowercase, like a friend catching you up. No corporate tone, no emoji spam.",

@@ -5,6 +5,7 @@ import { wrapEmbeddingModel } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModelV4 } from "@ai-sdk/provider";
+import { NEBIUS_BASE_URL, NEMOTRON, nebiusKey, type NemotronModel } from "./nebius";
 
 /**
  * Model routing for the whole app. This is the job Convex's AI Gateway does,
@@ -21,7 +22,42 @@ import type { LanguageModelV4 } from "@ai-sdk/provider";
  * `AI_PROXY_TOKEN` are set, direct OpenAI when `OPENAI_API_KEY` is. The order
  * stays a config-time preference, not a failover — a 500 from the chosen
  * target is not retried against the next one.
+ *
+ * NVIDIA Nemotron on Nebius Token Factory sits in front of all of that: when
+ * NEBIUS_API_KEY is set, every chat call (completeJson and the agent's
+ * languageModel) goes to api.tokenfactory.nebius.com with the Nemotron model
+ * its job calls for, below. Without the key (prod today) the order above is
+ * untouched. Embeddings never go to Nebius: Token Factory's only embedding
+ * model is Qwen3-Embedding-8B, not 1536-dim text-embedding-3-small, and every
+ * stored vector (rag, widgets.by_embedding) is the latter.
  */
+
+/** Which feature is calling. The model follows from the job. */
+export type AiJob = "recap" | "ask" | "mail" | "questions" | "digest";
+
+/**
+ * Nemotron by job. Numbers are from the 2026-10-04 latency spike, measured
+ * inside a Convex action with thinking off unless the row says on.
+ *
+ * | job       | feature (caller)                          | model     | thinking | why |
+ * |-----------|-------------------------------------------|-----------|----------|-----|
+ * | recap     | "catch me up" (recap.ts buildRecap)       | ultra     | off      | someone is waiting on 2-4 lines that must cite real widget/message ids; Ultra was the only model at 100% valid JSON and right on every multi-step pick, ~730 ms |
+ * | ask       | ask the space (agent.ts → recap.ask, streaming.ts) | ultra | off  | same job, one cited answer while the asker watches |
+ * | mail      | mail filing (inboxRouting.ts decideFiling) | ultra    | off      | a multi-rule pick of action + widget id, which is where Lightning slipped; the arrival is watched on the canvas, so no thinking delay |
+ * | questions | link-card conversation starters (questions.ts) | lightning | off  | two short lowercase lines, no ids to get right; fastest and cheapest, and action-cached per link |
+ * | digest    | the weekly email (digest.ts)              | super     | on       | a cron with nobody waiting and a 2048-token budget, so it can afford to reason before writing 3-6 lines that must not invent events |
+ */
+const NEMOTRON_BY_JOB: Record<AiJob, { model: NemotronModel; thinking: boolean }> = {
+  recap: { model: "ultra", thinking: false },
+  ask: { model: "ultra", thinking: false },
+  mail: { model: "ultra", thinking: false },
+  questions: { model: "lightning", thinking: false },
+  digest: { model: "super", thinking: true },
+};
+
+/** Thinking is on by default on every Nemotron model; this is the switch
+ * that turns it off (see convex/nebius.ts). */
+const THINKING_OFF = { chat_template_kwargs: { enable_thinking: false } };
 
 const GATEWAY_BASE_URL = "https://ai-gateway.convex.dev/v1";
 /** Gateway model ids are `provider/model`; chat ids are inlined at the
@@ -60,9 +96,21 @@ function gatewayProvider() {
 
 type ChatTarget =
   | { kind: "gateway"; url: string; model: string }
-  | { kind: "proxy" | "openai"; url: string; model: string; token: string };
+  | { kind: "proxy" | "openai"; url: string; model: string; token: string }
+  | { kind: "nebius"; url: string; model: string; token: string; thinking: boolean };
 
-export function chatTarget(): ChatTarget | null {
+export function chatTarget(job: AiJob): ChatTarget | null {
+  const nebius = nebiusKey();
+  if (nebius) {
+    const pick = NEMOTRON_BY_JOB[job];
+    return {
+      kind: "nebius",
+      url: `${NEBIUS_BASE_URL}/chat/completions`,
+      token: nebius,
+      model: NEMOTRON[pick.model],
+      thinking: pick.thinking,
+    };
+  }
   if (gatewayEnabled()) {
     return {
       kind: "gateway",
@@ -103,10 +151,24 @@ export function chatTarget(): ChatTarget | null {
  * `json_object` (it logs an AI SDK warning) and OpenAI answers 400 to a
  * json_object request whose messages never contain the word "json". So every
  * generateObject through this model must name JSON in its prompt; recap.ts's
- * `ask` does. streamText is unaffected — it sends no response_format. */
-export function languageModel(): LanguageModelV4 {
-  const target = chatTarget();
+ * `ask` does. streamText is unaffected — it sends no response_format.
+ *
+ * On Nemotron the provider does declare structured outputs, so generateObject
+ * sends a real json_schema (Token Factory accepts it), and thinking is
+ * switched off in the request body unless the job's row turns it on. */
+export function languageModel(job: AiJob = "ask"): LanguageModelV4 {
+  const target = chatTarget(job);
   if (target?.kind === "gateway") return convexGateway(target.model);
+  if (target?.kind === "nebius") {
+    const thinking = target.thinking;
+    return createOpenAICompatible({
+      baseURL: NEBIUS_BASE_URL,
+      name: "nebius",
+      apiKey: target.token,
+      supportsStructuredOutputs: true,
+      transformRequestBody: (body) => (thinking ? body : { ...body, ...THINKING_OFF }),
+    })(target.model);
+  }
   const provider = createOpenAICompatible({
     baseURL: (target?.url ?? "https://api.openai.com/v1/chat/completions").replace(
       /\/chat\/completions$/,
@@ -147,16 +209,17 @@ export function embeddingModel() {
  * spark questions). Takes no ctx, so retry/cache/quota can't live here: they
  * sit at the call site — workflow retry in digest.ts, action-cache in
  * questions.ts, workpool + rate-limiter in recap.ts, none on inbound mail.
- * All three targets speak OpenAI's /v1/chat/completions, so the only thing
+ * All four targets speak OpenAI's /v1/chat/completions, so the only thing
  * that changes between them is the URL, the model id and how the request is
- * authorized.
+ * authorized (plus Nemotron's thinking switch).
  */
 export async function completeJson(args: {
+  job: AiJob;
   system: string;
   user: string;
   temperature?: number;
 }): Promise<Record<string, unknown> | null> {
-  const target = chatTarget();
+  const target = chatTarget(args.job);
   if (!target) return null;
 
   const body: Record<string, unknown> = {
@@ -170,6 +233,7 @@ export async function completeJson(args: {
   };
   // gpt-oss on the proxy rejects extra guided_json; prompt-only JSON is enough.
   if (target.kind !== "proxy") body.response_format = { type: "json_object" };
+  if (target.kind === "nebius" && !target.thinking) Object.assign(body, THINKING_OFF);
 
   // The gateway's credential is minted here, per call, and never stored.
   const token =

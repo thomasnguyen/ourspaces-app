@@ -48,19 +48,37 @@ export function radioRoomOf(
   };
 }
 
-/** The radio lives in a widget that scrolls off canvas — the dock keeps the
-    station in reach: idle it's "tap play", live it's the track, and when someone
-    else already started it it's "join". The label pans back to the card. */
-function DockRadio({
+/** Everything you hear sits behind one ♪ key: the room's radio and the
+    interface sounds. The radio lives in a widget that scrolls off canvas, so
+    the menu keeps the station in reach: idle it's "tap play", live it's the
+    track, and when someone else already started it it's "join" (the key
+    shows a lime dot). The label pans back to the card. With no radio in the
+    room the key is just the sounds switch. */
+function DockSound({
   room,
   onTune,
+  soundEnabled,
+  onSoundToggle,
 }: {
   room?: DockRadioRoom;
   onTune?: (widgetId: string, tune: { stationId: string; playing: boolean }) => void;
+  soundEnabled: boolean;
+  onSoundToggle: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", away);
+    return () => document.removeEventListener("pointerdown", away);
+  }, [open]);
+
   const radio = useSyncExternalStore(subscribeRadio, getRadioSnapshot, getRadioSnapshot);
   const on = Boolean(radio.stationId && !radio.error && (radio.playing || radio.waiting));
-  if (!on && !room) return null;
+  const hasRadio = on || Boolean(room);
 
   const stationId = on ? radio.stationId ?? undefined : room?.stationId;
   const station = stationById(stationId);
@@ -101,42 +119,94 @@ function DockRadio({
       ?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
   };
 
-  return (
-    <>
-      <span className="action-dock-divider" aria-hidden="true" />
-      <div
-        className={`action-dock-radio${on ? " is-on" : ""}${radio.waiting && on ? " is-tuning" : ""}${
-          join ? " is-join" : ""
-        }`}
+  const muteClass = soundEnabled ? "" : " is-muted";
+  if (!hasRadio) {
+    return (
+      <button
+        type="button"
+        className={`action-dock-sound${muteClass}`}
+        data-testid="dock-sound"
+        onClick={onSoundToggle}
+        aria-pressed={soundEnabled}
+        aria-label={soundEnabled ? "Mute interface sounds" : "Turn on interface sounds"}
+        title={soundEnabled ? "Mute sounds" : "Turn on sounds"}
       >
-        <button
-          type="button"
-          className="action-dock-radio-key"
-          onClick={toggle}
-          title={on ? `${label} · ${station.name} — click to stop` : `Play ${station.name}`}
-        >
+        <span aria-hidden="true">♪</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="dock-sound" ref={rootRef}>
+      {open && (
+        <div className="dock-sound-menu">
+          <div
+            className={`action-dock-radio${on ? " is-on" : ""}${radio.waiting && on ? " is-tuning" : ""}${
+              join ? " is-join" : ""
+            }`}
+          >
+            <button
+              type="button"
+              className="action-dock-radio-key"
+              data-testid="dock-radio-key"
+              onClick={toggle}
+              title={on ? `${label} · ${station.name} — click to stop` : `Play ${station.name}`}
+            >
+              <span className="action-dock-radio-eq" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+            </button>
+            <button
+              type="button"
+              className="action-dock-radio-label"
+              onClick={reveal}
+              title={`${station.name} — show the radio`}
+            >
+              <span className="action-dock-radio-track">{label}</span>
+              {sub && <span className="action-dock-radio-sub">{sub}</span>}
+            </button>
+          </div>
+          <button
+            type="button"
+            className={`dock-sound-switch${muteClass}`}
+            data-testid="dock-sound-toggle"
+            onClick={onSoundToggle}
+            aria-pressed={soundEnabled}
+          >
+            interface sounds
+            <b>{soundEnabled ? "on" : "off"}</b>
+          </button>
+        </div>
+      )}
+      <button
+        type="button"
+        className={`action-dock-sound${muteClass}${on ? " is-on" : ""}${join ? " is-join" : ""}${
+          open ? " is-active" : ""
+        }`}
+        data-testid="dock-sound"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        title={on ? `${label} · ${station.name}` : "Radio and sounds"}
+      >
+        {on ? (
           <span className="action-dock-radio-eq" aria-hidden="true">
             <i />
             <i />
             <i />
           </span>
-        </button>
-        <button
-          type="button"
-          className="action-dock-radio-label"
-          onClick={reveal}
-          title={`${station.name} — show the radio`}
-        >
-          <span className="action-dock-radio-track">{label}</span>
-          {sub && <span className="action-dock-radio-sub">{sub}</span>}
-        </button>
-      </div>
-    </>
+        ) : (
+          <span aria-hidden="true">♪</span>
+        )}
+      </button>
+    </div>
   );
 }
 
-/** Talk to the space. Tap the orb: it lifts and listens, your words run
-    beside it, tap again (or done) to send. Nothing acts on the ask yet; the
+/** Talk to the space: the dock's lead action. Tap the orb or the prompt
+    beside it: the orb lifts and listens, the rest of the dock steps back and
+    your words take the bar; tap again (or done) to send. Nothing acts on the ask yet; the
     Nemotron call lands next. */
 function DockVoice() {
   const voice = useVoice();
@@ -157,8 +227,13 @@ function DockVoice() {
         onClick={toggle}
         title={listening ? "Done talking" : "Talk to the space"}
       >
-        <VoiceOrb state={voice.state} level={voice.level} size={38} />
+        <VoiceOrb state={voice.state} level={voice.level} size={58} />
       </button>
+      {voice.state === "idle" && (
+        <button type="button" className="dock-voice-ask" onClick={toggle}>
+          say what to add
+        </button>
+      )}
       <div className="dock-voice-say" aria-live="polite">
         <div className="dock-voice-say-inner">
           {text ? (
@@ -621,39 +696,27 @@ export function ActionDock({
         data-testid="dock-recap"
         onClick={onRecapToggle}
         aria-expanded={recapOpen}
+        title="Catch me up"
       >
         <span aria-hidden="true">✦</span>
-        catch me up
+        <b className="action-dock-label">catch me up</b>
       </button>
-      <span className="action-dock-divider" aria-hidden="true" />
       <button
         type="button"
         className={`action-dock-chat ${chatOpen ? "is-active" : ""}`}
+        data-testid="dock-chat"
         onClick={onChatToggle}
         aria-pressed={chatOpen}
+        title="Chat"
       >
-        <span aria-hidden="true">●</span>
-        chat
-        <span className="action-dock-count">{messageCount}</span>
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M3.5 5.5a2.5 2.5 0 0 1 2.5-2.5h8a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-2.5 2.5H9.2L5.6 16.4V13A2.5 2.5 0 0 1 3.5 10.5z" />
+        </svg>
+        <b className="action-dock-label">chat</b>
+        {messageCount > 0 && <span className="action-dock-count">{messageCount}</span>}
       </button>
-      {nav && (
-        <>
-          <span className="action-dock-divider" aria-hidden="true" />
-          <div className="action-dock-nav">{nav}</div>
-        </>
-      )}
-      <DockRadio room={radioRoom} onTune={onRadioTune} />
-      <span className="action-dock-divider" aria-hidden="true" />
-      <button
-        type="button"
-        className={`action-dock-sound ${soundEnabled ? "" : "is-muted"}`}
-        onClick={onSoundToggle}
-        aria-pressed={soundEnabled}
-        aria-label={soundEnabled ? "Mute interface sounds" : "Turn on interface sounds"}
-        title={soundEnabled ? "Mute sounds" : "Turn on sounds"}
-      >
-        <span aria-hidden="true">♪</span>
-      </button>
+      {nav && <div className="action-dock-nav">{nav}</div>}
+      <DockSound room={radioRoom} onTune={onRadioTune} soundEnabled={soundEnabled} onSoundToggle={onSoundToggle} />
     </nav>
   );
 }

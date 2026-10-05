@@ -1,8 +1,10 @@
-/* The voice orb's shader: three liquid strands (crew violet, couple pink,
-   trip orange) twisted around each other inside a glossy sphere, like the
-   concept in nebius/refs/voice/01. It is the one lit material in the app
-   (DESIGN.md): the light stays inside the circle, no halo. Your voice swells
-   the strands and loosens the twist; "working" tightens and spins it. */
+/* The voice orb's shader: a clear glass ball with liquid light inside. The
+   colour is one soft field that runs crew violet → couple pink → trip orange
+   (through pink, so it never goes muddy), folded over itself and seen through
+   a lens, with a warm heart that brightens when you talk. It is the one lit
+   material in the app (DESIGN.md): the light stays inside the circle, no
+   halo. Your voice stirs the liquid and lifts the glow; "working" winds it
+   into a whirlpool. */
 
 const VERT = `
 attribute vec2 aPos;
@@ -71,13 +73,29 @@ float snoise(vec3 v) {
 
 mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
 
+// violet → pink → orange. Always through pink: violet and orange mixed
+// straight make mud.
+vec3 ramp(float h) {
+  vec3 c = mix(uA, uB, smoothstep(0.02, 0.5, h));
+  return mix(c, uC, smoothstep(0.5, 0.98, h));
+}
+
+// The liquid: one smooth field, warped twice so it folds over itself.
+float liquid(vec2 s, float t, float stir) {
+  vec2 w = vec2(snoise(vec3(s * 0.6, t)), snoise(vec3(s * 0.6 + 5.2, t)));
+  s += stir * w;
+  w = vec2(snoise(vec3(s * 0.9 + 1.7, t * 0.8)), snoise(vec3(s * 0.9 + 9.2, t * 0.8)));
+  s += 0.3 * stir * w;
+  return snoise(vec3(s * 0.62, t * 0.6 + 2.0));
+}
+
 void main() {
   vec2 uv = (gl_FragCoord.xy * 2.0 - uRes) / uRes.y;
   float r = length(uv);
   float ang = atan(uv.y, uv.x);
 
   // Round at rest; the outline only gives a little when you talk.
-  float wob = snoise(vec3(cos(ang) * 1.1, sin(ang) * 1.1, uTime * 1.4)) * (0.004 + 0.03 * uLevel);
+  float wob = snoise(vec3(cos(ang) * 1.1, sin(ang) * 1.1, uTime * 1.2)) * (0.003 + 0.024 * uLevel);
   float R = 0.62 + 0.06 * uLevel - 0.035 * uWork + wob;
   float aa = 2.0 / uRes.y;
   float mask = 1.0 - smoothstep(R - aa, R + aa, r);
@@ -85,52 +103,49 @@ void main() {
 
   vec2 q = uv / R;
   float z = sqrt(max(0.0, 1.0 - dot(q, q)));
-  vec3 n = normalize(vec3(q, z));
+  vec3 n = vec3(q, z);
+  float edge = 1.0 - z;
 
-  float t = uTime * (0.2 + 0.28 * uListen + 1.2 * uWork);
-  vec3 p = n;
-  p.yz = rot(0.55) * p.yz;
-  p.xz = rot(t * 0.8) * p.xz;
-  float flow = 0.2 * (1.0 + 0.9 * uLevel);
-  p += flow * vec3(
-    snoise(p * 1.3 + vec3(0.0, 0.0, t * 0.7)),
-    snoise(p * 1.3 + vec3(3.1, 1.7, t * 0.7)),
-    snoise(p * 1.3 + vec3(7.3, 4.1, t * 0.7)));
+  // Ball lens: the middle magnifies, the rim squeezes what's behind it.
+  vec2 s = q / (0.55 + 0.45 * z);
+  float t = uTime * (0.16 + 0.2 * uListen + 0.5 * uWork);
+  // working: a whirlpool, wound tighter toward the middle
+  s = rot(uTime * 0.12 + uWork * (uTime * 2.6 + 2.2 * (1.0 - length(q)))) * s;
+  float stir = 0.6 + 0.3 * uLevel;
 
-  // Three strands twisted around one axis, like a rope of jelly.
-  float twist = 2.3 + 0.6 * sin(t * 0.5) + 1.2 * uWork - 0.6 * uLevel;
-  float psi = atan(p.y, p.x) + p.z * twist + t * 0.5;
-  float third = 2.0943951;
-  float w1 = pow(0.5 + 0.5 * cos(psi), 3.0);
-  float w2 = pow(0.5 + 0.5 * cos(psi - third), 3.0);
-  float w3 = pow(0.5 + 0.5 * cos(psi + third), 3.0);
-  float sum = w1 + w2 + w3;
-  // Colour from much sharper weights, or violet + orange blend into a third
-  // pink and pink swallows the orb.
-  vec3 k = pow(vec3(w1, w2, w3) / sum, vec3(4.0));
-  vec3 col = (uA * k.x + uB * k.y + uC * k.z) / (k.x + k.y + k.z);
+  // Two sheets of the same liquid, the far one slower and seen through the
+  // near one: that is what makes it read as clear instead of painted.
+  float fNear = liquid(s, t, stir);
+  float fFar = liquid(s * 0.7 + 3.1, t * 0.7 + 4.0, stir);
+  vec3 near = ramp(smoothstep(-0.42, 0.42, fNear));
+  vec3 far = mix(uA * 0.6, uB * 0.7, smoothstep(-0.3, 0.6, fFar));
+  float veil = smoothstep(-0.5, 0.5, snoise(vec3(s * 0.7 + 6.0, t * 0.9)));
+  vec3 col = mix(far, near, 0.3 + 0.7 * veil);
 
-  // Each strand is a rounded tube: bright crest, shadowed valley between,
-  // and the normal bends over the tube so every strand catches its own light.
-  float crest = smoothstep(0.34, 0.92, max(w1, max(w2, w3)) / sum);
-  float tube = sqrt(crest);
-  col = mix(uA * 0.22, col, 0.18 + 0.82 * tube);
-  vec2 slope = vec2(dFdx(tube), dFdy(tube)) * uRes.y * 0.5;
-  vec3 nb = normalize(n + vec3(-slope * 0.07, 0.0));
+  // Where violet turns to orange the sheet folds over and the light inside
+  // shows through: that seam glows.
+  float seam = exp(-fNear * fNear * 26.0) * veil;
+  col += (col * 0.5 + vec3(0.3, 0.16, 0.22)) * seam * (0.55 + 0.6 * uLevel);
 
-  vec3 L = normalize(vec3(-0.45, 0.62, 0.75));
-  float diff = clamp(dot(nb, L), 0.0, 1.0);
-  col *= 0.5 + 0.7 * diff;
-  col += col * 0.25 * z * tube;
+  // The heart: a warm light a little off centre, behind the liquid.
+  vec2 hc = 0.16 * vec2(sin(uTime * 0.31), cos(uTime * 0.23)) + vec2(0.06, -0.04);
+  float heart = exp(-dot(q - hc, q - hc) * 2.4);
+  col *= 0.56 + 0.74 * heart;
+  col += mix(uB, vec3(1.0, 0.9, 0.86), 0.6) * heart * (0.34 + 0.5 * uLevel + 0.15 * uWork);
 
-  vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
-  col += vec3(1.0, 0.96, 0.98) * pow(clamp(dot(nb, H), 0.0, 1.0), 48.0) * 0.7 * tube;
-  col += vec3(1.0, 0.97, 0.99) * pow(clamp(dot(n, H), 0.0, 1.0), 140.0) * 0.8;
+  // Glass. Light comes from up-left, runs through the ball and pools on the
+  // far rim as a bright crescent; a thin pale line all the way round; a soft
+  // window up-left with one small hard glint in it.
+  vec2 Ld = normalize(vec2(-0.55, 0.7));
+  float through = pow(edge, 1.6) * smoothstep(-0.1, 0.9, dot(normalize(q + 1e-4), -Ld));
+  col += (col * 0.9 + vec3(0.3, 0.2, 0.26)) * through * 1.25;
+  col *= 1.0 - 0.42 * pow(edge, 1.8) * smoothstep(-0.2, 1.0, dot(normalize(q + 1e-4), Ld));
+  col += vec3(0.95, 0.88, 1.0) * pow(edge, 6.0) * 0.8;
+  vec3 H = normalize(vec3(Ld * 0.62, 0.78));
+  float hl = clamp(dot(n, H), 0.0, 1.0);
+  col += vec3(1.0, 0.97, 1.0) * (pow(hl, 14.0) * 0.34 + pow(hl, 220.0) * 0.9);
 
-  float fres = pow(1.0 - z, 2.4);
-  col = mix(col, uB * 1.08 + 0.06, fres * 0.38);
-  col *= 1.0 - 0.32 * pow(1.0 - z, 7.0);
-
+  col = min(col, vec3(1.0));
   gl_FragColor = vec4(col * mask, mask);
 }
 `;
