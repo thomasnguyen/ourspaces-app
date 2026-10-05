@@ -108,7 +108,7 @@ function flyToSource(from: HTMLElement, ids: string[], color: string) {
   fly.style.top = `${a.top - 8}px`;
   document.body.appendChild(fly);
   const w = fly.offsetWidth, h = fly.offsetHeight;
-  const DUR = 720;
+  const DUR = 900;
   const glide = (t: number) => 1 - Math.pow(1 - t, 4);
   let t0 = 0;
   const step = (now: number) => {
@@ -121,7 +121,7 @@ function flyToSource(from: HTMLElement, ids: string[], color: string) {
     const x = (b.left + b.width / 2 - w / 2 - (a.left - 14)) * e;
     const y = (b.top - h / 2 - (a.top - 8)) * e;
     fly.style.transform = `translate(${x}px, ${y}px) rotate(${-3 * Math.sin(Math.PI * e)}deg) scale(${1 + 0.12 * Math.sin(Math.PI * Math.min(1, t * 1.6))})`;
-    fly.style.opacity = String(t < 0.78 ? 1 : 1 - (t - 0.78) / 0.22);
+    fly.style.opacity = String(t < 0.86 ? 1 : 1 - (t - 0.86) / 0.14);
     requestAnimationFrame(step);
   };
   requestAnimationFrame(step);

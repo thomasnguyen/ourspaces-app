@@ -19,7 +19,7 @@
 /* A line being followed to its card: the page lifts away around it. */
 .room-knows.is-leaving {
   pointer-events: none;
-  animation: knows-lift-out var(--dur-arrive) var(--ease-glide) both;
+  animation: knows-lift-out var(--dur-base) var(--ease-glide) both;
 }
 
 @keyframes knows-lift-out {
@@ -209,6 +209,11 @@ html.is-knows-flip::view-transition-new(root) {
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1;
+}
+
+/* a heading comes in with its first object, not ahead of it */
+.knows-sheets .knows-sec h2 {
+  animation: knows-fade-in var(--dur-base) var(--ease-glide) 180ms both;
 }
 
 .knows-sec ul {
@@ -668,11 +673,11 @@ button.knows-fact:not(:disabled):hover .knows-go {
 
 .knows-line.is-gone .knows-fact > :not(.knows-text) {
   filter: grayscale(1);
-  opacity: 0.42;
+  opacity: 0.6;
 }
 
 .knows-line.is-gone .knows-words-of {
-  color: color-mix(in srgb, var(--color-ink) 46%, transparent);
+  color: color-mix(in srgb, var(--color-ink) 62%, transparent);
 }
 
 .knows-line.is-gone .knows-fact {
@@ -712,7 +717,8 @@ button.knows-fact:not(:disabled):hover .knows-go {
   font-size: 12px;
   font-weight: 700;
   rotate: -3deg;
-  animation: knows-stamp var(--dur-arrive) var(--ease-pop) 120ms both;
+  /* last: after the marker's three passes */
+  animation: knows-stamp var(--dur-arrive) var(--ease-pop) 400ms both;
 }
 
 .knows-stamp .knows-face {
@@ -733,7 +739,7 @@ button.knows-fact:not(:disabled):hover .knows-go {
   border-color: var(--color-sticker);
   background: var(--color-sticker);
   color: white;
-  animation: knows-fade-in var(--dur-base) var(--ease-glide) 260ms both;
+  animation: knows-fade-in var(--dur-base) var(--ease-glide) 560ms both;
 }
 
 @keyframes knows-fade-in {
