@@ -213,7 +213,7 @@ export function checkSettings<S extends Schema>(schema: S, raw: unknown): Checke
  * topic left once the card's own words are gone, a list ("tacos, pho or
  * pizza"), a date, a number, and whether the room already knows the date.
  */
-export type Said = { text: string; topic: string; list: string[]; date: string | null; number: number | null; roomDate: boolean };
+export type Said = { text: string; topic: string; list: string[]; date: string | null; number: number | null; roomDate: boolean; roomPlaces?: boolean };
 
 /**
  * A field a card can't do without (C1, "it asks for what's missing"). When

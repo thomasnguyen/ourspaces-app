@@ -101,7 +101,7 @@ export function saidOf(text: string, card: string, facts: RoomFacts | null, toda
   const topic = (date ? raw.replace(new RegExp(date.phrase.replace(/^on\s+/i, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), " ") : raw).replace(/\b(?:on|in|this|next)\b/g, " ").replace(/\s+/g, " ").trim();
   const tw = wordsOf(topic);
   const roomDate = !!facts?.dates.some((d) => d.days >= 0 && wordsOf(d.title).some((w) => tw.includes(w) || tw.includes(w.replace(/'s$/, ""))));
-  return { text, topic, list: listIn(text), date: date?.iso ?? null, number: numberIn(text), roomDate };
+  return { text, topic, list: listIn(text), date: date?.iso ?? null, number: numberIn(text), roomDate, roomPlaces: !!facts?.places.length };
 }
 
 /** A card's (or a recipe's) must-have fields. */

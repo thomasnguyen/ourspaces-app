@@ -120,6 +120,8 @@ export const RECIPES = [
     slots: { meal: text(12, { optional: true }), day: text(16, { optional: true }), options: list(2, 5, { itemMax: 32 }) },
     size: pair("poll", "rsvp").size,
     links: [{ from: "poll", to: "rsvp", when: "closed|everyone", fill: "title", value: "winner", tag: "winner names it" }],
+    // a new room has no saved places to choose from, so it asks (N1); a room with places fills the poll from them
+    needs: [{ field: "options", ask: "where are we choosing between?", slot: "add the places", as: "list", has: (w: Said) => w.list.length >= 2 || !!w.roomPlaces }],
     lead: (s) => ({ card: "poll", settings: { question: whereFor(s), ...(s.options ? { options: s.options } : {}) } }),
     parts: (s) => {
       const at = pair("poll", "rsvp");
