@@ -133,6 +133,8 @@ export function useVoice(hooks: VoiceHooks = {}) {
   const [muted, setMuted] = useState(false);
   const mutedRef = useRef(false);
   const micRef = useRef<MediaStream | null>(null);
+  const heard = useRef("");
+  const muteCut = useRef<{ keep: string; skip: number } | null>(null);
 
   const finish = useCallback((how: VoiceEnd["how"] = "done") => {
     window.clearInterval(listenTimer.current);
@@ -160,8 +162,14 @@ export function useVoice(hooks: VoiceHooks = {}) {
     });
   }, []);
 
-  const hear = useCallback((text: string) => {
+  const hear = useCallback((raw: string) => {
+    // The recogniser (and the script) hand over the whole ask so far each
+    // time. What it gathered while muted is cut out: keep what stood at
+    // mute, then only what came after unmute.
+    heard.current = raw;
     if (mutedRef.current) return;
+    const cut = muteCut.current;
+    const text = cut && raw.length >= cut.skip ? `${cut.keep} ${raw.slice(cut.skip).trim()}`.trim() : raw;
     if (text && text !== said.current) {
       if (!said.current) performance.mark("voice:first-word");
       lastWordAt.current = performance.now();
@@ -189,6 +197,7 @@ export function useVoice(hooks: VoiceHooks = {}) {
 
   const start = useCallback(async () => {
     window.clearTimeout(workTimer.current);
+    muteCut.current = null;
     performance.mark("voice:tap");
     lastWordAt.current = 0;
     hear("");
@@ -268,6 +277,7 @@ export function useVoice(hooks: VoiceHooks = {}) {
   // ---- voice stage additions: one block, nothing above depends on it ----
   /** Mute stops the mic and drops what it hears; the ask stays open. */
   const mute = useCallback((on: boolean) => {
+    if (!on && mutedRef.current) muteCut.current = { keep: said.current, skip: heard.current.length };
     mutedRef.current = on;
     setMuted(on);
     micRef.current?.getAudioTracks().forEach((track) => (track.enabled = !on));
@@ -279,6 +289,7 @@ export function useVoice(hooks: VoiceHooks = {}) {
       stopRef.current = () => {};
       level.current = 0;
       mutedRef.current = false;
+      muteCut.current = null;
       hear(text);
     },
     [hear],
