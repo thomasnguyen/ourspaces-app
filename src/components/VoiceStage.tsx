@@ -440,6 +440,18 @@ function StageCard({
 }) {
   const body = useRef<HTMLDivElement>(null);
   useArrivals(body, build.key);
+  // an edit: the part that changes lights up (the row or line that carries the new words)
+  const edit = build.edit;
+  useLayoutEffect(() => {
+    const root = body.current;
+    if (!root) return;
+    root.querySelectorAll("[data-edit-changed]").forEach((el) => el.removeAttribute("data-edit-changed"));
+    const want = edit?.changed.toLowerCase().trim();
+    if (!want) return;
+    const hits = [...root.querySelectorAll<HTMLElement>("*")].filter((el) => (el.textContent ?? "").toLowerCase().includes(want));
+    const deepest = hits.filter((el) => !hits.some((o) => o !== el && el.contains(o)));
+    for (const el of deepest.slice(0, 2)) (el.closest<HTMLElement>("li, tr, .poll-row") ?? el).setAttribute("data-edit-changed", edit!.state);
+  });
   // it is dealt out of the orb: where the orb is, from where the card will stand
   useLayoutEffect(() => {
     const el = fly.current;
@@ -463,7 +475,7 @@ function StageCard({
       className="voice-two-card"
       data-testid="voice-stage-card"
       data-kind={build.kind ?? "card"}
-      data-state={found ? "found" : whole ? "complete" : asking ? "asking" : "skeleton"}
+      data-state={edit ? "edit" : found ? "found" : whole ? "complete" : asking ? "asking" : "skeleton"}
     >
       <header className="voice-two-kind">
         <b>{build.kind ?? "card"}</b>
@@ -485,7 +497,12 @@ function StageCard({
             {fillPlan(build.kind).ask}
           </strong>
         )}
-        {found && (
+        {edit && (
+          <strong className="voice-two-ask is-found is-edit" data-testid="voice-stage-edit" data-state={edit.state}>
+            {edit.text}
+          </strong>
+        )}
+        {found && !edit && (
           <strong className="voice-two-ask is-found" data-testid="voice-stage-found">
             already on the board
           </strong>

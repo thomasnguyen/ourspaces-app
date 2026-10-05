@@ -34,6 +34,8 @@ import { guessCards } from "../lib/deck/guess";
 import { shortlistDeck } from "../lib/deck/shortlist";
 import { answerFor, cardAnswer, goFor, mineFor, routeVerb, type Answer, type MineAct, type Verb, type VerbPick } from "../lib/deck/verbs";
 import type { VoiceEnd, VoiceHooks } from "../lib/voice";
+import { applyEdit, editFor, type EditOp } from "../lib/deck/edits";
+import { titleOfWidget } from "../lib/deck/existing";
 
 /**
  * Say it → it builds, the room's half (the model's half is convex/voiceBuild.ts).
@@ -195,6 +197,8 @@ export type AskTrace = {
     answer?: { text: string; source: string; facts: string[]; by: "facts" | "retrieval" | "unknown" | "stand-in"; ms?: number };
     /** What do my part did, offered or refused. */
     mine?: string;
+    /** An edit: the target and how it was found, the op, the door's verdict, any refusal and why. */
+    edit?: { target?: string; how?: string; op?: string; fields?: string[]; status?: string; verdict?: string; refusal?: string; serverMs?: number };
   } | null;
   /** The "already here" answer: code's check at the pause, the model's yes/no, and what was done. */
   found: {
@@ -269,7 +273,12 @@ export type VoiceFound = {
   next: "spin" | null;
   /** Something was done on it for you (do my part): the slip says what. */
   done?: string;
+  /** An edit you asked for: undo it (a few seconds, the same door). Resolves to the slip's new line. */
+  undo?: () => Promise<string>;
 };
+/** An edit on the asker's stage: the card as it will be, and the part that changes. Tentative while talking. */
+export type VoiceEdit = { traceKey: number; widgetId: string; widget: Widget; changed: string; text: string; state: "tentative" | "final" };
+export type EditOut = { status: "applied" | "refused" | "failed" | "wait" | "ask"; text: string; writeId?: string; fields: string[]; verdict?: string };
 /** A non-build verb's slip: an answer, a recap, a refusal, offers to tap. Nothing is written by it. */
 export type VoiceReply = {
   traceKey: number;
@@ -579,6 +588,10 @@ export type VerbHooks = {
   retrieve?: (said: string) => Promise<RetrieveOut>;
   /** Start a game (games aren't on main yet: a later task replaces this). */
   game?: (said: string) => string;
+  /** An edit through convex/edits.ts (optimistic on this screen); absent in mock. */
+  edit?: (widgetId: string, op: EditOp) => Promise<EditOut>;
+  undo?: (writeId: string) => Promise<EditOut>;
+  today?: () => string;
 };
 
 /** Games aren't on main yet: the one place a later task plugs them in. */
@@ -636,6 +649,7 @@ export function useVoiceBuild({
   const room = useRef({ deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board, myPart, verbs });
   room.current = { deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board, myPart, verbs };
   const [reply, setReply] = useState<VoiceReply | null>(null);
+  const [edit, setEdit] = useState<VoiceEdit | null>(null);
   const session = useRef<Session | null>(null);
   const clearTimer = useRef(0);
   const shellTimer = useRef(0);
@@ -1132,6 +1146,7 @@ export function useVoiceBuild({
     setLanded(null);
     setFound(null);
     setReply(null);
+    setEdit(null);
     setLeaving(false);
     setShell(null);
     setDrafts([]);
@@ -1164,7 +1179,13 @@ export function useVoiceBuild({
       s.trace.words.push({ text, ms: Math.round(performance.now() - s.t0) });
       // The router (code, 0 ms): another verb than make shows no skeleton and sends no fill.
       const vh = room.current.verbs;
-      s.verb = vh ? routeVerb(text, { people: vh.people(), me: vh.me().name }) : null;
+      s.verb = vh ? routeVerb(text, { people: vh.people(), me: vh.me().name, selected: Boolean(room.current.selectedId?.()) }) : null;
+      // An edit while talking: the card as it would be, on this stage only (nothing is sent until the pause).
+      if (vh && s.verb?.verb === "edit") {
+        const plan = editFor(text, vh.widgets(), room.current.selectedId?.() ?? null, { today: vh.today?.() ?? new Date().toISOString().slice(0, 10) }, vh.frameOf);
+        if (plan.kind === "do") setEdit({ traceKey: s.key, widgetId: plan.target.id, widget: { ...(plan.target as unknown as Widget), data: plan.result.data as Widget["data"] }, changed: plan.result.changed, text: plan.result.text, state: "tentative" });
+        else setEdit(null);
+      } else if (s.verb) setEdit(null);
       if (s.verb && s.verb.verb !== "make" && !s.forceMake && !s.reopened && !s.commitP) {
         if (s.shown) {
           s.shown = null;
@@ -1227,6 +1248,7 @@ export function useVoiceBuild({
         setLanded(null);
         setFound(null);
         setReply(null);
+        setEdit(null);
         setLeaving(false);
       }, LEAVE_MS);
     }, RECEIPT_MS);
@@ -1437,7 +1459,7 @@ export function useVoiceBuild({
   const routeAt = async (s: Session, said: string, end: VoiceEnd, round: number): Promise<boolean> => {
     const vh = room.current.verbs!;
     const me = vh.me();
-    const pick = routeVerb(said, { people: vh.people(), me: me.name });
+    const pick = routeVerb(said, { people: vh.people(), me: me.name, selected: Boolean(room.current.selectedId?.()) });
     s.verb = pick;
     s.trace.verb = { verb: pick.verb, by: "code", why: pick.why };
     if (pick.verb === "make") return false;
@@ -1495,9 +1517,98 @@ export function useVoiceBuild({
       case "game":
         say(s, { verb: "game", text: (vh.game ?? startGame)(said), by: "code" });
         return true;
-      case "edit":
-        say(s, { verb: "edit", text: "can't change cards yet", by: "code" });
+      case "edit": {
+        const today = vh.today?.() ?? new Date().toISOString().slice(0, 10);
+        const nameOf = (w: BoardW) => titleOfWidget(w as never) || w.type;
+        const tr = (x: NonNullable<NonNullable<AskTrace["verb"]>["edit"]>) => {
+          s.trace.verb = { ...s.trace.verb!, edit: { ...(s.trace.verb!.edit ?? {}), ...x } };
+        };
+        /** The change: on this stage first, then the board (optimistic), then the server's door. */
+        const doEdit = (target: BoardW, op: EditOp, how: string) => {
+          const r = applyEdit(target, op, { today });
+          tr({ target: nameOf(target), how, op: JSON.stringify(op) });
+          if (!r.ok) {
+            tr({ status: r.refused ? "refused" : "none", refusal: r.reason });
+            setEdit(null);
+            pointWith("edit", target.id, r.reason);
+            return;
+          }
+          tr({ fields: r.fields.map((f) => f.field) });
+          setEdit({ traceKey: s.key, widgetId: target.id, widget: { ...(target as unknown as Widget), data: r.data as Widget["data"] }, changed: r.changed, text: r.text, state: "final" });
+          const item = itemOf(target.id) ?? { id: target.id, card: target.type, title: nameOf(target), by: null };
+          s.trace.found = { check: { ok: true, item, shared: [], why: "edit" }, verdict: null, outcome: "dealt", why: `edit: ${r.text}` };
+          if (!vh.edit) {
+            // mock: an honest stand-in, nothing is saved
+            tr({ status: "stand-in", verdict: "not sent (mock)" });
+            s.foundText = `${r.text} · stand-in, not saved`;
+            markNext(s, "answer");
+            if (!pointAt(s, item)) say(s, { verb: "edit", text: r.text, source: "stand-in · mock doesn't save", by: "stand-in" });
+            return;
+          }
+          const t0 = performance.now();
+          const sent = vh.edit(target.id, op);
+          s.foundText = r.text;
+          markNext(s, "answer");
+          const pointed = pointAt(s, item);
+          if (!pointed) say(s, { verb: "edit", text: r.text, by: "code" });
+          void sent.then(
+            (out) => {
+              tr({ status: out.status, verdict: out.verdict ?? "—", serverMs: Math.round(performance.now() - t0), ...(out.status !== "applied" ? { refusal: out.text } : {}) });
+              publish(s);
+              if (out.status !== "applied") {
+                setFound(null);
+                setEdit(null);
+                setReply({ traceKey: s.key, verb: "edit", text: out.text, by: "code" });
+                return;
+              }
+              const writeId = out.writeId;
+              if (!writeId || !vh.undo) return;
+              const undo = async () => {
+                const u = await vh.undo!(writeId);
+                tr({ status: `${out.status}; undo ${u.status}${u.status === "applied" ? "" : `: ${u.text}`}` });
+                publish(s);
+                return u.status === "applied" ? "undone" : u.text;
+              };
+              setFound((f) => (f && f.traceKey === s.key ? { ...f, undo } : f));
+            },
+            (e) => {
+              tr({ status: "error", refusal: String(e).slice(0, 120) });
+              setFound(null);
+              setReply({ traceKey: s.key, verb: "edit", text: "couldn't change it", by: "code" });
+            },
+          );
+        };
+        const plan = editFor(said, widgets, room.current.selectedId?.() ?? null, { today }, frames);
+        if (plan.kind === "do") doEdit(plan.target, plan.op, plan.how);
+        else if (plan.kind === "refused") {
+          tr({ target: nameOf(plan.target), how: plan.how, op: JSON.stringify(plan.op), status: "refused", verdict: "not sent", refusal: plan.text });
+          setEdit(null);
+          pointWith("edit", plan.target.id, plan.text);
+        } else if (plan.kind === "offers") {
+          tr({ how: `offers: ${plan.why}`, status: "offered" });
+          setEdit(null);
+          say(s, {
+            verb: "edit",
+            text: "which one?",
+            source: plan.why,
+            by: "code",
+            offers: plan.targets.map((o) => ({
+              label: o.label,
+              run: () => {
+                setReply(null);
+                s.trace.verb = { ...s.trace.verb!, by: "tapped" };
+                doEdit(o.target, o.op, `tapped: ${o.label}`);
+              },
+            })),
+          });
+        } else {
+          tr({ target: plan.target ? nameOf(plan.target) : "none", how: plan.how ?? "no target", status: "none", refusal: plan.text });
+          setEdit(null);
+          if (plan.target) pointWith("edit", plan.target.id, plan.text);
+          else say(s, { verb: "edit", text: plan.text, by: "code" });
+        }
         return true;
+      }
       case "go": {
         const t = goFor(said, vh.rooms(), room.current.board?.() ?? [], vh.here());
         if (!t) {
@@ -1920,5 +2031,5 @@ export function useVoiceBuild({
   );
 
   const voice: VoiceHooks = { start, words, ask, ready };
-  return { voice, withDrafts, drafts, shell, landed, found, reply, receipt, leaving, traces };
+  return { voice, withDrafts, drafts, shell, landed, found, reply, edit, receipt, leaving, traces };
 }

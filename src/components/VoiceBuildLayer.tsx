@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { Widget } from "../data/types";
-import type { AskTrace, StageName, VoiceFound, VoiceLanded, VoiceReceipt, VoiceReply, VoiceShell } from "../live/useVoiceBuild";
+import type { AskTrace, StageName, VoiceEdit, VoiceFound, VoiceLanded, VoiceReceipt, VoiceReply, VoiceShell } from "../live/useVoiceBuild";
 import { feedVoiceStage } from "../lib/voiceStage";
 import type { ResolveNote, RoomFacts } from "../lib/deck";
 
@@ -52,6 +52,54 @@ function ShellRing({ shell, tint }: { shell: VoiceShell; tint: CSSProperties }) 
 
 /** The ask was already on the board: a ring in the asker's colour pulses
     once around that widget (following it while the camera glides). */
+/** The asker's undo on an edit's slip: a few seconds, one tap, back through the same door. */
+function UndoButton({ undo }: { undo: () => Promise<string> }) {
+  const [state, setState] = useState<"ready" | "busy" | string>("ready");
+  useEffect(() => {
+    const id = window.setTimeout(() => setState((x) => (x === "ready" ? "gone" : x)), 5000);
+    return () => window.clearTimeout(id);
+  }, []);
+  if (state === "gone") return null;
+  if (state !== "ready" && state !== "busy") return <span className="voice-found-next" data-testid="voice-edit-undone">{state}</span>;
+  return (
+    <button
+      type="button"
+      className="voice-found-next"
+      data-testid="voice-edit-undo"
+      disabled={state === "busy"}
+      onClick={(e) => {
+        e.stopPropagation();
+        setState("busy");
+        void undo().then(setState, () => setState("couldn't undo"));
+      }}
+    >
+      undo
+    </button>
+  );
+}
+
+/** Every other screen: an AI edit lands on the card with a small slip, "juno added ramen". */
+export function EditSlips({ slips, host, at }: { slips: { id: string; widgetId: string; text: string; color: string }[]; host: HTMLElement | null; at: (widgetId: string) => { x: number; y: number } | null }) {
+  if (!host) return null;
+  return (
+    <>
+      {slips.map((slip) => {
+        const p = at(slip.widgetId);
+        if (!p) return null;
+        return createPortal(
+          <div key={slip.id} className="voice-slip is-found is-edit" style={{ "--maker": slip.color, left: p.x, top: p.y } as CSSProperties}>
+            <span className="voice-landed voice-found" data-testid="voice-edit-slip" data-widget-ref={slip.widgetId}>
+              {slip.text}
+            </span>
+          </div>,
+          host,
+          slip.id,
+        );
+      })}
+    </>
+  );
+}
+
 function FoundPulse({ found, tint }: { found: VoiceFound; tint: CSSProperties }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -246,6 +294,14 @@ function ContextDrawer({
               {t.verb.conf != null && ` (${t.verb.conf.toFixed(2)})`} · {t.verb.why}
             </p>
             {t.verb.mine && <p>your part: {t.verb.mine}</p>}
+            {t.verb.edit && (
+              <ol className="dev-context-list" data-testid="dev-context-edit">
+                <li>target: {t.verb.edit.target ?? "—"} · found by {t.verb.edit.how ?? "—"}</li>
+                <li>op: <code>{t.verb.edit.op ?? "—"}</code>{t.verb.edit.fields?.length ? ` · touches ${t.verb.edit.fields.join(", ")}` : ""}</li>
+                <li>the door (rightOfWay): {t.verb.edit.verdict ?? "…"} · {t.verb.edit.status ?? "…"}{t.verb.edit.serverMs != null ? ` · server ${t.verb.edit.serverMs} ms` : ""}</li>
+                {t.verb.edit.refusal && <li data-testid="dev-context-edit-refusal">not applied: {t.verb.edit.refusal}</li>}
+              </ol>
+            )}
             {t.verb.answer && (
               <>
                 <p>
@@ -464,12 +520,15 @@ export function VoiceBuildLayer({
   landed,
   found,
   reply,
+  edit,
   receipt,
   leaving,
   traces,
   color,
   by,
 }: {
+  /** An edit's card as it will be, for the stage. */
+  edit?: VoiceEdit | null;
   /** The local skeleton / card, for the voice stage (lib/voiceStage.ts). */
   drafts: Widget[];
   shell: VoiceShell | null;
@@ -486,7 +545,7 @@ export function VoiceBuildLayer({
 }) {
   const [dev] = useState(devMode);
   // The voice stage shows this build on its right half; it reads it through this one call.
-  useEffect(() => feedVoiceStage({ drafts, shell, landed, found: found ?? null, reply: reply ?? null, receipt, traces, color, by }), [drafts, shell, landed, found, reply, receipt, traces, color, by]);
+  useEffect(() => feedVoiceStage({ drafts, shell, landed, found: found ?? null, reply: reply ?? null, edit: edit ?? null, receipt, traces, color, by }), [drafts, shell, landed, found, reply, edit, receipt, traces, color, by]);
   const [open, setOpen] = useState<number | null>(null);
   const tint = { "--maker": color } as CSSProperties;
   const latest = traces[0];
@@ -523,6 +582,7 @@ export function VoiceBuildLayer({
             <span className="voice-landed voice-found" data-testid="voice-found" data-widget-ref={found.widgetId} data-card={found.card}>
               {found.done ?? <>already here{found.by ? ` · ${found.by} made it` : ""}</>}
             </span>
+            {found.undo && <UndoButton key={found.traceKey} undo={found.undo} />}
             {found.next === "spin" && (
               <button
                 type="button"

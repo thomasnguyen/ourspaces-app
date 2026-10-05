@@ -20,13 +20,14 @@ const PlayLab = lazy(() =>
 const PLAY_LAB_SOURCE = "crew";
 import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock, radioRoomOf } from "../components/ActionDock";
-import { VoiceBuildLayer } from "../components/VoiceBuildLayer";
+import { EditSlips, VoiceBuildLayer } from "../components/VoiceBuildLayer";
 import { offersFor } from "../lib/deck/suggest";
 import { setVoiceStageBoard, setVoiceStageOffers } from "../lib/voiceStage";
 import { RoomKnowsDoor, RoomKnowsPage } from "../components/RoomKnows";
 import { standing } from "../lib/roomKnows";
 import { useVoiceBuild } from "../live/useVoiceBuild";
-import { boardItems } from "../lib/deck";
+import { boardItems, titleOfWidget } from "../lib/deck";
+import { applyEdit } from "../lib/deck/edits";
 import { myPartFor } from "../lib/challenge";
 import { Canvas, SpaceHeader } from "../components/Canvas";
 import { ClaimCard, type RoomContext } from "../components/ClaimCard";
@@ -97,7 +98,7 @@ import { cannedLinkQuestions } from "../lib/linkQuestions";
 import { guessLinkKind } from "../lib/mockArrival";
 import type { PhotoComment } from "../components/PhotoWallGallery";
 import { getPresenceId, useIdentity } from "../live/identity";
-import { useLiveHandlers } from "../live/useLiveHandlers";
+import { patchWidgetData, useLiveHandlers } from "../live/useLiveHandlers";
 import { mergePollRows, type PollRow } from "../live/useLivePoll";
 import { useLiveSpace } from "../live/useLiveSpace";
 import { usePresence } from "../live/usePresence";
@@ -1546,6 +1547,45 @@ export function LiveSpacePage({
   const noteDealLanded = useMutation(api.voiceBuild.noteLanded);
   const decideCard = useAction(api.voiceBuild.decide);
   const answerAsk = useAction(api.voiceBuild.answer);
+  /* Voice edits (lib/deck/edits.ts → convex/edits.ts): the change paints on this
+     screen at once (the same applyEdit the server runs), the server's door decides. */
+  const editMutation = useMutation(api.edits.apply);
+  const applyVoiceEdit = useMemo(
+    () => editMutation.withOptimisticUpdate((store, { spaceId, widgetId, op, today }) =>
+      patchWidgetData(store, spaceId, widgetId, (data) => {
+        const r = applyEdit({ type: adaptedTypesRef.current.get(widgetId) ?? "", data: data as Record<string, unknown> }, op, { today });
+        return r.ok ? (r.data as typeof data) : data;
+      })),
+    [editMutation],
+  );
+  const undoVoiceEdit = useMutation(api.edits.undo);
+  const adaptedTypesRef = useRef(new Map<string, string>());
+  adaptedTypesRef.current = new Map(widgets.map((w) => [w.id, w.type]));
+  /* Every other screen: "juno added ramen" on the card as an AI edit lands
+     (edits.recent; rows that were there when the room loaded are history). */
+  const recentEdits = useQuery(api.edits.recent, mode === "live" && space ? { spaceId: space._id } : "skip");
+  const seenEdits = useRef<Set<string> | null>(null);
+  const [editSlips, setEditSlips] = useState<{ id: string; widgetId: string; text: string; color: string }[]>([]);
+  useEffect(() => {
+    if (!recentEdits) return;
+    if (seenEdits.current === null) {
+      seenEdits.current = new Set(recentEdits.map((r) => String(r.id)));
+      return;
+    }
+    const fresh = recentEdits.filter((r) => !seenEdits.current!.has(String(r.id)));
+    if (!fresh.length) return;
+    for (const r of fresh) seenEdits.current.add(String(r.id));
+    const mine = fresh.filter((r) => r.byUserId !== identity.userId);
+    if (!mine.length) return;
+    const add = mine.map((r) => ({
+      id: String(r.id),
+      widgetId: String(r.widgetId),
+      text: r.kind === "undo" ? `${r.by.toLowerCase()} undid it` : `${r.by.toLowerCase()} ${r.text}`,
+      color: members.find((m) => m.name === r.by)?.color ?? "var(--color-lime)",
+    }));
+    setEditSlips((x) => [...x, ...add]);
+    window.setTimeout(() => setEditSlips((x) => x.filter((y) => !add.some((a) => a.id === y.id))), 4000);
+  }, [identity.userId, members, recentEdits]);
   /* The room brief's facts (convex/roomBrief.ts): each call is routed by
      them and its tokens resolve against them, on this screen. */
   const [briefNow] = useState(() => Date.now());
@@ -1564,7 +1604,28 @@ export function LiveSpacePage({
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   };
-  const voiceSelectedId = () => (focusedTarget?.kind === "widget" ? focusedTarget.id : selectedWidgetId) ?? null;
+  /* The card a voice ask means by "it": the focused or selected card, or the one whose toolbar is up
+     (a tap), or one picked in the last few seconds (tapping the orb can drop the toolbar).
+     `&select=<title words>` picks one on load (take recipes). */
+  const pickedRef = useRef<{ id: string; at: number } | null>(null);
+  useEffect(() => {
+    const id = (focusedTarget?.kind === "widget" ? focusedTarget.id : selectedWidgetId) || managedWidgetId;
+    if (id) pickedRef.current = { id, at: Date.now() };
+  }, [focusedTarget, managedWidgetId, selectedWidgetId]);
+  const selectParam = useRef(new URLSearchParams(window.location.search).get("select"));
+  useEffect(() => {
+    const want = selectParam.current?.toLowerCase();
+    if (!want || !adaptedWidgets.length) return;
+    const hit = adaptedWidgets.find((w) => titleOfWidget(w).toLowerCase().includes(want));
+    if (!hit) return;
+    selectParam.current = null;
+    setManagedWidgetId(hit.id);
+  }, [adaptedWidgets]);
+  const voiceSelectedId = () =>
+    (focusedTarget?.kind === "widget" ? focusedTarget.id : selectedWidgetId) ||
+    managedWidgetId ||
+    (pickedRef.current && Date.now() - pickedRef.current.at < 8000 ? pickedRef.current.id : null) ||
+    null;
   // What the room can offer for a card named with nothing in it (the voice stage asks; lib/deck/suggest.ts).
   setVoiceStageOffers((card) => offersFor(roomBrief?.room ?? null, card));
   // "already here": the stage shows the card that is there
@@ -1616,6 +1677,15 @@ export function LiveSpacePage({
       retrieve: async (said) => {
         if (!space) throw new Error("no space");
         return await answerAsk({ spaceId: space._id, question: said });
+      },
+      today: () => voiceToday(),
+      edit: async (widgetId, op) => {
+        if (!space) throw new Error("no space");
+        return await applyVoiceEdit({ spaceId: space._id, widgetId: widgetId as Id<"widgets">, op, by: identity.name, byUserId: identity.userId, today: voiceToday() });
+      },
+      undo: async (writeId) => {
+        if (!space) throw new Error("no space");
+        return await undoVoiceEdit({ spaceId: space._id, writeId: writeId as Id<"aiWrites">, byUserId: identity.userId, today: voiceToday() });
       },
     },
     facts: () => roomBrief?.room ?? null,
@@ -3127,6 +3197,14 @@ export function LiveSpacePage({
         highlightMessageId={highlightMessageId}
       />
       <VoiceBuildLayer {...voiceBuild} color={identity.color} by={identity.name} />
+      <EditSlips
+        slips={editSlips}
+        host={viewportRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null}
+        at={(id) => {
+          const w = adaptedWidgets.find((x) => x.id === id);
+          return w ? { x: w.x, y: w.y } : null;
+        }}
+      />
       {roomEntered && (
         <YourTurn
           roomKey={slug}

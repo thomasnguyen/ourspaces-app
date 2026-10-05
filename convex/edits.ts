@@ -45,7 +45,7 @@ async function run(ctx: MutationCtx, a: { spaceId: Id<"spaces">; widgetId: Id<"w
   }
   const door = await rightOfWay(ctx, { kind: a.kind, spaceId: a.spaceId, widgetId: widget._id, by: who, fields: r.fields, text: r.text, undo: r.undo });
   if (door.verdict !== "go") return { status: door.verdict, text: door.reason, writeId: door.writeId, fields: r.fields.map((f) => f.field), verdict: door.verdict };
-  await writeWidgetData(ctx, widget, r.data as Doc<"widgets">["data"]);
+  await writeWidgetData(ctx, widget, r.data as Doc<"widgets">["data"], { stampLater: true });
   return { status: "applied", text: r.text, writeId: door.writeId, fields: r.fields.map((f) => f.field), verdict: door.verdict };
 }
 

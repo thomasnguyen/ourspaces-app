@@ -285,6 +285,8 @@ export function parseSaid(said: string): Said | null {
 }
 /** Words that are an edit (the router's test). `selected`: a card is selected, so "add rio" means it. */
 export function isEditSaid(said: string, selected: boolean): boolean {
+  // "add ramen to the…" while the card's name is still coming: an edit until a word says otherwise
+  if (/^(add|put|throw|stick) (?!(a|an|another|one|some new|new|me|us)\b)\S+( \S+)? (to|on|onto|in|into)( the| our| my)?$/.test(clean(said))) return true;
   const p = parseSaid(said);
   if (!p) return false;
   if (p.fam === "add") return Boolean(p.phrase && KIND.some(([re]) => re.test(p.phrase!))) || (selected && !p.phrase && p.value.split(" ").length <= 3);

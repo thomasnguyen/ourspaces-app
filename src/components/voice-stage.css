@@ -987,6 +987,25 @@ body.voice-stage-up .voice-slip {
   color: var(--color-lime);
 }
 
+/* A voice edit (lib/deck/edits.ts): the part that changes lights up as it lands.
+   Plain on purpose; a design pass follows. */
+.voice-two-card [data-edit-changed] {
+  outline: 3px solid var(--color-lime);
+  outline-offset: 2px;
+  border-radius: 10px;
+  animation: voice-edit-pop calc(var(--dur-arrive) * var(--slow, 1)) var(--ease-pop) backwards;
+}
+.voice-two-card [data-edit-changed="tentative"] {
+  outline-style: dashed;
+  opacity: 0.75;
+}
+@keyframes voice-edit-pop {
+  from {
+    scale: 0.92;
+    outline-color: transparent;
+  }
+}
+
 @keyframes voice-ask-in {
   from {
     opacity: 0;

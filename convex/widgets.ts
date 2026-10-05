@@ -1,4 +1,5 @@
-import { query, mutation } from "./_generated/server";
+import { internalMutation, query, mutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
@@ -196,11 +197,22 @@ export const updateWidgetData = mutation({
 });
 
 /** A card's data, written the way the card's own edit writes it: the outcome log, its links, the room's stamp. Voice edits (edits.ts) come through here too. */
-export async function writeWidgetData(ctx: MutationCtx, widget: Doc<"widgets">, data: Doc<"widgets">["data"]) {
+export async function writeWidgetData(ctx: MutationCtx, widget: Doc<"widgets">, data: Doc<"widgets">["data"], opts: { stampLater?: boolean } = {}) {
   await ctx.db.patch(widget._id, { data });
   const field = editedLabels(widget.type, widget.data, data);
   if (field) await noteOutcome(ctx, widget, { kind: "edited", field });
   // a card waiting on this one may resolve now
   await applyLinks(ctx, widget._id);
-  await touchSpace(ctx, widget.spaceId);
+  // the room's stamp re-runs every query that reads the space doc: a voice edit stamps it right after, like voiceBuild.commit
+  if (opts.stampLater) await ctx.scheduler.runAfter(0, internal.widgets.stamp, { spaceId: widget.spaceId, at: Date.now() });
+  else await touchSpace(ctx, widget.spaceId);
 }
+
+export const stamp = internalMutation({
+  args: { spaceId: v.id("spaces"), at: v.number() },
+  returns: v.null(),
+  handler: async (ctx, { spaceId, at }) => {
+    await touchSpace(ctx, spaceId, at);
+    return null;
+  },
+});

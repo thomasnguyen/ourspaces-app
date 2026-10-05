@@ -72,6 +72,8 @@ export type StageBuild = {
   found: { widgetId: string; host: HTMLElement; title: string } | null;
   /** Another verb than make (an answer, a recap, your part, go): its slip, and offers to tap. No card. */
   reply: StageReply | null;
+  /** An edit (lib/deck/edits.ts): the card shown is the one on the board with the change; `changed` highlights. */
+  edit: { changed: string; text: string; state: "tentative" | "final" } | null;
   maker: { name: string; color: string };
 };
 
@@ -87,6 +89,8 @@ export type StageFeed = {
   found?: { widgetId: string; host: HTMLElement; traceKey: number; title: string } | null;
   /** Another verb's slip (useVoiceBuild `reply`). */
   reply?: (StageReply & { traceKey: number }) | null;
+  /** An edit's card as it will be (useVoiceBuild `edit`). */
+  edit?: { traceKey: number; widget: Widget; changed: string; text: string; state: "tentative" | "final" } | null;
   receipt: { ok: boolean; key: number } | null;
   traces: Array<{ key: number; said: string; how: string | null; notes?: Array<{ token: string; kind: string; detail: string }> }>;
   color: string;
@@ -133,14 +137,15 @@ export function feedVoiceStage(feed: StageFeed) {
   const frame = feed.drafts.length > 1 ? feed.drafts.find((d) => d.type === "frame") : undefined;
   const draft = (frame ? feed.drafts.find((d) => d.type === "checkIn") : feed.drafts[0]) ?? feed.drafts[0] ?? null;
   const draftKey = draft ? Number(/^voice-draft-(\d+)-/.exec(draft.id)?.[1]) : NaN;
-  const key = Number.isFinite(draftKey) ? draftKey : (feed.reply?.traceKey ?? feed.found?.traceKey ?? feed.landed?.traceKey ?? feed.receipt?.key ?? (feed.shell ? feed.traces[0]?.key : undefined));
+  const key = Number.isFinite(draftKey) ? draftKey : (feed.reply?.traceKey ?? feed.edit?.traceKey ?? feed.found?.traceKey ?? feed.landed?.traceKey ?? feed.receipt?.key ?? (feed.shell ? feed.traces[0]?.key : undefined));
   let next: StageBuild | null = null;
   if (key !== undefined) {
     const same = current?.key === key ? current : null;
     const replyHere = feed.reply?.traceKey === key ? feed.reply : null;
     // an answer pointed at its card: the stage says the answer, never "already here"
     const foundHere = feed.found?.traceKey === key && !replyHere ? feed.found : null;
-    const there = foundHere ? (boardWidget?.(foundHere.widgetId) ?? null) : null;
+    const editHere = feed.edit?.traceKey === key ? feed.edit : null;
+    const there = editHere ? editHere.widget : foundHere ? (boardWidget?.(foundHere.widgetId) ?? null) : null;
     // the draft is dropped once its synced copy is on the board: keep showing the last one
     const widget = there ?? draft ?? same?.widget ?? null;
     const kind = widget ? (CATALOG.find((c) => c.type === widget.type)?.id ?? null) : null;
@@ -157,7 +162,7 @@ export function feedVoiceStage(feed: StageFeed) {
     if (widget) {
       for (const step of fillPlan(kind).steps) {
         step.read(widget.data as Record<string, unknown>, complete).forEach((value, i) => {
-          const status = value === null ? "pending" : complete || there || (ended && step.from !== "words") ? "final" : "tentative";
+          const status = value === null ? "pending" : editHere ? (editHere.state === "final" ? "final" : "tentative") : complete || there || (ended && step.from !== "words") ? "final" : "tentative";
           const room = value === null ? null : (fromRoom.get(String(value).toLowerCase()) ?? null);
           parts.push({ id: partId(step, i), label: step.label, wave: step.wave, status, value, tick: Boolean(step.tick), room });
         });
@@ -177,6 +182,7 @@ export function feedVoiceStage(feed: StageFeed) {
       sources: [...new Set(parts.flatMap((p) => (p.room ? [p.room] : [])))],
       found: foundHere ? { widgetId: foundHere.widgetId, host: foundHere.host, title: foundHere.title } : null,
       reply: replyHere ? { verb: replyHere.verb, text: replyHere.text, source: replyHere.source, widgetId: replyHere.widgetId, offers: replyHere.offers } : (same?.reply ?? null),
+      edit: editHere ? { changed: editHere.changed, text: editHere.text, state: editHere.state } : (same?.edit ?? null),
       maker: { name: feed.by, color: feed.color },
     };
   }

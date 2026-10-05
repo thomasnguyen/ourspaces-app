@@ -74,7 +74,7 @@ function patchWidgetBox(
 }
 
 /** Same walk as patchWidgetBox, for the half of a widget that is not its box. */
-function patchWidgetData(
+export function patchWidgetData(
   store: OptimisticLocalStore,
   spaceId: Id<"spaces">,
   widgetId: Id<"widgets">,
