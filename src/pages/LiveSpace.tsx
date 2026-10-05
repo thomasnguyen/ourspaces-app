@@ -102,6 +102,8 @@ import { useShowAfter } from "../lib/entrance";
 import { freshWidgetData, getWidgetBlueprint } from "../lib/widgetDefaults";
 import { widgetLabel } from "../lib/widgetLabels";
 import { panToWidget, recapTargetsOf, startBoardScan } from "../lib/recapBoard";
+import { YourTurn } from "../components/YourTurn";
+import { yourTurn, type TurnViewer } from "../lib/yourTurn";
 import { widgetSupportsThread } from "../lib/widgetThreads";
 import { RSVP_CHOICES, type RsvpStatus } from "../widgets/extras";
 import type { CozyColorStroke } from "../widgets/CozyColorWidget";
@@ -805,6 +807,28 @@ export function LiveSpacePage({
     });
     return { widgets, rsvpSelections, dailyAnswers, dailyReactions };
   }, [boardWidgets, identity.userId, revealingAnswers]);
+  /* "your turn": computed from what this page already holds. A guest has
+     nothing waiting on them, so they get where the room is at instead. Only
+     the first poll has its votes loaded here, so only that poll can be read. */
+  const turnViewer = useMemo<TurnViewer>(
+    () => ({
+      name: identity.name,
+      userId: identity.userId,
+      standing: account.joined ? "member" : "guest",
+    }),
+    [account.joined, identity.name, identity.userId],
+  );
+  const turnItems = useMemo(
+    () => yourTurn({
+      widgets: adaptedWidgets,
+      members: members.map((member) => member.name),
+      viewer: turnViewer,
+      mine: { polls: pollSelections, rsvps: rsvpSelections, answers: dailyAnswers },
+      knownPolls: livePoll.id ? [livePoll.id] : [],
+      sharedSeals: true,
+    }),
+    [adaptedWidgets, dailyAnswers, livePoll.id, members, pollSelections, rsvpSelections, turnViewer],
+  );
   /* `/?peers=3#/space/house` — the peers lab (src/live/labPeers.ts) on a real
      space: the fixture's roster gets a cursor each, moving the way people do
      between the cards the board actually has. Built once the board has
@@ -2993,6 +3017,29 @@ export function LiveSpacePage({
         highlightMessageId={highlightMessageId}
       />
       <VoiceBuildLayer {...voiceBuild} color={identity.color} by={identity.name} />
+      {roomEntered && (
+        <YourTurn
+          roomKey={slug}
+          items={turnItems}
+          viewer={turnViewer}
+          onVote={handlers.onVote}
+          onRsvp={respondToRsvp}
+          onAnswer={answerDailyQuestion}
+          onClaim={handlers.onClaim}
+          onDays={(widgetId, dayIndex) => {
+            const widget = rawWidgetsRef.current.find((item) => item.id === widgetId);
+            if (!widget) return;
+            const days = Array.isArray(widget.data.days) ? widget.data.days : [];
+            handlers.onUpdate(widgetId, {
+              ...widget.data,
+              members: [
+                ...(Array.isArray(widget.data.members) ? widget.data.members : []),
+                { name: identity.name, userId: identity.userId, slots: days.map((_, index) => index === dayIndex) },
+              ],
+            });
+          }}
+        />
+      )}
       <ActionDock
         voice={voiceBuild.voice}
         recapOpen={recapOpen}

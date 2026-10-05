@@ -133,6 +133,7 @@ export function Rail({
   self,
   onSettingsClick,
   settingsOpen = false,
+  waiting,
 }: {
   activeId?: string;
   activeSpaceOverride?: Partial<SpaceMeta>;
@@ -142,6 +143,8 @@ export function Rail({
   self?: { name: string; color: string; emoji: string; avatarUrl?: string };
   onSettingsClick?: () => void;
   settingsOpen?: boolean;
+  /** "your turn" in other rooms: how many things wait on you there. */
+  waiting?: Record<string, number>;
 }) {
   const rememberCurrentSpace = () => {
     if (activeId) rememberSpaceSlug(activeId);
@@ -203,11 +206,15 @@ export function Rail({
                   {/* U+FE0E keeps ♥ a text glyph (white ink) instead of the emoji */}
                   {!spaceCover && <span>{`${displaySpace.icon}\uFE0E`}</span>}
                   {hasSpace && <OnlineDot spaceId={space.id} />}
+                  {!active && Boolean(waiting?.[space.id]) && (
+                    <b className="rail-turn" data-testid="rail-turn">{waiting?.[space.id]}</b>
+                  )}
                 </button>
                 <span className="space-tooltip">
                   {displaySpace.name}
                   {displaySpace.preview ? ` · ${displaySpace.preview}` : ""}
                   {hasSpace && <OnlineCount spaceId={space.id} />}
+                  {!active && Boolean(waiting?.[space.id]) && ` · your turn on ${waiting?.[space.id]}`}
                 </span>
               </div>
             </Fragment>

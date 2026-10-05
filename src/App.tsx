@@ -36,7 +36,7 @@ import {
   type ChatMessage,
 } from "./data/chat";
 import { RECAP_LINES, type RecapTurn } from "./data/recap";
-import { DECISION_WIDGET, canvasSizeFor, getSpace, getWidgets } from "./data/spaces";
+import { DECISION_WIDGET, SPACES_BY_ID, canvasSizeFor, getSpace, getWidgets } from "./data/spaces";
 import { createLabPeerFeed, labPeersRequested } from "./live/labPeers";
 import { dealDemo, deckLabRequested } from "./lib/deck/lab";
 import { STAND_IN_ANSWER } from "./lib/deck/standIn";
@@ -106,6 +106,8 @@ import { ShipRoom } from "./components/ShipRoom";
 import type { RoomOrigin } from "./components/CanvasRoom";
 import type { BuildRoomLink } from "./data/buildroom";
 import { pendingLinkRows, scheduleMockResolve } from "./lib/mockArrival";
+import { YourTurn } from "./components/YourTurn";
+import { mockViewer, mockWaitingByRoom, playAsOverrides, yourTurn } from "./lib/yourTurn";
 
 const CursorLab = lazy(() =>
   import("./pages/CursorLab").then((module) => ({ default: module.CursorLab })),
@@ -1545,6 +1547,48 @@ export default function App() {
     }));
   };
 
+  /* "your turn" does these two from its pile; the cards read the same data. */
+  const patchWidgetData = (widgetId: string, patch: (data: Widget["data"]) => Widget["data"]) => {
+    setWidgetDataOverrides((current) => ({
+      ...current,
+      [spaceId]: {
+        ...(current[spaceId] ?? {}),
+        [widgetId]: patch(
+          current[spaceId]?.[widgetId] ??
+            getSpace(spaceId).widgets.find((widget) => widget.id === widgetId)?.data ??
+            {},
+        ),
+      },
+    }));
+  };
+
+  const claimSlot = (widgetId: string, itemName: string) => {
+    playSound("place");
+    const by = mockViewer(getSpace(spaceId).members.map((member) => member.name)).name;
+    patchWidgetData(widgetId, (data) => ({
+      ...data,
+      items: (Array.isArray(data.items) ? (data.items as Record<string, unknown>[]) : []).map((item) =>
+        item.name !== itemName
+          ? item
+          : item.byUserId === "you"
+            ? { ...item, claimed: false, by: null, byUserId: undefined }
+            : { ...item, claimed: true, by, byUserId: "you" },
+      ),
+    }));
+  };
+
+  const addMyDays = (widgetId: string, dayIndex: number) => {
+    playSound("place");
+    const name = mockViewer(getSpace(spaceId).members.map((member) => member.name)).name;
+    patchWidgetData(widgetId, (data) => ({
+      ...data,
+      members: [
+        ...(Array.isArray(data.members) ? data.members : []),
+        { name, slots: (Array.isArray(data.days) ? data.days : []).map((_, index) => index === dayIndex) },
+      ],
+    }));
+  };
+
   const respondToRsvp = (widgetId: string, status: RsvpStatus) => {
     const previous = rsvpSelections[spaceId]?.[widgetId];
     if (previous === status) return;
@@ -1960,6 +2004,18 @@ export default function App() {
       data: widgetDataOverrides[spaceId]?.[widget.id] ?? widget.data,
     }));
   visibleWidgetsRef.current = visibleWidgets;
+  const turnMembers = baseSpace.members.map((member) => member.name);
+  const turnViewer = mockViewer(turnMembers);
+  const turnItems = yourTurn({
+    widgets: visibleWidgets,
+    members: turnMembers,
+    viewer: turnViewer,
+    mine: {
+      polls: pollSelections[spaceId] ?? {},
+      rsvps: rsvpSelections[spaceId] ?? {},
+      answers: dailyAnswers[spaceId] ?? {},
+    },
+  });
 
   /* #/mail, mock mode: no backend to do the filing, so the lab does it. The
      receipt stands its own empty "cake" card up before the envelope flies —
@@ -2115,6 +2171,7 @@ export default function App() {
         }}
         onSelectSpace={selectSpace}
         onCreateClick={openPicker}
+        waiting={mockWaitingByRoom(SPACES_BY_ID, { widgetDataOverrides, pollSelections, rsvpSelections, dailyAnswers })}
         self={tabIdentity}
         settingsOpen={settingsOpen}
         onSettingsClick={() => setSettingsOpen((open) => !open)}
@@ -2304,7 +2361,12 @@ export default function App() {
               onPromote={promoteMessage}
               addedWidgets={voiceAddedWidgets}
               widgetPlacements={widgetPlacements[spaceId] ?? {}}
-              widgetDataOverrides={widgetDataOverrides[spaceId] ?? {}}
+              widgetDataOverrides={{
+                ...playAsOverrides(baseSpace.widgets, turnViewer),
+                ...(widgetDataOverrides[spaceId] ?? {}),
+              }}
+              onClaim={claimSlot}
+              claimantId="you"
               localCommentCounts={commentCounts}
               pollSelections={pollSelections[spaceId] ?? {}}
               rsvpSelections={rsvpSelections[spaceId] ?? {}}
@@ -2517,6 +2579,16 @@ export default function App() {
         onSave={saveSpace}
       />
       <VoiceBuildLayer {...voiceBuild} color={voiceMaker.color} by={voiceMaker.name} />
+      <YourTurn
+        roomKey={spaceId}
+        items={turnItems}
+        viewer={turnViewer}
+        onVote={voteOnPoll}
+        onRsvp={respondToRsvp}
+        onAnswer={answerDailyQ}
+        onClaim={claimSlot}
+        onDays={addMyDays}
+      />
       <ActionDock
         voice={voiceBuild.voice}
         recapOpen={recapOpen}

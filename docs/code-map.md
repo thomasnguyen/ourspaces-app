@@ -611,3 +611,5 @@ the home of the house motion system: three easing curves, the six-step duration
 scale, stagger, FLIP, and which moments earn cinematic treatment. Read it
 before any UI work; skip it if a clone doesn't have it. Token names are
 mirrored publicly in `docs/tokens.md`.
+
+`lib/yourTurn.ts` + `components/YourTurn.tsx` (+ `yourTurn.css`) — "your turn": what on the board waits on one person, computed from loaded widgets (never stored), shown as a pile of tickets by the room header; mounted once in `App.tsx` (mock, `?as=<name>`) and once in `pages/LiveSpace.tsx`; `Rail` takes an optional `waiting` count. Feature file: `features/your-turn.md`.
