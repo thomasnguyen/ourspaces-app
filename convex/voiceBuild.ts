@@ -312,17 +312,22 @@ export const commit = mutation({
       if (!applied.ok) continue;
       const w = applied.widget;
       // the one door every AI write passes (rightOfWay.ts): a new card, all its fields new
-      const door = await rightOfWay(ctx, { kind: "build", spaceId: args.spaceId, by: { name: args.by, userId: args.createdBy }, fields: [{ field: "card", old: null, new: { type: w.type, title: (w.data as Record<string, unknown>).title ?? (w.data as Record<string, unknown>).question ?? (w.data as Record<string, unknown>).event ?? null } }] });
-      if (door.verdict !== "go") continue;
+      const size = { w: Math.round(Math.min(1600, Math.max(80, c.w ?? w.w))), h: Math.round(Math.min(1200, Math.max(60, c.h ?? w.h))) };
+      let spot = { x: Math.round(c.x), y: Math.round(c.y) };
+      const door = await rightOfWay(ctx, { kind: "build", spaceId: args.spaceId, by: { name: args.by, userId: args.createdBy }, fields: [{ field: "card", old: null, new: { type: w.type, title: (w.data as Record<string, unknown>).title ?? (w.data as Record<string, unknown>).question ?? (w.data as Record<string, unknown>).event ?? null } }], rect: { ...spot, ...size } });
+      // never on a held card: the asker's screen placed it with the live leases, so this is a race; it goes below the held card instead
+      if (door.verdict === "never" && door.onThing) {
+        const held = ctx.db.normalizeId("widgets", door.onThing);
+        const h = held && (await ctx.db.get(held));
+        if (h) spot = { x: spot.x, y: h.y + h.h + 64 };
+      } else if (door.verdict !== "go") continue;
       const rotate = c.rotate ?? w.rotate;
       // What widgets.createWidget does, without a nested mutation in the hot path.
       const id = await ctx.db.insert("widgets", {
         spaceId: args.spaceId,
         type: w.type,
-        x: Math.round(c.x),
-        y: Math.round(c.y),
-        w: Math.round(Math.min(1600, Math.max(80, c.w ?? w.w))),
-        h: Math.round(Math.min(1200, Math.max(60, c.h ?? w.h))),
+        ...spot,
+        ...size,
         z: w.z,
         ...(rotate !== undefined ? { rotate: Math.max(-6, Math.min(6, rotate)) } : {}),
         data: w.data as never,

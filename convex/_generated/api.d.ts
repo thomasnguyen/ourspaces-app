@@ -25,6 +25,7 @@ import type * as games from "../games.js";
 import type * as http from "../http.js";
 import type * as inbox from "../inbox.js";
 import type * as inboxRouting from "../inboxRouting.js";
+import type * as leases from "../leases.js";
 import type * as links from "../links.js";
 import type * as mailArrival from "../mailArrival.js";
 import type * as messages from "../messages.js";
@@ -81,6 +82,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   inbox: typeof inbox;
   inboxRouting: typeof inboxRouting;
+  leases: typeof leases;
   links: typeof links;
   mailArrival: typeof mailArrival;
   messages: typeof messages;

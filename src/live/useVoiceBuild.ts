@@ -198,7 +198,7 @@ export type AskTrace = {
     /** What do my part did, offered or refused. */
     mine?: string;
     /** An edit: the target and how it was found, the op, the door's verdict, any refusal and why. */
-    edit?: { target?: string; how?: string; op?: string; fields?: string[]; status?: string; verdict?: string; refusal?: string; serverMs?: number };
+    edit?: { target?: string; how?: string; op?: string; fields?: string[]; status?: string; verdict?: string; refusal?: string; serverMs?: number; lease?: string; waited?: string; outcome?: string };
   } | null;
   /** The "already here" answer: code's check at the pause, the model's yes/no, and what was done. */
   found: {
@@ -278,7 +278,9 @@ export type VoiceFound = {
 };
 /** An edit on the asker's stage: the card as it will be, and the part that changes. Tentative while talking. */
 export type VoiceEdit = { traceKey: number; widgetId: string; widget: Widget; changed: string; text: string; state: "tentative" | "final" };
-export type EditOut = { status: "applied" | "refused" | "failed" | "wait" | "ask"; text: string; writeId?: string; fields: string[]; verdict?: string };
+export type EditOut = { status: "applied" | "refused" | "failed" | "wait" | "ask"; text: string; writeId?: string; fields: string[]; verdict?: string; on?: { userId: string; name: string; color: string; kind: string }; pendingId?: string };
+/** How a write that waited ended (convex/rightOfWay.ts outcome). */
+export type WaitOutcome = { state: string; ms: number; on: string; why?: string; afterLetGo?: number };
 /** A non-build verb's slip: an answer, a recap, a refusal, offers to tap. Nothing is written by it. */
 export type VoiceReply = {
   traceKey: number;
@@ -591,6 +593,8 @@ export type VerbHooks = {
   /** An edit through convex/edits.ts (optimistic on this screen); absent in mock. */
   edit?: (widgetId: string, op: EditOp) => Promise<EditOut>;
   undo?: (writeId: string) => Promise<EditOut>;
+  /** Resolves when a write that had to wait lands, is dropped, expires or is cancelled. */
+  settled?: (writeId: string) => Promise<WaitOutcome>;
   today?: () => string;
 };
 
@@ -604,6 +608,7 @@ export function useVoiceBuild({
   amend,
   cardContext,
   selectedId,
+  held,
   warm,
   onLanded,
   facts,
@@ -631,6 +636,8 @@ export function useVoiceBuild({
   board?: () => BoardItem[];
   cardContext: () => CardContext;
   selectedId?: () => string | null;
+  /** Cards someone else is holding (Right of Way leases): a new card never lands on one. */
+  held?: () => ReadonlySet<string>;
   /** Orb tapped: wake the model path (live only). */
   warm?: () => void;
   /** The asker's screen showed the synced card, `ms` after the last word. */
@@ -646,8 +653,8 @@ export function useVoiceBuild({
   const [traces, setTraces] = useState<AskTrace[]>([]);
   /** The slip is on its way out (it leaves on glide, then unmounts). */
   const [leaving, setLeaving] = useState(false);
-  const room = useRef({ deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board, myPart, verbs });
-  room.current = { deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board, myPart, verbs };
+  const room = useRef({ deal, commit, amend, cardContext, selectedId, held, warm, onLanded, facts, decide, board, myPart, verbs });
+  room.current = { deal, commit, amend, cardContext, selectedId, held, warm, onLanded, facts, decide, board, myPart, verbs };
   const [reply, setReply] = useState<VoiceReply | null>(null);
   const [edit, setEdit] = useState<VoiceEdit | null>(null);
   const session = useRef<Session | null>(null);
@@ -707,7 +714,7 @@ export function useVoiceBuild({
         s.m = measure(scrollerRef.current) ?? s.m;
         if (!s.m) return;
         const size = footprint(first);
-        const [spot] = placeCards([size], { widgets: s.m.board, view: s.m.view, bounds: s.m.bounds, selected: room.current.selectedId?.() ?? null });
+        const [spot] = placeCards([size], { widgets: s.m.board, view: s.m.view, bounds: s.m.bounds, selected: room.current.selectedId?.() ?? null, held: room.current.held?.() });
         if (inView({ ...spot, ...size }, s.m.view)) s.spot = spot;
         else {
           // No clear spot in view: float over the board now, find the spot after.
@@ -1335,7 +1342,7 @@ export function useVoiceBuild({
       if (!m) return fail("no canvas");
       // the group is placed by its frame (the first part), the rest sit inside it
       const size = { ...kept[0].part!.size };
-      const placeRoom = { widgets: m.board, view: m.view, bounds: m.bounds, selected: room.current.selectedId?.() ?? null };
+      const placeRoom = { widgets: m.board, view: m.view, bounds: m.bounds, selected: room.current.selectedId?.() ?? null, held: room.current.held?.() };
       const [spot] = placeCards([size], placeRoom);
       s.trace.place = `recipe group ${size.w}×${size.h}: ${placeReason([size], [spot], placeRoom)}`;
       const placed = kept.map((k) => ({ ...k, widget: { ...k.widget, x: spot.x + k.part!.at.x, y: spot.y + k.part!.at.y } }));
@@ -1559,8 +1566,20 @@ export function useVoiceBuild({
           if (!pointed) say(s, { verb: "edit", text: r.text, by: "code" });
           void sent.then(
             (out) => {
-              tr({ status: out.status, verdict: out.verdict ?? "—", serverMs: Math.round(performance.now() - t0), ...(out.status !== "applied" ? { refusal: out.text } : {}) });
+              tr({ status: out.status, verdict: out.verdict ?? "—", serverMs: Math.round(performance.now() - t0), ...(out.status !== "applied" && out.status !== "wait" ? { refusal: out.text } : {}), ...(out.on ? { lease: `${out.on.name} · ${out.on.kind}${out.status === "applied" ? " (the asker's own hand: go)" : ""}` } : {}) });
               publish(s);
+              if (out.status === "wait" && out.on) {
+                // someone holds it: the stage says so plainly and lets go to the board, where the ghost waits
+                const who = out.on.name.toLowerCase();
+                setEdit(null);
+                pointWith("edit", target.id, `waiting on ${who} · ${who} is ${({ drag: "moving it", type: "typing in it", vote: "choosing" } as Record<string, string>)[out.on.kind] ?? "holding it"}`);
+                if (out.writeId && vh.settled)
+                  void vh.settled(out.writeId).then((o) => {
+                    tr({ waited: `${(o.ms / 1000).toFixed(1)} s`, outcome: `${o.state}${o.why ? `: ${o.why}` : ""}${o.afterLetGo != null ? ` · ${o.afterLetGo} ms after ${o.on} let go` : ""}` });
+                    publish(s);
+                  });
+                return;
+              }
               if (out.status !== "applied") {
                 setFound(null);
                 setEdit(null);
@@ -1767,7 +1786,7 @@ export function useVoiceBuild({
         s.m = measure(scrollerRef.current) ?? s.m;
         if (s.m) {
           const size = { w: 300, h: 240 };
-          const [spot] = placeCards([size], { widgets: s.m.board, view: s.m.view, bounds: s.m.bounds });
+          const [spot] = placeCards([size], { widgets: s.m.board, view: s.m.view, bounds: s.m.bounds, held: room.current.held?.() });
           setShell({ host: s.m.canvas, draftId: null, box: { ...spot, ...size }, said, phase: "dealing" });
           s.spot = inView({ ...spot, ...size }, s.m.view) ? spot : null;
           void nextFrame().then((t) => mark(s, "skeleton", t));
@@ -1926,7 +1945,7 @@ export function useVoiceBuild({
       if (!m) return fail("no canvas");
       // Where it goes: code, from the board as drawn, as close to the skeleton as fits.
       const sizes = kept.map((k) => footprint(k.widget));
-      const placeRoom = { widgets: m.board, view: m.view, bounds: m.bounds, selected: room.current.selectedId?.() ?? null, anchor: s.spot ?? undefined };
+      const placeRoom = { widgets: m.board, view: m.view, bounds: m.bounds, selected: room.current.selectedId?.() ?? null, held: room.current.held?.(), anchor: s.spot ?? undefined };
       const spots = placeCards(sizes, placeRoom);
       s.trace.place = placeReason(sizes, spots, placeRoom);
       const placed = kept.map((k, i) => ({ ...k, widget: { ...k.widget, ...spots[i] } }));
@@ -1999,7 +2018,7 @@ export function useVoiceBuild({
           s.trace.notes = more.notes;
           const m2 = measure(scrollerRef.current) ?? m;
           const sizes2 = extra.map((k) => footprint(k.widget));
-          const spots2 = placeCards(sizes2, { widgets: m2.board, view: m2.view, bounds: m2.bounds, anchor: spots[0] });
+          const spots2 = placeCards(sizes2, { widgets: m2.board, view: m2.view, bounds: m2.bounds, anchor: spots[0], held: room.current.held?.() });
           const ids2 = await room.current
             .commit({ dealId: answer.dealId, nonce: sp.nonce, cards: extra.map((k, i) => ({ ...k, widget: { ...k.widget, ...spots2[i] } })) })
             .catch(() => [] as string[]);

@@ -135,13 +135,19 @@ export default defineSchema({
     spaceId: v.id("spaces"), from: v.id("widgets"), to: v.id("widgets"), when: v.string(), fill: v.string(), value: v.string(),
     at: v.optional(v.number()), resolvedAt: v.optional(v.number()),
   }).index("by_from", ["from"]).index("by_space", ["spaceId"]),
-  // Every AI write through the one door (rightOfWay.ts): kind edit|undo|link|build, fields = JSON [{field,old,new}],
-  // verdict go|wait|ask (or refused: an edit that would undo people's choices), undo = the inverse op JSON.
+  // Every AI write through the one door (rightOfWay.ts): fields = JSON [{field,old,new}], verdict go|wait|never,
+  // undo = inverse op JSON, outcome = what a wait came to (JSON {state,ms,on}).
   aiWrites: defineTable({
     spaceId: v.id("spaces"), widgetId: v.optional(v.id("widgets")), kind: v.string(), by: v.string(), byUserId: v.optional(v.string()),
     fields: v.string(), verdict: v.string(), reason: v.optional(v.string()), text: v.optional(v.string()), undo: v.optional(v.string()),
-    undone: v.optional(v.boolean()), at: v.number(),
+    undone: v.optional(v.boolean()), at: v.number(), outcome: v.optional(v.string()),
   }).index("by_space", ["spaceId"]),
+  // Right of Way (leases.ts): who holds what (thing = card id | piece:<game>:<i>) until `until`.
+  leases: defineTable({ spaceId: v.id("spaces"), thing: v.string(), kind: v.string(), userId: v.string(), name: v.string(), color: v.string(), since: v.number(), until: v.number(), letGoAt: v.optional(v.number()), settleAt: v.number() })
+    .index("by_thing", ["spaceId", "thing"]),
+  // A write told to wait (the ghost): write = its replay, on = the holder (JSON).
+  pending: defineTable({ spaceId: v.id("spaces"), thing: v.string(), writeId: v.id("aiWrites"), write: v.string(), on: v.string(), at: v.number() })
+    .index("by_thing", ["spaceId", "thing"]),
   // Room brief for voice asks (roomBrief.ts); facts = evidence JSON.
   briefs: defineTable({ spaceId: v.id("spaces"), text: v.string(), facts: v.string(), at: v.number() }).index("by_space", ["spaceId"]),
 
@@ -166,8 +172,8 @@ export default defineSchema({
     .index("by_game", ["gameId", "n"]),
   awards: defineTable({ spaceId: v.id("spaces"), gameId: v.id("games"), to: v.string(), title: v.string(), glyph: v.string(), prompt: v.string(), tone: v.number(), at: v.number() })
     .index("by_space", ["spaceId", "at"]),
-  // The jigsaw's pieces: where each one is, and who holds it (a lease that runs out by itself).
-  puzzlePieces: defineTable({ gameId: v.id("games"), i: v.number(), x: v.number(), y: v.number(), placed: v.boolean(), by: v.optional(v.string()), heldBy: v.optional(v.string()), heldName: v.optional(v.string()), heldUntil: v.optional(v.number()) })
+  // The jigsaw's pieces: where each one is (who holds one is a lease, leases.ts).
+  puzzlePieces: defineTable({ gameId: v.id("games"), i: v.number(), x: v.number(), y: v.number(), placed: v.boolean(), by: v.optional(v.string()) })
     .index("by_game", ["gameId", "i"]),
 
   // batch-worker queue: stale linkCards awaiting Firecrawl refresh.

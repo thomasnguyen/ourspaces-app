@@ -3,7 +3,8 @@ import { mutation, query, type MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { caller, type Who } from "./games";
 import { rightOfWay as door } from "./rightOfWay";
-import { rightOfWay, type Hold } from "../src/lib/games/rightOfWay";
+import { rightOfWay } from "../src/lib/rightOfWay";
+import { holdThing, leasesFrom, letGoThing } from "./leases";
 
 /**
  * The group-photo jigsaw, live (features/jigsaw.md). A puzzle is a `games`
@@ -11,15 +12,20 @@ import { rightOfWay, type Hold } from "../src/lib/games/rightOfWay";
  * piece is a `puzzlePieces` row once someone has touched it (untouched pieces
  * lie where the shared seed scattered them on every screen).
  *
- * Holding a piece is a lease: `heldBy` until `heldUntil`, renewed while you
- * drag, gone by itself a few seconds after you stop (a closed laptop never
- * locks a piece). Every grab asks the same rule the mock's hands ask
- * (src/lib/games/rightOfWay.ts: go | wait | never) with the live leases:
- * the seed of the real Right of Way gate. The space's hand is not here: in
- * a live room only people move pieces.
+ * Holding a piece is a lease (leases.ts, the same table cards use; thing =
+ * "piece:<game>:<i>"), renewed while you drag, gone by itself a few seconds
+ * after you stop (a closed laptop never locks a piece). Every grab asks the
+ * Right of Way gate (src/lib/rightOfWay.ts) with the live leases.
  */
 
 const LEASE_MS = 4_000;
+
+const pieceOf = (gameId: Id<"games">, i: number) => `piece:${gameId}:${i}`;
+/** The game's live piece leases. */
+async function heldIn(ctx: MutationCtx, game: Doc<"games">) {
+  const now = Date.now();
+  return (await leasesFrom(ctx, game.spaceId, `piece:${game._id}:`)).filter((l) => l.until > now);
+}
 
 async function pieces(ctx: MutationCtx, gameId: Id<"games">) {
   return await ctx.db.query("puzzlePieces").withIndex("by_game", (q) => q.eq("gameId", gameId)).take(64);
@@ -43,15 +49,20 @@ export const forRoom = query({
   handler: async (ctx, { spaceId }) => {
     const game = (await ctx.db.query("games").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(12)).find((g) => g.kind === "jigsaw");
     if (!game) return null;
-    const [rows, players] = await Promise.all([
+    const [rows, players, held] = await Promise.all([
       ctx.db.query("puzzlePieces").withIndex("by_game", (q) => q.eq("gameId", game._id)).take(64),
       ctx.db.query("gamePlayers").withIndex("by_game", (q) => q.eq("gameId", game._id)).take(40),
+      leasesFrom(ctx, spaceId, `piece:${game._id}:`),
     ]);
+    const holderOf = (i: number) => held.find((l) => l.thing === pieceOf(game._id, i) && l.letGoAt === undefined);
     return {
       id: game._id, phase: game.phase, photo: game.photo ?? "friday", pieces: game.known ?? 20, startedAt: game.startedAt,
       startedBy: { name: game.startedBy.name, color: game.startedBy.color },
       players: players.map((p) => ({ name: p.name, color: p.color, userId: p.userId })),
-      rows: rows.map((r) => ({ i: r.i, x: r.x, y: r.y, placed: r.placed, by: r.by ?? null, holder: r.heldName ?? null, holderId: r.heldBy ?? null, until: r.heldUntil ?? 0 })),
+      rows: rows.map((r) => {
+        const h = holderOf(r.i);
+        return { i: r.i, x: r.x, y: r.y, placed: r.placed, by: r.by ?? null, holder: h?.name ?? null, holderId: h?.userId ?? null, until: h?.until ?? 0 };
+      }),
     };
   },
 });
@@ -83,18 +94,18 @@ export const grab = mutation({
   handler: async (ctx, { gameId, userId, i, x, y }) => {
     const seat = await seatIn(ctx, gameId, userId);
     if (!seat) return { kind: "never" };
-    const now = Date.now();
     const rows = await pieces(ctx, gameId);
     const row = rows.find((r) => r.i === i);
     if (row?.placed) return { kind: "never" };
-    const holds: Hold[] = rows.filter((r) => r.heldBy && (r.heldUntil ?? 0) > now).map((r) => ({ thing: String(r.i), by: { kind: "person", name: r.heldBy! } }));
-    const d = rightOfWay(holds, { thing: String(i), by: { kind: "person", name: seat.me.userId } });
-    if (d.kind !== "go") return d.kind === "wait" ? { kind: "wait", on: row?.heldName ?? "someone" } : { kind: "never" };
+    const held = await heldIn(ctx, seat.game);
+    const thing = pieceOf(gameId, i);
+    const d = rightOfWay({ thing, by: { kind: "person", id: seat.me.userId, name: seat.me.name } }, held.map((l) => ({ thing: l.thing, by: { kind: "person" as const, id: l.userId, name: l.name }, kind: "piece" as const })));
+    if (d.kind !== "go") return d.kind === "wait" ? { kind: "wait", on: d.on.by.kind === "person" ? d.on.by.name : "the space" } : { kind: "never" };
     /* one piece per hand: anything else you held goes back down where it is */
-    for (const r of rows) if (r.heldBy === seat.me.userId && r.i !== i) await ctx.db.patch("puzzlePieces", r._id, { heldBy: undefined, heldName: undefined, heldUntil: undefined });
-    const lease = { heldBy: seat.me.userId, heldName: seat.me.name, heldUntil: now + LEASE_MS, x, y };
-    if (row) await ctx.db.patch("puzzlePieces", row._id, lease);
-    else await ctx.db.insert("puzzlePieces", { gameId, i, placed: false, ...lease });
+    for (const l of held) if (l.userId === seat.me.userId && l.thing !== thing) await letGoThing(ctx, seat.game.spaceId, l.thing, seat.me.userId);
+    await holdThing(ctx, { spaceId: seat.game.spaceId, thing, kind: "piece", userId: seat.me.userId, name: seat.me.name, color: seat.me.color }, LEASE_MS);
+    if (row) await ctx.db.patch("puzzlePieces", row._id, { x, y });
+    else await ctx.db.insert("puzzlePieces", { gameId, i, placed: false, x, y });
     return { kind: "go" };
   },
 });
@@ -107,8 +118,11 @@ export const move = mutation({
     const row = (await pieces(ctx, gameId)).find((r) => r.i === i);
     const game = await ctx.db.get("games", gameId);
     const me = game && (await caller(ctx, game.spaceId, userId));
-    if (!row || !me || row.heldBy !== me.userId || row.placed) return false;
-    await ctx.db.patch("puzzlePieces", row._id, { x, y, heldUntil: Date.now() + LEASE_MS });
+    if (!row || !me || row.placed) return false;
+    const mine = (await heldIn(ctx, game)).find((l) => l.thing === pieceOf(gameId, i) && l.userId === me.userId && l.letGoAt === undefined);
+    if (!mine) return false;
+    await holdThing(ctx, { spaceId: game.spaceId, thing: mine.thing, kind: "piece", userId: me.userId, name: me.name, color: me.color }, LEASE_MS);
+    await ctx.db.patch("puzzlePieces", row._id, { x, y });
     return true;
   },
 });
@@ -122,8 +136,10 @@ export const drop = mutation({
     if (!seat) return false;
     const rows = await pieces(ctx, gameId);
     const row = rows.find((r) => r.i === i);
-    if (!row || row.heldBy !== seat.me.userId || row.placed) return false;
-    await ctx.db.patch("puzzlePieces", row._id, { x, y, placed, heldBy: undefined, heldName: undefined, heldUntil: undefined, ...(placed ? { by: seat.me.name } : {}) });
+    const thing = pieceOf(gameId, i);
+    if (!row || row.placed || !(await heldIn(ctx, seat.game)).some((l) => l.thing === thing && l.userId === seat.me.userId)) return false;
+    await ctx.db.patch("puzzlePieces", row._id, { x, y, placed, ...(placed ? { by: seat.me.name } : {}) });
+    await letGoThing(ctx, seat.game.spaceId, thing, seat.me.userId);
     if (placed && rows.filter((r) => r.placed).length + 1 >= (seat.game.known ?? 20)) await ctx.db.patch("games", gameId, { phase: "done" });
     return true;
   },

@@ -21,6 +21,9 @@ const PLAY_LAB_SOURCE = "crew";
 import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock, radioRoomOf } from "../components/ActionDock";
 import { EditSlips, VoiceBuildLayer } from "../components/VoiceBuildLayer";
+import { LiveHeldBack, RowGhosts, RowHalos, settledLine, withGhosts, type RowGhost, type RowLease } from "../components/RightOfWay";
+import { useHolds } from "../live/useHolds";
+import type { WaitOutcome } from "../live/useVoiceBuild";
 import { offersFor } from "../lib/deck/suggest";
 import { setVoiceStageBoard, setVoiceStageOffers } from "../lib/voiceStage";
 import { RoomKnowsDoor, RoomKnowsPage } from "../components/RoomKnows";
@@ -123,7 +126,7 @@ import { yourTurn, type TurnViewer } from "../lib/yourTurn";
 import { widgetSupportsThread } from "../lib/widgetThreads";
 import { RSVP_CHOICES, type RsvpStatus } from "../widgets/extras";
 import type { CozyColorStroke } from "../widgets/CozyColorWidget";
-import type { CanvasLayout, LivePeer } from "../live/presenceTypes";
+import type { CanvasGestureKind, CanvasLayout, LivePeer } from "../live/presenceTypes";
 import { createLabPeerFeed, labPeersRequested } from "../live/labPeers";
 import { DEFAULT_SPACE_SLUG, knowsHash, normalSpaceHash } from "../lib/routes";
 import { useCanvasSpacePan } from "../lib/canvasSpacePan";
@@ -1604,13 +1607,48 @@ export function LiveSpacePage({
   const editMutation = useMutation(api.edits.apply);
   const applyVoiceEdit = useMemo(
     () => editMutation.withOptimisticUpdate((store, { spaceId, widgetId, op, today }) =>
-      patchWidgetData(store, spaceId, widgetId, (data) => {
+      heldByOthersRef.current.has(widgetId) ? undefined : patchWidgetData(store, spaceId, widgetId, (data) => {
         const r = applyEdit({ type: adaptedTypesRef.current.get(widgetId) ?? "", data: data as Record<string, unknown> }, op, { today });
         return r.ok ? (r.data as typeof data) : data;
       })),
     [editMutation],
   );
   const undoVoiceEdit = useMutation(api.edits.undo);
+  /* Right of Way (convex/leases.ts, convex/rightOfWay.ts): who holds what, and the AI writes waiting on them.
+     Your own hands go out through useHolds; the halo and the ghost are components/RightOfWay.tsx. */
+  const holds = useHolds({ spaceId: space?._id, me: identity, enabled: mode === "live" && roomEntered });
+  const leaseRows = useQuery(api.leases.forRoom, mode === "live" && space ? { spaceId: space._id } : "skip");
+  const rowRoom = useQuery(api.rightOfWay.room, mode === "live" && space ? { spaceId: space._id } : "skip");
+  const cancelPending = useMutation(api.rightOfWay.cancel);
+  const leases = useMemo<RowLease[]>(() => (leaseRows ?? []) as RowLease[], [leaseRows]);
+  const ghosts = useMemo<RowGhost[]>(() => (rowRoom?.ghosts ?? []).map((g) => ({ ...g, id: String(g.id), writeId: String(g.writeId), widgetId: g.widgetId ? String(g.widgetId) : undefined })), [rowRoom?.ghosts]);
+  const heldByOthersRef = useRef(new Set<string>());
+  heldByOthersRef.current = new Set(leases.filter((l) => l.userId !== identity.userId).map((l) => l.thing));
+  /* a wait's ending: the asker's voice drawer hears it (settled), every screen gets the slip */
+  const waitResolvers = useRef(new Map<string, (o: WaitOutcome) => void>());
+  const seenSettled = useRef<Set<string> | null>(null);
+  const [rowSlips, setRowSlips] = useState<{ id: string; widgetId: string; text: string; color: string }[]>([]);
+  useEffect(() => {
+    const settled = rowRoom?.settled;
+    if (!settled) return;
+    const keyOf = (r: (typeof settled)[number]) => `${r.id}:${r.outcome}`;
+    if (seenSettled.current === null) {
+      seenSettled.current = new Set(settled.map(keyOf));
+      return;
+    }
+    const fresh = settled.filter((r) => !seenSettled.current!.has(keyOf(r)));
+    for (const r of fresh) {
+      seenSettled.current.add(keyOf(r));
+      const o = JSON.parse(r.outcome) as WaitOutcome;
+      waitResolvers.current.get(String(r.id))?.(o);
+      waitResolvers.current.delete(String(r.id));
+      const text = settledLine(r, identity.userId);
+      if (!text || !r.widgetId) continue;
+      const slip = { id: `${r.id}:${o.state}`, widgetId: String(r.widgetId), text, color: members.find((m) => m.name === r.by)?.color ?? "var(--color-lime)" };
+      setRowSlips((x) => [...x, slip]);
+      window.setTimeout(() => setRowSlips((x) => x.filter((y) => y.id !== slip.id)), 5000);
+    }
+  }, [identity.userId, members, rowRoom?.settled]);
   const adaptedTypesRef = useRef(new Map<string, string>());
   adaptedTypesRef.current = new Map(widgets.map((w) => [w.id, w.type]));
   /* Every other screen: "juno added ramen" on the card as an AI edit lands
@@ -1692,6 +1730,7 @@ export function LiveSpacePage({
       colors: Object.fromEntries((roomKnows?.people ?? []).filter((p) => p.color).map((p) => [p.name, p.color])),
     }),
     selectedId: voiceSelectedId,
+    held: () => heldByOthersRef.current,
     // "i did 40": your own row on a running check-in, through the same as-yourself mutation as a tap
     myPart: (said) => {
       const mine = myPartFor(said, adaptedWidgets as never, identity.name);
@@ -1751,6 +1790,7 @@ export function LiveSpacePage({
         if (!space) throw new Error("no space");
         return await undoVoiceEdit({ spaceId: space._id, writeId: writeId as Id<"aiWrites">, byUserId: identity.userId, today: voiceToday() });
       },
+      settled: (writeId) => new Promise<WaitOutcome>((resolve) => waitResolvers.current.set(writeId, resolve)),
     },
     facts: () => roomBrief?.room ?? null,
     decide: (said, { onBoard, card, verb }) =>
@@ -1874,7 +1914,7 @@ export function LiveSpacePage({
     () => ({ ...voiceBuild.voice, start: () => { setRecapOpen(false); voiceBuild.voice.start?.(); } }),
     [voiceBuild.voice],
   );
-  const canvasWidgets = useMemo(() => voiceBuild.withDrafts([...adaptedWidgets, ...gameWidgets]), [voiceBuild.withDrafts, adaptedWidgets, gameWidgets]);
+  const canvasWidgets = useMemo(() => voiceBuild.withDrafts(withGhosts([...adaptedWidgets, ...gameWidgets], ghosts, leases)), [voiceBuild.withDrafts, adaptedWidgets, gameWidgets, ghosts, leases]);
   /* The header always needs a number to print, so an unloaded count reads as
      quiet rather than falling through to the seeded roster. The strip can
      stay silent until the real one lands, so it gets the raw value. */
@@ -2755,12 +2795,17 @@ export function LiveSpacePage({
       : recapCites.concat(payoffFlashId ? [payoffFlashId] : []),
     [payoffFlashId, recapCites, recapHover],
   );
+  const startCanvasGesture = useCallback((widget: Widget, kind: CanvasGestureKind) => {
+    holds.start(widget.id, "drag");
+    handlers.onGestureStart(widget, kind);
+  }, [handlers.onGestureStart, holds.start]);
   const finishCanvasGesture = useCallback((widgetId: string, layout: CanvasLayout) => {
+    holds.stop(widgetId, "drag");
     handlers.onGestureEnd(widgetId, layout);
     if (focusedTarget?.id === widgetId) {
       window.requestAnimationFrame(() => refitFocusedTarget(CAMERA_EXIT_MS));
     }
-  }, [focusedTarget?.id, handlers.onGestureEnd, refitFocusedTarget]);
+  }, [focusedTarget?.id, handlers.onGestureEnd, holds.stop, refitFocusedTarget]);
   const deleteCanvasWidget = useCallback((widgetId: string) => {
     const widget = widgets.find((item) => item.id === widgetId);
     if (!widget) return;
@@ -2948,7 +2993,7 @@ export function LiveSpacePage({
                 onWidgetSelect={focusWidgetThread}
                 managedWidgetId={managedWidgetId}
                 onWidgetManage={setManagedWidgetId}
-                onGestureStart={handlers.onGestureStart}
+                onGestureStart={startCanvasGesture}
                 onGestureChange={handlers.onGestureChange}
                 onGestureEnd={finishCanvasGesture}
                 onLayoutCommit={handlers.onLayoutCommit}
@@ -3264,8 +3309,15 @@ export function LiveSpacePage({
         highlightMessageId={highlightMessageId}
       />
       <VoiceBuildLayer {...voiceBuild} color={identity.color} by={identity.name} />
+      <RowHalos host={viewportRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null} leases={leases} me={identity.userId} />
+      <RowGhosts
+        host={viewportRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null}
+        ghosts={ghosts}
+        me={identity.userId}
+        onCancel={(id) => void cancelPending({ pendingId: id as Id<"pending">, userId: identity.userId })}
+      />
       <EditSlips
-        slips={editSlips}
+        slips={[...editSlips, ...rowSlips]}
         host={viewportRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null}
         at={(id) => {
           const w = adaptedWidgets.find((x) => x.id === id);
@@ -3362,6 +3414,7 @@ export function LiveSpacePage({
           roomName={activeCustomization.name}
           knows={roomKnows}
           self={identity}
+          heldBack={<LiveHeldBack spaceId={space._id} />}
           onChange={(change) => void correctKnows({ spaceId: space._id, by: identity.name, color: identity.color, change })}
         />
       )}

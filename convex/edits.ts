@@ -2,7 +2,7 @@ import { mutation, query, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { applyEdit, type EditOp } from "../src/lib/deck/edits";
-import { log, rightOfWay } from "./rightOfWay";
+import { rightOfWay } from "./rightOfWay";
 import { writeWidgetData } from "./widgets";
 
 /**
@@ -21,6 +21,9 @@ const resultV = v.object({
   writeId: v.optional(v.id("aiWrites")),
   fields: v.array(v.string()),
   verdict: v.optional(v.string()),
+  /** wait: who holds the card, and the ghost (rightOfWay.ts); go: the asker held it themself */
+  on: v.optional(v.object({ userId: v.string(), name: v.string(), color: v.string(), kind: v.string() })),
+  pendingId: v.optional(v.id("pending")),
 });
 type Result = typeof resultV.type;
 
@@ -33,20 +36,28 @@ async function votesOf(ctx: MutationCtx, widget: Doc<"widgets">) {
   return out;
 }
 
+/** Ops that set a value: a waiting one is dropped if someone changed that field meanwhile. Adds and removes re-check by re-running. */
+const SETS = new Set(["rename", "setWhen", "setDate", "setDays", "setDay"]);
+
 async function run(ctx: MutationCtx, a: { spaceId: Id<"spaces">; widgetId: Id<"widgets">; op: EditOp; by: string; byUserId: string; today: string; kind: "edit" | "undo" }): Promise<Result> {
   const widget = await ctx.db.get(a.widgetId);
   // a card in another room is never touched
   if (!widget || widget.spaceId !== a.spaceId) return { status: "failed", text: "that card isn't in this room", fields: [] };
   const r = applyEdit({ type: widget.type, data: widget.data as Record<string, unknown> }, a.op, { today: a.today, votes: await votesOf(ctx, widget) });
   const who = { name: a.by, userId: a.byUserId };
-  if (!r.ok) {
-    if (r.refused) await log(ctx, { kind: a.kind, spaceId: a.spaceId, widgetId: widget._id, by: who, fields: [], text: r.reason, undo: a.op }, "refused", r.reason);
-    return { status: r.refused ? "refused" : "failed", text: r.reason, fields: [] };
-  }
-  const door = await rightOfWay(ctx, { kind: a.kind, spaceId: a.spaceId, widgetId: widget._id, by: who, fields: r.fields, text: r.text, undo: r.undo });
-  if (door.verdict !== "go") return { status: door.verdict, text: door.reason, writeId: door.writeId, fields: r.fields.map((f) => f.field), verdict: door.verdict };
+  if (!r.ok && !r.refused) return { status: "failed", text: r.reason, fields: [] };
+  // the one door (rightOfWay.ts): a refusal is its `never`; someone holding the card is `wait`
+  const door = r.ok
+    ? await rightOfWay(ctx, {
+        kind: a.kind, spaceId: a.spaceId, widgetId: widget._id, by: who, fields: r.fields, text: r.text, undo: r.undo,
+        replay: { kind: "edit", op: a.op, today: a.today, ...(SETS.has(a.op.op) ? { set: Object.fromEntries(r.fields.map((f) => [f.field, f.old ?? null])) } : {}) },
+      })
+    : await rightOfWay(ctx, { kind: a.kind, spaceId: a.spaceId, widgetId: widget._id, by: who, fields: [], text: r.reason, undo: a.op, refused: r.reason });
+  if (!r.ok) return { status: "refused", text: r.reason, writeId: door.writeId, fields: [], verdict: "never" };
+  if (door.verdict === "wait") return { status: "wait", text: door.reason, writeId: door.writeId, fields: r.fields.map((f) => f.field), verdict: "wait", ...(door.on ? { on: door.on } : {}), ...(door.pendingId ? { pendingId: door.pendingId } : {}) };
+  if (door.verdict !== "go") return { status: "refused", text: door.reason, writeId: door.writeId, fields: [], verdict: door.verdict };
   await writeWidgetData(ctx, widget, r.data as Doc<"widgets">["data"], { stampLater: true });
-  return { status: "applied", text: r.text, writeId: door.writeId, fields: r.fields.map((f) => f.field), verdict: door.verdict };
+  return { status: "applied", text: r.text, writeId: door.writeId, fields: r.fields.map((f) => f.field), verdict: door.verdict, ...(door.on ? { on: door.on } : {}) };
 }
 
 export const apply = mutation({

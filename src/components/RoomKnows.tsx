@@ -134,6 +134,7 @@ export function RoomKnowsPage({
   self,
   onChange,
   fixture = false,
+  heldBack,
 }: {
   slug: string;
   roomName: string;
@@ -143,6 +144,8 @@ export function RoomKnowsPage({
   onChange: (change: KnowsChange) => void;
   /** Mock mode: the lines are fixtures and corrections stay on this screen. */
   fixture?: boolean;
+  /** Right of Way's ledger: "what it held back" (components/RightOfWay.tsx `HeldBack`). */
+  heldBack?: ReactNode;
 }) {
   const page = useSpacePage();
   /* The page stays mounted for its own way out (a line being followed to its
@@ -301,6 +304,7 @@ export function RoomKnowsPage({
               )}
               {(told.length > 0 || of("habits").length > 0) && <div className="knows-sheet is-b">{habits(of("habits"))}</div>}
               {of("decided").length > 0 && <div className="knows-sheet is-c">{section("decided", of("decided"))}</div>}
+              {heldBack && <div className="knows-sheet is-d">{heldBack}</div>}
             </div>
           </>
         )}

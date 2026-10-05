@@ -56,7 +56,8 @@ export async function writeLinked(ctx: MutationCtx, link: Doc<"links">, value: u
   const to = await ctx.db.get(link.to);
   if (!to || value === undefined) return false;
   // the one door every AI write passes (rightOfWay.ts)
-  const door = await rightOfWay(ctx, { kind: "link", spaceId: to.spaceId, widgetId: to._id, by: { name: "link" }, fields: [{ field: link.fill, old: (to.data as Record<string, unknown>)[link.fill], new: value }] });
+  const door = await rightOfWay(ctx, { kind: "link", spaceId: to.spaceId, widgetId: to._id, by: { name: "link" }, fields: [{ field: link.fill, old: (to.data as Record<string, unknown>)[link.fill], new: value }], replay: { kind: "link", linkId: link._id, fill: link.fill, value } });
+  // wait: someone holds the target; it fills when they let go (rightOfWay.ts landWaiting)
   if (door.verdict !== "go") return false;
   await ctx.db.patch(to._id, { data: { ...(to.data as object), [link.fill]: value } as Doc<"widgets">["data"] });
   await ctx.db.patch(link._id, { resolvedAt: now });

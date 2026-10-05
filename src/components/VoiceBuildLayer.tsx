@@ -300,6 +300,12 @@ function ContextDrawer({
                 <li>op: <code>{t.verb.edit.op ?? "—"}</code>{t.verb.edit.fields?.length ? ` · touches ${t.verb.edit.fields.join(", ")}` : ""}</li>
                 <li>the door (rightOfWay): {t.verb.edit.verdict ?? "…"} · {t.verb.edit.status ?? "…"}{t.verb.edit.serverMs != null ? ` · server ${t.verb.edit.serverMs} ms` : ""}</li>
                 {t.verb.edit.refusal && <li data-testid="dev-context-edit-refusal">not applied: {t.verb.edit.refusal}</li>}
+                {t.verb.edit.lease && <li data-testid="dev-context-edit-lease">the lease: {t.verb.edit.lease}</li>}
+                {t.verb.edit.verdict === "wait" && (
+                  <li data-testid="dev-context-edit-outcome">
+                    waited {t.verb.edit.waited ?? "…"} · {t.verb.edit.outcome ?? "still waiting"}
+                  </li>
+                )}
               </ol>
             )}
             {t.verb.answer && (
