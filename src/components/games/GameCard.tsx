@@ -12,6 +12,7 @@ import type { Game, GamePerson, GameRound } from "../../lib/games/types";
 import { SCOREBOARD_WIDGET_ID, useGames, type GamesApi } from "../../lib/games/useMockGames";
 import { AwardSticker, byStyle, GameFace, nameList } from "./parts";
 import { goToTurnWidget } from "../YourTurn";
+import { HotSeatBody } from "./HotSeat";
 import "./games.css";
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
@@ -32,7 +33,7 @@ export function GameCard({ sheet = false }: { sheet?: boolean }) {
         <header className="gm-head">
           <span className="gm-name">
             <i aria-hidden="true" />
-            {game.name}
+            {game.kind === "hot-seat" ? "the hot seat" : game.name}
           </span>
         </header>
         <p className="gm-kicker">you're playing this one up front</p>
@@ -44,6 +45,7 @@ export function GameCard({ sheet = false }: { sheet?: boolean }) {
       className={`gm at-${game.phase} ${sheet ? "is-sheet" : "widget-shell"} ${playing ? "is-playing" : "is-watching"}`}
       data-testid="game-card"
       data-phase={game.phase}
+      data-kind={game.kind}
       data-round={game.round + 1}
       data-cast={game.cast.length}
       style={byStyle(game.startedBy)}
@@ -51,7 +53,7 @@ export function GameCard({ sheet = false }: { sheet?: boolean }) {
       <header className="gm-head">
         <span className="gm-name">
           <i aria-hidden="true" />
-          {game.name}
+          {game.kind === "hot-seat" ? "the hot seat" : game.name}
         </span>
         <span className="gm-dots" aria-label={`round ${game.round + 1} of ${game.rounds.length}`}>
           {game.rounds.map((r) => (
@@ -64,9 +66,15 @@ export function GameCard({ sheet = false }: { sheet?: boolean }) {
           </button>
         )}
       </header>
-      {game.phase === "invite" && <Lobby api={api} game={game} />}
-      {(game.phase === "round" || game.phase === "reveal") && round && <Round api={api} game={game} round={round} />}
-      {game.phase === "done" && <AwardsWall api={api} game={game} />}
+      {game.kind === "hot-seat" ? (
+        <HotSeatBody api={api} game={game} round={round} />
+      ) : (
+        <>
+          {game.phase === "invite" && <Lobby api={api} game={game} />}
+          {(game.phase === "round" || game.phase === "reveal") && round && <Round api={api} game={game} round={round} />}
+          {game.phase === "done" && <AwardsWall api={api} game={game} />}
+        </>
+      )}
     </section>
   );
 }

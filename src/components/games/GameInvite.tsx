@@ -20,6 +20,26 @@ export function GameInvite() {
   if (!api || !game || !showing) return null;
   const lobby = game.phase === "invite";
   const left = game.phaseEndsAt ? Math.max(0, Math.ceil((game.phaseEndsAt - api.now) / 1000)) : undefined;
+  /* the person a hot seat is about gets their own wording */
+  const seated = game.seat?.length === 1 && game.seat[0].name.toLowerCase() === api.me.name.toLowerCase();
+  if (seated)
+    return (
+      <aside className="gmi" style={byStyle(game.startedBy)} data-testid="game-invite" data-seat="you" key={game.id}>
+        <GameFace person={game.startedBy} />
+        <p>
+          <b>you're in the hot seat</b>
+          <span>
+            {game.startedBy.name.toLowerCase()} started a game about you · {game.players.length} in{lobby && left !== undefined ? ` · starts in ${left}` : ""}
+          </span>
+        </p>
+        <button type="button" className="gmi-join" data-testid="game-invite-join" onClick={api.join}>
+          sit down →
+        </button>
+        <button type="button" className="gmi-hide" data-testid="game-invite-hide" aria-label="not now" onClick={api.hideInvite}>
+          ×
+        </button>
+      </aside>
+    );
   return (
     <aside className="gmi" style={byStyle(game.startedBy)} data-testid="game-invite" key={game.id}>
       <GameFace person={game.startedBy} />
@@ -28,7 +48,7 @@ export function GameInvite() {
           {game.startedBy.name.toLowerCase()} started {game.name}
         </b>
         <span>
-          {game.players.length} in · {lobby ? (left !== undefined ? `starts in ${left}` : "starting soon") : `round ${game.round + 1} of ${game.rounds.length}, jump in`}
+          {game.players.length} in · {lobby ? (left !== undefined ? `starts in ${left}` : "starting soon") : `${game.kind === "hot-seat" ? "question" : "round"} ${game.round + 1} of ${game.rounds.length}, jump in`}
         </span>
       </p>
       <button type="button" className="gmi-join" data-testid="game-invite-join" onClick={api.join}>
@@ -64,7 +84,7 @@ export function GameDoor({ onGo }: { onGo: (widgetId: string) => void }) {
       onClick={() => (on ? (isIn(game, api.me.name) ? api.start() : api.join()) : onGo(SCOREBOARD_WIDGET_ID))}
     >
       <i aria-hidden="true">▶</i>
-      {on ? `${game.name} is on` : "games"}
+      {on ? `${game.kind === "hot-seat" ? "the hot seat" : game.name} is on` : "games"}
     </button>
   );
 }
@@ -86,7 +106,7 @@ export function GameSheetTab() {
   if (!api || !game || api.sheetOpen || game.phase === "done" || !isIn(game, api.me.name)) return null;
   return (
     <button type="button" className="gm-sheet-tab" data-testid="game-sheet-tab" onClick={api.openSheet} style={byStyle(game.startedBy)}>
-      back to {game.name} →
+      back to {game.kind === "hot-seat" ? "the hot seat" : game.name} →
     </button>
   );
 }

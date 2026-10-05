@@ -307,7 +307,7 @@ export function yourTurn(input: TurnInput): TurnItem[] {
       push(widget, {
         kind: "game",
         verb: "join",
-        title: `${lower(data.startedBy)} started ${lower(data.name)}`,
+        title: typeof data.ticket === "string" ? data.ticket : `${lower(data.startedBy)} started ${lower(data.name)}`,
         waiting:
           typeof data.waiting === "string"
             ? data.waiting

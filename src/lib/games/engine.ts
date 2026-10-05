@@ -3,7 +3,8 @@
  * from a timer (`useMockGames`); a live version calls the same ones inside
  * mutations. Nothing here knows about React, clocks or who is simulated.
  */
-import type { Award, Game, GamePerson, GamePrompt, GameRound, ScoreRow } from "./types";
+import { askAbout, askFor, seatAwards, seatName, seatWinners } from "./hotSeat";
+import type { Award, Game, GamePerson, GamePrompt, GameRound, HotQuestion, ScoreRow, SeatReaction } from "./types";
 
 export const ROUND_MS = 14_000;
 export const LOBBY_MS = 7_000;
@@ -35,6 +36,20 @@ export function newGame(o: {
   };
 }
 
+/** A hot-seat game: the same card and the same four beats, but a round is a
+    question about the person in the seat (`hotSeat.ts` makes them). */
+export function newSeatGame(o: { id: string; room: string; by: GamePerson; cast: GamePerson[]; seat: GamePerson[]; why?: string; asks: HotQuestion[][]; known: number; now: number }): Game {
+  const game = newGame({ id: o.id, room: o.room, name: seatName(o.seat.map((p) => p.name)), by: o.by, cast: o.cast, prompts: [], now: o.now });
+  return {
+    ...game,
+    kind: "hot-seat",
+    seat: o.seat,
+    seatWhy: o.why,
+    known: o.known,
+    rounds: o.asks.map((asks, n) => ({ n, asks, prompt: { id: asks[0].id, text: asks[0].text, award: "", glyph: "", fact: asks[0].fact.key, from: asks[0].fact.from }, answers: [], winners: [] })),
+  };
+}
+
 export const isIn = (game: Game, name: string) => game.players.some((p) => same(p.name, name));
 
 /** Joining is always allowed until the game is done; late is fine. */
@@ -59,21 +74,26 @@ export function beginRound(game: Game, now: number, n = game.round): Game {
   return withRound({ ...game, phase: "round", round: n, phaseEndsAt: undefined }, (round) => ({ ...round, endsAt: now + ROUND_MS }));
 }
 
-/** Who is expected to answer this round: everyone who is in. */
-export const roundPlayers = (game: Game) => game.players;
-
 export const currentRound = (game: Game): GameRound | undefined => game.rounds[game.round];
+
+/** Who is expected to answer this round: everyone who is in. The person a
+    hot-seat question is about has nothing to answer. */
+export function roundPlayers(game: Game) {
+  const round = currentRound(game);
+  return game.kind === "hot-seat" && round ? game.players.filter((p) => askFor(round, p.name)) : game.players;
+}
 
 /** One answer each; the first one stands. The AI can't change it either. */
 export function answer(game: Game, by: string, pick: string, now: number): Game {
   const round = currentRound(game);
   if (game.phase !== "round" || !round || !isIn(game, by) || round.answers.some((a) => same(a.by, by))) return game;
+  if (game.kind === "hot-seat" && !askFor(round, by)) return game;
   return withRound(game, (r) => ({ ...r, answers: [...r.answers, { by, pick, at: now }] }));
 }
 
 export function everyoneIn(game: Game): boolean {
   const round = currentRound(game);
-  return Boolean(round) && roundPlayers(game).every((p) => round!.answers.some((a) => same(a.by, p.name)));
+  return Boolean(round) && roundPlayers(game).length > 0 && roundPlayers(game).every((p) => round!.answers.some((a) => same(a.by, p.name)));
 }
 
 /** Votes per person in a round, most first; the cast's order breaks ties. */
@@ -101,8 +121,15 @@ export function reveal(game: Game, now: number): Game {
   return withRound({ ...game, phase: "reveal", phaseEndsAt: now + REVEAL_MS }, (r) => ({
     ...r,
     revealedAt: now,
-    winners: winnersOf(game, r),
+    winners: game.kind === "hot-seat" ? seatWinners(r) : winnersOf(game, r),
   }));
+}
+
+/** Hot seat: the person a question was about gets one tap after its reveal. */
+export function react(game: Game, by: string, kind: SeatReaction, now: number): Game {
+  const round = currentRound(game);
+  if (game.phase !== "reveal" || !round || !askAbout(round, by) || round.reactions?.some((r) => same(r.by, by))) return game;
+  return withRound(game, (r) => ({ ...r, reactions: [...(r.reactions ?? []), { by, kind, at: now }] }));
 }
 
 export function nextRound(game: Game, now: number): Game {
@@ -112,6 +139,7 @@ export function nextRound(game: Game, now: number): Game {
 
 /** The stickers a game has handed out so far. */
 export function awardsOf(game: Game): Award[] {
+  if (game.kind === "hot-seat") return seatAwards(game);
   return game.rounds
     .filter((round) => round.revealedAt !== undefined)
     .flatMap((round) =>
@@ -135,7 +163,8 @@ export function pointsOf(game: Game): Record<string, number> {
   for (const round of game.rounds) {
     if (round.revealedAt === undefined) continue;
     for (const a of round.answers) {
-      if (round.winners.some((w) => same(w, a.pick))) out[a.by] = (out[a.by] ?? 0) + 1;
+      /* hot seat: a point for the right answer, or for the closest number */
+      if (round.winners.some((w) => same(w, game.kind === "hot-seat" ? a.by : a.pick))) out[a.by] = (out[a.by] ?? 0) + 1;
     }
   }
   return out;

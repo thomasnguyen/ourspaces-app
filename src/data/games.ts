@@ -108,3 +108,19 @@ export const GAME_SPOTS: Record<string, { board: { x: number; y: number }; card:
   house: { card: { x: 1216, y: 64 }, board: { x: 1652, y: 64 } },
   couple: { card: { x: 1236, y: 52 }, board: { x: 1672, y: 52 } },
 };
+
+/** Hot seat, mock only: how often each simulated player gets a question about
+    a roommate right. Like `lean`, it never leaves the mock. */
+export const SEAT_SKILL: Record<string, Record<string, number>> = {
+  crew: { Sam: 0.85, Kenji: 0.7, Jules: 0.6, Maya: 0.75, Rio: 0.45, Ash: 0.3 },
+  house: { noor: 0.8, gigi: 0.7, marco: 0.45, theo: 0.5 },
+  couple: { ren: 0.8, sky: 0.7 },
+};
+
+/** Where a hot-seat game's keepsake is pinned: by the birthday corner in the
+    crew, in a clear spot elsewhere. */
+export const KEEPSAKE_SPOTS: Record<string, { x: number; y: number; rotate: number }> = {
+  crew: { x: 638, y: 616, rotate: 1.4 },
+  house: { x: 900, y: 420, rotate: -1.2 },
+  couple: { x: 900, y: 420, rotate: 1.2 },
+};

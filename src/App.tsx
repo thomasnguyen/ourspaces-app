@@ -115,8 +115,8 @@ import type { BuildRoomLink } from "./data/buildroom";
 import { pendingLinkRows, scheduleMockResolve } from "./lib/mockArrival";
 import { YourTurn, goToTurnWidget } from "./components/YourTurn";
 import { GameDoor, GameInvite, GameSheet, GameSheetTab } from "./components/games/GameInvite";
-import { GAME_WIDGET_ID, GamesProvider, SCOREBOARD_WIDGET_ID, useMockGames, type CastPerson } from "./lib/games/useMockGames";
-import { GAME_SPOTS, hasGames } from "./data/games";
+import { GAME_WIDGET_ID, GamesProvider, KEEPSAKE_WIDGET_ID, SCOREBOARD_WIDGET_ID, useMockGames, type CastPerson } from "./lib/games/useMockGames";
+import { GAME_SPOTS, KEEPSAKE_SPOTS, hasGames } from "./data/games";
 import { JigsawDev, JigsawInvite, JigsawSheet, JigsawWorld } from "./components/games/Jigsaw";
 import { JigsawProvider, useMockJigsaw, withJigsaw, JIGSAW_WIDGET_ID } from "./lib/jigsaw/useMockJigsaw";
 import { hasJigsaw } from "./data/jigsaw";
@@ -2057,7 +2057,7 @@ export default function App() {
   const jigsawOverlay = useMemo(() => <JigsawWorld />, []);
   const gameWidgets: Widget[] = hasGames(spaceId)
     ? [
-        { id: SCOREBOARD_WIDGET_ID, type: "scoreboard", ...GAME_SPOTS[spaceId].board, w: 300, h: 110 + 49 * Math.min(7, games.rows.length) + 96 + (hasJigsaw(spaceId) ? 44 : 0), z: 4, data: { title: "scoreboard" } },
+        { id: SCOREBOARD_WIDGET_ID, type: "scoreboard", ...GAME_SPOTS[spaceId].board, w: 300, h: 110 + 49 * Math.min(7, games.rows.length) + 96 + (hasJigsaw(spaceId) ? 44 : 0) + (games.seatName && !(games.game && games.game.phase !== "done") ? 48 : 0), z: 4, data: { title: "scoreboard" } },
         ...(games.game
           ? [
               {
@@ -2076,9 +2076,15 @@ export default function App() {
                   youIn: games.game.players.some((player) => player.name === games.me.name),
                   round: games.game.round + 1,
                   rounds: games.game.rounds.length,
+                  /* the person a hot seat is about gets their own ticket */
+                  ...(games.game.seat?.length === 1 && games.game.seat[0].name === games.me.name ? { ticket: "you're in the hot seat", waiting: `${games.game.startedBy.name.toLowerCase()} started a game about you. sit down` } : {}),
                 },
               },
             ]
+          : []),
+        /* what a finished hot seat leaves on the board */
+        ...(games.keepsake && KEEPSAKE_SPOTS[spaceId]
+          ? [{ id: KEEPSAKE_WIDGET_ID, type: "keepsake" as const, ...KEEPSAKE_SPOTS[spaceId], w: 304, h: 112 + 37 * games.keepsake.rows.length, z: 6, data: { title: games.keepsake.title } }]
           : []),
       ]
     : [];

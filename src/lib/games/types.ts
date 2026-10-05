@@ -5,7 +5,7 @@
  * would become is named on it (see features/games.md "live version").
  */
 
-export type GameKind = "most-likely";
+export type GameKind = "most-likely" | "hot-seat";
 
 export type GamePhase = "invite" | "round" | "reveal" | "done";
 
@@ -34,6 +34,29 @@ export type GamePrompt = {
   from: string;
 };
 
+/** Where a hot-seat question came from: a line on "what this space knows"
+    (or the card row behind it), in a few words, and the card to fly to. */
+export type HotFact = { key: string; kind: string; card?: string; from: string };
+
+/** One hot-seat question. Code builds it from a typed room fact
+    (`hotSeat.ts`); nothing in it is invented. */
+export type HotQuestion = {
+  id: string;
+  /** who it is about; they don't answer it, they react */
+  about: string;
+  text: string;
+  form: "choice" | "number";
+  /** choice: the right answer among wrong ones from the room's own options */
+  options: string[];
+  /** the right answer (a number question stores it as a string) */
+  right: string;
+  /** number: the slider; closest wins. `clock` shows hours as a time of day */
+  range?: { min: number; max: number; unit: string; clock?: boolean };
+  fact: HotFact;
+};
+
+export type SeatReaction = "ha" | "wrong" | "who-told-you";
+
 /** table `gameAnswers` (by round): kept apart from the round so a query can
     hold `pick` back until the reveal. */
 export type GameAnswer = { by: string; pick: string; at: number };
@@ -46,8 +69,13 @@ export type GameRound = {
   /** the round's timer; the reveal happens here if not everyone is in */
   endsAt?: number;
   revealedAt?: number;
-  /** set at the reveal: the most-picked (two can share; a wider tie is no one) */
+  /** set at the reveal: the most-picked (two can share; a wider tie is no one).
+      In a hot-seat round: who got it right (or was closest). */
   winners: string[];
+  /** hot seat: the question (a room of two gets one each, about the other) */
+  asks?: HotQuestion[];
+  /** hot seat: the one tap the person it's about gets after the reveal */
+  reactions?: Array<{ by: string; kind: SeatReaction; at: number }>;
 };
 
 /** table `games` (by room). */
@@ -68,6 +96,12 @@ export type Game = {
   /** the people who can be picked: the room's members */
   cast: GamePerson[];
   rounds: GameRound[];
+  /** hot seat: who it's about (both people in a room of two) and why the
+      space offered them ("birthday in 6 days") */
+  seat?: GamePerson[];
+  seatWhy?: string;
+  /** hot seat: how many usable facts the space had (fewer than five = a short round) */
+  known?: number;
 };
 
 /** table `awards` (by room, by week): what stays after a game. */

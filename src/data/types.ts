@@ -34,7 +34,8 @@ export type WidgetType =
   | "roundtable"
   | "letter"
   | "game"
-  | "scoreboard";
+  | "scoreboard"
+  | "keepsake";
 
 export type Widget = {
   id: string;
