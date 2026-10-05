@@ -1,10 +1,11 @@
-import { v } from "convex/values";
+import { v, type Infer } from "convex/values";
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { FirecrawlClient } from "@firecrawl/firecrawl-convex";
 import { ActionRetrier } from "@convex-dev/action-retrier";
 import { ActionCache } from "@convex-dev/action-cache";
 import { components, internal } from "./_generated/api";
-import { action, internalAction, internalMutation, query } from "./_generated/server";
+import { action, internalAction, internalMutation, query, type ActionCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { logWork } from "./work";
 
 const firecrawl = new FirecrawlClient(components.firecrawl);
@@ -94,7 +95,7 @@ async function resolveHnStory(parsed: URL): Promise<HnStory | null> {
  * the retrier on a miss) so this keeps returning a plain value like a
  * normal action — callers (WidgetEditorPanel, the mail-drop router) never
  * see the cache or retry machinery. */
-export const scrapeLink = action({
+const scrapeLinkDef = {
   // `spaceId` is optional and narration-only: pass it and the room says what
   // it is doing while it does it (convex/work.ts); leave it off and this is
   // the same action it always was. The callers that have a room pass one —
@@ -102,7 +103,7 @@ export const scrapeLink = action({
   // link sweep, which nobody is watching) does not.
   args: { url: v.string(), spaceId: v.optional(v.id("spaces")), runId: v.optional(v.string()) },
   returns: linkCardScrapeValidator,
-  handler: async (ctx, args): Promise<{
+  handler: async (ctx: ActionCtx, args: { url: string; spaceId?: Id<"spaces">; runId?: string }): Promise<{
     url: string;
     title: string;
     description: string;
@@ -151,7 +152,21 @@ export const scrapeLink = action({
       throw error;
     }
   },
+};
+
+type LinkScrape = Infer<typeof linkCardScrapeValidator>;
+
+/** From a browser: a seat in the room and the person's Firecrawl limit first (S3, convex/guard.ts). */
+export const scrapeLink = action({
+  ...scrapeLinkDef,
+  handler: async (ctx, args): Promise<LinkScrape> => {
+    await ctx.runMutation(internal.guard.firecrawl, { spaceId: args.spaceId, kind: "scrape" });
+    return await scrapeLinkDef.handler(ctx, args);
+  },
 });
+
+/** The server's own scrapes (the stale-link sweep, a mailed link): no session, no seat. */
+export const scrapeLinkServer = internalAction(scrapeLinkDef);
 
 export const scrapeLinkRetried = internalAction({
   args: { url: v.string() },
@@ -264,6 +279,7 @@ export const searchTopic = action({
   handler: async (ctx, { query, limit, spaceId }) => {
     const trimmed = query.trim();
     if (!trimmed) return [];
+    await ctx.runMutation(internal.guard.firecrawl, { spaceId, kind: "search" });
     const runId = `search-${Date.now().toString(36)}`;
     if (spaceId) {
       await logWork(ctx, {
@@ -323,6 +339,7 @@ export const crawlSite = action({
   },
   returns: v.object({ crawlId: v.string() }),
   handler: async (ctx, { url, limit, spaceId }) => {
+    await ctx.runMutation(internal.guard.firecrawl, { spaceId, kind: "crawl" });
     const normalized = url.includes("://") ? url : `https://${url}`;
     const parsed = new URL(normalized);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {

@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { canRead } from "./seat";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
@@ -753,6 +754,7 @@ export const inspect = query({
     v.object({ text: v.string(), chars: v.number(), at: v.number(), ageMs: v.number(), lines: v.array(lineV), room: v.optional(roomV) }),
   ),
   handler: async (ctx, { spaceId, now }) => {
+    if (!(await canRead(ctx, spaceId))) return null;
     const row = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
     if (!row) return null;
     // Briefs stored before the room facts existed have no `room` until the next refresh.
@@ -826,6 +828,7 @@ export const knows = query({
     }),
   ),
   handler: async (ctx, { spaceId }): Promise<RoomKnows | null> => {
+    if (!(await canRead(ctx, spaceId))) return null;
     const row = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
     if (!row) return null;
     const s = JSON.parse(row.facts) as Stored;

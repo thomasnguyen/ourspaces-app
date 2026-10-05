@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
-import { seatOf } from "./seat";
+import { seatOf, canRead } from "./seat";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { rightOfWay as gate, type Choice, type Lease, type Verdict } from "../src/lib/rightOfWay";
@@ -285,6 +285,7 @@ export const room = query({
   args: { spaceId: v.id("spaces") },
   returns: v.object({ ghosts: v.array(ghostV), settled: v.array(settledV) }),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return { ghosts: [], settled: [] };
     const waiting = await ctx.db.query("pending").withIndex("by_thing", (q) => q.eq("spaceId", spaceId)).take(20);
     const ghosts = [];
     for (const p of waiting) {
@@ -306,6 +307,7 @@ export const heldBack = query({
   args: { spaceId: v.id("spaces") },
   returns: v.array(v.object({ id: v.id("aiWrites"), at: v.number(), kind: v.string(), by: v.string(), verdict: v.string(), reason: v.string(), text: v.string(), outcome: v.optional(v.string()) })),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     const rows = await ctx.db.query("aiWrites").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(200);
     return rows
       .filter((r) => (r.verdict === "wait" || r.verdict === "never" || r.verdict === "refused" || r.verdict === "ask") && !r.outcome?.includes('"replaced"'))

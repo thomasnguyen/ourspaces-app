@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { ShardedCounter } from "@convex-dev/sharded-counter";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internalMutation, internalQuery } from "./_generated/server";
@@ -6,7 +6,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { components } from "./_generated/api";
 import { rateLimiter, PRICE_PER_M, SPEND_CEILING_USD } from "./rateLimits";
-import { seatOf } from "./seat";
+import { seatOf, seatOrMaker } from "./seat";
 import type { NemotronModel } from "./nebius";
 
 /**
@@ -107,7 +107,42 @@ export const warm = internalMutation({
   },
 });
 
-/** For the other model paths (games, recap, sparks): past the ceiling, don't call. */
+/** Firecrawl from a browser: a seat in the room it's for, and the person's limit. */
+export const firecrawl = internalMutation({
+  args: { spaceId: v.optional(v.id("spaces")), kind: v.union(v.literal("scrape"), v.literal("search"), v.literal("crawl")) },
+  returns: v.null(),
+  handler: async (ctx, { spaceId, kind }) => {
+    const me = spaceId ? await seatOrMaker(ctx, spaceId) : null;
+    if (!me) throw new Error("not in this room");
+    const name = kind === "scrape" ? "firecrawlScrape" : kind === "search" ? "firecrawlSearch" : "firecrawlCrawl";
+    await rateLimiter.limit(ctx, name, { key: me.userId, throws: true });
+    return null;
+  },
+});
+
+/**
+ * The room's other model calls a browser starts (recap "catch me up" and its
+ * ask, the ask stream, a link's spark questions): a seat in the room, and
+ * under the day's ceiling. Those calls report no tokens back
+ * (convex/ai.ts completeJson), so the call is counted here, up front, at the
+ * size b2 measured for an Ultra answer with a board in the prompt.
+ */
+export async function modelDoor(ctx: MutationCtx, spaceId: Id<"spaces">, model: NemotronModel = "ultra") {
+  if (!(await seatOrMaker(ctx, spaceId))) throw new Error("not in this room");
+  if ((await spentToday(ctx)).usd >= SPEND_CEILING_USD) throw new ConvexError("spent: the space's AI is resting until tomorrow");
+  await noteSpendIn(ctx, [{ model, usage: { prompt_tokens: 2000, completion_tokens: 300 } }]);
+}
+
+export const model = internalMutation({
+  args: { spaceId: v.id("spaces"), model: v.optional(v.union(v.literal("lightning"), v.literal("ultra"))) },
+  returns: v.null(),
+  handler: async (ctx, { spaceId, model }) => {
+    await modelDoor(ctx, spaceId, model);
+    return null;
+  },
+});
+
+/** For the server's own model paths (game wording): past the ceiling, don't call. */
 export const underCeiling = internalQuery({
   args: {},
   returns: v.boolean(),

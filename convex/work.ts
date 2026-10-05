@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { canRead } from "./seat";
 import { internal } from "./_generated/api";
 import { internalMutation, query } from "./_generated/server";
 import type { ActionCtx } from "./_generated/server";
@@ -133,6 +134,7 @@ export const recent = query({
     }),
   ),
   handler: async (ctx, { spaceId, since }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     const rows = await ctx.db
       .query("work")
       .withIndex("by_space", (q) => q.eq("spaceId", spaceId).gte("_creationTime", since))

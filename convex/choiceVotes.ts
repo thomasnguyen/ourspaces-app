@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
-import { seatOf } from "./seat";
+import { seatOf, canRead } from "./seat";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { applyEdit, fieldsOf, type Choice, type EditOp } from "../src/lib/deck/edits";
@@ -220,6 +220,7 @@ export const room = query({
   args: { spaceId: v.id("spaces") },
   returns: v.array(voteV),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     const rows = await ctx.db.query("choiceVotes").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(24);
     const open = rows.filter((r) => r.state === "open");
     const closed = rows.filter((r) => r.state !== "open").slice(0, 6);

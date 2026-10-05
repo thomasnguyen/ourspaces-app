@@ -1,5 +1,5 @@
 import { mutation, query, type MutationCtx } from "./_generated/server";
-import { seatOf } from "./seat";
+import { seatOf, canRead } from "./seat";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { applyEdit, type EditOp } from "../src/lib/deck/edits";
@@ -104,6 +104,7 @@ export const recent = query({
   args: { spaceId: v.id("spaces") },
   returns: v.array(v.object({ id: v.id("aiWrites"), at: v.number(), widgetId: v.id("widgets"), kind: v.string(), by: v.string(), byUserId: v.optional(v.string()), text: v.string() })),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     const rows = await ctx.db.query("aiWrites").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(30);
     return rows
       .filter((r) => (r.kind === "edit" || r.kind === "undo") && r.verdict === "go" && r.widgetId)

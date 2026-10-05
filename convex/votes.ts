@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { applyLinks } from "./links";
-import { seatOf } from "./seat";
+import { seatOf, canRead } from "./seat";
 import { recheck } from "./choiceVotes";
 import { v } from "convex/values";
 import { touchSpace } from "./activity";
@@ -25,6 +25,7 @@ export const getResults = query({
   args: { widgetId: v.id("widgets"), spaceId: v.id("spaces") },
   returns: v.array(schema.doc("votes").extend({ voterName: v.string() })),
   handler: async (ctx, { widgetId, spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     const widget = await ctx.db.get(widgetId);
     // Scoped: results carry voter names, so an unscoped read leaked the member
     // roster of any space to anyone holding a widget id.
@@ -127,6 +128,7 @@ export const inSpace = query({
   args: { spaceId: v.id("spaces") },
   returns: v.array(v.object({ widgetId: v.id("widgets"), userId: v.string(), optionId: v.string(), voterName: v.string() })),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     const polls = (
       await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).collect()
     ).filter((widget) => widget.type === "poll");

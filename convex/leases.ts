@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
-import { seatOf } from "./seat";
+import { seatOf, canRead } from "./seat";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { landWaiting } from "./rightOfWay";
@@ -131,6 +131,7 @@ export const forRoom = query({
   args: { spaceId: v.id("spaces") },
   returns: v.array(v.object({ thing: v.string(), kind: v.string(), userId: v.string(), name: v.string(), color: v.string(), since: v.number(), letGoAt: v.optional(v.number()) })),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     const rows = await ctx.db.query("leases").withIndex("by_thing", (q) => q.eq("spaceId", spaceId)).take(64);
     return rows
       .filter((l) => !l.thing.startsWith("piece:"))

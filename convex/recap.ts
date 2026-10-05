@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { canRead } from "./seat";
 import { touchSpace } from "./activity";
 import {
   action,
@@ -388,6 +389,7 @@ export const latest = query({
   args: { spaceId: v.id("spaces") },
   returns: v.union(schema.doc("recaps"), v.null()),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return null;
     return await ctx.db
       .query("recaps")
       .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
@@ -481,6 +483,8 @@ export const generate = action({
     // rate-limiter: the user-triggered "catch me up" button hits the LLM
     // proxy — the daily cron path (generateOne/generateAll) is unmetered.
     await rateLimiter.limit(ctx, "recapGenerate", { key: spaceId, throws: true });
+    // a seat in the room, under the day's model ceiling (S3, convex/guard.ts)
+    await ctx.runMutation(internal.guard.model, { spaceId });
     const payload = await buildRecap(ctx, spaceId, kind ?? "ask");
     await ctx.runMutation(internal.recap.save, { spaceId, ...payload });
     return payload;
@@ -542,6 +546,7 @@ export const ask = action({
     messageId?: string;
   }> => {
     await rateLimiter.limit(ctx, "recapAsk", { key: spaceId, throws: true });
+    await ctx.runMutation(internal.guard.model, { spaceId });
     const snap: Snapshot = await ctx.runQuery(internal.recap.snapshot, { spaceId });
     // rag: retrieve the widgets/messages most relevant to this specific
     // question (vector search) instead of dumping the whole board every

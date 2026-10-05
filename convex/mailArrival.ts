@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { canRead } from "./seat";
 import { query } from "./_generated/server";
 
 /**
@@ -25,6 +26,7 @@ export const recentInbound = query({
     }),
   ),
   handler: async (ctx, { spaceId, since }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     const rows = await ctx.db
       .query("emailEvents")
       .withIndex("by_space", (q) => q.eq("spaceId", spaceId).gte("_creationTime", since))

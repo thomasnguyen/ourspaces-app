@@ -52,6 +52,9 @@ export async function requireSeat(ctx: QueryCtx, spaceId: Id<"spaces">): Promise
  * or slug alone is not enough to read its chat, mail or brief.
  */
 export async function canRead(ctx: QueryCtx, spaceId: Id<"spaces">): Promise<boolean> {
+  // the seat first: a member's subscriptions then never read the space doc,
+  // whose stamp (convex/activity.ts) would re-run every one of them
+  if (await seatOf(ctx, spaceId)) return true;
   const space = await ctx.db.get(spaceId);
   if (!space) return false;
   if (!space.ownerId) return true;

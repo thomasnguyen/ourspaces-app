@@ -73,11 +73,12 @@ const questionsCache = new ActionCache(components.actionCache, {
 });
 
 export const setQuestions = internalMutation({
-  args: { widgetId: v.id("widgets"), questions: questionsValidator },
+  args: { widgetId: v.id("widgets"), spaceId: v.optional(v.id("spaces")), questions: questionsValidator },
   returns: v.null(),
-  handler: async (ctx, { widgetId, questions }) => {
+  handler: async (ctx, { widgetId, spaceId, questions }) => {
     const widget = await ctx.db.get(widgetId);
-    if (!widget) return null;
+    // only a card in the room the asker is seated in (S3)
+    if (!widget || (spaceId && widget.spaceId !== spaceId)) return null;
     await ctx.db.patch(widget._id, { data: { ...widget.data, questions } });
     await touchSpace(ctx, widget.spaceId);
     return null;
@@ -95,12 +96,15 @@ export const sparkQuestions = action({
   handler: async (ctx, args): Promise<{ id: string; text: string }[]> => {
     // rate-limiter: guard the LLM proxy from a runaway loop of link saves.
     await rateLimiter.limit(ctx, "sparkQuestions", { key: args.spaceId, throws: true });
+    // a seat in the room, under the day's model ceiling (S3, convex/guard.ts)
+    await ctx.runMutation(internal.guard.model, { spaceId: args.spaceId, model: "lightning" });
     const questions = await questionsCache.fetch(ctx, {
       title: args.title,
       description: args.description,
     });
     await ctx.runMutation(internal.questions.setQuestions, {
       widgetId: args.widgetId,
+      spaceId: args.spaceId,
       questions,
     });
     return questions;

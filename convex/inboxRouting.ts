@@ -1,5 +1,5 @@
 import { type Infer } from "convex/values";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { completeJson } from "./ai";
@@ -174,7 +174,7 @@ export async function routeBuildRoom(
         description: string;
         imageUrl: string;
         siteName: string;
-      } = await ctx.runAction(api.firecrawl.scrapeLink, { url: link.url });
+      } = await ctx.runAction(internal.firecrawl.scrapeLinkServer, { url: link.url });
       patch = {
         title: scraped.title,
         description: scraped.description,

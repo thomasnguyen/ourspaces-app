@@ -1,4 +1,6 @@
 import { internalMutation, mutation } from "./_generated/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { seatOf } from "./seat";
 import { v } from "convex/values";
 import type { PhotoWallData } from "./widgetData";
 import { touchSpace } from "./activity";
@@ -21,14 +23,18 @@ const CREW_MEMORY_SOURCES: Record<
 export const generateUploadUrl = mutation({
   args: {},
   returns: v.string(),
-  handler: async (ctx) => await ctx.storage.generateUploadUrl(),
+  handler: async (ctx) => {
+    // a signed-in browser only (S3): not an open bucket
+    if (!(await getAuthUserId(ctx))) throw new Error("sign in first");
+    return await ctx.storage.generateUploadUrl();
+  },
 });
 
 /** Uploaded bytes → a public url any widget can persist in its data. */
 export const storageUrl = mutation({
   args: { storageId: v.id("_storage") },
   returns: v.union(v.string(), v.null()),
-  handler: async (ctx, { storageId }) => await ctx.storage.getUrl(storageId),
+  handler: async (ctx, { storageId }) => ((await getAuthUserId(ctx)) ? await ctx.storage.getUrl(storageId) : null),
 });
 
 /* Each new print lands with its own tilt so the pile stays organic. */
@@ -42,10 +48,14 @@ export const addPhoto = mutation({
     spaceId: v.id("spaces"),
     storageId: v.id("_storage"),
     caption: v.string(),
-    by: v.string(),
+    /** Ignored: the pin is the caller's seat (S3). */
+    by: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, { widgetId, spaceId, storageId, caption, by }) => {
+  handler: async (ctx, { widgetId, spaceId, storageId, caption }) => {
+    const me = await seatOf(ctx, spaceId);
+    if (!me) throw new Error("not in this room");
+    const by = me.name;
     const widget = await ctx.db.get(widgetId);
     // Space-scoped like paint.addStroke. Without the spaceId clause an
     // anonymous visitor could pin an uploaded image to the FRONT of any

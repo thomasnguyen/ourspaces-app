@@ -1,4 +1,6 @@
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { canRead, seatOf } from "./seat";
 import { mutation, query } from "./_generated/server";
 import schema from "./schema";
 import type { NoteData } from "./widgetData";
@@ -20,6 +22,7 @@ export const listBySpace = query({
   args: { spaceId: v.id("spaces") },
   returns: v.array(schema.doc("paintMarks")),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     const recent = await ctx.db
       .query("paintMarks")
       .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
@@ -33,9 +36,10 @@ export const addStroke = mutation({
   args: {
     spaceId: v.id("spaces"),
     widgetId: v.id("widgets"),
-    userId: v.string(),
-    authorName: v.string(),
-    authorColor: v.string(),
+    // Ignored (the seat says who, S3): kept so older screens still validate.
+    userId: v.optional(v.string()),
+    authorName: v.optional(v.string()),
+    authorColor: v.optional(v.string()),
     tone,
     size: v.number(),
     points: v.array(v.object({ x: v.number(), y: v.number() })),
@@ -43,11 +47,14 @@ export const addStroke = mutation({
     preset: v.optional(preset),
   },
   returns: v.union(v.id("paintMarks"), v.null()),
-  handler: async (ctx, args) => {
-    const widget = await ctx.db.get(args.widgetId);
-    if (!widget || widget.spaceId !== args.spaceId || widget.type !== "cozyColor") {
+  handler: async (ctx, a) => {
+    const widget = await ctx.db.get(a.widgetId);
+    if (!widget || widget.spaceId !== a.spaceId || widget.type !== "cozyColor") {
       return null;
     }
+    const me = await seatOf(ctx, a.spaceId);
+    if (!me) return null;
+    const args = { ...a, userId: me.userId, authorName: me.name, authorColor: me.color };
     // rate-limiter: per-user quota on the live paint hot path. Drop silently
     // rather than throw — a paint stroke isn't worth an error toast.
     const status = await rateLimiter.limit(ctx, "paintStroke", { key: args.userId });
@@ -96,6 +103,7 @@ export const clear = mutation({
   },
   returns: v.number(),
   handler: async (ctx, { spaceId, widgetId, regionPrefix }) => {
+    if (!(await seatOf(ctx, spaceId))) return 0;
     const marks = await ctx.db
       .query("paintMarks")
       .withIndex("by_space_and_widget", (q) =>
@@ -122,6 +130,9 @@ export const ensureCozyColorWidget = mutation({
   },
   returns: v.id("widgets"),
   handler: async (ctx, { spaceId, createdBy }) => {
+    // the couple tour room's self-heal only (S3): a signed-in browser, never a made room
+    const space = await ctx.db.get(spaceId);
+    if (!space || space.ownerId || !(await getAuthUserId(ctx))) throw new Error("not this room");
     const widgets = await ctx.db
       .query("widgets")
       .withIndex("by_space", (q) => q.eq("spaceId", spaceId))

@@ -8,6 +8,7 @@
  * it again is the reset. It has no inbox, so mail never lands here.
  */
 import { mutation } from "./_generated/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { memberCounts } from "./spaces";
 import { spacesCounter, widgetsCounter } from "./stats";
@@ -34,6 +35,9 @@ export const prepareTake = mutation({
       .withIndex("by_slug", (q) => q.eq("slug", source))
       .unique();
     if (!from) throw new Error(`no space with slug "${source}" to copy`);
+    // S3: a signed-in browser only, and only a tour room as the source (a made room's people and board stay in it)
+    if (!(await getAuthUserId(ctx))) throw new Error("sign in first");
+    if (from.ownerId) throw new Error("the take copies a tour room only");
 
     let take = await ctx.db
       .query("spaces")

@@ -1,4 +1,5 @@
 import { internalMutation, mutation, query } from "./_generated/server";
+import { seatOf, canRead } from "./seat";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
@@ -301,7 +302,8 @@ export const finishGesture = mutation({
     }
 
     const widget = await ctx.db.get(args.widgetId);
-    if (!widget || widget.spaceId !== args.spaceId) {
+    // the drop writes the card: a seat in this room, from the session (S3)
+    if (!widget || widget.spaceId !== args.spaceId || !(await seatOf(ctx, args.spaceId))) {
       await ctx.db.patch(existing._id, {
         gesture: undefined,
         updatedAt: now,
@@ -366,6 +368,7 @@ export const listHereNow = query({
   // filter is the one that decides what a person SEES, which is why the sweep
   // can run as infrequently as it does.
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     return await ctx.db
       .query("presence")
       .withIndex("by_space", (q) => q.eq("spaceId", spaceId))

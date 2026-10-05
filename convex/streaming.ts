@@ -1,4 +1,6 @@
 import { v } from "convex/values";
+import { canRead } from "./seat";
+import { modelDoor } from "./guard";
 import {
   PersistentTextStreaming,
   StreamIdValidator,
@@ -51,6 +53,8 @@ export const createAskStream = mutation({
     // here (rather than inside the stream) means the client still has a real
     // error to catch and can fall back to the non-streaming recap.ask path.
     await rateLimiter.limit(ctx, "recapAsk", { key: spaceId, throws: true });
+    // a seat in the room, under the day's model ceiling (S3, convex/guard.ts)
+    await modelDoor(ctx, spaceId);
     const streamId = await persistentTextStreaming.createStream(ctx);
     // The turn the answer will type itself into. It exists before the first
     // token so every viewer — not just the asker — sees the reporter start.
@@ -77,6 +81,7 @@ export const latestAskStream = query({
   args: { spaceId: v.id("spaces") },
   returns: v.union(askStreamRow, v.null()),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return null;
     const row = await ctx.db
       .query("askStreams")
       .withIndex("by_space", (q) => q.eq("spaceId", spaceId))

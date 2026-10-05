@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { canRead } from "./seat";
 import { internalAction, internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -256,6 +257,7 @@ export const offer = query({
   args: { spaceId: v.id("spaces") },
   returns: v.array(v.object({ name: v.string(), color: v.string(), why: v.optional(v.string()), known: v.number(), away: v.optional(v.boolean()) })),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     const now = Date.now();
     const knows = await knowsOf(ctx, spaceId);
     return seatPicks(await seatRoomOf(ctx, spaceId, knows, now), seeded(3), now).map((p) => ({ name: p.name, color: p.color, known: p.known, ...(p.why ? { why: p.why } : {}), ...(p.away ? { away: true } : {}) }));
@@ -456,7 +458,13 @@ export const word = internalAction({
       return null;
     }
     const ask = seat ? seatWordingAsk(asks.map((q) => ({ text: q.text, about: q.about, from: q.fact.from }))) : wordingAsk(facts, input.names, input.name);
+    // past the day's model ceiling the game keeps its templates (S3, convex/guard.ts)
+    if (!(await ctx.runQuery(internal.guard.underCeiling, {}))) {
+      await ctx.runMutation(internal.games.setWording, { gameId, rounds: [], worded: "templates (the day's model ceiling)" });
+      return null;
+    }
     const res = await streamChat({ model: "super", messages: [{ role: "system", content: ask.system }, { role: "user", content: ask.user }], maxTokens: 320 });
+    await ctx.runMutation(internal.guard.noteSpend, { calls: [{ model: "super", prompt: res.usage?.prompt_tokens ?? 0, completion: res.usage?.completion_tokens ?? 0 }] });
     if (res.error || !res.content.trim()) {
       await ctx.runMutation(internal.games.setWording, { gameId, rounds: [], worded: `templates (model failed: ${(res.error ?? "empty").slice(0, 60)})` });
       return null;

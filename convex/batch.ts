@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { defineBatchWorkerValidators, ping } from "@convex-dev/batch-worker";
-import { api, components, internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import type { LinkCardData } from "./widgetData";
 
@@ -94,7 +94,7 @@ export const refreshOne = internalAction({
     const url = await ctx.runQuery(internal.batch.getWidgetUrl, { widgetId });
     if (!url) return null;
     try {
-      const scraped = await ctx.runAction(api.firecrawl.scrapeLink, { url });
+      const scraped = await ctx.runAction(internal.firecrawl.scrapeLinkServer, { url });
       await ctx.runMutation(internal.batch.applyRefresh, {
         widgetId,
         title: scraped.title,
