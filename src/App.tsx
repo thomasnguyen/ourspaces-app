@@ -51,6 +51,7 @@ import { boardItems } from "./lib/deck/existing";
 import { useVoiceBuild } from "./live/useVoiceBuild";
 import { EditSlips, VoiceBuildLayer } from "./components/VoiceBuildLayer";
 import { HeldBack, RowGhosts, RowHalos, withGhosts } from "./components/RightOfWay";
+import { RowVotes } from "./components/ChoiceVote";
 import { useRowMock } from "./lib/rowMock";
 import {
   MAIL_LAB_CAKE_ID,
@@ -2799,6 +2800,9 @@ export default function App() {
         onSave={saveSpace}
       />
       <VoiceBuildLayer {...voiceBuild} color={voiceMaker.color} by={voiceMaker.name} />
+      {rowMock.votes.length > 0 && (
+        <RowVotes host={canvasScaleLayerRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null} votes={rowMock.votes} me={{ userId: "you", name: "you" }} onAnswer={rowMock.answer} onWithdraw={() => {}} />
+      )}
       {rowMock.leases.length + rowMock.ghosts.length > 0 || rowMock.slip ? (
         <>
           <RowHalos host={canvasScaleLayerRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null} leases={rowMock.leases} me="you" />

@@ -30,7 +30,7 @@ const LANDED_MS = 900;
 const REMOVES = new Set(["removeOption", "removeItem", "removePerson"]);
 
 /** The card element on the board, once it's there. */
-function useCardEl(host: HTMLElement | null, id: string | undefined) {
+export function useCardEl(host: HTMLElement | null, id: string | undefined) {
   const [el, setEl] = useState<HTMLElement | null>(null);
   useEffect(() => {
     if (!host || !id) return;
@@ -47,7 +47,7 @@ function useCardEl(host: HTMLElement | null, id: string | undefined) {
 }
 
 /** Keep a list's leavers on screen for the exit. */
-function useLeaving<T extends { key: string }>(items: T[]) {
+export function useLeaving<T extends { key: string }>(items: T[]) {
   const [shown, setShown] = useState<(T & { leaving?: boolean })[]>(items);
   useEffect(() => {
     const keys = new Set(items.map((x) => x.key));
@@ -232,7 +232,7 @@ export function HeldBack({ rows }: { rows: HeldBackRow[] }) {
     <section className="knows-sec row-held-back" data-testid="knows-held-back">
       <h2>what it held back</h2>
       {rows.length === 0 ? (
-        <p className="row-held-empty">nothing yet. when someone is holding a card, the space waits for them.</p>
+        <p className="row-held-empty">nothing yet. when someone is holding a card, the space waits for them; when a change would undo what people chose, it asks them.</p>
       ) : (
         <ul>
           {rows.map((r) => {
@@ -240,7 +240,11 @@ export function HeldBack({ rows }: { rows: HeldBackRow[] }) {
             const asked = r.by === "the space" ? `the space's hand: ${r.text || r.kind}` : `${r.by.toLowerCase()} asked: ${r.text || r.kind}`;
             // a stamp (what it did about it) and the rest of the line
             const [tone, stamp, rest] =
-              r.verdict === "wait"
+              r.verdict === "ask"
+                ? o
+                  ? [o.state === "changed" || o.state === "moot" ? "landed" : "dropped", o.state === "changed" ? "asked them · changed" : o.state === "moot" ? "asked them · moot" : o.state === "withdrawn" ? "asked them · withdrawn" : "asked them · kept", `${r.reason.replace(/^that's /, "")} · ${o.why ?? ""}`]
+                  : ["waiting", "asked them", `${r.reason.replace(/^that's /, "")} · waiting on their answers`]
+                : r.verdict === "wait"
                 ? o
                   ? [
                       o.state === "landed" ? "landed" : "dropped",
@@ -253,7 +257,7 @@ export function HeldBack({ rows }: { rows: HeldBackRow[] }) {
                   : ["never", "didn't", r.reason];
             return (
               <li key={r.id} data-verdict={r.verdict} data-tone={tone} style={{ "--i": rows.indexOf(r) } as CSSProperties}>
-                <span className="row-held-asked">{r.verdict === "wait" || r.kind !== "build" ? asked : `${r.by.toLowerCase()}'s new card`}</span>
+                <span className="row-held-asked">{r.verdict === "wait" || r.verdict === "ask" || r.kind !== "build" ? asked : `${r.by.toLowerCase()}'s new card`}</span>
                 <span className="row-held-line">
                   <b>{stamp}</b>
                   {rest}

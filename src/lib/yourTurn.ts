@@ -32,10 +32,10 @@ export type TurnMine = {
   answers: Record<string, string | undefined>;
 };
 
-export type TurnKind = "rsvp" | "poll" | "question" | "days" | "signup" | "wheel" | "letter" | "checkin" | "chore" | "game" | "finish";
+export type TurnKind = "rsvp" | "poll" | "question" | "days" | "signup" | "wheel" | "letter" | "checkin" | "chore" | "game" | "finish" | "decide";
 
 /** How the item is done from the stack: one choice, a typed line, or a trip. */
-export type TurnAct = "vote" | "rsvp" | "claim" | "days" | "answer" | "go" | "join";
+export type TurnAct = "vote" | "rsvp" | "claim" | "days" | "answer" | "go" | "join" | "decide";
 
 export type TurnChoice = { id: string; label: string };
 

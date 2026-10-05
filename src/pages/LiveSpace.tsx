@@ -22,6 +22,8 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock, radioRoomOf } from "../components/ActionDock";
 import { EditSlips, VoiceBuildLayer } from "../components/VoiceBuildLayer";
 import { LiveHeldBack, RowGhosts, RowHalos, settledLine, withGhosts, type RowGhost, type RowLease } from "../components/RightOfWay";
+import { RowVotes, labelsOf, questionOf, type RowVote } from "../components/ChoiceVote";
+import { voterOf } from "../lib/choiceVote";
 import { useHolds } from "../live/useHolds";
 import type { WaitOutcome } from "../live/useVoiceBuild";
 import { offersFor } from "../lib/deck/suggest";
@@ -123,7 +125,7 @@ import { JigsawDev, JigsawInvite, JigsawWorld } from "../components/games/Jigsaw
 import { JigsawProvider } from "../lib/jigsaw/useMockJigsaw";
 import { gameSpots, GAME_CARD } from "../lib/games/place";
 import { LIVE_GAME_ROOMS } from "../data/games";
-import { yourTurn, type TurnViewer } from "../lib/yourTurn";
+import { yourTurn, type TurnItem, type TurnViewer } from "../lib/yourTurn";
 import { widgetSupportsThread } from "../lib/widgetThreads";
 import { RSVP_CHOICES, type RsvpStatus } from "../widgets/extras";
 import type { CozyColorStroke } from "../widgets/CozyColorWidget";
@@ -911,8 +913,29 @@ export function LiveSpacePage({
     }),
     [account.joined, identity.name, identity.userId],
   );
+  /* Choices become a vote (convex/choiceVotes.ts, components/ChoiceVote.tsx): open votes ride on their cards,
+     and each one is a "waiting on you" ticket for the people whose choice it is */
+  const voteRows = useQuery(api.choiceVotes.room, mode === "live" && space ? { spaceId: space._id } : "skip");
+  const answerVote = useMutation(api.choiceVotes.answer);
+  const withdrawVote = useMutation(api.choiceVotes.withdraw);
+  const rowVotes = useMemo<RowVote[]>(() => (voteRows ?? []).map((r) => ({ ...r, id: String(r.id), widgetId: String(r.widgetId) })), [voteRows]);
+  const onAnswerVote = useCallback(
+    (voteId: string, option: string) => void answerVote({ voteId: voteId as Id<"choiceVotes">, option, userId: identity.userId, name: identity.name }),
+    [answerVote, identity.name, identity.userId],
+  );
+  const voteTurns = useMemo<TurnItem[]>(
+    () =>
+      rowVotes.flatMap((v) => {
+        const mine = v.state === "open" ? voterOf(v.voters, identity.userId, identity.name) : null;
+        if (!mine || v.answers.some((a) => a.voter === mine)) return [];
+        const labels = labelsOf(v);
+        const asker = v.options.find((o) => o.by)?.by?.toLowerCase() ?? "someone";
+        return [{ key: `vote:${v.id}`, widgetId: v.widgetId, kind: "decide" as const, verb: "decide", title: questionOf(v, identity), waiting: `${asker} asked · ${v.stake}`, act: "decide" as const, choices: v.options.map((o) => ({ id: o.id, label: labels[o.id] })), soft: false, urgency: 400 }];
+      }),
+    [identity, rowVotes],
+  );
   const turnItems = useMemo(
-    () => yourTurn({
+    () => [...voteTurns, ...yourTurn({
       /* a game you're not in is a ticket in the same list, ranked first while it's open */
       widgets: [...turnPolls.widgets, ...gameWidgets.filter((w) => w.type === "game")],
       members: members.map((member) => member.name),
@@ -921,8 +944,8 @@ export function LiveSpacePage({
       // until the room's votes load, no poll can be read
       knownPolls: roomVotes ? undefined : [],
       sharedSeals: true,
-    }),
-    [dailyAnswers, gameWidgets, members, pollSelections, roomVotes, rsvpSelections, turnPolls, turnViewer],
+    })],
+    [dailyAnswers, gameWidgets, members, pollSelections, roomVotes, rsvpSelections, turnPolls, turnViewer, voteTurns],
   );
   /* `/?peers=3#/space/house` — the peers lab (src/live/labPeers.ts) on a real
      space: the fixture's roster gets a cursor each, moving the way people do
@@ -1813,7 +1836,9 @@ export function LiveSpacePage({
       },
       edit: async (widgetId, op) => {
         if (!space) throw new Error("no space");
-        return await applyVoiceEdit({ spaceId: space._id, widgetId: widgetId as Id<"widgets">, op, by: identity.name, byUserId: identity.userId, today: voiceToday() });
+        // ?asklife=<seconds>: a test's short life for a vote this edit may open (default a day)
+        const life = Number(new URLSearchParams(window.location.search).get("asklife")) * 1000 || undefined;
+        return await applyVoiceEdit({ spaceId: space._id, widgetId: widgetId as Id<"widgets">, op, by: identity.name, byUserId: identity.userId, today: voiceToday(), ...(life ? { life } : {}) });
       },
       undo: async (writeId) => {
         if (!space) throw new Error("no space");
@@ -3278,7 +3303,9 @@ export function LiveSpacePage({
           // back from `restoreKeys` with its unicode keys unescaped — saving a
           // daily question that has 😂 reactions was rejected by the encoder
           // before it ever reached the mutation.
-          handlers.onUpdate(widgetId, convexSafeKeys(data));
+          // a date a person sets by hand is their choice: a voice edit that would move it asks them first (R2)
+          const hand = editingWidget?.type === "countdown" && data.targetDate !== editingWidget.data.targetDate ? { dateBy: { id: identity.userId, name: identity.name } } : {};
+          handlers.onUpdate(widgetId, convexSafeKeys({ ...data, ...hand }));
           if (layout) handlers.onResize(widgetId, layout.w, layout.h);
           // A saved link gets OpenAI conversation starters; canned ones from
           // the editor hold the spot until the action lands.
@@ -3355,6 +3382,13 @@ export function LiveSpacePage({
         me={identity.userId}
         onCancel={(id) => void cancelPending({ pendingId: id as Id<"pending">, userId: identity.userId })}
       />
+      <RowVotes
+        host={viewportRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null}
+        votes={rowVotes}
+        me={identity}
+        onAnswer={onAnswerVote}
+        onWithdraw={(id) => void withdrawVote({ voteId: id as Id<"choiceVotes">, userId: identity.userId })}
+      />
       <EditSlips
         slips={[...editSlips, ...rowSlips]}
         host={viewportRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null}
@@ -3373,6 +3407,7 @@ export function LiveSpacePage({
           onRsvp={respondToRsvp}
           onAnswer={answerDailyQuestion}
           onClaim={handlers.onClaim}
+          onDecide={onAnswerVote}
           onDays={(widgetId, dayIndex) => {
             const widget = rawWidgetsRef.current.find((item) => item.id === widgetId);
             if (!widget) return;

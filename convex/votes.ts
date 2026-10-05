@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { applyLinks } from "./links";
+import { recheck } from "./choiceVotes";
 import { v } from "convex/values";
 import { touchSpace } from "./activity";
 import { TableAggregate } from "@convex-dev/aggregate";
@@ -100,6 +101,8 @@ export const vote = mutation({
       await touchSpace(ctx, spaceId);
       // a card waiting on this poll (a flow, links.ts) may resolve now: everyone voted
       await applyLinks(ctx, widgetId);
+      // a vote on this card waiting on these voters may be moot now (choiceVotes.ts)
+      await recheck(ctx, widgetId);
       return existing._id;
     }
 

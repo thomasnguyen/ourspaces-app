@@ -317,6 +317,12 @@ function ContextDrawer({
                 <li>the door (rightOfWay): {t.verb.edit.verdict ?? "…"} · {t.verb.edit.status ?? "…"}{t.verb.edit.serverMs != null ? ` · server ${t.verb.edit.serverMs} ms` : ""}</li>
                 {t.verb.edit.refusal && <li data-testid="dev-context-edit-refusal">not applied: {t.verb.edit.refusal}</li>}
                 {t.verb.edit.lease && <li data-testid="dev-context-edit-lease">the lease: {t.verb.edit.lease}</li>}
+                {t.verb.edit.affected && <li data-testid="dev-context-edit-affected">counted as affected (code): {t.verb.edit.affected}</li>}
+                {t.verb.edit.vote && (
+                  <li data-testid="dev-context-edit-vote">
+                    the vote: {t.verb.edit.vote} · {t.verb.edit.outcome ?? "open"}
+                  </li>
+                )}
                 {t.verb.edit.verdict === "wait" && (
                   <li data-testid="dev-context-edit-outcome">
                     waited {t.verb.edit.waited ?? "…"} · {t.verb.edit.outcome ?? "still waiting"}

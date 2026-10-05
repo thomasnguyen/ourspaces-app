@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
 ready: dock-voice-orb
-testids: row-halo row-halo-tag row-ghost row-ghost-on row-ghost-cancel knows-held-back widget-edit-button widget-editor-title widget-editor-save dev-context-edit-lease dev-context-edit-outcome voice-edit-slip
+testids: row-halo row-halo-tag row-ghost row-ghost-on row-ghost-cancel row-vote row-vote-ask row-vote-stake row-vote-option row-vote-you row-vote-tally row-vote-withdraw row-vote-note dev-context-edit-affected dev-context-edit-vote knows-held-back widget-edit-button widget-editor-title widget-editor-save dev-context-edit-lease dev-context-edit-outcome voice-edit-slip
 states:
   held: ?mock=1&row=held | wait row-halo-tag | sleep 400
   ghost: ?mock=1&row=ghost | wait row-ghost | sleep 600
@@ -9,8 +9,12 @@ states:
   knows: ?mock=1&row=ghost #/space/crew/knows | wait knows-held-back | sleep 600
   boot-land: ?mock=1&row=land | sleep 300
   liveknows: ?enter=1 #/space/crew/knows | wait knows-held-back | sleep 800
+  ask: ?mock=1&row=ask | wait row-vote | sleep 600
+  askland: ?mock=1&row=askland | wait row-vote | sleep 3400
+  boot-ask: ?mock=1&row=askland | sleep 300
 take:
   land: boot-land real 30fps 180f focus css:[data-widget-id="poll-cake"]
+  askland: boot-ask real 30fps 120f focus css:[data-widget-id="poll-cake"]
 ---
 # Right of Way (the AI never changes what someone is touching)
 

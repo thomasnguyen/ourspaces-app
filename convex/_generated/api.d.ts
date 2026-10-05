@@ -16,6 +16,7 @@ import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
 import type * as batch from "../batch.js";
 import type * as checkIns from "../checkIns.js";
+import type * as choiceVotes from "../choiceVotes.js";
 import type * as crons from "../crons.js";
 import type * as digest from "../digest.js";
 import type * as edits from "../edits.js";
@@ -78,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   batch: typeof batch;
   checkIns: typeof checkIns;
+  choiceVotes: typeof choiceVotes;
   crons: typeof crons;
   digest: typeof digest;
   edits: typeof edits;

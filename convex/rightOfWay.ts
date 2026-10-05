@@ -2,8 +2,9 @@ import { v } from "convex/values";
 import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { rightOfWay as gate, type Lease, type Verdict } from "../src/lib/rightOfWay";
-import { applyEdit, type EditOp } from "../src/lib/deck/edits";
+import { rightOfWay as gate, type Choice, type Lease, type Verdict } from "../src/lib/rightOfWay";
+import { applyEdit, type EditCtx, type EditOp, type EditResult } from "../src/lib/deck/edits";
+import { pollTallies } from "./votes";
 import { leasesOn } from "./leases";
 import { writeWidgetData } from "./widgets";
 
@@ -15,10 +16,13 @@ import { writeWidgetData } from "./widgets";
  * game started (games.ts), a piece the space's hand places (puzzles.ts).
  *
  * It reads the live leases (leases.ts) and asks the pure gate
- * (src/lib/rightOfWay.ts, the case table is there) for go | wait | never.
+ * (src/lib/rightOfWay.ts, the case table is there) for go | ask | wait | never.
  * No model is called anywhere on this path.
  *
  *   go     the caller commits it
+ *   ask    it would override other people's choices: the caller opens a
+ *          vote of those people on the card (choiceVotes.ts); a passed vote
+ *          sends the write here again, consented, and it goes or waits
  *   wait   kept as a `pending` row (the ghost every screen draws) and
  *          replayed by `landWaiting` in the mutation that ends the hold,
  *          after re-checking it still makes sense; dropped after 30 s
@@ -29,8 +33,8 @@ import { writeWidgetData } from "./widgets";
  */
 
 export type Replay =
-  /** set = for ops that set a value: the touched fields as they were; changed meanwhile → dropped */
-  | { kind: "edit"; op: EditOp; today: string; set?: Record<string, unknown> }
+  /** set = for ops that set a value: the touched fields as they were; changed meanwhile → dropped. consent = a passed vote's write */
+  | { kind: "edit"; op: EditOp; today: string; set?: Record<string, unknown>; consent?: true; vote?: Id<"choiceVotes"> }
   | { kind: "link"; linkId: Id<"links">; fill: string; value: unknown }
   | { kind: "puzzle"; gameId: Id<"games">; i: number; x: number; y: number };
 
@@ -48,7 +52,11 @@ export type AiWrite = {
   undo?: unknown;
   /** A new card's spot: the gate keeps it off held cards. */
   rect?: { x: number; y: number; w: number; h: number };
-  /** Code refused it before the door (it would undo people's choices). */
+  /** People's choices it would override (applyEdit found them): the gate says ask unless they're all the asker's own. */
+  choice?: Choice;
+  /** Sent again after the people at stake agreed ("the vote passed, 2 of 3"): it goes in the ledger's reason. */
+  consented?: string;
+  /** Code refused it before the door. */
   refused?: string;
   /** It would complete a shared thing (the last piece). */
   finishes?: boolean;
@@ -56,7 +64,7 @@ export type AiWrite = {
   replay?: Replay;
 };
 export type Holder = { userId: string; name: string; color: string; kind: string };
-export type Door = { verdict: Verdict["kind"]; reason: string; writeId: Id<"aiWrites">; on?: Holder; onThing?: string; pendingId?: Id<"pending"> };
+export type Door = { verdict: Verdict["kind"]; reason: string; writeId: Id<"aiWrites">; on?: Holder; onThing?: string; pendingId?: Id<"pending">; who?: Choice["people"]; stake?: string };
 
 export const WAIT_MS = 30_000;
 const DOING: Record<string, string> = { drag: "moving", type: "typing in", vote: "choosing on", piece: "holding" };
@@ -83,16 +91,21 @@ export async function rightOfWay(ctx: MutationCtx, write: AiWrite): Promise<Door
       if (w && overlaps(write.rect, w)) spot.push(l.thing);
     }
   }
-  const v = gate({ thing, by: { kind: "space", ...(write.by.userId ? { asker: write.by.userId } : {}) }, spot, refused: write.refused, finishes: write.finishes }, rows.map(asLease));
+  const v = gate({ thing, by: { kind: "space", ...(write.by.userId ? { asker: write.by.userId } : {}), askerName: write.by.name }, spot, choice: write.choice, refused: write.refused, finishes: write.finishes }, rows.map(asLease));
   // the lease behind the verdict: who it waits on, or (go) the asker's own hold on it
-  const lease = v.kind !== "go" && v.on ? rows.find((l) => l.thing === v.on!.thing && l.userId === (v.on!.by as { id: string }).id) : v.kind === "go" && thing !== undefined ? rows.find((l) => l.thing === thing) : undefined;
+  const vOn = v.kind === "wait" || v.kind === "never" ? v.on : undefined;
+  const lease = vOn ? rows.find((l) => l.thing === vOn.thing && l.userId === (vOn.by as { id: string }).id) : v.kind === "go" && thing !== undefined ? rows.find((l) => l.thing === thing) : undefined;
   const on = lease ? holderOf(lease) : undefined;
+  const own = write.choice ? `only ${write.by.name.toLowerCase()}'s own choice (${write.choice.stake}); ` : "";
   const reason =
-    v.kind === "go"
-      ? lease ? `${lease.name} holds it: their own hand` : "nobody holds it"
-      : v.kind === "wait"
-        ? `${on!.name} is ${DOING[on!.kind] ?? "holding"} it`
-        : v.kind === "never" && on && thing === undefined ? `${v.why}; placed it below` : v.why;
+    v.kind === "ask"
+      ? `that's ${v.who.length === 1 ? `${v.who[0].name.toLowerCase()}'s` : `${v.who.length} people's`} choice: ${write.choice!.stake}`
+      : (write.consented ? `${write.consented}; ` : "") +
+        (v.kind === "go"
+          ? own + (lease ? `${lease.name} holds it: their own hand` : "nobody holds it")
+          : v.kind === "wait"
+            ? own + `${on!.name} is ${DOING[on!.kind] ?? "holding"} it`
+            : on && thing === undefined ? `${v.why}; placed it below` : v.why);
   const writeId = await log(ctx, write, v.kind, reason);
   let pendingId: Id<"pending"> | undefined;
   if (v.kind === "wait" && write.replay && thing !== undefined) {
@@ -106,7 +119,31 @@ export async function rightOfWay(ctx: MutationCtx, write: AiWrite): Promise<Door
     await ctx.scheduler.runAfter(WAIT_MS, internal.rightOfWay.expire, { pendingId });
   }
   console.log(`rightOfWay ${write.kind} ${thing ?? "new"} by ${write.by.name}: ${write.fields.map((f) => f.field).join(",")} → ${v.kind} (${reason})`);
-  return { verdict: v.kind, reason, writeId, ...(on ? { on, onThing: lease!.thing } : {}), ...(pendingId ? { pendingId } : {}) };
+  return { verdict: v.kind, reason, writeId, ...(on ? { on, onThing: lease!.thing } : {}), ...(pendingId ? { pendingId } : {}), ...(v.kind === "ask" ? { who: v.who, stake: v.stake } : {}) };
+}
+
+/** What people did on a card that an edit must not undo, from the tables (a poll's votes and who cast them). */
+export async function cardCtx(ctx: MutationCtx, widget: Doc<"widgets">, today: string, consent = false): Promise<EditCtx> {
+  if (widget.type !== "poll") return { today, consent };
+  const votes: Record<string, number> = {};
+  const voters: Record<string, { id: string; name: string }[]> = {};
+  for (const x of await ctx.db.query("votes").withIndex("by_widget", (q) => q.eq("widgetId", widget._id)).take(500)) {
+    votes[x.optionId] = (votes[x.optionId] ?? 0) + 1;
+    const m = await ctx.db.query("members").withIndex("by_space_user", (q) => q.eq("spaceId", widget.spaceId).eq("userId", x.userId)).first();
+    (voters[x.optionId] ??= []).push({ id: x.userId, name: m?.name ?? "someone" });
+  }
+  return { today, votes, voters, consent };
+}
+
+/** Write an applied edit: the card's data, and the vote rows of an option a passed vote took off (their note says so). */
+export async function commitEdit(ctx: MutationCtx, widget: Doc<"widgets">, r: Extract<EditResult, { ok: true }>) {
+  await writeWidgetData(ctx, widget, r.data as Doc<"widgets">["data"], { stampLater: true });
+  if (!r.cleared?.votesFor) return;
+  for (const x of await ctx.db.query("votes").withIndex("by_widget", (q) => q.eq("widgetId", widget._id)).take(500)) {
+    if (x.optionId !== r.cleared.votesFor) continue;
+    await ctx.db.delete(x._id);
+    await pollTallies.deleteIfExists(ctx, x);
+  }
 }
 
 /** One ledger row. */
@@ -133,14 +170,10 @@ async function replay(ctx: MutationCtx, r: Replay, row: Doc<"aiWrites">): Promis
     const widget = row.widgetId && (await ctx.db.get(row.widgetId));
     if (!widget) return { ok: false, why: "the card was deleted while you waited; nothing done" };
     for (const [field, old] of Object.entries(r.set ?? {})) if (JSON.stringify((widget.data as Record<string, unknown>)[field] ?? null) !== JSON.stringify(old ?? null)) return changed;
-    let votes: Record<string, number> | undefined;
-    if (widget.type === "poll") {
-      votes = {};
-      for (const x of await ctx.db.query("votes").withIndex("by_widget", (q) => q.eq("widgetId", widget._id)).take(500)) votes[x.optionId] = (votes[x.optionId] ?? 0) + 1;
-    }
-    const out = applyEdit({ type: widget.type, data: widget.data as Record<string, unknown> }, r.op, { today: r.today, votes });
+    // a choice made while it waited is a new choice: without consent it doesn't land over it
+    const out = applyEdit({ type: widget.type, data: widget.data as Record<string, unknown> }, r.op, await cardCtx(ctx, widget, r.today, r.consent));
     if (!out.ok) return changed;
-    await writeWidgetData(ctx, widget, out.data as Doc<"widgets">["data"], { stampLater: true });
+    await commitEdit(ctx, widget, out);
     return { ok: true };
   }
   if (r.kind === "link") {
@@ -189,7 +222,10 @@ export async function landWaiting(ctx: MutationCtx, spaceId: Id<"spaces">, thing
       continue;
     }
     await ctx.db.delete(p._id);
-    const out = await replay(ctx, JSON.parse(p.write) as Replay, row);
+    const r = JSON.parse(p.write) as Replay;
+    const out = await replay(ctx, r, row);
+    // a passed vote's change: the card's note says it landed (or why not)
+    if (r.kind === "edit" && r.vote) await ctx.db.patch(r.vote, { landed: out.ok ? "landed" : out.why });
     await ctx.db.patch(row._id, {
       outcome: JSON.stringify({
         state: out.ok ? "landed" : "dropped",
@@ -208,6 +244,8 @@ async function close(ctx: MutationCtx, p: Doc<"pending">, state: "expired" | "ca
   await ctx.db.delete(p._id);
   const on = JSON.parse(p.on) as Holder;
   const now = Date.now();
+  const r = JSON.parse(p.write) as Replay;
+  if (r.kind === "edit" && r.vote) await ctx.db.patch(r.vote, { landed: state === "expired" ? `${on.name.toLowerCase()} held it past 30 s; nothing done` : state });
   await ctx.db.patch(p.writeId, { outcome: JSON.stringify({ state, ms: now - p.at, on: on.name, why: state === "expired" ? `${on.name} held it past 30 s; nothing done` : state, at: now }) });
 }
 
@@ -268,7 +306,7 @@ export const heldBack = query({
   handler: async (ctx, { spaceId }) => {
     const rows = await ctx.db.query("aiWrites").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(200);
     return rows
-      .filter((r) => (r.verdict === "wait" || r.verdict === "never" || r.verdict === "refused") && !r.outcome?.includes('"replaced"'))
+      .filter((r) => (r.verdict === "wait" || r.verdict === "never" || r.verdict === "refused" || r.verdict === "ask") && !r.outcome?.includes('"replaced"'))
       .slice(0, 8)
       .map((r) => ({ id: r._id, at: r.at, kind: r.kind, by: r.by, verdict: r.verdict, reason: r.reason ?? "", text: r.text ?? "", ...(r.outcome ? { outcome: r.outcome } : {}) }));
   },

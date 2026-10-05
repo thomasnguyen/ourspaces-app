@@ -36,7 +36,8 @@ import { guessCards } from "../lib/deck/guess";
 import { shortlistDeck } from "../lib/deck/shortlist";
 import { answerFor, cardAnswer, goFor, mineFor, routeVerb, type Answer, type MineAct, type Verb, type VerbPick } from "../lib/deck/verbs";
 import type { VoiceEnd, VoiceHooks } from "../lib/voice";
-import { applyEdit, editFor, type EditOp } from "../lib/deck/edits";
+import { applyEdit, editFor, type Choice, type EditOp } from "../lib/deck/edits";
+import { askLine } from "../lib/choiceVote";
 import { titleOfWidget } from "../lib/deck/existing";
 
 /**
@@ -202,7 +203,7 @@ export type AskTrace = {
     /** What do my part did, offered or refused. */
     mine?: string;
     /** An edit: the target and how it was found, the op, the door's verdict, any refusal and why. */
-    edit?: { target?: string; how?: string; op?: string; fields?: string[]; status?: string; verdict?: string; refusal?: string; serverMs?: number; lease?: string; waited?: string; outcome?: string };
+    edit?: { target?: string; how?: string; op?: string; fields?: string[]; status?: string; verdict?: string; refusal?: string; serverMs?: number; lease?: string; waited?: string; outcome?: string; affected?: string; vote?: string };
   } | null;
   /** The "already here" answer: code's check at the pause, the model's yes/no, and what was done. */
   found: {
@@ -282,7 +283,13 @@ export type VoiceFound = {
 };
 /** An edit on the asker's stage: the card as it will be, and the part that changes. Tentative while talking. */
 export type VoiceEdit = { traceKey: number; widgetId: string; widget: Widget; changed: string; text: string; state: "tentative" | "final" };
-export type EditOut = { status: "applied" | "refused" | "failed" | "wait" | "ask"; text: string; writeId?: string; fields: string[]; verdict?: string; on?: { userId: string; name: string; color: string; kind: string }; pendingId?: string };
+export type EditOut = {
+  status: "applied" | "refused" | "failed" | "wait" | "ask"; text: string; writeId?: string; fields: string[]; verdict?: string; on?: { userId: string; name: string; color: string; kind: string }; pendingId?: string;
+  /** ask: the vote on the card (convex/choiceVotes.ts): asked | joined | already | busy, who votes, why each counts */
+  vote?: { id: string; state: string; who: string[]; why: string[]; stake: string; ask: string };
+  /** a write that went with consent: the choices it cleared */
+  cleared?: string;
+};
 /** How a write that waited ended (convex/rightOfWay.ts outcome). */
 export type WaitOutcome = { state: string; ms: number; on: string; why?: string; afterLetGo?: number };
 /** A non-build verb's slip: an answer, a recap, a refusal, offers to tap. Nothing is written by it. */
@@ -1579,9 +1586,43 @@ export function useVoiceBuild({
           s.trace.verb = { ...s.trace.verb!, edit: { ...(s.trace.verb!.edit ?? {}), ...x } };
         };
         /** The change: on this stage first, then the board (optimistic), then the server's door. */
+        /** People's choices in the way (R2): the server's door asks them (a vote on the card), or it was only mine and goes. */
+        const askEdit = (target: BoardW, op: EditOp, choice: Choice) => {
+          tr({ status: "asking", affected: choice.people.map((p) => `${p.name.toLowerCase()} (${p.why})`).join(", ") });
+          setEdit(null);
+          if (!vh.edit) {
+            // mock: an honest stand-in, nothing is asked
+            tr({ status: "stand-in", verdict: "not sent (mock)" });
+            pointWith("edit", target.id, askLine({ state: "asked", who: choice.people.map((p) => p.name) }, me), "stand-in · mock doesn't ask anyone", "stand-in");
+            return;
+          }
+          const t0 = performance.now();
+          void vh.edit(target.id, op).then(
+            (out) => {
+              tr({ status: out.status, verdict: out.verdict ?? "—", serverMs: Math.round(performance.now() - t0), ...(out.vote ? { affected: out.vote.why.join(", "), vote: `${out.vote.state} · ${out.vote.ask}` } : {}), ...(out.status === "applied" || out.status === "ask" ? {} : { refusal: out.text }) });
+              publish(s);
+              if (out.status === "ask" && out.vote) {
+                pointWith("edit", target.id, askLine(out.vote, me));
+                if (out.writeId && vh.settled)
+                  void vh.settled(out.writeId).then((o) => {
+                    tr({ outcome: `${o.state}${o.why ? `: ${o.why}` : ""}` });
+                    publish(s);
+                  });
+                return;
+              }
+              if (out.status === "applied") playSound("place");
+              pointWith("edit", target.id, out.status === "applied" && out.cleared ? `${out.text} · ${out.cleared}` : out.text);
+            },
+            (e) => {
+              tr({ status: "error", refusal: String(e).slice(0, 120) });
+              say(s, { verb: "edit", text: "couldn't ask them", by: "code" });
+            },
+          );
+        };
         const doEdit = (target: BoardW, op: EditOp, how: string) => {
           const r = applyEdit(target, op, { today });
           tr({ target: nameOf(target), how, op: JSON.stringify(op) });
+          if (!r.ok && r.choice) return askEdit(target, op, r.choice);
           if (!r.ok) {
             tr({ status: r.refused ? "refused" : "none", refusal: r.reason });
             setEdit(null);
@@ -1610,6 +1651,14 @@ export function useVoiceBuild({
             (out) => {
               tr({ status: out.status, verdict: out.verdict ?? "—", serverMs: Math.round(performance.now() - t0), ...(out.status !== "applied" && out.status !== "wait" ? { refusal: out.text } : {}), ...(out.on ? { lease: `${out.on.name} · ${out.on.kind}${out.status === "applied" ? " (the asker's own hand: go)" : ""}` } : {}) });
               publish(s);
+              if (out.status === "ask" && out.vote) {
+                // this screen's copy was stale: the server found people's choices in the way
+                setFound(null);
+                setEdit(null);
+                tr({ affected: out.vote.why.join(", "), vote: `${out.vote.state} · ${out.vote.ask}` });
+                pointWith("edit", target.id, askLine(out.vote, me));
+                return;
+              }
               if (out.status === "wait" && out.on) {
                 // someone holds it: the stage says so plainly and lets go to the board, where the ghost waits
                 const who = out.on.name.toLowerCase();
@@ -1652,7 +1701,10 @@ export function useVoiceBuild({
         };
         const plan = editFor(said, widgets, room.current.selectedId?.() ?? null, { today }, frames);
         if (plan.kind === "do") doEdit(plan.target, plan.op, plan.how);
-        else if (plan.kind === "refused") {
+        else if (plan.kind === "refused" && plan.choice) {
+          tr({ target: nameOf(plan.target), how: plan.how, op: JSON.stringify(plan.op) });
+          askEdit(plan.target, plan.op, plan.choice);
+        } else if (plan.kind === "refused") {
           tr({ target: nameOf(plan.target), how: plan.how, op: JSON.stringify(plan.op), status: "refused", verdict: "not sent", refusal: plan.text });
           setEdit(null);
           pointWith("edit", plan.target.id, plan.text);

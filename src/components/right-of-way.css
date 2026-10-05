@@ -312,3 +312,156 @@
     opacity: 0.4;
   }
 }
+
+/* CHOICES BECOME A VOTE (components/ChoiceVote.tsx). The vote rides on the
+   card it's about, an ink ticket off the bottom edge like the waiting one,
+   but solid: it waits on people's answers, not a hand. The question leads in
+   cream, who asked and what's at stake under it; the people it's up to get
+   keep it / change it, everyone sees who has answered. A closed vote leaves
+   a cream note on the card with an ink edge: what changed, what it cleared. */
+.row-vote {
+  position: absolute;
+  left: 14px;
+  top: calc(100% - 3px);
+  display: grid;
+  gap: 6px;
+  width: max-content;
+  max-width: 340px;
+  padding: 9px 12px 10px;
+  border: 2px solid var(--color-ink);
+  border-top: 0;
+  border-radius: 0 0 14px 14px;
+  background: var(--color-ink);
+  color: var(--color-card);
+  font: 500 13px/1.25 var(--font-sans);
+  box-shadow: 4px 4px 0 var(--color-ink);
+  z-index: 7;
+  transform-origin: 50% 0;
+  animation: row-ticket-in var(--dur-arrive) var(--ease-pop) backwards;
+}
+.row-vote-ask {
+  font: 800 16px/1.15 var(--font-display);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.row-vote-stake {
+  opacity: 0.7;
+}
+.row-vote-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.row-vote-you {
+  color: var(--color-lime);
+  font-weight: 700;
+}
+.row-vote-option {
+  padding: 5px 13px 6px;
+  border: 2px solid var(--color-card);
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  font: 700 13px/1.1 var(--font-sans);
+  cursor: pointer;
+  transition:
+    background var(--dur-quick) var(--ease-glide),
+    scale var(--dur-instant) var(--ease-glide);
+}
+.row-vote-option:active {
+  scale: 0.95;
+}
+.row-vote-option[data-keep] {
+  background: transparent;
+  color: var(--color-card);
+}
+.row-vote-option[data-picked] {
+  border-color: var(--color-lime);
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+.row-vote-tally {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  font-size: 12px;
+}
+.row-vote-tally i {
+  padding: 1px 7px 2px;
+  border: 1.5px dashed color-mix(in oklab, var(--color-card) 55%, transparent);
+  border-radius: 999px;
+  font-style: normal;
+  opacity: 0.75;
+}
+.row-vote-tally i[data-answered] {
+  border: 1.5px solid var(--color-lime);
+  color: var(--color-lime);
+  opacity: 1;
+}
+.row-vote-tally em {
+  font-style: normal;
+  opacity: 0.6;
+}
+.row-vote-withdraw {
+  margin-left: auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-card);
+  font: 600 12px/1.2 var(--font-sans);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.row-vote.is-leaving,
+.row-vote-note.is-leaving {
+  opacity: 0;
+  translate: 0 6px;
+  transition:
+    opacity var(--dur-base) var(--ease-glide),
+    translate var(--dur-base) var(--ease-glide);
+}
+/* closed: a cream slip on the card's bottom edge (the slip family) */
+.row-vote-note {
+  position: absolute;
+  left: 14px;
+  top: calc(100% + 6px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 8px;
+  max-width: 340px;
+  padding: 7px 12px 8px;
+  border: 2px solid var(--color-ink);
+  border-radius: 12px;
+  background: var(--color-card);
+  box-shadow: 4px 4px 0 var(--color-ink);
+  color: var(--color-ink);
+  font: 500 13px/1.25 var(--font-sans);
+  z-index: 6;
+  animation: row-held-in var(--dur-arrive) var(--ease-pop) backwards;
+}
+.row-vote-note b {
+  padding: 2px 8px 3px;
+  border: 2px solid var(--color-ink);
+  border-radius: 999px;
+  background: var(--color-lime);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.row-vote-note:not([data-state="change"]) b {
+  background: transparent;
+  border-style: dashed;
+}
+.widget-group.is-dragging .row-vote,
+.widget-group.is-dragging .row-vote-note {
+  animation-play-state: running !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .row-vote,
+  .row-vote-note {
+    animation: none;
+  }
+}

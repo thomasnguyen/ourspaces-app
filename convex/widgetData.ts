@@ -64,6 +64,8 @@ const countdownData = v.object({
   startDate: v.optional(v.string()),
   hyped: v.optional(v.array(v.string())),
   tone: v.optional(v.string()),
+  // who set the date by hand (the editor); a voice edit moving it asks them first (choiceVotes.ts)
+  dateBy: v.optional(v.object({ id: v.optional(v.string()), name: v.string() })),
 });
 
 // Matches firecrawl.ts's scrape payload plus the savedBy/savedAt/questions

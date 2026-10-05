@@ -10,8 +10,11 @@
  *  - the op: one of the closed set the card declares next to its schema
  *    (catalog.ts `edits`), `{op: "addOption", value: "ramen"}`.
  *  - `applyEdit`: the new data, the fields it touched (only the ones the op
- *    names), the inverse op for undo, or a refusal when it would undo what
- *    people did (a voted option, a claimed slot, a date people said yes to).
+ *    names), the inverse op for undo, or the choice it would override (a
+ *    voted option, a claimed slot, a time people said yes to, a payment,
+ *    logged days, a date someone set by hand): who made it and what's at
+ *    stake. The gate turns that into a vote of those people (R2); with their
+ *    consent it applies, and says which choices it cleared.
  */
 import { CATALOG, revealOf } from "./catalog";
 import type { Field } from "./schema";
@@ -20,11 +23,22 @@ import { blankSlot, fillSlot, type Unfinished } from "./needs";
 type W = { id: string; type: string; data: Record<string, unknown> };
 export type EditOp = { op: string; value: string | number; item?: string };
 export type FieldChange = { field: string; old: unknown; new: unknown };
+/** A person whose choice an edit would override: `id` where the card knows it, `why` = their choice in words. */
+export type Chooser = { id?: string; name: string; why: string };
+/** The choice an edit would override (R2): `key` names it on the card, `ask` is the vote's question. */
+export type Choice = { key: string; stake: string; ask: string; people: Chooser[] };
 export type EditResult =
-  | { ok: true; data: Record<string, unknown>; fields: FieldChange[]; text: string; changed: string; undo: EditOp }
-  | { ok: false; reason: string; refused: boolean };
-/** What people did on the card that an edit must not undo. Server: the votes table. Client: the merged card. */
-export type EditCtx = { today: string; votes?: Record<string, number> };
+  | { ok: true; data: Record<string, unknown>; fields: FieldChange[]; text: string; changed: string; undo: EditOp; cleared?: Cleared }
+  | { ok: false; reason: string; refused: boolean; choice?: Choice };
+/** What a consented edit cleared, for the note on the card; `votesFor` = the poll option whose vote rows go too. */
+export type Cleared = { note: string; people: number; votesFor?: string };
+/**
+ * What people did on the card that an edit must not undo. Server: the votes
+ * table (`voters`: who voted for each option). Client: the merged card.
+ * `consent`: the people at stake agreed (a passed vote, or it was only the
+ * asker's own choice), so it applies and clears what no longer makes sense.
+ */
+export type EditCtx = { today: string; votes?: Record<string, number>; voters?: Record<string, { id: string; name: string }[]>; consent?: boolean };
 
 const BY_TYPE = new Map<string, (typeof CATALOG)[number]>(CATALOG.map((c) => [c.type as string, c]));
 /** The ops a widget type takes, op → its value's field. */
@@ -33,7 +47,9 @@ export const editable = (w: { type: string }) => opsFor(w.type) !== null;
 
 /** The fields each op may touch; anything else changed is a bug and the server refuses it. */
 const RENAMES: Record<string, string> = { poll: "question", potluck: "title", countdown: "event", rsvp: "title", expenseSplit: "title", itinerary: "title", checkIn: "title" };
-export function fieldsOf(type: string, op: string): string[] {
+export function fieldsOf(type: string, op: string, consent = false): string[] {
+  // with consent, the people's choices it clears (vote rows live in their own table)
+  if (consent && CLEARS[op]) return [...fieldsOf(type, op), ...CLEARS[op]];
   switch (op) {
     case "addOption":
     case "removeOption":
@@ -58,6 +74,8 @@ export function fieldsOf(type: string, op: string): string[] {
       return [];
   }
 }
+
+const CLEARS: Record<string, string[]> = { setWhen: ["responses"], setDays: ["logs"], setDate: ["dateBy"] };
 
 /** Top-level data keys that differ (by value). */
 export function touched(before: Record<string, unknown>, after: Record<string, unknown>): string[] {
@@ -87,7 +105,8 @@ export const niceDate = (iso: string) => {
   return Number.isNaN(d.getTime()) ? iso : `${DAYS[d.getUTCDay()]} ${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
 };
 const people = (n: number) => `${n} ${n === 1 ? "person" : "people"}`;
-const refuse = (reason: string): EditResult => ({ ok: false, reason, refused: true });
+const conflict = (choice: Choice): EditResult => ({ ok: false, reason: choice.stake, refused: true, choice });
+const named = (n: number, one: string) => (n === 1 ? one : people(n));
 const fail = (reason: string): EditResult => ({ ok: false, reason, refused: false });
 
 /**
@@ -102,13 +121,14 @@ export function applyEdit(w: { type: string; data: Record<string, unknown> }, op
   if (!ops || !f) return fail(`a ${w.type} can't ${op.op}`);
   const d = w.data;
   const str = typeof op.value === "string" ? clip(op.value, f) : "";
-  const done = (data: Record<string, unknown>, text: string, changed: string, undo: EditOp): EditResult => {
+  const consent = Boolean(ctx.consent);
+  const done = (data: Record<string, unknown>, text: string, changed: string, undo: EditOp, cleared?: Cleared): EditResult => {
     const fields = touched(d, data).map((field) => ({ field, old: d[field], new: data[field] }));
     if (!fields.length) return fail("nothing changes");
-    const allowed = fieldsOf(w.type, op.op);
+    const allowed = fieldsOf(w.type, op.op, consent);
     const stray = fields.filter((x) => !allowed.includes(x.field));
     if (stray.length) return fail(`would touch ${stray.map((x) => x.field).join(", ")}`);
-    return { ok: true, data, fields, text, changed, undo };
+    return { ok: true, data, fields, text, changed, undo, ...(cleared ? { cleared } : {}) };
   };
   switch (op.op) {
     case "rename": {
@@ -134,9 +154,13 @@ export function applyEdit(w: { type: string; data: Record<string, unknown> }, op
       const hit = opts.find((o) => low(o.label) === low(str)) ?? opts.find((o) => same(str, o.label));
       if (!hit) return fail(`no option called ${str}`);
       const n = ctx.votes ? (ctx.votes[hit.id] ?? 0) : (hit.voters?.length ?? 0);
-      if (n > 0) return refuse(`${people(n)} voted for ${low(hit.label)}; i won't remove it`);
+      const label = low(hit.label);
+      if (n > 0 && !consent) {
+        const who = ctx.voters?.[hit.id]?.map((p) => ({ id: p.id, name: p.name })) ?? (hit.voters ?? []).map((name) => ({ name }));
+        return conflict({ key: `option:${hit.id}`, stake: `${people(n)} voted for ${label}`, ask: `take ${label} off the poll?`, people: who.map((p) => ({ ...p, why: `voted for ${label}` })) });
+      }
       if (opts.length <= 2) return fail("a poll needs two options");
-      return done({ ...d, options: opts.filter((o) => o !== hit) }, `took ${low(hit.label)} off`, low(hit.label), { op: "addOption", value: hit.label });
+      return done({ ...d, options: opts.filter((o) => o !== hit) }, `took ${label} off`, label, { op: "addOption", value: hit.label }, n > 0 ? { note: `${label} votes cleared · ${people(n)}, vote again`, people: n, votesFor: hit.id } : undefined);
     }
     case "addItem": {
       const items = (d.items as { name: string; by: string | null; claimed: boolean }[] | undefined) ?? [];
@@ -150,23 +174,40 @@ export function applyEdit(w: { type: string; data: Record<string, unknown> }, op
       const items = (d.items as { name: string; by: string | null; claimed: boolean }[] | undefined) ?? [];
       const hit = items.find((i) => low(i.name) === low(str)) ?? items.find((i) => same(str, i.name));
       if (!hit) return fail(`no ${str} on the list`);
-      if (hit.claimed) return refuse(`${low(hit.by) || "someone"} has ${low(hit.name)}; i won't take it off`);
+      const by = low(hit.by) || "someone";
+      if (hit.claimed && !consent) {
+        const id = (hit as { byUserId?: string }).byUserId;
+        return conflict({ key: `item:${low(hit.name)}`, stake: `${by} has ${low(hit.name)}`, ask: `take ${low(hit.name)} off the list?`, people: [{ ...(id ? { id } : {}), name: hit.by || "someone", why: `has ${low(hit.name)}` }] });
+      }
       const next = items.filter((i) => i !== hit);
-      return done({ ...d, items: next, openCount: next.filter((i) => !i.claimed).length }, `took ${low(hit.name)} off`, low(hit.name), { op: "addItem", value: hit.name });
+      return done({ ...d, items: next, openCount: next.filter((i) => !i.claimed).length }, `took ${low(hit.name)} off`, low(hit.name), { op: "addItem", value: hit.name }, hit.claimed ? { note: `${low(hit.name)} is off the list · ${by}'s claim cleared`, people: 1 } : undefined);
     }
     case "setDate": {
       const iso = String(op.value).slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return fail("no date");
       const old = String(d.targetDate ?? "");
-      return done({ ...d, targetDate: old.length > 10 ? `${iso}${old.slice(10)}` : iso }, `moved it to ${niceDate(iso)}`, niceDate(iso), { op: "setDate", value: old.slice(0, 10) });
+      // a date a person set by hand (the card's editor stamps `dateBy`)
+      const setBy = d.dateBy as { id?: string; name: string } | undefined;
+      if (setBy && !consent && old.slice(0, 10) !== iso)
+        return conflict({ key: "date", stake: `${low(setBy.name)} set ${niceDate(old)} by hand`, ask: `move ${low(d.event) || "it"} to ${niceDate(iso)}?`, people: [{ ...setBy, why: `set ${niceDate(old)}` }] });
+      const { dateBy: _by, ...rest } = d;
+      const data = setBy && consent ? rest : d;
+      return done({ ...data, targetDate: old.length > 10 ? `${iso}${old.slice(10)}` : iso }, `moved it to ${niceDate(iso)}`, niceDate(iso), { op: "setDate", value: old.slice(0, 10) }, setBy && consent ? { note: `the date ${low(setBy.name)} set is replaced`, people: 1 } : undefined);
     }
     case "setWhen": {
       const [base, when] = splitWhen(String(d.title ?? ""));
-      const rows = (d.responses as { status: string }[] | undefined) ?? [];
-      const said = rows.filter((r) => r.status === "yes" || r.status === "maybe").length;
-      if (said > 0) return refuse(`${people(said)} said they're in for ${when || base}; i won't move it`);
+      const rows = (d.responses as { status: string; name: string; userId?: string }[] | undefined) ?? [];
+      const inFor = rows.filter((r) => r.status === "yes" || r.status === "maybe");
+      const said = inFor.length;
       const next = str ? mergeWhen(when, str) : "";
-      return done({ ...d, title: next ? `${base} · ${next}` : base }, next ? `moved it to ${next}` : "took the time off", next, { op: "setWhen", value: when });
+      const at = when || base;
+      if (said > 0 && !consent && next !== when) {
+        const yes = inFor.every((r) => r.status === "yes") ? "yes" : "yes or maybe";
+        return conflict({ key: "when", stake: `${people(said)} said ${yes} to ${at}`, ask: next ? `move ${base} to ${next}?` : `take the time off ${base}?`, people: inFor.map((r) => ({ ...(r.userId ? { id: r.userId } : {}), name: r.name, why: `said ${r.status} to ${at}` })) });
+      }
+      // with consent: the yes and maybe for the old time no longer make sense; a "no" stays as it was
+      const data = said > 0 && consent ? { ...d, title: next ? `${base} · ${next}` : base, responses: rows.filter((r) => !inFor.includes(r)) } : { ...d, title: next ? `${base} · ${next}` : base };
+      return done(data, next ? `moved it to ${next}` : "took the time off", next, { op: "setWhen", value: when }, said > 0 && consent ? { note: `${at} rsvps cleared · ${people(said)}, answer again`, people: said } : undefined);
     }
     case "addPerson": {
       const rows = (d.splits as { name: string; owes: number; paid: number }[] | undefined) ?? [];
@@ -179,9 +220,9 @@ export function applyEdit(w: { type: string; data: Record<string, unknown> }, op
       const rows = (d.splits as { name: string; owes: number; paid: number }[] | undefined) ?? [];
       const hit = rows.find((r) => low(r.name) === low(str));
       if (!hit) return fail(`${str} isn't on the split`);
-      if (hit.paid > 0) return refuse(`${low(hit.name)} paid $${hit.paid}; i won't take them off`);
+      if (hit.paid > 0 && !consent) return conflict({ key: `person:${low(hit.name)}`, stake: `${low(hit.name)} paid $${hit.paid}`, ask: `take ${low(hit.name)} off the split?`, people: [{ name: hit.name, why: `paid $${hit.paid}` }] });
       if (rows.length <= 2) return fail("a split needs two people");
-      return done({ ...d, splits: resplit(rows.filter((r) => r !== hit), d.total) }, `took ${low(hit.name)} off`, low(hit.name), { op: "addPerson", value: hit.name });
+      return done({ ...d, splits: resplit(rows.filter((r) => r !== hit), d.total) }, `took ${low(hit.name)} off`, low(hit.name), { op: "addPerson", value: hit.name }, hit.paid > 0 ? { note: `${low(hit.name)}'s $${hit.paid} is off the split · settle it by hand`, people: 1 } : undefined);
     }
     case "setDay": {
       const days = (d.days as { day: string; plan: string }[] | undefined) ?? [];
@@ -193,10 +234,13 @@ export function applyEdit(w: { type: string; data: Record<string, unknown> }, op
       const n = Math.round(Number(op.value));
       if (!Number.isFinite(n) || n < 1 || n > 30) return fail("days must be 1–30");
       const logs = (d.logs as Record<string, (number | null)[]> | undefined) ?? {};
-      const logged = Math.max(0, ...Object.values(logs).map((r) => r.length));
-      if (n < logged) return refuse(`people have logged ${logged} days; i won't cut it to ${n}`);
+      // the people with a check-in logged past the new last day
+      const past = Object.entries(logs).filter(([, r]) => r.slice(n).some((x) => x !== null && x !== undefined));
+      if (past.length && !consent)
+        return conflict({ key: "days", stake: `${named(past.length, low(past[0][0]))} logged past day ${n}`, ask: `cut ${low(d.title) || "the challenge"} to ${n} days?`, people: past.map(([name, r]) => ({ name, why: `logged day ${r.reduce<number>((last, x, i) => (x !== null && x !== undefined ? i + 1 : last), 0)}` })) });
       const start = String(d.start ?? ctx.today);
-      return done({ ...d, days: n, revealAt: revealOf(start, n) }, `${n} days now`, `${n}`, { op: "setDays", value: Number(d.days ?? n) });
+      const cut = past.length ? { logs: Object.fromEntries(Object.entries(logs).map(([k, r]) => [k, r.slice(0, n)])) } : {};
+      return done({ ...d, days: n, revealAt: revealOf(start, n), ...cut }, `${n} days now`, `${n}`, { op: "setDays", value: Number(d.days ?? n) }, past.length ? { note: `days ${n + 1}+ cleared · ${people(past.length)}'s logs`, people: past.length } : undefined);
     }
   }
   return fail(`unknown op ${op.op}`);
@@ -350,7 +394,7 @@ const FAM_OPS: Record<Said["fam"], Record<string, string>> = {
 
 export type EditPlan =
   | { kind: "do"; target: W; how: string; op: EditOp; result: Extract<EditResult, { ok: true }> }
-  | { kind: "refused"; target: W; how: string; op: EditOp; text: string }
+  | { kind: "refused"; target: W; how: string; op: EditOp; text: string; choice?: Choice }
   | { kind: "offers"; targets: { target: W; op: EditOp; label: string }[]; why: string }
   | { kind: "none"; text: string; target?: W; how?: string };
 
@@ -403,7 +447,7 @@ export function editFor(said: string, widgets: W[], selectedId: string | null, c
   const op = opFor(p, target, ctx);
   if (!op) return { kind: "none", target, how, text: p.fam === "when" && target.type === "countdown" ? "a countdown has no time" : `can't ${p.fam} that on a ${BY_TYPE.get(target.type)?.id ?? target.type}` };
   const result = applyEdit(target, op, ctx);
-  if (!result.ok) return result.refused ? { kind: "refused", target, how, op, text: result.reason } : { kind: "none", target, how, text: result.reason };
+  if (!result.ok) return result.refused ? { kind: "refused", target, how, op, text: result.reason, ...(result.choice ? { choice: result.choice } : {}) } : { kind: "none", target, how, text: result.reason };
   return { kind: "do", target, how, op, result };
 }
 

@@ -29,5 +29,5 @@ export function rightOfWay(holds: readonly Hold[], move: Move): Decision {
   const v = gate({ thing: move.thing, by: hand(move.by), finishes: move.finishes }, holds.map((h) => ({ thing: h.thing, by: hand(h.by), kind: "piece" as const })));
   if (v.kind === "wait") return { kind: "wait", on: v.on.by.kind === "person" ? v.on.by.name : "the space" };
   if (v.kind === "never") return { kind: "never", why: "the last one belongs to a person" };
-  return v.handover ? { kind: "go", handover: true } : { kind: "go" };
+  return v.kind === "go" && v.handover ? { kind: "go", handover: true } : { kind: "go" };
 }

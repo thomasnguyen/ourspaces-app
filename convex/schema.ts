@@ -39,6 +39,7 @@ export default defineSchema({
   aiWrites: row.aiWrites, // every AI write through the one door, with its verdict
   leases: row.leases, // who is holding what, right now
   pending: row.pending, // a write waiting on someone's hand (the ghost)
+  choiceVotes: row.choiceVotes, // a write that would override people's choices, put to those people
 
   // games
   games: games.games, // a game in a room and its phase

@@ -26,6 +26,8 @@ export type YourTurnHandlers = {
   onAnswer?: (widgetId: string, text: string) => void;
   /** a game invitation: join it (the room flies you to the card) */
   onJoin?: (widgetId: string) => void;
+  /** a choice vote on a card (components/ChoiceVote.tsx): the item's key is "vote:<id>" */
+  onDecide?: (voteId: string, option: string) => void;
 };
 
 const LEAVE_MS = 640;
@@ -59,6 +61,7 @@ export function YourTurn({
   onDays,
   onAnswer,
   onJoin,
+  onDecide,
 }: YourTurnHandlers & {
   /** the room; a new one starts the layer over */
   roomKey: string;
@@ -190,6 +193,7 @@ export function YourTurn({
     if (item.act === "claim") onClaim?.(item.widgetId, choice);
     if (item.act === "days") onDays?.(item.widgetId, Number(choice));
     if (item.act === "join") onJoin?.(item.widgetId);
+    if (item.act === "decide") onDecide?.(item.key.slice(5), choice);
   };
 
   const answer = (event: FormEvent, item: TurnItem) => {

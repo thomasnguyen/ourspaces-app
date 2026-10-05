@@ -1,4 +1,5 @@
 import { internalMutation, query, mutation } from "./_generated/server";
+import { dropFor, recheck } from "./choiceVotes";
 import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -93,6 +94,7 @@ export const deleteWidget = mutation({
     if (!widget) return null;
     await ctx.db.delete(id);
     await noteOutcome(ctx, widget, { kind: "deleted" });
+    await dropFor(ctx, widget._id);
     await widgetsCounter.dec(ctx);
     await touchSpace(ctx, spaceId);
     return null;
@@ -122,6 +124,7 @@ export const claimItem = mutation({
       return { ...item, claimed: true, by: args.claimantName, byUserId: args.claimantUserId };
     });
     await ctx.db.patch(widget._id, { data: { ...potluckData, items: nextItems } });
+    await recheck(ctx, widget._id);
     await touchSpace(ctx, args.spaceId);
     return null;
   },
@@ -201,8 +204,9 @@ export async function writeWidgetData(ctx: MutationCtx, widget: Doc<"widgets">, 
   await ctx.db.patch(widget._id, { data });
   const field = editedLabels(widget.type, widget.data, data);
   if (field) await noteOutcome(ctx, widget, { kind: "edited", field });
-  // a card waiting on this one may resolve now
+  // a card waiting on this one may resolve now; a vote waiting on people's choices here may be moot (choiceVotes.ts)
   await applyLinks(ctx, widget._id);
+  await recheck(ctx, widget._id);
   // the room's stamp re-runs every query that reads the space doc: a voice edit stamps it right after, like voiceBuild.commit
   if (opts.stampLater) await ctx.scheduler.runAfter(0, internal.widgets.stamp, { spaceId: widget.spaceId, at: Date.now() });
   else await touchSpace(ctx, widget.spaceId);
