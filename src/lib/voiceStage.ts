@@ -118,7 +118,7 @@ function sourceName(token: string) {
     case "last":
       return `the ${of}wheel`;
     default:
-      return "the room";
+      return "who's in it";
   }
 }
 
@@ -198,7 +198,7 @@ export const watchVoiceStage = (w: () => void) => {
 };
 export const voiceStageBuild = () => current;
 
-/* ---- the beats of the last ask, for the dev readout (`?timing=1`) ---- */
+/* ---- the beats of the last ask, for the dev table (`?timing=table`) ---- */
 
 export type StageBeat = { name: string; at: number };
 let beats: StageBeat[] = [];

@@ -81,7 +81,7 @@ export const RECIPES = [
         { key: "signup", card: "signup", settings: { title: "who's in" }, at: { x: 1054, y: 48 }, size: { w: 190, h: 250 }, z: 6, rotate: -1.5, batch: 0 },
         { key: "checkin", card: "checkin", settings: { title, unit, kind: "number", days }, at: { x: 24, y: 62 }, size: { w: 600, h: 420 }, z: 7, rotate: -0.6, batch: 1 },
         { key: "standings", card: "standings", settings: { title: "standings", ...(stake ? { stake } : {}) }, at: { x: 658, y: 56 }, size: { w: 372, h: 430 }, z: 7, rotate: 1, batch: 2 },
-        { key: "deal", card: "note", settings: { label: "the deal", text: stake ? `${stake}. log before bed or it didn't happen.` : `one number a day, logged before bed. most ${unit} by ${when} wins.` }, at: { x: 24, y: 504 }, size: { w: 400, h: 128 }, z: 6, rotate: -1, batch: 3 },
+        { key: "deal", card: "note", settings: { label: "the deal", text: stake ? `${stake}. log before bed or it didn't happen.` : `one number a day. log before bed or it didn't happen. most ${unit} by ${when} wins.` }, at: { x: 24, y: 504 }, size: { w: 400, h: 128 }, z: 6, rotate: -1, batch: 3 },
         { key: "reveal", card: "countdown", settings: { event: `the reveal · ${when}`, date: reveal.slice(0, 10) }, at: { x: 1058, y: 320 }, size: { w: 182, h: 262 }, z: 6, rotate: 2, batch: 4 },
       ];
     },

@@ -708,7 +708,16 @@
 .voice-two-cluster-card {
   position: absolute;
   inset: 0;
+  /* the frame first, then its cards one by one */
   animation: voice-card-in calc(var(--dur-arrive) * var(--slow)) var(--ease-pop) backwards;
+  animation-delay: calc(var(--i) * 70ms * var(--slow));
+}
+
+/* a group is wider than one card: it takes the gap beside the words */
+@media (min-width: 641px) {
+  .voice-two-card[data-group] {
+    margin-left: clamp(-150px, -8vw, 0px);
+  }
 }
 
 .voice-two-cluster-card > .widget-group {
@@ -732,6 +741,7 @@
 
 .voice-stage.is-two[data-phase="closing"] .voice-two-left > :not(.voice-stage-orb),
 .voice-stage.is-two[data-phase="closing"] .voice-two-kind,
+.voice-stage.is-two[data-phase="closing"] .voice-two-reply,
 .voice-stage.is-two[data-phase="closing"] .voice-two-try {
   animation: voice-stage-out calc(var(--dur-quick) * var(--slow)) var(--ease-glide) forwards;
 }
