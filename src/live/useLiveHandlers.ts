@@ -200,7 +200,7 @@ export function useLiveHandlers(
     () => claimMutation.withOptimisticUpdate(
       (store, { spaceId, widgetId, itemName, claimantName, claimantUserId }) =>
         patchWidgetData(store, spaceId, widgetId, (data) =>
-          toggleClaimed(data, itemName, claimantName, claimantUserId),
+          toggleClaimed(data, itemName, claimantName ?? "", claimantUserId ?? ""),
         ),
     ),
     [claimMutation],

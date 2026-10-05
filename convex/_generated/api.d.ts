@@ -23,6 +23,8 @@ import type * as edits from "../edits.js";
 import type * as emails_signIn from "../emails/signIn.js";
 import type * as firecrawl from "../firecrawl.js";
 import type * as games from "../games.js";
+import type * as guard from "../guard.js";
+import type * as harness from "../harness.js";
 import type * as http from "../http.js";
 import type * as inbox from "../inbox.js";
 import type * as inboxRouting from "../inboxRouting.js";
@@ -87,6 +89,8 @@ declare const fullApi: ApiFromModules<{
   "emails/signIn": typeof emails_signIn;
   firecrawl: typeof firecrawl;
   games: typeof games;
+  guard: typeof guard;
+  harness: typeof harness;
   http: typeof http;
   inbox: typeof inbox;
   inboxRouting: typeof inboxRouting;

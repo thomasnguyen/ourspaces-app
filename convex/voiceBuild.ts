@@ -1,9 +1,9 @@
 // The deck pulls in src/lib/radio.ts, which reads import.meta.env inside a function never called here.
 /// <reference types="vite/client" />
-import { v } from "convex/values";
-import { seatOf } from "./seat";
+import { v, type Infer } from "convex/values";
+import { canRead, seatOf } from "./seat";
 import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { chooseLetter, pingTokenFactory, streamChat } from "./nebius";
@@ -27,6 +27,7 @@ import {
 } from "../src/lib/deck";
 import { VERB_CHOICES, VERB_LETTERS, VERB_Q } from "../src/lib/deck/verbs";
 import { rightOfWay } from "./rightOfWay";
+import { noteSpendIn, type Gate } from "./guard";
 
 /**
  * Say it → it builds (path-to-win §3 "The engine"), split in two so the room
@@ -127,11 +128,17 @@ export const deal = action({
     // Only the shortlisted cards (and the told card) go in the prompt; without a list, the whole deck.
     const deck = args.deck?.length ? [...new Set([...args.deck.slice(0, 10), ...(card ? [card] : [])])] : undefined;
     const user = brain ? dealTurnV2({ menu: context, said, card }) : `${dealTurn({ context, said })}${card ? `\n${cardLine(card)}` : ""}`;
-    // The row opens alongside the model call, never in front of it.
-    const opened: Promise<Id<"deals">> = ctx.runMutation(internal.voiceBuild.record, {
+    // The door (convex/guard.ts): a seat in this room, the person's and the room's limits, the day's ceiling. It opens the ask's row too.
+    const gate: Gate = await ctx.runMutation(internal.guard.voice, {
       spaceId: args.spaceId,
+      calls: 1,
       run: JSON.stringify({ at: t0, nonce: args.nonce, said, spec: args.spec, model: M.name, route: brain ? "brain" : "fast", card: card ?? null, deck: deck ?? null, context, answer: "", done: false }),
     });
+    if (!gate.ok || !gate.dealId) {
+      const why = gate.ok ? "limit" : gate.why;
+      return { dealId: null, model: M.name, route: brain ? "brain" : "fast", usage: null, context, answer: "", none: true, error: `${why}: ${refusal(why)}`, firstTokenMs: null, firstLineMs: null, totalMs: Date.now() - t0 };
+    }
+    const opened: Promise<Id<"deals">> = Promise.resolve(gate.dealId);
 
     /* Mirror the answer into the row as it grows: one write in flight at a
        time, the newest text wins, so a fast stream costs a handful of writes. */
@@ -184,6 +191,8 @@ export const deal = action({
     if (dealId) {
       await ctx.runMutation(internal.voiceBuild.finish, {
         dealId,
+        model: M.model,
+        usage: out.usage ?? undefined,
         patch: JSON.stringify({
           ...out,
           done: true,
@@ -225,13 +234,25 @@ export const stream = internalMutation({
 });
 
 export const finish = internalMutation({
-  args: { dealId: v.id("deals"), patch: v.string() },
+  args: {
+    dealId: v.id("deals"),
+    patch: v.string(),
+    // the call's tokens, for the day's spend (convex/guard.ts)
+    model: v.optional(v.union(v.literal("lightning"), v.literal("ultra"))),
+    usage: v.optional(v.object({ prompt: v.number(), completion: v.number() })),
+  },
   returns: v.null(),
-  handler: async (ctx, { dealId, patch }) => {
+  handler: async (ctx, { dealId, patch, model, usage }) => {
     await patchRun(ctx, dealId, JSON.parse(patch) as Record<string, unknown>);
+    if (model) await noteSpendIn(ctx, [{ model, usage: usage ? { prompt_tokens: usage.prompt, completion_tokens: usage.completion } : null }]);
     return null;
   },
 });
+
+/** What the asker's screen says when the door says no (src/live/useVoiceBuild.ts reads the prefix). */
+function refusal(why: "limit" | "spent") {
+  return why === "limit" ? "that's a lot of asks; try again in a minute" : "the space's AI is resting until tomorrow; edits and answers from the board still work";
+}
 
 /** One call's row, by the asker's nonce (among the room's newest). */
 async function rowByNonce(ctx: QueryCtx, spaceId: Id<"spaces">, nonce: string) {
@@ -253,6 +274,7 @@ export const live = query({
   args: { spaceId: v.id("spaces"), nonce: v.string() },
   returns: v.union(v.null(), v.object({ answer: v.string(), done: v.boolean() })),
   handler: async (ctx, { spaceId, nonce }) => {
+    if (!(await canRead(ctx, spaceId))) return null;
     const found = await rowByNonce(ctx, spaceId, nonce);
     return found ? { answer: found.run.answer ?? "", done: found.run.done === true } : null;
   },
@@ -446,6 +468,29 @@ export const amend = mutation({
   },
 });
 
+const decideOut = v.object({
+  onBoard: v.union(
+    v.null(),
+    v.object({
+      yes: v.boolean(),
+      conf: v.union(v.number(), v.null()),
+      ms: v.number(),
+      usage: v.union(v.null(), v.object({ prompt: v.number(), completion: v.number() })),
+      error: v.union(v.string(), v.null()),
+    }),
+  ),
+  verb: v.union(
+    v.null(),
+    v.object({ verb: v.string(), conf: v.union(v.number(), v.null()), ms: v.number(), usage: v.union(v.null(), v.object({ prompt: v.number(), completion: v.number() })) }),
+  ),
+  card: v.union(v.string(), v.null()),
+  conf: v.union(v.number(), v.null()),
+  top: v.array(v.object({ card: v.string(), p: v.number() })),
+  ms: v.number(),
+  usage: v.union(v.null(), v.object({ prompt: v.number(), completion: v.number() })),
+  error: v.union(v.string(), v.null()),
+});
+
 /**
  * The decide pass (nebius/eval/decide): Ultra answers one letter, which card
  * these words want, with its probability. Fired while the asker talks; their
@@ -460,6 +505,8 @@ export const amend = mutation({
  */
 export const decide = action({
   args: {
+    /** The room asked in: the caller needs a seat there (convex/guard.ts). */
+    spaceId: v.id("spaces"),
     said: v.string(),
     room: v.string(),
     today: v.string(),
@@ -475,32 +522,14 @@ export const decide = action({
     /** Also ask make-or-answer (a question code can't place; lib/deck/verbs.ts). */
     verb: v.optional(v.boolean()),
   },
-  returns: v.object({
-    onBoard: v.union(
-      v.null(),
-      v.object({
-        yes: v.boolean(),
-        conf: v.union(v.number(), v.null()),
-        ms: v.number(),
-        usage: v.union(v.null(), v.object({ prompt: v.number(), completion: v.number() })),
-        error: v.union(v.string(), v.null()),
-      }),
-    ),
-    verb: v.union(
-      v.null(),
-      v.object({ verb: v.string(), conf: v.union(v.number(), v.null()), ms: v.number(), usage: v.union(v.null(), v.object({ prompt: v.number(), completion: v.number() })) }),
-    ),
-    card: v.union(v.string(), v.null()),
-    conf: v.union(v.number(), v.null()),
-    top: v.array(v.object({ card: v.string(), p: v.number() })),
-    ms: v.number(),
-    usage: v.union(v.null(), v.object({ prompt: v.number(), completion: v.number() })),
-    error: v.union(v.string(), v.null()),
-  }),
-  handler: async (_ctx, args) => {
+  returns: decideOut,
+  handler: async (ctx, args): Promise<Infer<typeof decideOut>> => {
     const context = roomContext({ room: args.room, today: args.today, people: args.people.slice(0, 12) });
     const prefix = { context, board: args.board.slice(0, 24).map((t) => t.slice(0, 40)), said: args.said.trim().slice(0, 240) };
     const skipped: Awaited<ReturnType<typeof chooseLetter>> = { status: 0, letter: null, conf: null, top: [], usage: null, ms: 0 };
+    const calls = (args.card === false ? 0 : 1) + (args.onBoard && prefix.board.length ? 1 : 0) + (args.verb ? 1 : 0);
+    const gate: Gate = await ctx.runMutation(internal.guard.voice, { spaceId: args.spaceId, calls });
+    if (!gate.ok) return { verb: null, onBoard: null, card: null, conf: null, top: [], ms: 0, usage: null, error: `${gate.why}: ${refusal(gate.why)}` };
     const verbQ = args.verb
       ? chooseLetter({
           model: "ultra",
@@ -522,6 +551,9 @@ export const decide = action({
         : null,
       verbQ,
     ]);
+    await ctx.runMutation(internal.guard.noteSpend, {
+      calls: [r === skipped ? null : r, b, vq].flatMap((x) => (x ? [{ model: "ultra" as const, prompt: x.usage?.prompt_tokens ?? 0, completion: x.usage?.completion_tokens ?? 0 }] : [])),
+    });
     const cardOf = (l: string) => DECIDE_CHOICES[DECIDE_LETTERS.indexOf(l)] ?? l;
     const usageOf = (u: typeof r.usage) => (u ? { prompt: u.prompt_tokens ?? 0, completion: u.completion_tokens ?? 0 } : null);
     return {
@@ -590,10 +622,13 @@ export const answer = action({
   handler: async (ctx, args): Promise<AnswerOut> => {
     const t0 = Date.now();
     const q = args.question.trim().slice(0, 200);
+    // Only the room the caller is seated in (the gate throws for anyone else), one Ultra call.
+    const gate: Gate = await ctx.runMutation(internal.guard.voice, { spaceId: args.spaceId, calls: 1 });
+    if (!gate.ok) return { answer: null, why: `${gate.why}: ${refusal(gate.why)}`, ms: Date.now() - t0, usage: null, snippets: [] };
     const snap: { widgets: { id: string; type: string; summary: string }[]; chat: { from: string; text: string }[] } = await ctx.runQuery(internal.recap.snapshot, { spaceId: args.spaceId });
     const want = askWords(q);
     const summarised = new Set(snap.widgets.map((w) => w.id));
-    const rest: { _id: string; type: string; data: unknown }[] = (await ctx.runQuery(api.widgets.listWidgets, { spaceId: args.spaceId })).filter(
+    const rest: { _id: string; type: string; data: unknown }[] = (await ctx.runQuery(internal.widgets.board, { spaceId: args.spaceId })).filter(
       (w: { _id: string; type: string }) => !summarised.has(w._id) && !["sticker", "media", "frame", "weather"].includes(w.type),
     );
     const pool = [
@@ -621,6 +656,7 @@ export const answer = action({
       ],
     });
     const usage = result.usage ? { prompt: result.usage.prompt_tokens ?? 0, completion: result.usage.completion_tokens ?? 0 } : null;
+    await ctx.runMutation(internal.guard.noteSpend, { calls: [{ model: "ultra", prompt: usage?.prompt ?? 0, completion: usage?.completion ?? 0 }] });
     let parsed: { answer?: unknown; from?: unknown } = {};
     try {
       parsed = JSON.parse(/\{[\s\S]*\}/.exec(result.content)?.[0] ?? "{}");
@@ -688,7 +724,8 @@ export function editedLabels(type: string, before: unknown, after: unknown): str
 export const warm = action({
   args: {},
   returns: v.object({ status: v.number(), ms: v.number() }),
-  handler: async () => await pingTokenFactory(),
+  // a signed-in person, a few a minute (convex/guard.ts): it costs nothing, but it is not an open relay
+  handler: async (ctx): Promise<{ status: number; ms: number }> => ((await ctx.runMutation(internal.guard.warm, {})) ? await pingTokenFactory() : { status: 429, ms: 0 }),
 });
 
 /** The asker's screen saw the card: ms from the last word, plus every stage mark. */
@@ -698,6 +735,7 @@ export const noteLanded = mutation({
   handler: async (ctx, { dealId, landedMs, trace }) => {
     const row = await ctx.db.get(dealId);
     if (!row || !(landedMs > -60_000 && landedMs < 120_000)) return null;
+    if (!(await seatOf(ctx, row.spaceId))) return null;
     const run = JSON.parse(row.run) as Record<string, unknown>;
     if (run.landedMs !== undefined) return null;
     await ctx.db.patch(dealId, {

@@ -1,4 +1,4 @@
-import { internalMutation, query, mutation } from "./_generated/server";
+import { internalMutation, internalQuery, query, mutation } from "./_generated/server";
 import { dropFor, recheck } from "./choiceVotes";
 import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
@@ -10,17 +10,30 @@ import { widgetsCounter } from "./stats";
 import { touchSpace } from "./activity";
 import { editedLabels, noteOutcome } from "./voiceBuild";
 import { applyLinks } from "./links";
+import { canRead, requireSeat, seatOrMaker } from "./seat";
 
 /** Drives the canvas — every widget in a space, rendered by type (PRD §11). */
 export const listWidgets = query({
   args: { spaceId: v.id("spaces") },
   returns: v.array(schema.doc("widgets")),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     return await ctx.db
       .query("widgets")
       .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
       .collect();
   },
+});
+
+/** The same board for the server's own readers (mail filing, the answer verb), which have no session. */
+export const board = internalQuery({
+  args: { spaceId: v.id("spaces") },
+  returns: v.array(schema.doc("widgets")),
+  handler: async (ctx, { spaceId }) =>
+    await ctx.db
+      .query("widgets")
+      .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
+      .collect(),
 });
 
 export const createWidget = mutation({
@@ -33,13 +46,15 @@ export const createWidget = mutation({
     h: v.number(),
     z: v.number(),
     data: widgetDataValidator,
-    createdBy: v.string(),
+    /** Ignored: the maker is the caller's seat (S3). Kept so older screens still validate. */
+    createdBy: v.optional(v.string()),
     rotate: v.optional(v.number()),
   },
   returns: v.id("widgets"),
   handler: async (ctx, args) => {
+    const me = await requireSeat(ctx, args.spaceId);
     const now = Date.now();
-    const id = await ctx.db.insert("widgets", { ...args, createdAt: now });
+    const id = await ctx.db.insert("widgets", { ...args, createdBy: me.userId, createdAt: now });
     await widgetsCounter.inc(ctx);
     await touchSpace(ctx, args.spaceId, now);
     return id;
@@ -55,9 +70,10 @@ export const createWidget = mutation({
  * holding its id. `paint.addStroke` and `presence.claimGesture` already scope
  * their writes this way; these mutations did not.
  *
- * Not an ownership check — showcase spaces stay world-writable for guests by
- * design (docs/data-model-plan.md §1). This only keeps a write inside the
- * space it was aimed at.
+ * And only for a caller with a seat in that room (S3, nebius/eval/s3-audit.md):
+ * no session or no seat and the write is ignored. Not an ownership check: any
+ * seat may move anyone's card, and the tour's rooms give every visitor a seat
+ * at the gate (docs/data-model-plan.md §1).
  */
 async function widgetInSpace(
   ctx: MutationCtx,
@@ -66,7 +82,7 @@ async function widgetInSpace(
 ) {
   const widget = await ctx.db.get(widgetId);
   if (!widget || widget.spaceId !== spaceId) return null;
-  return widget;
+  return (await seatOrMaker(ctx, spaceId)) ? widget : null;
 }
 
 export const moveWidget = mutation({
@@ -92,27 +108,35 @@ export const deleteWidget = mutation({
   handler: async (ctx, { id, spaceId }) => {
     const widget = await widgetInSpace(ctx, id, spaceId);
     if (!widget) return null;
-    await ctx.db.delete(id);
-    await noteOutcome(ctx, widget, { kind: "deleted" });
-    await dropFor(ctx, widget._id);
-    await widgetsCounter.dec(ctx);
-    await touchSpace(ctx, spaceId);
+    await removeWidget(ctx, widget);
     return null;
   },
 });
+
+/** A card off the board with everything that hangs on it (deleteWidget, and convex/harness.ts sweeps). */
+export async function removeWidget(ctx: MutationCtx, widget: Doc<"widgets">) {
+  await ctx.db.delete(widget._id);
+  await noteOutcome(ctx, widget, { kind: "deleted" });
+  await dropFor(ctx, widget._id);
+  await widgetsCounter.dec(ctx);
+  await touchSpace(ctx, widget.spaceId);
+}
 
 export const claimItem = mutation({
   args: {
     widgetId: v.id("widgets"),
     spaceId: v.id("spaces"),
     itemName: v.string(),
-    claimantName: v.string(),
-    claimantUserId: v.string(),
+    /** Ignored: the claimant is the caller's seat (S3). Kept so older screens still validate. */
+    claimantName: v.optional(v.string()),
+    claimantUserId: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const widget = await widgetInSpace(ctx, args.widgetId, args.spaceId);
+  handler: async (ctx, a) => {
+    const widget = await widgetInSpace(ctx, a.widgetId, a.spaceId);
     if (!widget) return null;
+    const me = (await seatOrMaker(ctx, a.spaceId))!;
+    const args = { ...a, claimantName: me.name, claimantUserId: me.userId };
     const potluckData = widget.data as PotluckData;
     const items = Array.isArray(potluckData?.items) ? potluckData.items : [];
     const nextItems = items.map((item) => {
@@ -143,7 +167,8 @@ export const spinWheel = mutation({
   handler: async (ctx, { widgetId, spaceId, ...spin }) => {
     const widget = await widgetInSpace(ctx, widgetId, spaceId);
     if (!widget) return null;
-    await ctx.db.patch(widget._id, { data: { ...widget.data, ...spin } });
+    const me = (await seatOrMaker(ctx, spaceId))!;
+    await ctx.db.patch(widget._id, { data: { ...widget.data, ...spin, spunBy: me.name || spin.spunBy } });
     await touchSpace(ctx, spaceId);
     return null;
   },
@@ -162,7 +187,8 @@ export const tuneRadio = mutation({
   handler: async (ctx, { widgetId, spaceId, ...tune }) => {
     const widget = await widgetInSpace(ctx, widgetId, spaceId);
     if (!widget) return null;
-    await ctx.db.patch(widget._id, { data: { ...widget.data, ...tune } });
+    const me = (await seatOrMaker(ctx, spaceId))!;
+    await ctx.db.patch(widget._id, { data: { ...widget.data, ...tune, playedBy: me.name || tune.playedBy } });
     await touchSpace(ctx, spaceId);
     return null;
   },

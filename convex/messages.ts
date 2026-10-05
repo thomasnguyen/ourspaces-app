@@ -5,6 +5,7 @@ import schema from "./schema";
 import type { DecisionData } from "./widgetData";
 import { messagesCounter, widgetsCounter } from "./stats";
 import { touchSpace } from "./activity";
+import { canRead, seatOf } from "./seat";
 
 const messageValidator = schema.doc("messages");
 
@@ -18,6 +19,7 @@ export const listMessages = query({
   },
   returns: paginationResultValidator(messageValidator),
   handler: async (ctx, { spaceId, widgetId, paginationOpts }) => {
+    if (!(await canRead(ctx, spaceId))) return { page: [], isDone: true, continueCursor: "" };
     return await ctx.db
       .query("messages")
       .withIndex("by_space_widget", (q) => q.eq("spaceId", spaceId).eq("widgetId", widgetId))
@@ -29,12 +31,14 @@ export const listMessages = query({
 export const listBySpace = query({
   args: { spaceId: v.id("spaces"), paginationOpts: paginationOptsValidator },
   returns: paginationResultValidator(messageValidator),
-  handler: async (ctx, { spaceId, paginationOpts }) =>
-    await ctx.db
+  handler: async (ctx, { spaceId, paginationOpts }) => {
+    if (!(await canRead(ctx, spaceId))) return { page: [], isDone: true, continueCursor: "" };
+    return await ctx.db
       .query("messages")
       .withIndex("by_space", (q) => q.eq("spaceId", spaceId))
       .order("asc")
-      .paginate(paginationOpts),
+      .paginate(paginationOpts);
+  },
 });
 
 // Full-text search over a space's chat history — the "search_text" index
@@ -43,7 +47,7 @@ export const search = query({
   args: { spaceId: v.id("spaces"), query: v.string() },
   returns: v.array(messageValidator),
   handler: async (ctx, { spaceId, query: text }) => {
-    if (!text.trim()) return [];
+    if (!text.trim() || !(await canRead(ctx, spaceId))) return [];
     return await ctx.db
       .query("messages")
       .withSearchIndex("search_text", (q) => q.search("text", text).eq("spaceId", spaceId))
@@ -51,26 +55,36 @@ export const search = query({
   },
 });
 
+/** Said as the caller's own seat (S3): the author fields a screen sends are ignored; no seat, no message. */
 export const sendMessage = mutation({
   args: {
     spaceId: v.id("spaces"),
     widgetId: v.string(),
-    userId: v.string(),
     text: v.string(),
-    authorName: v.string(),
-    authorColor: v.string(),
+    // Ignored (the seat says who): kept so older screens still validate.
+    userId: v.optional(v.string()),
+    authorName: v.optional(v.string()),
+    authorColor: v.optional(v.string()),
     authorEmoji: v.optional(v.string()),
     authorAvatarUrl: v.optional(v.string()),
   },
   returns: v.union(v.id("messages"), v.null()),
   handler: async (ctx, args) => {
-    const text = args.text.trim();
+    const text = args.text.trim().slice(0, 4000);
     if (!text) return null;
+    const me = await seatOf(ctx, args.spaceId);
+    if (!me) return null;
 
     const now = Date.now();
     const id = await ctx.db.insert("messages", {
-      ...args,
+      spaceId: args.spaceId,
+      widgetId: args.widgetId,
+      userId: me.userId,
       text,
+      authorName: me.name,
+      authorColor: me.color,
+      ...(me.emoji ? { authorEmoji: me.emoji } : {}),
+      ...(me.avatarUrl ? { authorAvatarUrl: me.avatarUrl } : {}),
       createdAt: now,
     });
     await messagesCounter.inc(ctx);
@@ -84,12 +98,16 @@ export const promoteMessage = mutation({
   args: {
     messageId: v.id("messages"),
     spaceId: v.id("spaces"),
-    userId: v.string(),
+    /** Ignored: the note's maker is the caller's seat (S3). */
+    userId: v.optional(v.string()),
     x: v.number(),
     y: v.number(),
   },
   returns: v.union(v.id("widgets"), v.null()),
-  handler: async (ctx, { messageId, spaceId, userId, x, y }) => {
+  handler: async (ctx, { messageId, spaceId, x, y }) => {
+    const me = await seatOf(ctx, spaceId);
+    if (!me) return null;
+    const userId = me.userId;
     const message = await ctx.db.get(messageId);
     if (!message) throw new Error("Message not found");
     // listBySpace is public and returns message ids for any space, so without

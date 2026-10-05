@@ -649,7 +649,7 @@ export function VoiceBuildLayer({
           style={tint}
           role="status"
         >
-          couldn't place that
+          {receipt.text ?? "couldn't place that"}
         </p>
       )}
       {dev && (

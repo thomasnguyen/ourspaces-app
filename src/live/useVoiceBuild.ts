@@ -307,7 +307,13 @@ export type VoiceReply = {
 };
 export type VoiceReceipt =
   | { ok: true; key: number; cards: string[]; model: string | null; ms: number | null; widgetId: string }
-  | { ok: false; key: number };
+  | { ok: false; key: number; text?: string };
+
+/** The server's door said no (convex/guard.ts: "limit: …" or "spent: …"): its plain line replaces "couldn't place that". */
+export function refusedLine(error: string | null | undefined): string | undefined {
+  const m = /^(?:limit|spent): (.+)$/.exec(error ?? "");
+  return m?.[1];
+}
 
 const DOCK_ROOM = 20; // clear air between a landed card and the dock
 const HANDOFF_MS = 520; // the ring's let-go (--dur-stage, plus a frame)
@@ -1378,7 +1384,7 @@ export function useVoiceBuild({
         s.trace.error = s.trace.error ?? reason;
         setShell(null);
         setDrafts([]);
-        setReceipt({ ok: false, key: s.key });
+        setReceipt({ ok: false, key: s.key, text: refusedLine(s.trace.error) });
         s.trace.done = true;
         s.trace.ok = false;
         publish(s);
@@ -1566,6 +1572,7 @@ export function useVoiceBuild({
       const byCode = counted ? cardAnswer(counted) : null;
       if (byCode) answered({ ...byCode, facts: [...byCode.facts, `(retrieved; the model said “${out.answer!.text}”, code counted the card)`] }, "retrieval", Math.round(performance.now() - t0));
       else if (out.answer) answered({ ...out.answer, facts: out.snippets }, "retrieval", Math.round(performance.now() - t0));
+      else if (refusedLine(out.why)) say(s, { verb: "answer", text: refusedLine(out.why)!, by: "code" });
       else dontKnow("unknown", out.why, out.snippets);
     };
 
@@ -1911,7 +1918,7 @@ export function useVoiceBuild({
         }
         setShell(null);
         setDrafts([]);
-        setReceipt({ ok: false, key: s.key });
+        setReceipt({ ok: false, key: s.key, text: refusedLine(s.trace.error) });
         s.trace.done = true;
         s.trace.ok = false;
         publish(s);

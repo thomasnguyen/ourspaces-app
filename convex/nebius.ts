@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { chatTarget, type AiJob } from "./ai";
 import { decideFiling } from "./inboxRouting";
 
@@ -234,7 +234,7 @@ export const fileDryRun = internalAction({
   handler: async (ctx, { slug, from, subject, body }) => {
     const space = await ctx.runQuery(internal.agentmail.getSpaceBySlug, { slug });
     if (!space) throw new Error(`no space ${slug}`);
-    const widgets = await ctx.runQuery(api.widgets.listWidgets, { spaceId: space._id });
+    const widgets = await ctx.runQuery(internal.widgets.board, { spaceId: space._id });
     const t0 = Date.now();
     const decision = await decideFiling({
       event: { from, subject, body, summary: body.slice(0, 200), attachments: [], createdAt: Date.now() },

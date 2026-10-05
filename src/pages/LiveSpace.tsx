@@ -1900,11 +1900,12 @@ export function LiveSpacePage({
     },
     facts: () => roomBrief?.room ?? null,
     decide: (said, { onBoard, card, verb }) =>
-      decideCard({
+      !space ? Promise.reject(new Error("no space")) : decideCard({
+        spaceId: space._id,
         said,
         card,
         ...(verb ? { verb: true } : {}),
-        room: space?.name ?? "",
+        room: space.name,
         today: voiceToday(),
         people: voicePeople(),
         board: (roomBrief?.room?.board ?? []).map((b) => b.title),

@@ -1,4 +1,5 @@
 import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
+import { canRead, seatOf } from "./seat";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -189,19 +190,23 @@ export const tick = internalMutation({
   },
 });
 
+/** A link in this room, for a caller seated there (S3): no seat, no write. */
 async function linkInSpace(ctx: MutationCtx, linkId: Id<"links">, spaceId: Id<"spaces">) {
   const link = await ctx.db.get(linkId);
-  return link && link.spaceId === spaceId ? link : null;
+  return link && link.spaceId === spaceId && (await seatOf(ctx, spaceId)) ? link : null;
 }
 
 /** "call it": anyone closes a poll or a day-finder another card waits on (a person's write on the source). */
 export const callIt = mutation({
-  args: { spaceId: v.id("spaces"), widgetId: v.id("widgets"), by: v.string() },
+  // `by` is ignored: who called it is the caller's seat (S3)
+  args: { spaceId: v.id("spaces"), widgetId: v.id("widgets"), by: v.optional(v.string()) },
   returns: v.boolean(),
-  handler: async (ctx, { spaceId, widgetId, by }) => {
+  handler: async (ctx, { spaceId, widgetId }) => {
     const w = await ctx.db.get(widgetId);
     if (!w || w.spaceId !== spaceId) return false;
-    await ctx.db.patch(w._id, { data: { ...(w.data as object), closed: true, closedBy: by } as Doc<"widgets">["data"] });
+    const me = await seatOf(ctx, spaceId);
+    if (!me) return false;
+    await ctx.db.patch(w._id, { data: { ...(w.data as object), closed: true, closedBy: me.name } as Doc<"widgets">["data"] });
     return (await applyLinks(ctx, w._id)) > 0;
   },
 });
@@ -248,6 +253,7 @@ export const waiting = query({
   args: { spaceId: v.id("spaces") },
   returns: v.array(v.object({ id: v.id("links"), from: v.id("widgets"), to: v.id("widgets"), when: v.string(), tag: v.optional(v.string()), state: v.string() })),
   handler: async (ctx, { spaceId }) => {
+    if (!(await canRead(ctx, spaceId))) return [];
     const rows = await ctx.db.query("links").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(100);
     const shown = rows.filter((l) => l.cutAt === undefined && (l.resolvedAt === undefined || l.tag));
     // a link whose card was deleted has nothing to wait on or thread to

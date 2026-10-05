@@ -1,4 +1,4 @@
-import { RateLimiter, MINUTE, HOUR } from "@convex-dev/rate-limiter";
+import { RateLimiter, MINUTE, HOUR, DAY } from "@convex-dev/rate-limiter";
 import { components } from "./_generated/api";
 
 /**
@@ -28,4 +28,32 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   // Per-user: a stroke lands once per completed drag, not per point, so this
   // is generous headroom for normal drawing while still bounding abuse.
   paintStroke: { kind: "token bucket", rate: 60, period: MINUTE, capacity: 20 },
+  /* Token Factory, the voice orb (convex/guard.ts; nebius/eval/s3-audit.md).
+     Keyed by the caller's seat, which the session proves, so these can be per
+     person. One ask is about a dozen calls (≤6 speculative fills, the final
+     fill, 3–4 decides): the burst covers five asks back to back, the refill
+     an ask every ~15s all day. */
+  voicePerson: { kind: "token bucket", rate: 50, period: MINUTE, capacity: 60 },
+  /* Per room per day: 300 calls ≈ 30–60 asks ≈ $0.08–0.27 (b2-wired §e: a
+     fast ask ≈ $0.0021 over ~8 calls, a brain ask ≈ $0.0045 over ~5). */
+  voiceRoomDay: { kind: "fixed window", rate: 300, period: DAY },
+  // The orb's wake-up ping costs nothing, but it is not an open relay.
+  voiceWarm: { kind: "token bucket", rate: 6, period: MINUTE, capacity: 6 },
 });
+
+/**
+ * The deployment's daily Token Factory ceiling (convex/guard.ts): estimated
+ * dollars (tokens × list price) across every room, per UTC day. Past it the
+ * voice orb stops calling the model and says so; what code answers alone
+ * (edits, answers from the room's facts, cards filled from answers) still
+ * works. Thomas's account holds a few dollars with no cap on Nebius's side.
+ */
+export const SPEND_CEILING_USD = 0.5;
+
+/** List price, USD per million tokens (Token Factory /v1/models, Oct 2026). */
+export const PRICE_PER_M = {
+  nano: { prompt: 0.06, completion: 0.24 },
+  lightning: { prompt: 0.06, completion: 0.24 },
+  super: { prompt: 0.3, completion: 0.9 },
+  ultra: { prompt: 1, completion: 3 },
+} as const;

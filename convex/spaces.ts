@@ -473,14 +473,16 @@ export const joinDemoSpace = mutation({
     emoji: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
   },
-  returns: v.id("members"),
+  returns: v.union(v.id("members"), v.null()),
   handler: async (ctx, { spaceId, userId: tabId, name, color, emoji, avatarUrl }) => {
-    /* The seat is the signed-in id (guests are anonymous accounts). The tab's
-       id is used only before the session lands, and never one that names a
-       real account: nobody can write a seat for someone else. */
+    /* The seat is the signed-in id (guests are anonymous accounts). Before the
+       session lands there is no seat at all (S3): a tab id could be anyone's,
+       a seeded "seed:crew:maya" included, and nothing honours a tab-id seat
+       now. The screen joins again when its id turns into the session's. */
+    void tabId;
     const authId = await getAuthUserId(ctx);
-    if (!authId && ctx.db.normalizeId("users", tabId)) throw new Error("sign in first");
-    const userId = authId ?? tabId;
+    if (!authId) return null;
+    const userId: string = authId;
     const existing = await ctx.db
       .query("members")
       .withIndex("by_space_user", (q) =>
