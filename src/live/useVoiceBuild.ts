@@ -1793,13 +1793,17 @@ export function useVoiceBuild({
       if (check) {
         const v = verdict ? await verdict : null;
         if (stale()) return;
-        const sureYes = !!v?.yes && (v.standIn || (v.conf ?? 0) >= DECIDE_BAR);
+        // A challenge of the same activity already running is "already here" by code (the model kept saying a new one was wanted).
+        const sameChallenge = check.ok && check.item.card === "checkin";
+        const sureYes = sameChallenge || (!!v?.yes && (v.standIn || (v.conf ?? 0) >= DECIDE_BAR));
         s.trace.found = {
           check,
           verdict: v,
           outcome: "dealt",
           why: !check.ok
             ? check.why
+            : sameChallenge
+              ? `a ${check.item.title} challenge is already running (code: same activity)${v ? `; the model said ${v.yes ? "yes" : "no"} ${v.conf?.toFixed(2) ?? ""}` : ""}`
             : !v
               ? "the yes/no didn't come back in time: dealt"
               : sureYes

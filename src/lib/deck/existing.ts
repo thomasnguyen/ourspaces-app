@@ -48,10 +48,12 @@ const GENERIC = new Set(
   ("a an the of for to on in at is are do does did who whos what whats which s our we us this that it and or with my me i you " +
     "add make put start create set up get have let lets can could please need want some " +
     "poll polls vote list checklist wheel spin card note countdown rsvp question tonight today tomorrow week weekend now " +
-    "again still all everyone everybody one whose turn").split(" "),
+    "again still all everyone everybody one whose turn " +
+    // a challenge is named by its activity: "a push-up challenge for the four of us" is the push-ups check-in
+    "challenge check checkin streak daily habit just two three four five six seven eight nine ten").split(" "),
 );
 const norm = (s: string) => s.toLowerCase().normalize("NFKD").replace(/['’]s\b/g, "").replace(/[^\p{L}\p{N} ]+/gu, " ").replace(/\s+/g, " ").trim();
-const topic = (s: string) => new Set(norm(s).split(" ").filter((w) => w && !GENERIC.has(w)).map((w) => w.replace(/(es|s)$/, "")));
+const topic = (s: string) => new Set(norm(s).split(" ").filter((w) => w && !GENERIC.has(w)).map((w) => w.replace(/(es|s)$/, "")).filter((w) => !GENERIC.has(w)));
 
 /**
  * The widget these words already have, if code can see one: the same kind

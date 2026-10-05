@@ -278,7 +278,15 @@ function pollAnswer(w: W): Answer {
  * the model's words (live, the model named the losing option of a poll).
  */
 export function cardAnswer(w: W): Answer | null {
-  return w.type === "poll" ? pollAnswer(w) : null;
+  return w.type === "poll" ? pollAnswer(w) : w.type === "rsvp" ? rsvpAnswer(w) : null;
+}
+
+/** An rsvp's standing, read by code (live, the model added "at maya's place" to one). */
+function rsvpAnswer(w: W): Answer {
+  const rows = (w.data.responses as { name: string; status: string }[] | undefined) ?? [];
+  const by = (st: string) => rows.filter((r) => r.status === st).map((r) => r.name.toLowerCase());
+  const parts = [by("yes").length ? `${list(by("yes"))} ${by("yes").length === 1 ? "is" : "are"} in` : "nobody's in yet", by("no").length && `${list(by("no"))} can't`, by("maybe").length && `${list(by("maybe"))} maybe`].filter(Boolean);
+  return { text: `${titleOf(w)}: ${parts.join(" · ")}`, source: `the ${titleOf(w)} rsvp`, widgetId: w.id, facts: rows.map((r) => `${r.name}: ${r.status}`) };
 }
 
 /* ---------- Go: a room, a card, the knows page ---------- */
