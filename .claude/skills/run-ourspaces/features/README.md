@@ -10,6 +10,7 @@ id named here exists in `src/`.
 | [voice-stage](voice-stage.md) | crew | poll · countdown · checklist · split · where · nokey · open · words · type · mid · complete · closing · landed · ask · ask-offer · room · already-found · already-landed · live · livefacts · livealready · livehesitate (lane) |
 | [wheel](wheel.md) | house | idle · spinning · landed |
 | [voice-verbs](voice-verbs.md) | crew | answer · answer-card · dontknow · recap · mine · refuse · tie · go · room · game · edit · drawer · liveanswer · liveask · liverecap · livego · livedrawer (lane) |
+| [voice-edits](voice-edits.md) | crew | mock · mockboard · mockrefuse · mocktentative · mockdrawer · ramen · time · undo · refuse (lane) |
 | [recap](recap.md) | crew dock | closed · open · landed |
 | [dock](dock.md) | crew dock | idle · sound · recap |
 | [deck](deck.md) | crew board | one · four · eight · beside |

@@ -1071,7 +1071,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
           <div className="voice-two-bar">
             <span className="voice-stage-status" data-testid="voice-stage-status" data-mood={voice.muted ? "muted" : listening ? "listening" : "working"}>
               <i aria-hidden="true" />
-              {voice.muted ? "Muted" : listening ? "Listening" : reply ? (VERB_LABEL[reply.verb] ?? "Done") : found ? "Already here" : whole ? "Placing" : "Building"}
+              {voice.muted ? "Muted" : listening ? "Listening" : reply ? (VERB_LABEL[reply.verb] ?? "Done") : build?.edit ? "Changing it" : found ? "Already here" : whole ? "Placing" : "Building"}
             </span>
             {controls(done)}
           </div>
