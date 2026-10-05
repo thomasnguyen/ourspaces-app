@@ -337,6 +337,9 @@ function duplicateOf(card: string, settings: Record<string, unknown>, f: RoomFac
   return hit && { card: hit.card, title: hit.title };
 }
 
+/** Words that give a date by themselves: a month, a number, a day, or a day everyone knows. */
+const WORDS_DATE = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\b|\d|\b(today|tonight|tomorrow|weekend|week|month|year|mon|tues?|wed|thur?s?|fri|sat|sun)[a-z]*\b|\b(new year|nye|christmas|xmas|halloween|thanksgiving|valentine|easter|hanukkah|diwali|eid|juneteenth|independence day|labor day|memorial day)/i;
+
 /** Who a surprise or gift is for: a member named next to the occasion. */
 export function giftSubject(said: string, f: RoomFacts): string | null {
   if (!/\b(surprise|gift|present|birthday|bday|b-day)\b/i.test(said)) return null;
@@ -387,6 +390,12 @@ export function resolveCard(raw: RawCard, room: RoomFacts, said: string): Resolv
     out.assignees = (settings.items as unknown[]).map((_, i) => pool![i % pool!.length]);
   }
 
+  // Rule: a plain date the words don't give (no month, number, day or holiday) is the model's guess, not a fact.
+  const rawDate = raw.settings?.date;
+  if (raw.card === "countdown" && typeof rawDate === "string" && !rawDate.includes("@") && !WORDS_DATE.test(said)) {
+    notes.push({ token: "date", kind: "rule", detail: `${rawDate} isn't in the words or the room, left out` });
+    delete settings.date;
+  }
   // A countdown with no date the room or the words gave: this Saturday, said so.
   if (raw.card === "countdown" && !(typeof settings.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(settings.date))) {
     const t = dayNo(f.today);

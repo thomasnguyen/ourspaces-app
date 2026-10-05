@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
 ready: dock-voice-orb
-testids: voice-shell voice-landed voice-receipt dev-readout dev-context-drawer dev-context-close claim-enter dock-voice-orb
+testids: voice-shell voice-landed voice-receipt dev-readout dev-readout-route dev-context-drawer dev-context-close dev-context-route claim-enter dock-voice-orb
 states:
   room: ?enter=1
   ask: ?enter=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1200 | click dock-voice-orb | wait voice-shell | wait voice-landed | sleep 900
@@ -17,8 +17,13 @@ states:
   gate: | click claim-enter | wait dock-voice-orb | sleep 1200
   say: ?enter=1&timing=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1400
   mocksay: ?voice=add a poll for Saturday dinner | sleep 600
+  driving: ?enter=1&timing=1&voicePace=talk&voice=who's driving to Maya's | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
+  drivingdrawer: ?enter=1&timing=1&voicePace=talk&voice=who's driving to Maya's | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 1500 | click dev-readout | wait dev-context-drawer | sleep 300
+  drivingsay: ?enter=1&timing=1&voicePace=talk&voice=who's driving to Maya's | sleep 1400
+  cabin: ?enter=1&timing=1&voicePace=talk&voice=split the cabin, 640 | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
 take:
   ask: say real 30fps 165f | 3 click dock-voice-orb
+  driving: drivingsay real 30fps 150f | 3 click dock-voice-orb
 ---
 # Voice build (say it → it builds)
 
@@ -50,8 +55,23 @@ in one insert (counter, activity stamp and log line follow in a scheduled
 mutation). Extra cards in the answer follow in a second write. Usually 3–4
 calls per ask.
 
+**The room's brain (B2/D1b):** each call is routed by the room brief's
+facts (`routeAsk` in `deck/promptV2.ts`, read from `roomBrief.inspect`).
+Words that point at no room fact ("rsvp for game night Friday at 7") get the
+fast Lightning fill, as above. Words that do ("who's driving to Maya's",
+"split the cabin, 640") get the token prompt on Ultra with only those facts;
+the answer's tokens (`@coming(who's coming)`) are resolved on the asker's
+screen against the facts (`resolve.ts`), tentative fills too (a token left
+unresolved shows as "…"), so "who's driving" lists exactly the four who said
+yes and the cabin split is among the trip's four, paid by Jules. Alongside,
+every new word asks Ultra for one letter (`voiceBuild.decide`): a sure pick
+(≥ 0.8) sets the skeleton (beating the keyword guess), and on the fast route
+it's passed to the fill ("deal one wheel card"), and the fill is asked again
+if the final answer dealt another card. A deleted (≤ 10 min) or relabelled
+(≤ 30 min) dealt card writes `outcome` onto its `deals` row.
+
 **Dev readout** (dev lane, or `?timing=1`; `?timing=0` hides it): a mono
-line under the live strip (`dev-readout`): model · last word → final card ms ·
+line under the live strip (`dev-readout`): route (`dev-readout-route`: "room facts · Ultra" or "plain · Lightning") · last word → final card ms ·
 tentative ms (negative = before the last word) · calls · late word · guess right/wrong; `voice-receipt` inside it carries `data-ms` =
 last word → card complete on this screen. Click it (or a slip, in dev) for
 the context drawer (`dev-context-drawer`, `dev-context-close`): words heard
@@ -60,7 +80,11 @@ with its time (tentative or final, which fields changed), late words and
 what happened to the card, the code's
 guess, the room context sent to the model (one `context` string), the raw
 answer, cards after `applyCard` (rejects with the reason), why the spot,
-stage times from the last word. Last 10 asks, older/newer. Mock: stand-in,
+stage times from the last word; and for B2: the decide calls (sent/back,
+pick, confidence, the runners-up, first sure pick vs the pause, how the
+skeleton moved), the route and why (`dev-context-route`), the exact facts
+sent, every token with what it became and the room row it came from, every
+rule that fired, and the calls and cost of the ask. Last 10 asks, older/newer. Mock: stand-in,
 "not sent", no ms.
 
 **Drive:** `?voice=<sentence>` scripts the ask; `&voicePace=talk` = ~180
@@ -68,7 +92,9 @@ wpm, each word lands when it ends, "…" = a 900 ms hesitation
 (`&voicePause=`), "…600" a 600 ms one. `tentative` stops mid-sentence on
 the washed-out fill; `gapand`/`gapdate`/`hesitate` are pauses the ask
 must survive; `late` ends early, then "dinner" reopens it and corrects
-the card in place. Lane states write real widgets to the dev board (clear
+the card in place. `driving`/`cabin` are the two context asks (brain
+route; crew room facts); `drivingdrawer` opens their drawer; take
+`driving` films it. Lane states write real widgets to the dev board (clear
 them with `widgets:deleteWidget`). `shell` = mock skeleton held
 (`&voiceHold=1`); `drawer`/`mockdrawer` open the drawer. `voice-landed`
 carries `data-widget-ref` (draft id, then the synced id after commit).

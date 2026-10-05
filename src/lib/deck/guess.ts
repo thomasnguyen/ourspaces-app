@@ -92,14 +92,25 @@ function placeholder(f: Field, ctx: CardContext): unknown {
   }
 }
 
+function validZone(tz: string) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return tz.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 /** A partial value the model already wrote, if it has the field's shape. */
 function partialValue(f: Field, v: unknown): unknown {
   if (v === undefined || v === null) return undefined;
   switch (f.kind) {
     case "text":
     case "date":
-    case "zone":
       return typeof v === "string" ? v.slice(0, 200) : undefined;
+    // A zone still being written ("", "America/Los_") would throw in the clock widget.
+    case "zone":
+      return typeof v === "string" && validZone(v) ? v : undefined;
     case "number":
       return typeof v === "number" ? v : typeof v === "string" && Number(v) ? Number(v) : undefined;
     case "enum":

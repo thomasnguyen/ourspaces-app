@@ -6,6 +6,7 @@ import { widgetDataValidator, type PotluckData } from "./widgetData";
 import schema from "./schema";
 import { widgetsCounter } from "./stats";
 import { touchSpace } from "./activity";
+import { editedLabels, noteOutcome } from "./voiceBuild";
 
 /** Drives the canvas — every widget in a space, rendered by type (PRD §11). */
 export const listWidgets = query({
@@ -86,8 +87,10 @@ export const deleteWidget = mutation({
   args: { id: v.id("widgets"), spaceId: v.id("spaces") },
   returns: v.null(),
   handler: async (ctx, { id, spaceId }) => {
-    if (!(await widgetInSpace(ctx, id, spaceId))) return null;
+    const widget = await widgetInSpace(ctx, id, spaceId);
+    if (!widget) return null;
     await ctx.db.delete(id);
+    await noteOutcome(ctx, widget, { kind: "deleted" });
     await widgetsCounter.dec(ctx);
     await touchSpace(ctx, spaceId);
     return null;
@@ -184,8 +187,11 @@ export const updateWidgetData = mutation({
   },
   returns: v.null(),
   handler: async (ctx, { id, spaceId, data }) => {
-    if (!(await widgetInSpace(ctx, id, spaceId))) return null;
+    const widget = await widgetInSpace(ctx, id, spaceId);
+    if (!widget) return null;
     await ctx.db.patch(id, { data });
+    const field = editedLabels(widget.type, widget.data, data);
+    if (field) await noteOutcome(ctx, widget, { kind: "edited", field });
     await touchSpace(ctx, spaceId);
     return null;
   },

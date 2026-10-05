@@ -6,12 +6,19 @@ import {
   getCard,
   guessCard,
   parseDeal,
+  parseDealResolved,
   parsePartialCard,
   placeCards,
   placeReason,
+  resolveCard,
+  routeAsk,
+  scrubTokens,
   sentenceHangs,
   skeletonWidget,
+  type AskRoute,
   type CardContext,
+  type ResolveNote,
+  type RoomFacts,
   type CardId,
   type DealtCard,
   type Placement,
@@ -46,13 +53,46 @@ import type { VoiceEnd, VoiceHooks } from "../lib/voice";
  *    The longer sentence gets its own call; a card already committed is
  *    corrected in place (`amend`), never dealt twice.
  *
+ * Two more things run alongside (B2/D1b):
+ * - **Route by need.** Each call is routed by the room brief's facts
+ *   (`routeAsk`): words that point at no room fact get the fast Lightning
+ *   fill; words that do get the token prompt on Ultra, and every answer
+ *   (tentative too) is resolved here against the facts (`resolve.ts`), so
+ *   names and dates come from rows, never from the model.
+ * - **Decide while you talk.** Every new word (not hanging) also asks Ultra
+ *   for one letter: which card. A sure pick (≥ 0.8) beats the code's guess
+ *   for the skeleton, goes into the next fill as "deal one <card> card", and
+ *   when the final answer dealt a different card, the fill is asked again
+ *   with the pick.
+ *
  * Every ask leaves a trace (words, calls, guesses, every tentative fill and
  * which answer became final, the context the model got, its raw answer, the
  * cards kept or rejected, why the spot, stage times from the last word) for
  * the dev readout and drawer. Clocks start at the last word.
  */
 
-export type DealCall = { said: string; nonce: string; spec: boolean };
+export type DealCall = {
+  said: string;
+  nonce: string;
+  spec: boolean;
+  /** "brain": the token prompt with `menu` on the big model. */
+  route?: "fast" | "brain";
+  menu?: string;
+  /** The decide pass's card, when it was sure. */
+  card?: string;
+};
+export type DecideAnswer = {
+  card: string | null;
+  conf: number | null;
+  top: { card: string; p: number }[];
+  ms: number;
+  usage: { prompt: number; completion: number } | null;
+  error: string | null;
+};
+/** The decide pass is trusted from this probability (nebius/eval/decide: 36 of 38 right at ≥ 0.8). */
+const DECIDE_BAR = 0.8;
+const DECIDE_MAX = 6;
+const DECIDE_IN_FLIGHT = 2;
 export type DealAnswer = {
   dealId: string | null;
   /** The model's short name; null for the mock stand-in (no model, no ms). */
@@ -62,6 +102,8 @@ export type DealAnswer = {
   answer: string;
   error: string | null;
   modelMs?: { firstLine: number | null; total: number } | null;
+  route?: string;
+  usage?: { prompt: number; completion: number } | null;
 };
 
 /** One time an answer went into the card on this screen. */
@@ -87,8 +129,32 @@ export type AskTrace = {
   how: VoiceEnd["how"] | null;
   /** ms from the tap. */
   words: { text: string; ms: number }[];
-  calls: { text: string; ms: number; spec: boolean; used: boolean }[];
+  calls: {
+    text: string;
+    ms: number;
+    spec: boolean;
+    used: boolean;
+    route?: "fast" | "brain";
+    /** The decided card this call was told to deal. */
+    card?: string | null;
+    /** Tokens in and out, once the call returned (for the cost line). */
+    usage?: { model: string; prompt: number; completion: number } | null;
+  }[];
   guesses: { card: string; ms: number }[];
+  /** Every decide call: when it went out and came back (ms from the tap), its pick. */
+  decides: { text: string; ms: number; back: number | null; card: string | null; conf: number | null; top: { card: string; p: number }[]; error: string | null; usage: { prompt: number; completion: number } | null }[];
+  /** Every card the skeleton showed, and what put it there. */
+  skeletons: { card: string; by: "guess" | "decide" | "model"; ms: number }[];
+  /** The decide's pick replaced (or supplied) the skeleton's card this many times. */
+  decideMoves: number;
+  /** The final call's route, why, and the exact facts sent. */
+  route: AskRoute | null;
+  /** The decided card overrode the final answer's card (the fill was asked again). */
+  overrode: string | null;
+  /** Every token in the final cards, what it became, every rule that fired. */
+  notes: ResolveNote[];
+  /** The room facts the tokens read (for the drawer's source rows). */
+  facts: RoomFacts | null;
   fills: AskFill[];
   /** Field changes after a field first appeared, summed over the ask. */
   flicker: number;
@@ -110,7 +176,7 @@ export type AskTrace = {
   ok: boolean | null;
 };
 
-const STAGES = ["pause", "skeleton", "tentative", "card-full", "first-field", "card-local", "committed", "card-on-screen"] as const;
+const STAGES = ["pause", "decided", "skeleton", "tentative", "card-full", "first-field", "card-local", "committed", "card-on-screen"] as const;
 export type StageName = (typeof STAGES)[number];
 
 /** The ring in the maker's colour around the card being built (or, before
@@ -250,11 +316,63 @@ type Spec = {
   answer: DealAnswer | null;
   /** performance.now() when its answer first put a model field on screen. */
   firstFieldAt: number | null;
+  route: AskRoute;
+  /** The facts its tokens resolve against (as they were when it went out). */
+  facts: RoomFacts | null;
+  /** The decided card it was told to deal. */
+  hint: string | null;
   /** Resolves once a valid card has closed in the stream, or the call ended without one. */
   ready: Promise<void>;
   settle: () => void;
   promise: Promise<DealAnswer | null>;
 };
+
+/** A card kept for the board: the checked card, its widget, and (room tokens) who it's among / for. */
+export type Kept = { card: DealtCard; widget: Widget; people?: string[]; assignees?: string[] };
+
+type Dec = { seq: number; text: string; norm: string; card: string | null; conf: number | null; back: boolean };
+
+/** A decide pick that names a deck card (not none/several) and is sure. */
+const sure = (d: Dec | null) => !!d && d.back && d.conf !== null && d.conf >= DECIDE_BAR && !!d.card && !!getCard(d.card);
+
+type Item =
+  | { ok: true; card: DealtCard; raw: string; notes: ResolveNote[]; people?: string[]; assignees?: string[] }
+  | { ok: false; reason: string; raw: string };
+
+/** A call's answer as cards: the brain route's tokens resolved against the room, then checked. */
+function itemsOf(sp: Spec, text: string, whole: boolean): { items: Item[]; none: boolean } {
+  if (sp.route.route === "brain" && sp.facts) {
+    const d = parseDealResolved(text, whole, sp.facts, sp.text);
+    return {
+      none: d.none,
+      items: d.items.map((i): Item =>
+        i.ok
+          ? { ok: true, card: i.card, raw: i.raw, notes: i.resolved.notes, people: i.resolved.people, assignees: i.resolved.assignees }
+          : { ok: false, reason: i.reason, raw: i.raw },
+      ),
+    };
+  }
+  const d = parseDeal(text, whole);
+  return { none: d.none, items: d.items.map((i): Item => (i.ok ? { ok: true, card: i.card, raw: i.raw, notes: [] } : i)) };
+}
+
+/**
+ * The card a fill for these words is told to deal: the decide's sure pick, on
+ * the fast route only. The brain route is Ultra with the room's facts and
+ * picks better than the facts-free decide (live, the hint turned "where
+ * should we eat Saturday" into a question and "who's on dishes" into a
+ * checklist), so it picks its own card.
+ */
+function hintFor(s: Session, f: RoomFacts | null, said: string): string | null {
+  return sure(s.decided) && routeAsk(f, said).route === "fast" ? s.decided!.card : null;
+}
+
+/** The call to finish on for these words: the one told the decided card, else the newest. */
+function pickFinal(s: Session, said: string, f: RoomFacts | null): Spec | undefined {
+  const want = hintFor(s, f, said);
+  const all = s.specs.filter((sp) => sp.norm === norm(said));
+  return all.find((sp) => sp.hint === want) ?? all.at(-1);
+}
 
 type Session = {
   key: number;
@@ -276,6 +394,11 @@ type Session = {
   inFlight: number;
   /** Words came while every slot was taken: send the newest when one frees. */
   queued: boolean;
+  decides: Dec[];
+  decInFlight: number;
+  decQueued: boolean;
+  /** The newest sure decide (by words), if any. */
+  decided: Dec | null;
   steady: number;
   final: Spec | null;
   ended: boolean;
@@ -300,14 +423,20 @@ export function useVoiceBuild({
   selectedId,
   warm,
   onLanded,
+  facts,
+  decide,
 }: {
   scrollerRef: RefObject<HTMLElement | null>;
   /** `onPartial` gets the answer so far, and `done` once the stream is whole. */
   deal: (call: DealCall, onPartial: (answer: string, done?: boolean) => void) => Promise<DealAnswer>;
   /** Write the kept cards (already placed); resolves to the synced widget ids, in order. */
-  commit: (c: { dealId: string | null; nonce: string; cards: Array<{ card: DealtCard; widget: Widget }> }) => Promise<string[]>;
+  commit: (c: { dealId: string | null; nonce: string; cards: Kept[] }) => Promise<string[]>;
   /** A late word changed the card: rewrite the committed widget in place (live only). */
-  amend?: (a: { widgetId: string; nonce: string; card: DealtCard }) => Promise<unknown>;
+  amend?: (a: { widgetId: string; nonce: string; card: Kept }) => Promise<unknown>;
+  /** The room brief's facts (live only): routes each call and resolves its tokens. */
+  facts?: () => RoomFacts | null;
+  /** The one-letter card pick (live only). */
+  decide?: (said: string) => Promise<DecideAnswer>;
   cardContext: () => CardContext;
   selectedId?: () => string | null;
   /** Orb tapped: wake the model path (live only). */
@@ -324,14 +453,15 @@ export function useVoiceBuild({
   const [traces, setTraces] = useState<AskTrace[]>([]);
   /** The slip is on its way out (it leaves on glide, then unmounts). */
   const [leaving, setLeaving] = useState(false);
-  const room = useRef({ deal, commit, amend, cardContext, selectedId, warm, onLanded });
-  room.current = { deal, commit, amend, cardContext, selectedId, warm, onLanded };
+  const room = useRef({ deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide });
+  room.current = { deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide };
   const session = useRef<Session | null>(null);
   const clearTimer = useRef(0);
   const shellTimer = useRef(0);
   const warmedAt = useRef(0);
   /** Send the newest words if they're worth a call and a slot is free (set below). */
   const maybeFire = useRef<(s: Session) => void>(() => {});
+  const maybeDecide = useRef<(s: Session) => void>(() => {});
 
   useEffect(
     () => () => {
@@ -421,9 +551,17 @@ export function useVoiceBuild({
   const showGuess = useCallback(
     (s: Session) => {
       // Once the model has written into the skeleton, only the model changes it.
-      if (!s.guess || s.fromModel || s.reopened) return;
-      s.shown = s.guess;
-      const { widget } = skeletonWidget(s.guess, { id: `${DRAFT}${s.key}-0`, ctx: ctxNow(), said: s.text });
+      if (s.fromModel || s.reopened) return;
+      // A sure decide beats the words' guess (and fills in when they named nothing).
+      const dec = sure(s.decided) ? (s.decided!.card as CardId) : null;
+      const card = dec ?? s.guess;
+      if (!card) return;
+      if (card !== s.shown) {
+        s.trace.skeletons.push({ card, by: dec ? "decide" : "guess", ms: Math.round(performance.now() - s.t0) });
+        if (dec) s.trace.decideMoves++;
+      }
+      s.shown = card;
+      const { widget } = skeletonWidget(card, { id: `${DRAFT}${s.key}-0`, ctx: ctxNow(), said: s.text });
       show(s, [widget]);
     },
     [ctxNow, show],
@@ -453,7 +591,7 @@ export function useVoiceBuild({
       let card: CardId;
       let settings: Record<string, unknown>;
       let whole = false;
-      const first = parseDeal(sp.streamed, sp.whole).items.find((i) => i.ok);
+      const first = itemsOf(sp, sp.streamed, sp.whole).items.find((i) => i.ok);
       if (first?.ok) {
         // After the end, the final card is drawn by `ask` (placed, then committed).
         if (s.ended) return;
@@ -468,6 +606,8 @@ export function useVoiceBuild({
         settings = { ...p.settings };
         const last = Object.keys(settings).at(-1);
         if (last && typeof settings[last] === "object") delete settings[last];
+        // Tokens resolve on the tentative card too; anything left reads "…", never "@coming".
+        if (sp.route.route === "brain" && sp.facts) settings = scrubTokens(resolveCard({ card, settings }, sp.facts, sp.text).settings);
         // A newer call's first fields go over the card already shown, not over blanks.
         if (s.tent?.card === card) settings = { ...s.tent.settings, ...settings };
       }
@@ -477,6 +617,7 @@ export function useVoiceBuild({
       }
       const hasField = Object.keys(settings).length > 0;
       note(s, sp, card, settings, whole, false);
+      if (card !== s.shown) s.trace.skeletons.push({ card, by: "model", ms: Math.round(performance.now() - s.t0) });
       s.shown = card;
       s.fromModel = true;
       const { widget } = skeletonWidget(card, { id: `${DRAFT}${s.key}-0`, ctx: ctxNow(), said: s.text, partial: settings });
@@ -500,7 +641,7 @@ export function useVoiceBuild({
       // A watch update can arrive after the returned answer: never step back.
       if (text.length >= sp.streamed.length) sp.streamed = text;
       if (done) sp.whole = true;
-      if (!sp.cardOk && parseDeal(sp.streamed, sp.whole).items.some((i) => i.ok)) sp.cardOk = true;
+      if (!sp.cardOk && itemsOf(sp, sp.streamed, sp.whole).items.some((i) => i.ok)) sp.cardOk = true;
       if (sp.cardOk || sp.whole) sp.settle();
       fill(s, sp);
     },
@@ -509,6 +650,9 @@ export function useVoiceBuild({
 
   const fire = useCallback(
     (s: Session, text: string, spec: boolean): Spec => {
+      const facts = room.current.facts?.() ?? null;
+      const route = routeAsk(facts, text);
+      const hint = hintFor(s, facts, text);
       let settle = () => {};
       const ready = new Promise<void>((r) => (settle = r));
       const sp: Spec = {
@@ -517,6 +661,9 @@ export function useVoiceBuild({
         text,
         norm: norm(text),
         spec,
+        route,
+        facts,
+        hint,
         streamed: "",
         whole: false,
         cardOk: false,
@@ -527,7 +674,7 @@ export function useVoiceBuild({
         promise: Promise.resolve(null),
       };
       s.specs.push(sp);
-      s.trace.calls.push({ text, ms: Math.round(performance.now() - s.t0), spec, used: false });
+      s.trace.calls.push({ text, ms: Math.round(performance.now() - s.t0), spec, used: false, route: route.route, card: hint });
       // A speculative call holds a slot until its card is in (or it ends).
       let held = spec;
       const release = () => {
@@ -545,10 +692,21 @@ export function useVoiceBuild({
       }
       void ready.then(release);
       sp.promise = room.current
-        .deal({ said: text, nonce: sp.nonce, spec }, (a, done) => stream(s, sp, a, done === true))
+        .deal(
+          {
+            said: text,
+            nonce: sp.nonce,
+            spec,
+            ...(route.route === "brain" && route.menu ? { route: "brain" as const, menu: route.menu } : {}),
+            ...(hint ? { card: hint } : {}),
+          },
+          (a, done) => stream(s, sp, a, done === true),
+        )
         .then(
           (answer) => {
             sp.answer = answer;
+            const call = s.trace.calls[sp.seq];
+            if (call && answer.usage) call.usage = { model: answer.model ?? "?", ...answer.usage };
             stream(s, sp, answer.answer, true);
             return answer;
           },
@@ -567,14 +725,59 @@ export function useVoiceBuild({
     const text = s.text;
     if (session.current !== s || s.ended || !text || sentenceHangs(text)) return;
     const n = text.split(/\s+/).length;
-    if (!(guessCard(text) ? n >= 2 : n >= SPEC_MIN_WORDS)) return;
-    if (s.specs.some((sp) => sp.norm === norm(text))) return;
+    if (!(guessCard(text) || sure(s.decided) ? n >= 2 : n >= SPEC_MIN_WORDS)) return;
+    const hint = hintFor(s, room.current.facts?.() ?? null, text);
+    if (s.specs.some((sp) => sp.norm === norm(text) && sp.hint === hint)) return;
     if (s.specs.filter((sp) => sp.spec).length >= SPEC_MAX_CALLS) return;
     if (s.inFlight >= SPEC_IN_FLIGHT) {
       s.queued = true;
       return;
     }
     fire(s, text, true);
+  };
+
+  /** Ask the decide pass about the newest words (no settle; two out at most, the newest waits). */
+  maybeDecide.current = (s: Session) => {
+    const ask = room.current.decide;
+    const text = s.text;
+    if (!ask || session.current !== s || s.ended || !text || sentenceHangs(text)) return;
+    if (text.split(/\s+/).length < 2) return;
+    const n = norm(text);
+    if (s.decides.some((d) => d.norm === n) || s.decides.length >= DECIDE_MAX) return;
+    if (s.decInFlight >= DECIDE_IN_FLIGHT) {
+      s.decQueued = true;
+      return;
+    }
+    const d: Dec = { seq: s.decides.length, text, norm: n, card: null, conf: null, back: false };
+    s.decides.push(d);
+    s.decInFlight++;
+    const row: AskTrace["decides"][number] = { text, ms: Math.round(performance.now() - s.t0), back: null, card: null, conf: null, top: [], error: null, usage: null };
+    s.trace.decides.push(row);
+    void ask(text)
+      .then(
+        (a) => {
+          Object.assign(row, { back: Math.round(performance.now() - s.t0), card: a.card, conf: a.conf, top: a.top, error: a.error, usage: a.usage });
+          Object.assign(d, { back: true, card: a.card, conf: a.conf });
+          if (session.current !== s || !sure(d) || (s.decided && s.decided.seq > d.seq)) return;
+          s.decided = d;
+          mark(s, "decided");
+          if (s.ended) return;
+          // The skeleton follows it now; a model fill of another card is asked again with it.
+          if (!s.fromModel) showGuess(s);
+          if (!s.tent || s.tent.card !== d.card) maybeFire.current(s);
+        },
+        (e) => {
+          row.error = String(e).slice(0, 160);
+        },
+      )
+      .finally(() => {
+        s.decInFlight--;
+        if (s.decQueued) {
+          s.decQueued = false;
+          maybeDecide.current(s);
+        }
+        if (session.current === s) publish(s);
+      });
   };
 
   const start = useCallback(() => {
@@ -597,6 +800,10 @@ export function useVoiceBuild({
       specs: [],
       inFlight: 0,
       queued: false,
+      decides: [],
+      decInFlight: 0,
+      decQueued: false,
+      decided: null,
       steady: 0,
       final: null,
       ended: false,
@@ -614,6 +821,13 @@ export function useVoiceBuild({
         words: [],
         calls: [],
         guesses: [],
+        decides: [],
+        skeletons: [],
+        decideMoves: 0,
+        route: null,
+        overrode: null,
+        notes: [],
+        facts: null,
         fills: [],
         flicker: 0,
         late: [],
@@ -665,9 +879,10 @@ export function useVoiceBuild({
         s.trace.guesses.push({ card: guess, ms: Math.round(performance.now() - s.t0) });
       }
       showGuess(s);
+      maybeDecide.current(s);
       // Words that name a card go out at once; others once they've held for a beat.
       window.clearTimeout(s.steady);
-      if (guess) maybeFire.current(s);
+      if (guess || sure(s.decided)) maybeFire.current(s);
       else
         s.steady = window.setTimeout(() => {
           if (session.current === s && s.text === text) maybeFire.current(s);
@@ -680,7 +895,7 @@ export function useVoiceBuild({
   const ready = useCallback((text: string) => {
     const s = session.current;
     if (!s || s.reopened) return false;
-    return s.specs.some((sp) => sp.norm === norm(text) && sp.cardOk);
+    return !!pickFinal(s, text, room.current.facts?.() ?? null)?.cardOk;
   }, []);
 
   const leave = useCallback(() => {
@@ -719,10 +934,11 @@ export function useVoiceBuild({
       s.trace.how = end.how;
       const late: AskTrace["late"][number] | null = round > 1 ? { text: said, ms: Math.round(performance.now() - s.t0), outcome: "…" } : null;
       if (late) s.trace.late.push(late);
-      const hit = s.specs.find((sp) => sp.norm === norm(said));
-      const sp = hit ?? fire(s, said, false);
+      let sp = pickFinal(s, said, room.current.facts?.() ?? null) ?? fire(s, said, false);
       s.final = sp;
       s.trace.calls.forEach((c, i) => (c.used = i === sp.seq));
+      s.trace.route = sp.route;
+      s.trace.facts = sp.facts;
       // Words that named no card yet: hold a card-sized ring open in view.
       if (!s.shown && !s.reopened && !sp.cardOk) {
         s.m = measure(scrollerRef.current) ?? s.m;
@@ -759,28 +975,50 @@ export function useVoiceBuild({
 
       await sp.ready;
       if (stale()) return;
+      // Ultra wins over Lightning: the decide was sure of another card than the fast fill dealt, so it's asked again with it.
+      const want = hintFor(s, sp.facts, said);
+      const firstCard = itemsOf(sp, sp.streamed, sp.whole).items.find((i) => i.ok);
+      if (want && firstCard?.ok && firstCard.card.card !== want && sp.hint !== want && !s.commitP) {
+        s.trace.overrode = `${firstCard.card.card} → ${want}`;
+        sp = fire(s, said, false);
+        s.final = sp;
+        s.trace.calls.forEach((c, i) => (c.used = i === sp.seq));
+        s.trace.route = sp.route;
+        publish(s);
+        await sp.ready;
+        if (stale()) return;
+      }
       // Its first card is in (the rest of the answer may still be streaming).
       const ctx = ctxNow();
+      const final = sp;
       const keep = (text: string, whole: boolean) => {
-        const kept: Array<{ card: DealtCard; widget: Widget }> = [];
+        const kept: Kept[] = [];
         const cards: AskTrace["cards"] = [];
-        for (const item of parseDeal(text, whole).items) {
+        const notes: ResolveNote[] = [];
+        for (const item of itemsOf(final, text, whole).items) {
           if (!item.ok) {
             cards.push({ card: /"card"\s*:\s*"([^"]+)"/.exec(item.raw)?.[1] ?? "?", ok: false, reason: item.reason });
             continue;
           }
-          const r = applyCard(item.card, ctx, { id: `${DRAFT}${s.key}-${kept.length}`, z: 1000 + kept.length });
-          if (r.ok) kept.push({ card: item.card, widget: r.widget });
+          notes.push(...item.notes);
+          const people = item.people?.length ? item.people : undefined;
+          const r = applyCard(item.card, people ? { ...ctx, people } : ctx, {
+            id: `${DRAFT}${s.key}-${kept.length}`,
+            z: 1000 + kept.length,
+            assignees: item.assignees,
+          });
+          if (r.ok) kept.push({ card: item.card, widget: r.widget, people, assignees: item.assignees });
           cards.push(r.ok ? { card: item.card.card, ok: true } : { card: item.card.card, ok: false, reason: r.reason });
         }
-        return { kept, cards };
+        return { kept, cards, notes };
       };
       const got = keep(sp.streamed, sp.whole);
+      s.trace.notes = got.notes;
       let kept = got.kept;
       if (!kept.length) {
         traceAnswer(s, sp.answer);
         s.trace.cards = got.cards;
-        return fail(parseDeal(sp.streamed, true).none ? "the model said no card fits" : sp.answer ? "no valid card in the answer" : "the deal call failed");
+        return fail(itemsOf(sp, sp.streamed, true).none ? "the model said no card fits" : sp.answer ? "no valid card in the answer" : "the deal call failed");
       }
 
       if (s.commitP) {
@@ -792,7 +1030,7 @@ export function useVoiceBuild({
         else if (json === s.committedCard) late.outcome = "same card: nothing to change";
         else if (!room.current.amend) late.outcome = "stand-in: not corrected";
         else {
-          await room.current.amend({ widgetId: ids[0], nonce: sp.nonce, card: kept[0].card }).catch(() => {});
+          await room.current.amend({ widgetId: ids[0], nonce: sp.nonce, card: kept[0] }).catch(() => {});
           s.committedCard = json;
           late.outcome = `corrected in place → ${kept[0].card.card}`;
           late.after = Math.round(performance.now() - s.lastWordAt);
@@ -806,6 +1044,8 @@ export function useVoiceBuild({
       }
 
       // Final: the answer for exactly these words, on this screen.
+      if (kept[0].card.card !== s.shown) s.trace.skeletons.push({ card: kept[0].card.card, by: "model", ms: Math.round(performance.now() - s.t0) });
+      s.shown = kept[0].card.card;
       note(s, sp, kept[0].card.card, kept[0].card.settings as Record<string, unknown>, true, true);
       s.trace.cards = got.cards;
       s.trace.guessAgreed = s.guess ? kept[0].card.card === s.guess : null;
@@ -882,6 +1122,7 @@ export function useVoiceBuild({
         const extra = more.kept.slice(kept.length);
         if (extra.length) {
           s.trace.cards = more.cards;
+          s.trace.notes = more.notes;
           const m2 = measure(scrollerRef.current) ?? m;
           const sizes2 = extra.map((k) => footprint(k.widget));
           const spots2 = placeCards(sizes2, { widgets: m2.board, view: m2.view, bounds: m2.bounds, anchor: spots[0] });
