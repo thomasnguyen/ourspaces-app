@@ -76,6 +76,8 @@ export type GameRound = {
   asks?: HotQuestion[];
   /** hot seat: the one tap the person it's about gets after the reveal */
   reactions?: Array<{ by: string; kind: SeatReaction; at: number }>;
+  /** live: who has pressed `next →` on this reveal (the round moves on when everyone in has) */
+  ready?: string[];
 };
 
 /** table `games` (by room). */

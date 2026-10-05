@@ -12,7 +12,7 @@ import { awardsOf, isIn, ROUND_MS, roundPlayers } from "../../lib/games/engine";
 import { askAbout, askFor, distance, SEAT_REACTIONS, seatRanking } from "../../lib/games/hotSeat";
 import type { Game, GamePerson, GameRound, HotQuestion, SeatReaction } from "../../lib/games/types";
 import { KEEPSAKE_WIDGET_ID, useGames, type GamesApi } from "../../lib/games/useMockGames";
-import { AwardSticker, byStyle, GameFace, nameList } from "./parts";
+import { AwardSticker, byStyle, GameFace, nameList, NextKey } from "./parts";
 import { goToTurnWidget } from "../YourTurn";
 import "./games.css";
 import "./hot-seat.css";
@@ -302,9 +302,7 @@ function SeatReveal({ api, game, round }: { api: GamesApi; game: Game; round: Ga
       ) : (
         <span className="gm-called">{isIn(game, me.name) ? "you're in the seat" : "you sat this one out"}</span>
       )}
-      <button type="button" className="gm-go" data-testid="game-next" onClick={api.next}>
-        {last ? (duo ? "how you did →" : "who knows best →") : "next →"}
-      </button>
+      <NextKey round={round} players={game.players} me={me.name} label={last ? (duo ? "how you did →" : "who knows best →") : "next →"} onNext={api.next} />
     </div>
   );
   return (

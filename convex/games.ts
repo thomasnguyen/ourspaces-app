@@ -88,6 +88,7 @@ async function load(ctx: QueryCtx, doc: Doc<"games">): Promise<Loaded> {
         winners: r.winners,
         ...(r.asks ? { asks: JSON.parse(r.asks) as HotQuestion[] } : {}),
         ...(r.reactions ? { reactions: r.reactions as GameRound["reactions"] } : {}),
+        ...(r.ready?.length ? { ready: r.ready } : {}),
       }),
     ),
     ...(doc.seat ? { seat: doc.seat } : {}),

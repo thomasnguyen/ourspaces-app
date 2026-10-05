@@ -10,7 +10,7 @@ import { LOCKS, seeSecondsLeft, type SeeLock } from "../../lib/answerToSee";
 import { awardsOf, closestCall, currentRound, isIn, pointsOf, ROUND_MS, tally } from "../../lib/games/engine";
 import type { Game, GamePerson, GameRound } from "../../lib/games/types";
 import { SCOREBOARD_WIDGET_ID, useGames, type GamesApi } from "../../lib/games/useMockGames";
-import { AwardSticker, byStyle, GameFace, nameList } from "./parts";
+import { AwardSticker, byStyle, GameFace, nameList, NextKey } from "./parts";
 import { goToTurnWidget } from "../YourTurn";
 import { HotSeatBody } from "./HotSeat";
 import "./games.css";
@@ -237,9 +237,7 @@ function Reveal({ api, game, round }: { api: GamesApi; game: Game; round: GameRo
   const foot = (
     <div className="gm-rv-foot">
       {mine ? <span className={`gm-called ${called ? "is-yes" : ""}`}>{called ? "you called it · +1" : `you said ${you(mine.pick, me)}`}</span> : <span className="gm-called">you sat this one out</span>}
-      <button type="button" className="gm-go" data-testid="game-next" onClick={api.next}>
-        {last ? "the awards →" : "next →"}
-      </button>
+      <NextKey round={round} players={game.players} me={me.name} label={last ? "the awards →" : "next →"} onNext={api.next} />
     </div>
   );
   const promptLine = (
@@ -379,7 +377,7 @@ function AwardsWall({ api, game }: { api: GamesApi; game: Game }) {
   const played = isIn(game, me.name);
   const people = game.cast.filter((p) => counts.has(p.name));
   return (
-    <div className="gm-wall" data-testid="game-awards">
+    <div className="gm-wall" data-testid="game-awards" data-few={people.length <= 2 ? "" : undefined}>
       <p className="gm-kicker">the awards · {game.rounds.length} rounds</p>
       <h3 className="gm-title">
         {champs.length ? nameList(champs.map((name) => you(name, me))) : "nobody"} <span>took {most > 1 ? `${most} stickers` : most === 1 ? "one each" : "none"}</span>

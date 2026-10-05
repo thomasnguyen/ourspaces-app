@@ -883,7 +883,8 @@ export function LiveSpacePage({
     const out: Widget[] = [
       {
         id: SCOREBOARD_WIDGET_ID, type: "scoreboard", ...spot.board, w: 300, z: 4, data: { title: "scoreboard" },
-        h: 110 + 49 * Math.min(7, games.rows.length) + 96 + (games.challenge ? 40 + 30 * Math.min(4, games.challenge.rows.length) : 0) + (games.seatName && !(g && g.phase !== "done") ? 48 : 0),
+        // head + rows + the foot's slot and start keys (the puzzle key too); the rows stretch into any slack (games.css .sb-rows)
+        h: 110 + 49 * Math.min(7, games.rows.length) + 144 + (games.challenge ? 40 + 30 * Math.min(4, games.challenge.rows.length) : 0) + (games.seatName && !(g && g.phase !== "done") ? 48 : 0),
       },
     ];
     if (g && !(g.kind === "hot-seat" && g.phase === "done"))

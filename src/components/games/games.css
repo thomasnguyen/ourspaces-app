@@ -119,6 +119,17 @@
   scale: 0.96;
 }
 
+/* you pressed next: the key waits on the others */
+.gm-next-wait {
+  border: 2px dashed currentColor;
+  background: transparent;
+  color: inherit;
+  cursor: default;
+  font-size: 13px;
+  padding: 10px 14px;
+  animation: gm-pop var(--dur-base) var(--ease-pop) both;
+}
+
 .gm-go:disabled {
   background: color-mix(in srgb, var(--color-card) 16%, transparent);
   color: color-mix(in srgb, var(--color-card) 70%, transparent);
@@ -927,6 +938,40 @@ button.gm-pick:not(:disabled):active .gm-face {
   padding: 5px 10px 5px 6px;
 }
 
+/* one or two people took everything: they get the wall, big, in the middle (no empty band) */
+.gm-wall[data-few] .gm-title {
+  font-size: 46px;
+}
+
+.gm-wall[data-few] .gm-title span {
+  font-size: 20px;
+}
+
+.gm-wall[data-few] .gm-wall-list {
+  gap: 18px;
+  margin-block: auto;
+  --face: 76px;
+}
+
+.gm-wall[data-few] .gm-wall-list li {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 14px;
+  font-size: 22px;
+}
+
+.gm-wall[data-few] .gm-wall-list li .gm-face {
+  grid-row: span 2;
+}
+
+.gm-wall[data-few] .gm-wall-stickers {
+  gap: 8px 6px;
+}
+
+.gm-wall[data-few] .gm-wall-stickers .gm-award {
+  font-size: 17px;
+  padding: 7px 14px 7px 9px;
+}
+
 .gm-close-call {
   margin: 2px 0 0;
   border-radius: 11px;
@@ -1166,14 +1211,29 @@ button.gm-pick:not(:disabled):active .gm-face {
   line-height: 1;
 }
 
+.sb-see,
+.sb-see .ats-cover {
+  height: 100%;
+}
+
+/* the rows take the room the card has (up to a chunky 84px each), so four people don't leave an empty band */
 .sb-rows {
   position: relative;
-  display: grid;
-  align-content: start;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
   gap: 5px;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.sb-rows > .sb-row,
+.sb-rows > .ats-slip {
+  min-height: 0;
+  max-height: 84px;
+  flex: 1 1 44px;
 }
 
 .sb-row {
@@ -1264,7 +1324,6 @@ button.gm-pick:not(:disabled):active .gm-face {
 
 .sb-rows.is-down .ats-slip {
   display: flex;
-  height: 44px;
   align-items: center;
   justify-content: space-between;
   border-style: dashed;

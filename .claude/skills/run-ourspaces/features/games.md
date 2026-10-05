@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
 ready: scoreboard
-testids: game-card game-lobby game-round game-see game-reveal game-awards game-sticker game-join game-begin game-pick game-next game-rematch game-to-board game-start game-invite game-invite-join game-invite-hide game-sheet game-sheet-close game-sheet-tab games-dev game-notice rail-game award-dots award-row
+testids: game-card game-lobby game-round game-see game-reveal game-awards game-sticker game-join game-begin game-pick game-next game-next-waiting game-rematch game-to-board game-start game-invite game-invite-join game-invite-hide game-sheet game-sheet-close game-sheet-tab games-dev game-notice rail-game award-dots award-row
 states:
   idle: ?as=Rio
   start: ?as=Maya&game=start | wait game-lobby | sleep 5200

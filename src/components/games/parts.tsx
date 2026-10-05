@@ -59,6 +59,27 @@ export function AwardSticker({ award, size = "md", i = 0, land = false }: { awar
 }
 
 /** "ash" · "ash and kenji" · "ash, kenji and rio" */
+/** `next →` after a reveal. Live, the round moves on when everyone in has
+    pressed it: once you have, the key says who it is waiting on (dashed, like
+    every other wait in the room). */
+export function NextKey({ round, players, me, label, onNext }: { round: { ready?: string[] }; players: GamePerson[]; me: string; label: string; onNext: () => void }) {
+  const lower = (s: string) => s.trim().toLowerCase();
+  const ready = (round.ready ?? []).map(lower);
+  if (ready.includes(lower(me))) {
+    const out = players.filter((p) => !ready.includes(lower(p.name))).map((p) => lower(p.name));
+    return (
+      <span className="gm-go gm-next-wait" data-testid="game-next-waiting">
+        {out.length ? `waiting on ${nameList(out)}` : "next up"}
+      </span>
+    );
+  }
+  return (
+    <button type="button" className="gm-go" data-testid="game-next" onClick={onNext}>
+      {label}
+    </button>
+  );
+}
+
 export function nameList(names: string[]): string {
   const shown = names.map((name) => name.toLowerCase());
   if (shown.length <= 1) return shown.join("");
