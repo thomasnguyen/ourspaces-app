@@ -1,13 +1,12 @@
 ---
 name: run-ourspaces
-description: Run, drive, and screenshot the OurSpaces app. Use when asked to start the app, verify a UI change in the browser, screenshot a space or widget, or open the web post reading-circle thread dock.
+description: Run, drive, and screenshot the OurSpaces app. Use when asked to start the app, verify a UI change in the browser, screenshot a space, widget or feature state (voice orb, wheel, recap, …), shoot a sheet of states, or open the web post reading-circle thread dock. `drive go <feature>:<state>` plus the ~1 KB files in features/ replace reading docs/code-map.md.
 ---
 
-OurSpaces is a Vite + React + Convex canvas app. Drive it headless with
-`.claude/skills/run-ourspaces/driver.mjs` (playwright-core against the
-machine's cached Playwright Chromium — no chromium-cli, no browser download).
-The mock data mode (`?mock=1`) renders every space from fixtures, so no
-Convex backend is needed for UI verification.
+OurSpaces is a Vite + React + Convex canvas app. The default way to see it is
+**`drive`** (`.claude/skills/run-ourspaces/drive.mjs`): one warm Vite + one warm
+headless Chromium kept alive by a small daemon, driven by one-line commands.
+Mock mode (`?mock=1`) renders every space from fixtures, no backend.
 
 All paths are relative to the repo root. Verified on macOS (darwin arm64).
 
@@ -18,47 +17,75 @@ npm i --prefix .claude/skills/run-ourspaces playwright-core
 ```
 
 Needs a cached Chromium under `~/Library/Caches/ms-playwright/chromium-*`
-(the driver picks the newest). If missing: `npx playwright install chromium`.
+(newest is picked). If missing: `npx playwright install chromium`.
 
-## Run (agent path)
-
-Start the dev server, then run the driver:
+## Drive (default path)
 
 ```bash
-npm run dev > /tmp/vite-dev.log 2>&1 &
-for i in $(seq 1 30); do grep -q "localhost:" /tmp/vite-dev.log && break; sleep 1; done
-grep -o "localhost:[0-9]*" /tmp/vite-dev.log | head -1   # note the port
+alias drive="node .claude/skills/run-ourspaces/drive.mjs"
+drive go voice-orb:listening --shot    # load a state, wait for it, shoot (~1 s warm)
+drive sheet voice-orb:listening wheel:spinning recap:landed --w 1440,390
+drive down                             # when you're done
+```
 
-node .claude/skills/run-ourspaces/driver.mjs dock /tmp/dock.png 2
-node .claude/skills/run-ourspaces/driver.mjs shot "#/space/trip" /tmp/trip.png
+Start from **`features/README.md`** (the index) and the one feature file you
+need (~1 KB each), not `docs/code-map.md`. Each file names the room, the
+states (`<feature>:<state>`), the test ids, how to drive it and where the
+code lives.
+
+| command | what it does |
+|---|---|
+| `up [--lane\|--mock]` | start the daemon (Vite on :5291 strict, control on :5292, pids in `.context/drive/state.json`); any other command auto-ups. Cold ~1.5–3 s. `--lane`/`--mock` on a running daemon just switches mode |
+| `go <f>[:<s>] [--w 1440\|390] [--shot]` | full load of that state's URL, wait for its ready test id, let the entrance settle, run its steps; prints ms. First state is the default |
+| `click <id>` · `type <id> <text>` · `wait <id>` | act on the current page (`<id>` = data-testid, or `css:<selector>`) |
+| `shot [name]` | `.context/drive/shots/<name>.png` (full size) + `.jpg` (≤1000 px). **Look at the JPEG**; open the PNG only for one detail |
+| `sheet <f:s> … [--w 1440,390]` | shoot each × width, tile into ONE labelled JPEG — several states, one image read |
+| `two <f:s> [--w N]` | two separate browser contexts (two people) on one state, side by side. For `--lane`; mock tabs don't sync |
+| `eval <file.mjs>` | escape hatch: file default-exports `async ({page, ctx, base, mockUrl, go, shot})`; its `console.log` lines are printed |
+| `check` | fails if a test id named in `features/` isn't a `data-testid` in `src/`; lists css stand-ins and unmapped src test ids |
+| `down` | stops exactly what `up` started (recorded pids/process groups), never by name |
+
+Modes: Vite **always** runs with the dev-lane env from `scripts/dev-lane.sh`
+(the `dusty-condor-648` dev deployment), so nothing can reach prod. Mock vs
+lane is only whether `?mock=1` goes in the URL. In lane every room opens
+behind the entry gate ("enter the room"), which has no test id yet.
+
+Driving notes: the drive browser is a returning visitor (the "You're in the
+demo" modal is pre-dismissed; add `?notice=1` to a state to see it). After a
+click the pointer parks at (4,4) so hover toolbars don't photobomb. `go` adds
+`_d=<n>` to force a full load. CSS animations run 6× during the entrance
+settle, then 1×. After editing `drive.mjs`, `drive down` (the daemon keeps
+the old code). Log: `.context/drive/daemon.log`.
+
+Add a feature: copy a file in `features/`, fill the header (format in
+`features/README.md`), add a line to the index, run `drive check`.
+
+## Fallback: the one-shot driver
+
+`driver.mjs` launches a browser per call and needs a Vite you start yourself
+(never plain `npm run dev`, it talks to prod — use `npm run dev:lane`).
+Use it only if the daemon won't come up.
+
+```bash
+npm run dev:lane > /tmp/vite-lane.log 2>&1 &   # note the port it prints
+PORT=<port> node .claude/skills/run-ourspaces/driver.mjs shot "#/space/trip" /tmp/trip.png
+PORT=<port> node .claude/skills/run-ourspaces/driver.mjs dock /tmp/dock.png 2
 ```
 
 | command | what it does |
 |---|---|
 | `shot <route> <out.png>` | open a hash route in mock mode, wait for the canvas + entrance animation, screenshot |
 | `dock <out.png> [qN]` | trip space: open the web post's reading-circle thread dock via its comment chip; optional `2` switches to starter q2 |
-| `eval <file.mjs>` | escape hatch — the file default-exports `async ({page, ctx, base, mockUrl})` for arbitrary Playwright driving |
+| `eval <file.mjs>` | escape hatch — the file default-exports `async ({page, ctx, base, mockUrl})` |
 
-Env: `PORT=5174` pins the vite port (the driver otherwise probes 5173-5176
-and picks the server whose HTML title says OurSpaces), `HEADLESS=0` opens a
-visible window, `LIVE=1` drops `?mock=1` to hit the connected Convex dev
-deployment (needs `VITE_CONVEX_URL` in `.env.local`; mock is the default and
-right for UI checks).
-
-Routes: `#/` (crew) · `#/space/trip` · `#/space/league` · `#/widgets`
-(widget lab). **Look at the screenshot** — a crew-space screenshot when you
-asked for trip means the mock flag ended up in the wrong place (see Gotchas).
-
-Stop the server:
-
-```bash
-lsof -ti:5174 -sTCP:LISTEN | xargs -r kill   # use the port you noted
-```
+Env: `PORT` pins the Vite port (otherwise it probes 5173-5176 for the
+`OurSpaces` title), `HEADLESS=0` opens a window, `LIVE=1` drops `?mock=1`.
+Stop your Vite by the pid you started, never by port or name.
 
 ## Run (human path)
 
 ```bash
-npm run dev   # → prints the localhost URL, open in a browser. Ctrl-C to stop.
+npm run dev:lane   # dev database; plain `npm run dev` reads and writes prod (standing order 1)
 ```
 
 ## Test
@@ -102,9 +129,14 @@ radius is exactly the mutations the feature is made of.
   `/?mock=1#/space/trip`. Inside the hash (`#/space/trip?mock=1`) the mock
   flag still registers but the space-slug parser breaks and you silently land
   on the crew space.
-- **Vite drifts to port 5174+** when 5173 is held by another Conductor
-  workspace's dev server. Never assume 5173; the driver probes for the
-  `OurSpaces` title so it won't screenshot a sibling workspace's app.
+- **Vite drifts to port 5174+** when 5173 is held by another workspace's dev
+  server. `drive` sidesteps this with its own strict port (5291); the old
+  driver probes for the `OurSpaces` title. Never kill a 517x Vite you didn't start.
+- **Headless WebGL** (the voice orb): `drive` runs headless Chromium on the
+  real GPU (`--use-angle=metal`); SwiftShader also renders it but makes every
+  frame ~2× slower. If the orb comes out blank: `drive down; DRIVE_GL=swiftshader drive up`.
+- **Mock lab writes**: plain `npm run dev` + `#/play` used to write real prod
+  presence; `drive`'s Vite env points at the dev deployment instead.
 - **Opening a widget's thread dock = click its comment chip** (the black
   bubble, `.widget-comment-chip`), which lives as a *sibling* of the widget
   shell inside `.widget-group`. Don't XPath on `contains(@class,'widget-group')`
@@ -124,9 +156,11 @@ radius is exactly the mutations the feature is made of.
 
 - **`waiting for locator('.widget-link-card')` timeout on `#/space/trip`**:
   the mock flag was inside the hash, so you're on the crew space (no web
-  post). Use the driver — it builds the URL correctly.
+  post). Use `drive` or the driver — both build the URL correctly.
 - **Driver clicks the card but no dock appears, `ctx.pages()` grew to 2**:
   you clicked the article anchor, which opened a new tab. Click the comment
   chip or the cover art instead.
+- **`drive` says `daemon … alive but not answering`**: `drive down`, then retry; read `.context/drive/daemon.log`.
+- **`ERROR go: <f>:<s> ready test id "x" never appeared`**: wrong room, a modal on top, or the id moved — `drive shot` and look.
 - **`No OurSpaces vite server found`**: dev server not up or on a port
   outside 5173-5176 — start it, or pass `PORT=<n>`.
