@@ -5,6 +5,8 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **The room brief (B1, 2026-10-04, night):** `convex/roomBrief.ts` builds a ≤640-char (≈237-token) brief per room from its own rows, no model: the real group (seeded cast, else whoever wrote/voted/made something), who's away, upcoming dates with the arithmetic done, poll leaders and RSVPs, who paid and claimed, the board by title, clocks, and habits that have 2+ sources. Cards the voice ask dealt never count as habits. Stored in the new `briefs` table (schema 7,982 chars; two long comments shortened to pay for it). Refreshed by the cron every 10 min (active rooms, plus once a day). `getBrief` (internal) is what the ask will read; `inspect` (public, read-only) gives the text, its age and a source per line for the dev inspector. **Not wired into `voiceBuild` yet** (the next small task). Offline A/B, 150 Lightning calls, in the local eval folder: the shipped shape makes 5 of 20 asks more specific, 12 no change, 3 worse; first line −17 ms median; Thomas's ten examples 0 hit / 2 partial / 8 miss. The brief knows the facts, but the deck can't say "already there", and code has to filter people by RSVP/away.
+
 - **Say it → it builds, first slice (2026-10-04, night):** the orb's finished ask now calls Nemotron Lightning on the dev lane (`convex/voiceBuild.ts` `deal`): one card per line, `applyCard` checks it, `placeCards` places it, `widgets.createWidget` commits it, so every screen in the room gets it. A dashed shell in the asker's colour marks the spot at end of speech, the camera pans to it, the card lands with a "<name> said it" tag, and a receipt reads `poll · Lightning · 718 ms` (end of speech → card on screen, measured in the browser; numbers also in the new `deals` table). `{"card":"none"}` or invalid → "couldn't place that". Mock runs a marked stand-in (`src/lib/deck/standIn.ts`). 17 real calls: median 718 ms screen, worst 1,850 (first after deploy). Feature file `features/voice-build.md`. Rough: chains ("plan our Tahoe weekend") come back as one card, sometimes invalid; the shell is poll-sized; the placement view ignores decorations drawn outside a widget's box; shell/receipt need a design pass.
 
 - **The deck (2026-10-04):** `src/lib/deck/` — 17 existing widgets as typed cards a model can deal, `applyCard` (model JSON → widget row, rejects with a reason), `placeCards` (pure placement), `deckPrompt` + streaming `parseDeal` in the spike's one-card-per-line format. Prompt ≈ 2.8k chars / ~714 tokens. Wired to the orb + Lightning (see "Say it → it builds" above); next: recipes for chains, plus check-in / standings / pills cards. Lab: `?mock=1&deck=8#/space/crew`.
@@ -1736,6 +1738,8 @@ Backward-looking history lives in `hackathon.md`.
   crew: `.context/recap-live-check.png`, `.context/recap-live-board.png`.
 
 ## Next up
+
+- **Wire the room brief into the ask:** `ctx.runQuery(internal.roomBrief.getBrief, { spaceId, now })` in `voiceBuild.deal`, prepended to `roomContext`. Then the guards the A/B says the model won't do: drop a dealt card whose title matches one on the board, filter wheel/split people by RSVP yes and away, drop unasked extra cards when a brief is attached. An `exists` answer (point at a card instead of re-dealing it) would turn examples 8 and 10 into hits.
 
 - **Accounts — plan written 2026-09-21, not started.** `docs/accounts.md`.
   Joined people keep name/colour/look on the `users` row and get it back on

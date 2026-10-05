@@ -77,8 +77,7 @@ export default defineSchema({
     // "global" | a widget id | "<widgetId>::q:<n>" for a question sub-thread —
     // a string, not v.id, because of the first two.
     widgetId: v.string(), userId: v.string(), text: v.string(), createdAt: v.number(),
-    // Author identity is copied, not joined: a live thread would pay a read
-    // per message per update, and the name stays what it was when sent.
+    // Author copied, not joined: no read per message per update.
     authorName: v.string(), authorColor: v.string(),
     authorEmoji: v.optional(v.string()), authorAvatarUrl: v.optional(v.string()),
     promotable: v.optional(v.boolean()), promotedWidgetId: v.optional(v.id("widgets")),
@@ -118,9 +117,7 @@ export default defineSchema({
     name: v.string(), color: v.string(), emoji: v.optional(v.string()), avatarUrl: v.optional(v.string()),
     // unset = canvas cursor; "cozy:<id>" = x/y normalized 0..1 on a board
     zone: v.optional(v.string()),
-    // Also the gesture lock: holding `gesture` for a widget means owning its
-    // drag, so "who is moving it" and "who may write it" are the same row
-    // (arbitration + TTL sweep in presence.ts).
+    // Also the gesture lock: holding it = owning the drag (presence.ts).
     gesture: v.optional(v.object({
       sessionId: v.string(), widgetId: v.id("widgets"), kind: v.union(v.literal("move"), v.literal("resize")),
       x: v.number(), y: v.number(), w: v.number(), h: v.number(), z: v.number(), updatedAt: v.number(),
@@ -133,6 +130,8 @@ export default defineSchema({
 
   // A voice ask's receipt numbers, JSON (voiceBuild.ts).
   deals: defineTable({ spaceId: v.id("spaces"), run: v.string() }).index("by_space", ["spaceId"]),
+  // Room brief for voice asks (roomBrief.ts); facts = evidence JSON.
+  briefs: defineTable({ spaceId: v.id("spaces"), text: v.string(), facts: v.string(), at: v.number() }).index("by_space", ["spaceId"]),
 
   // batch-worker queue: stale linkCards awaiting Firecrawl refresh.
   linkRefreshQueue: defineTable({

@@ -22,6 +22,11 @@ crons.cron("catch me up", "0 15 * * *", internal.recap.generateAll, {});
 // AgentMail inbox and ownership are never touched (docs/local/admin-reset.md).
 crons.cron("nightly room reset", "0 7 * * *", internal.admin.nightlyReset, {});
 
+// Every 10 minutes — rooms with activity since their brief, and each room once
+// a day (its dates say "in N days"), get a fresh brief, so a voice ask reads
+// one stored row instead of the board (roomBrief.ts).
+crons.interval("room briefs", { minutes: 10 }, internal.roomBrief.refreshActive, {});
+
 // Friday 17:00 UTC — enqueue stale linkCards for the batch-worker to refresh.
 crons.cron("refresh stale links", "0 17 * * 5", internal.batch.enqueueStaleLinkRefresh, {});
 

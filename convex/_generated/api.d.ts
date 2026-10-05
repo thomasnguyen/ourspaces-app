@@ -35,6 +35,7 @@ import type * as questions from "../questions.js";
 import type * as rag from "../rag.js";
 import type * as rateLimits from "../rateLimits.js";
 import type * as recap from "../recap.js";
+import type * as roomBrief from "../roomBrief.js";
 import type * as roomPresence from "../roomPresence.js";
 import type * as seed from "../seed.js";
 import type * as shootReset from "../shootReset.js";
@@ -84,6 +85,7 @@ declare const fullApi: ApiFromModules<{
   rag: typeof rag;
   rateLimits: typeof rateLimits;
   recap: typeof recap;
+  roomBrief: typeof roomBrief;
   roomPresence: typeof roomPresence;
   seed: typeof seed;
   shootReset: typeof shootReset;

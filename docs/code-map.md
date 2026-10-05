@@ -529,6 +529,7 @@ models for `agent.ts`/`rag.ts`/`similar.ts`) ·
 `routes` [each job's host + model] and `fileDryRun` [mail brain on a
 synthetic email, writes nothing]) ·
 `voiceBuild.ts` (say it → it builds: `deal` action streams Lightning with `deckPrompt`, `parseDeal` per line → `applyCard` → `placeCards` (anchor = the client's shell) → `widgets.createWidget`; one JSON row per ask in `deals`; `noteLanded` adds the browser's end-of-speech → card-on-screen ms; `recent` reads them) ·
+`roomBrief.ts` (the room brief a voice ask carries: `buildBrief` turns members, widgets, messages, votes and `deals` into ≤640 chars of facts, each line with its source rows; `refresh` stores it in `briefs`, the `room briefs` cron runs `refreshActive` every 10 min; `getBrief` [internal] is what the ask reads, `inspect` [public, read-only] adds age + per-line sources for a dev inspector, `preview` [internal] builds one by slug without storing. No model call) ·
 `agent.ts` (`askAgent`: `@convex-dev/agent` thread per space, backs
 `recap.ask`'s conversational memory) ·
 `rag.ts` (`@convex-dev/rag`: indexes a space's widgets + recent chat,
