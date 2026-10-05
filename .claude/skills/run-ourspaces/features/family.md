@@ -56,22 +56,19 @@ bathroom wheel Casey asked for, removed; Mina's told note about the dog).
 (`SPACE_DEFAULT_ACCENTS`) · chat in `src/data/chat.ts` (`FAMILY_GLOBAL`) ·
 `mina` → a face in `src/data/avatars.ts` · `EXAMPLE_COUNT = 4` in `Rail.tsx`.
 
-**Your turn (not built in this branch).** When the `your turn` feature
-lands, these are the family's tickets, one list per person, from the board:
+**Your turn (built, `src/lib/yourTurn.ts`).** Two family tickets come from
+the board's own data: **log today** (a check-in you're in with nothing from
+you today: "3 of 4 logged · you're 26 behind dev", opens the card) and
+**yours** (an open chore with your name on it, "casey: bathroom": one tap
+ticks it). With the seeded week that is Casey: log today's push-ups + the
+bathroom, and the soft "grab one" for laundry. The rest of the design list
+(bins Thursday, allowance Friday, judge Mina's form video, the 7am walk,
+nobody made a birthday list) lives in note text and isn't derived. Drive:
+`your-turn:casey`.
 
-| who | tickets |
-|---|---|
-| Casey | log today's push-ups (standings are face down until you do) · the bathroom, due Sunday · break the saturday tie: you're 26 behind dad |
-| Dev | bins go out Thursday · Casey is 26 behind and hasn't logged: your lead is one check-in deep · pay allowance Friday |
-| Alex | log from the hotel (you missed the flight day) · laundry mountain is unclaimed and you're back Thursday · judge Mina's form video |
-| Mina | walk biscuit, 7am · 5 for 5: don't break it · your birthday is in 11 days and nobody has made a list |
-
-**Seeding it for real (next task):** add a `family` space + these widgets
-to `convex/seed.ts`, add `checkIn` / `standings` validators to
-`convex/widgetData.ts` (shapes in the two card files), teach
-`convex/roomBrief.ts` to read a check-in (streaks → "takes things on",
-`revealAt` → "coming up"), and pass `onWidgetData` from `LiveSpace.tsx`
-to `Canvas` as `updateWidgetData`.
+**Live:** seeded on dev (see Get there); `roomBrief` reads the check-in
+(who's in, logged today, the lead, streaks, the stake, the reveal), the
+chore list's last week and "Alex is away till thursday".
 
 **Gotchas:** no family photos exist yet; the one photo is the crew's
 camera-roll table. The countdown card counts to midnight of the reveal

@@ -13,6 +13,7 @@ states:
   house: ?as=theo #/space/house | click dock-recap | wait your-turn | sleep 700
   couple: #/space/couple | click dock-recap | wait your-turn | sleep 700
   rail: ?as=Rio #/space/house | wait rail-turn
+  casey: ?as=casey #/space/family | click dock-recap | wait your-turn | sleep 700
   live: ?enter=1 | click dock-recap | wait your-turn | sleep 900
 take:
   clear: badge real 60fps 540f | 60 click dock-recap | 170 click css:.yt-item.is-top [data-choice="yes"] | 290 click css:.yt-item.is-top [data-choice="1"] | 410 click your-turn-go

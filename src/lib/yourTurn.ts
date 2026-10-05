@@ -8,6 +8,7 @@
  */
 import type { Widget } from "../data/types";
 import { widgetIsInsideFrame } from "./frameMembership";
+import { findPerson, isRevealed, loggableDay, logOf, rank, readCheckIn } from "./challenge";
 
 export type TurnStanding =
   /** part of the room: things can wait on them */
@@ -31,7 +32,7 @@ export type TurnMine = {
   answers: Record<string, string | undefined>;
 };
 
-export type TurnKind = "rsvp" | "poll" | "question" | "days" | "signup" | "wheel" | "letter";
+export type TurnKind = "rsvp" | "poll" | "question" | "days" | "signup" | "wheel" | "letter" | "checkin" | "chore";
 
 /** How the item is done from the stack: one choice, a typed line, or a trip. */
 export type TurnAct = "vote" | "rsvp" | "claim" | "days" | "answer" | "go";
@@ -258,8 +259,44 @@ export function yourTurn(input: TurnInput): TurnItem[] {
       continue;
     }
 
+    /* A challenge you're in and haven't logged today: your standings are face down until you do. */
+    if (widget.type === "checkIn" && !guest) {
+      const ci = readCheckIn(data);
+      const you = findPerson(ci, viewer.name);
+      const day = loggableDay(ci, new Date(now));
+      if (!you || day < 0 || isRevealed(ci, new Date(now)) || logOf(ci, you.name, day) != null) continue;
+      const inToday = ci.people.filter((p) => logOf(ci, p.name, day) != null).length;
+      const rows = rank(ci, day);
+      const yours = rows.find((r) => r.name === you.name);
+      const ahead = yours && yours.rank > 1 ? rows[yours.rank - 2] : undefined;
+      push(widget, {
+        kind: "checkin",
+        verb: "log today",
+        title: lower(ci.title) || "the check-in",
+        waiting: [`${inToday} of ${ci.people.length} logged`, ahead && ci.kind === "number" ? `you're ${ahead.total - yours!.total} behind ${lower(ahead.name)}` : "standings open when you do"].join(" · "),
+        act: "go",
+        choices: [],
+        base: 55,
+        answered: inToday,
+      });
+      continue;
+    }
+
     if (widget.type === "potluck") {
       const slots = listOf<{ name: string; by?: string | null; claimed?: boolean; byUserId?: string }>(data.items);
+      /* A job with your name on it ("casey: bathroom") is yours, not a sign-up. */
+      const named = slots.find((slot) => !slot.claimed && !guest && me && lower(slot.name).startsWith(`${me}:`));
+      if (named) {
+        push(widget, {
+          kind: "chore",
+          verb: "yours",
+          title: lower(named.name).slice(me.length + 1).trim() || lower(named.name),
+          waiting: lower(data.kicker) || `on ${lower(data.title) || "the list"}`,
+          act: "claim",
+          choices: [{ id: named.name, label: "done" }],
+          base: 45,
+        });
+      }
       const open = slots.filter((slot) => !slot.claimed);
       if (open.length === 0 || isFor(widget)) continue;
       if (slots.some((slot) => slot.claimed && isMe(slot.by, slot.byUserId))) continue;
