@@ -70,6 +70,8 @@ export type JigsawApi = {
     rows: RemotePiece[];
     /** resolves "wait" when the server gave the piece to someone else first */
     onLocal: (m: LocalMove) => Promise<string | void> | void;
+    /** the space's hand waiting on a person for this piece (the ghost) */
+    helper?: { piece: number; on: string } | null;
   };
 };
 

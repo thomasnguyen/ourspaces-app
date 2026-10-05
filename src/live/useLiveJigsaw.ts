@@ -1,7 +1,7 @@
 /**
  * The jigsaw in a live room: the same `JigsawApi` the mat reads in mock
- * mode, from Convex (`convex/puzzles.ts`). Real players only; the space's
- * hand is absent (its live behaviour is the Right of Way gate's task). Your
+ * mode, from Convex (`convex/puzzles.ts`). Real players; the space's hand
+ * is the server's scheduled helper (placed rows + `helper` = its waiting move). Your
  * moves go out as leased writes; a move is sent at most every 80 ms.
  */
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -18,6 +18,7 @@ type Room = {
   startedBy: { name: string; color: string };
   players: Array<{ name: string; color: string; userId: string }>;
   rows: Array<RemotePiece & { until: number; holderId: string | null }>;
+  helper: { piece: number; on: string } | null;
 } | null;
 
 export function useLiveJigsaw(o: {
@@ -68,7 +69,8 @@ export function useLiveJigsaw(o: {
     [drop, gameId, grab, identity.userId, move],
   );
   const rows = data?.rows;
-  const live = useMemo(() => (rows ? { rows, onLocal } : undefined), [rows, onLocal]);
+  const helper = data?.helper ?? null;
+  const live = useMemo(() => (rows ? { rows, onLocal, helper } : undefined), [rows, onLocal, helper]);
   const sims = useMemo(() => (data?.players ?? []).filter((p) => p.userId !== identity.userId).map(({ name, color }) => ({ name, color })), [data?.players, identity.userId]);
   const options = useMemo<JigsawOptions>(() => ({ players: 0, seed: (data?.startedAt ?? 7) % 100_000, pieces: data?.pieces ?? 20, you: "real", beat: "", hand: false }), [data?.startedAt, data?.pieces]);
 

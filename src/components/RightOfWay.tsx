@@ -193,11 +193,11 @@ export function HeldBack({ rows }: { rows: HeldBackRow[] }) {
         <ul>
           {rows.map((r) => {
             const o = r.outcome ? parse<{ state: string; ms: number; on: string; why?: string }>(r.outcome) : null;
-            const asked = `${r.by.toLowerCase()} asked: ${r.text || r.kind}`;
+            const asked = r.by === "the space" ? `the space's hand: ${r.text || r.kind}` : `${r.by.toLowerCase()} asked: ${r.text || r.kind}`;
             const line =
               r.verdict === "wait"
                 ? o
-                  ? `waited ${(o.ms / 1000).toFixed(1)} s for ${o.on.toLowerCase()} · ${o.state === "landed" ? "then it landed" : o.state === "expired" ? "gave up after 30 s" : o.state === "cancelled" ? "cancelled" : "dropped: it had changed"}`
+                  ? `waited ${(o.ms / 1000).toFixed(1)} s for ${o.on.toLowerCase()} · ${o.state === "landed" ? "then it landed" : o.state === "expired" ? "gave up after 30 s" : o.state === "cancelled" ? "cancelled" : `dropped: ${o.why ?? "it had changed"}`}`
                   : `waiting: ${r.reason}`
                 : r.kind === "build"
                   ? r.reason

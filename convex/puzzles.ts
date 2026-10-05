@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query, type MutationCtx } from "./_generated/server";
+import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { caller, type Who } from "./games";
 import { rightOfWay as door } from "./rightOfWay";
@@ -16,9 +17,16 @@ import { holdThing, leasesFrom, letGoThing } from "./leases";
  * "piece:<game>:<i>"), renewed while you drag, gone by itself a few seconds
  * after you stop (a closed laptop never locks a piece). Every grab asks the
  * Right of Way gate (src/lib/rightOfWay.ts) with the live leases.
+ *
+ * The space's helper hand (`helper`, a scheduled function, every 7 s while
+ * a puzzle is on): code picks the next loose piece, no model. It asks the
+ * one door to place it; if a person holds that piece the placement waits as
+ * a ghost at its home and lands when they let go (or is dropped if they
+ * placed it themselves). It never places the last piece.
  */
 
 const LEASE_MS = 4_000;
+const HELPER_EVERY_MS = 7_000;
 
 const pieceOf = (gameId: Id<"games">, i: number) => `piece:${gameId}:${i}`;
 /** The game's live piece leases. */
@@ -55,9 +63,11 @@ export const forRoom = query({
       leasesFrom(ctx, spaceId, `piece:${game._id}:`),
     ]);
     const holderOf = (i: number) => held.find((l) => l.thing === pieceOf(game._id, i) && l.letGoAt === undefined);
+    const waiting = await ctx.db.query("pending").withIndex("by_thing", (q) => q.eq("spaceId", spaceId).gte("thing", `piece:${game._id}:`).lt("thing", `piece:${game._id}:\uffff`)).take(4);
     return {
       id: game._id, phase: game.phase, photo: game.photo ?? "friday", pieces: game.known ?? 20, startedAt: game.startedAt,
       startedBy: { name: game.startedBy.name, color: game.startedBy.color },
+      helper: waiting.length ? { piece: Number(waiting[0].thing.split(":")[2]), on: (JSON.parse(waiting[0].on) as { name: string }).name } : null,
       players: players.map((p) => ({ name: p.name, color: p.color, userId: p.userId })),
       rows: rows.map((r) => {
         const h = holderOf(r.i);
@@ -83,6 +93,7 @@ export const start = mutation({
       cast: [{ name: me.name, color: me.color }], known: [12, 20, 30].includes(n) ? n : 20, photo: photo.slice(0, 40),
     });
     await ctx.db.insert("gamePlayers", { gameId, userId: me.userId, name: me.name, color: me.color, joinedAt: now, fromRound: 0 });
+    await ctx.scheduler.runAfter(HELPER_EVERY_MS, internal.puzzles.helper, { gameId });
     return { ok: true, gameId };
   },
 });
@@ -142,5 +153,36 @@ export const drop = mutation({
     await letGoThing(ctx, seat.game.spaceId, thing, seat.me.userId);
     if (placed && rows.filter((r) => r.placed).length + 1 >= (seat.game.known ?? 20)) await ctx.db.patch("games", gameId, { phase: "done" });
     return true;
+  },
+});
+
+/** The space's hand: one piece per tick through the one door. Code picks it (the lowest loose piece), never a model. */
+export const helper = internalMutation({
+  args: { gameId: v.id("games") },
+  returns: v.null(),
+  handler: async (ctx, { gameId }) => {
+    const game = await ctx.db.get("games", gameId);
+    if (!game || game.kind !== "jigsaw" || game.phase === "done") return null;
+    const total = game.known ?? 20;
+    const rows = await pieces(ctx, gameId);
+    const placed = rows.filter((r) => r.placed).length;
+    // the last one belongs to a person: stop one short
+    if (placed >= total - 1) return null;
+    const waiting = await ctx.db.query("pending").withIndex("by_thing", (q) => q.eq("spaceId", game.spaceId).gte("thing", `piece:${gameId}:`).lt("thing", `piece:${gameId}:\uffff`)).take(1);
+    if (!waiting.length) {
+      const i = [...Array(total).keys()].find((k) => !rows.some((r) => r.i === k && r.placed))!;
+      const thing = pieceOf(gameId, i);
+      const d = await door(ctx, {
+        kind: "puzzle", spaceId: game.spaceId, thing, by: { name: "the space" }, fields: [{ field: "piece", old: i, new: "placed" }],
+        text: `placed piece ${i + 1}`, finishes: placed + 1 >= total, replay: { kind: "puzzle", gameId, i, x: 0, y: 0 },
+      });
+      if (d.verdict === "go") {
+        const row = rows.find((r) => r.i === i);
+        if (row) await ctx.db.patch("puzzlePieces", row._id, { placed: true, by: "the space" });
+        else await ctx.db.insert("puzzlePieces", { gameId, i, x: 0, y: 0, placed: true, by: "the space" });
+      }
+    }
+    await ctx.scheduler.runAfter(HELPER_EVERY_MS, internal.puzzles.helper, { gameId });
+    return null;
   },
 });

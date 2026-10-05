@@ -172,6 +172,12 @@ const JigsawMat = memo(function JigsawMat(p: MatProps) {
     const t = window.setInterval(apply, 1000);
     return () => window.clearInterval(t);
   }, [engine, rows, sims]);
+  /* live: the space's hand waiting on someone (convex/puzzles.ts helper → the one door) */
+  const helper = p.live?.helper;
+  useEffect(() => {
+    if (p.live) engine.remoteGhost(helper ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine, helper?.piece, helper?.on]);
   useEffect(() => {
     document.body.classList.add("jg-on");
     return () => document.body.classList.remove("jg-on");
@@ -551,7 +557,7 @@ export function JigsawDev() {
   if (api.live)
     return (
       <p className="jg-dev" data-testid="jigsaw-dev">
-        jigsaw · live · {api.sims.length + 1} real players, nobody simulated · no space hand in live rooms (the Right of Way gate is the next task) · leases 4 s · {o.pieces} pieces · <span ref={el}>…</span>
+        jigsaw · live · {api.sims.length + 1} real players, nobody simulated · the space's hand: code picks the next loose piece every 7 s, no model, through the Right of Way gate (waits on a held piece, never the last) · leases 4 s · {o.pieces} pieces · <span ref={el}>…</span>
       </p>
     );
   return (

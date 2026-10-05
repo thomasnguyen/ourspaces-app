@@ -1577,6 +1577,8 @@ export function useVoiceBuild({
                   void vh.settled(out.writeId).then((o) => {
                     tr({ waited: `${(o.ms / 1000).toFixed(1)} s`, outcome: `${o.state}${o.why ? `: ${o.why}` : ""}${o.afterLetGo != null ? ` · ${o.afterLetGo} ms after ${o.on} let go` : ""}` });
                     publish(s);
+                    // the board's slip takes over from "waiting on …"
+                    setReply((r) => (r && r.traceKey === s.key ? null : r));
                   });
                 return;
               }

@@ -8,7 +8,9 @@
  * rule. Every pick-up and every placement, a person's or the space's, goes
  * through `rightOfWay` (lib/games/rightOfWay.ts).
  *
- * Live (`o.live`): nobody is simulated and the space's hand is absent. The
+ * Live (`o.live`): nobody is simulated; the space's hand runs on the server
+ * (convex/puzzles.ts `helper`, code, no model) and arrives as placed rows
+ * and `remoteGhost` while it waits on someone. The
  * other people's pieces arrive from Convex (`applyRemote`: where each piece
  * is and who holds it, a lease that runs out by itself); your own grabs,
  * moves and drops go out through `o.live.onLocal`. The same rule decides a
@@ -312,6 +314,19 @@ export class JigsawEngine {
     const p = this.pieces[id];
     this.drop(a, p, 0);
     this.refuse(p, a);
+  }
+
+  /** live: the space's placement waiting on a person (a pending write, convex/puzzles.ts `helper`): the ghost at the piece's home */
+  remoteGhost(g: { piece: number; on: string } | null) {
+    const cur = this.ghost;
+    if (g ? cur?.piece === g.piece && cur.on === g.on && !cur.leaving : !cur || cur.leaving) return;
+    if (g) this.ghost = { piece: g.piece, on: g.on };
+    else {
+      this.ghost = { ...cur!, leaving: true };
+      this.ghostGoneAt = this.t + 420;
+    }
+    this.space.waitingOn = g?.on ?? null;
+    this.emit();
   }
 
   /** live: the room's pieces as the server has them. Your own hand wins on your screen. */
