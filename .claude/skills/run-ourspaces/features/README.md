@@ -7,12 +7,12 @@ id named here exists in `src/`.
 | feature | room | states |
 |---|---|---|
 | [voice-orb](voice-orb.md) | crew dock | idle · open · quiet · loud · working · dock-listening (+ `-knot`) |
-| [voice-stage](voice-stage.md) | crew | poll · countdown · checklist · split · where · nokey · open · words · type · mid · complete · closing · landed · ask · ask-offer · room · already-found · already-landed |
+| [voice-stage](voice-stage.md) | crew | poll · countdown · checklist · split · where · nokey · open · words · type · mid · complete · closing · landed · ask · ask-offer · room · already-found · already-landed · live · livefacts · livealready · livehesitate (lane) |
 | [wheel](wheel.md) | house | idle · spinning · landed |
 | [recap](recap.md) | crew dock | closed · open · landed |
 | [dock](dock.md) | crew dock | idle · sound · recap |
 | [deck](deck.md) | crew board | one · four · eight · beside |
-| [your-turn](your-turn.md) | crew dock (✦ key + recap panel) | badge · rio · ash · guest · mid · next · more · house · couple · rail |
+| [your-turn](your-turn.md) | crew dock (✦ key + recap panel) | badge · rio · ash · guest · mid · next · more · house · couple · rail · live (lane) |
 | [voice-build](voice-build.md) | crew (lane) | room · ask · hesitate · drawer · mock · shell · mockdrawer · gate · say |
 | [room-brain](room-brain.md) | crew, house, couple | door · open · visit · forget · told · empty · live |
 

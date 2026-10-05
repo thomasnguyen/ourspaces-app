@@ -13,6 +13,7 @@ states:
   house: ?as=theo #/space/house | click dock-recap | wait your-turn | sleep 700
   couple: #/space/couple | click dock-recap | wait your-turn | sleep 700
   rail: ?as=Rio #/space/house | wait rail-turn
+  live: ?enter=1 | click dock-recap | wait your-turn | sleep 900
 take:
   clear: badge real 60fps 540f | 60 click dock-recap | 170 click css:.yt-item.is-top [data-choice="yes"] | 290 click css:.yt-item.is-top [data-choice="1"] | 410 click your-turn-go
 ---
@@ -48,6 +49,22 @@ function over the widgets the room already loaded. Per widget type:
 
 Order: hard before soft, then urgency = kind + a date (the countdown sharing
 the card's frame) + how much of the room has already answered.
+
+**Live rooms (lane):** `LiveSpace.tsx` reads every poll's votes with one
+query, `votes.inSpace` (same rows and scoping as `votes.getResults`; the
+board itself still subscribes to the first poll only), so every poll, RSVP,
+question and availability card can make a ticket. **Member = email-joined**
+(`useAccount().joined`): everything waiting on them, orange count. **Silent
+guest** (anyone with the link who hasn't joined): nothing is on them, so a
+white count and `jump in`: three starters, one of each kind, never a
+backlog, and the ticket lines say how many answered without "waiting on
+you". Doing one works the same for both. A card the voice ask just built
+(a poll, an RSVP, a question, an availability) becomes a ticket for everyone
+else in the room on their next render; nothing is pushed. **Rail counts are
+mock-only** (`?as=`): live rooms pass no `waiting` to `Rail`, so no
+number shows on another room's tile. A voice ask closes catch me up (and
+its tickets) as the orb wakes, so the card lands on a clear board. State
+`live` = the guest view; the member view needs a joined browser (`.context/m1/member.mjs`).
 
 **Get there:** any room; `?as=<name>` plays the mock room as a fixture person
 (`Rio` has four things, `Ash` has the cake vote, `Maya` none, `theo` in the house has the wheel).

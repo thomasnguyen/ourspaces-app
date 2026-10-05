@@ -147,6 +147,9 @@ const KIND_LABEL: Record<ResolveNote["kind"], string> = {
 };
 
 /** The route in two or three words, for the readout. */
+/** Mock never calls a model: its readout must not name a route and a model mid-ask either. */
+const MOCK = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("mock");
+
 function routeLabel(t: AskTrace): string | null {
   if (!t.route) return null;
   return t.route.route === "brain" ? "room facts · Ultra" : "plain · Lightning";
@@ -523,7 +526,7 @@ export function VoiceBuildLayer({
               </span>
               <span>nothing written</span>
             </>
-          ) : latest.model === null && latest.done ? (
+          ) : latest.model === null && (latest.done || MOCK) ? (
             <span>simulated from measurements · no model ran</span>
           ) : (
             <>

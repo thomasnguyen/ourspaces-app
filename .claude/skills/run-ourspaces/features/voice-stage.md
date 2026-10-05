@@ -87,7 +87,7 @@ counts down to) gets an orange pip and the card a line under it
 **Already here.** The words name a card the board already has ("add a poll
 for cake flavor"). The check is the build's own ([voice-build](voice-build.md):
 code's match, then the model's yes/no; mock: code's match alone). The stage
-keeps the card it was showing, says "already on the board"
+swaps its card for the one on the board (`setVoiceStageBoard`, set by both room pages), says "already on the board"
 (`voice-stage-found`), then that card travels to the one on the board and
 melts into it, and the build's pulse and "already here" slip play there.
 Nothing is written.
@@ -104,6 +104,16 @@ per number: measured / derived / code / assumed / design, with its source).
 `&slow=3` plays it all at a third of the speed. `&timing=1` shows
 `voice-stage-beats`: the table's number beside this run's, from the last
 word, headed "simulated from measurements · no model ran" in mock.
+
+**Live (lane):** states `live` (a plain ask), `livefacts` ("who's driving to
+Maya's": a wheel of the four from the room), `livealready` ("add a poll for
+cake flavor": flies to the board's poll, nothing written), `livehesitate`;
+takes of the same names (`drive take voice-stage:livefacts --real`). They
+write real cards to the dev crew board: sweep them after. No card fits:
+the stage waits on its skeleton-less ring, then closes and the dock says
+"couldn't place that". The finish key (`voice-stage-finish`) ends the ask
+on the words so far. Sounds: `promote` once as the orb wakes, `place`
+once as the card lands (finish adds a `tap`).
 
 **Drive:** `ask` (asked, offers up) · `ask-answered` (a take: asked, then
 the rest is said) · `ask-offer` (an offer tapped) · `room` (sources line)

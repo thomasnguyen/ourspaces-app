@@ -436,7 +436,7 @@ so every patch re-runs both for every connected client) ·
 UpdateNudge subscribes to; must keep this filename, the hook resolves it by
 path) ·
 `messages.ts` (per-widget threads, real cursor pagination, `search` full-text
-query, `messagesCounter`) · `votes.ts` (`pollTallies` aggregate + `vote`) ·
+query, `messagesCounter`) · `votes.ts` (`pollTallies` aggregate + `vote`; `inSpace` = every poll's votes in a room, for "your turn") ·
 `presence.ts` (hand-rolled canvas cursors + gesture-lock arbitration, TTLs —
 also exports a `disconnect` adapter that belongs to `roomPresence`: the
 presence hook's goodbye beacon posts to the hardcoded path
@@ -612,4 +612,4 @@ scale, stagger, FLIP, and which moments earn cinematic treatment. Read it
 before any UI work; skip it if a clone doesn't have it. Token names are
 mirrored publicly in `docs/tokens.md`.
 
-`lib/yourTurn.ts` + `components/YourTurn.tsx` (+ `yourTurn.css`) — "your turn": what on the board waits on one person, computed from loaded widgets (never stored), shown as a count on the dock ✦ key and a "waiting on you" section at the top of the recap panel (portalled in, no ActionDock edit); mounted once in `App.tsx` (mock, `?as=<name>`) and once in `pages/LiveSpace.tsx`; `Rail` takes an optional `waiting` count. Feature file: `features/your-turn.md`.
+`lib/yourTurn.ts` + `components/YourTurn.tsx` (+ `yourTurn.css`) — "your turn": what on the board waits on one person, computed from loaded widgets (never stored), shown as a count on the dock ✦ key and a "waiting on you" section at the top of the recap panel (portalled in, no ActionDock edit); mounted once in `App.tsx` (mock, `?as=<name>`) and once in `pages/LiveSpace.tsx` (every poll via `votes.inSpace`; member = email-joined, silent guest = three "jump in" starters); `Rail` takes an optional `waiting` count. Feature file: `features/your-turn.md`.
