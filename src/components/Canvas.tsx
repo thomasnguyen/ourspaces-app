@@ -113,6 +113,7 @@ export function Canvas({
   widgets: widgetsProp,
   cursors: cursorsProp,
   labPeers = null,
+  overlay = null,
   onClaim,
   claimantId,
   onWheelSpin,
@@ -184,6 +185,8 @@ export function Canvas({
   cursors?: CanvasCursor[];
   /** `?peers=N` on a mock space: hands that aren't anyone (src/live/labPeers.ts) */
   labPeers?: LabPeerFeed | null;
+  /** drawn on the board above the cards, in board coordinates (the jigsaw) */
+  overlay?: ReactNode;
   members?: SpaceMember[];
   spaceName?: string;
   hereCount?: number;
@@ -529,6 +532,8 @@ export function Canvas({
           className={cursor.userId === arrivalPeerId ? "is-new-arrival" : ""}
         />
       ))}
+
+      {overlay}
 
       {placingItem && viewportRef && onPlaceItem && onPlaceCancel && (
         <PlacementGhost

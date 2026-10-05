@@ -309,7 +309,9 @@ export function yourTurn(input: TurnInput): TurnItem[] {
         verb: "join",
         title: `${lower(data.startedBy)} started ${lower(data.name)}`,
         waiting:
-          data.phase === "invite"
+          typeof data.waiting === "string"
+            ? data.waiting
+            : data.phase === "invite"
             ? `${players.length} in, starting any second`
             : `${players.length} playing, round ${Number(data.round)} of ${Number(data.rounds)}. jump in`,
         act: "join",

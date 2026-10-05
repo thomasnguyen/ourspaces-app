@@ -1,7 +1,14 @@
 /** The small pieces every game surface draws with: a face, an award sticker. */
-import type { CSSProperties } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { getAvatarSrc } from "../../data/avatars";
 import type { Award, GamePerson } from "../../lib/games/types";
+
+/** An invitation outranks the first-visit demo notice: while one is showing, the notice steps aside. */
+export function useNoticeAside(showing: boolean) {
+  useEffect(() => {
+    if (showing) document.querySelector<HTMLDialogElement>('dialog[data-testid="demo-waitlist-dialog"][open]')?.close();
+  }, [showing]);
+}
 
 /** Ink that reads on a flat identity colour. */
 export function inkOn(color: string): string {

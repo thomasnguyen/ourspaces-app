@@ -117,6 +117,9 @@ import { YourTurn, goToTurnWidget } from "./components/YourTurn";
 import { GameDoor, GameInvite, GameSheet, GameSheetTab } from "./components/games/GameInvite";
 import { GAME_WIDGET_ID, GamesProvider, SCOREBOARD_WIDGET_ID, useMockGames, type CastPerson } from "./lib/games/useMockGames";
 import { GAME_SPOTS, hasGames } from "./data/games";
+import { JigsawDev, JigsawInvite, JigsawSheet, JigsawWorld } from "./components/games/Jigsaw";
+import { JigsawProvider, useMockJigsaw, withJigsaw, JIGSAW_WIDGET_ID } from "./lib/jigsaw/useMockJigsaw";
+import { hasJigsaw } from "./data/jigsaw";
 import { mockViewer, mockWaitingByRoom, playAsOverrides, yourTurn } from "./lib/yourTurn";
 
 const CursorLab = lazy(() =>
@@ -2047,10 +2050,14 @@ export default function App() {
     },
     [gameCastOf, tabIdentity.color],
   );
-  const games = useMockGames({ room: spaceId, meOf: gameMeOf, castOf: gameCastOf, flyTo: goToTurnWidget });
+  const gamesOnly = useMockGames({ room: spaceId, meOf: gameMeOf, castOf: gameCastOf, flyTo: goToTurnWidget });
+  /* the jigsaw: its own mat on the board; what it leaves joins the same scoreboard */
+  const jigsaw = useMockJigsaw({ room: spaceId, meOf: gameMeOf, castOf: gameCastOf, flyTo: goToTurnWidget });
+  const games = withJigsaw(gamesOnly, jigsaw);
+  const jigsawOverlay = useMemo(() => <JigsawWorld />, []);
   const gameWidgets: Widget[] = hasGames(spaceId)
     ? [
-        { id: SCOREBOARD_WIDGET_ID, type: "scoreboard", ...GAME_SPOTS[spaceId].board, w: 300, h: 110 + 49 * Math.min(7, games.rows.length) + 96, z: 4, data: { title: "scoreboard" } },
+        { id: SCOREBOARD_WIDGET_ID, type: "scoreboard", ...GAME_SPOTS[spaceId].board, w: 300, h: 110 + 49 * Math.min(7, games.rows.length) + 96 + (hasJigsaw(spaceId) ? 44 : 0), z: 4, data: { title: "scoreboard" } },
         ...(games.game
           ? [
               {
@@ -2095,8 +2102,13 @@ export default function App() {
   visibleWidgetsRef.current = visibleWidgets;
   const turnMembers = baseSpace.members.map((member) => member.name);
   const turnViewer = mockViewer(turnMembers);
+  /* a puzzle you're not in is an invitation too: the same "your turn" ticket */
+  const jigsawRun = jigsaw.run?.phase === "on" && !jigsaw.run.result && !jigsaw.run.joined ? jigsaw.run : undefined;
+  const jigsawTicket: Widget[] = jigsawRun
+    ? [{ id: JIGSAW_WIDGET_ID, type: "game", x: 0, y: 0, w: 0, h: 0, z: 0, data: { title: "a puzzle", name: "a puzzle", phase: "round", startedBy: jigsawRun.startedBy.name, players: jigsaw.sims.map((sim) => sim.name), youIn: false, waiting: `${jigsaw.placed} of ${jigsaw.options.pieces} pieces in. jump in` } }]
+    : [];
   const turnItems = yourTurn({
-    widgets: visibleWidgets,
+    widgets: [...visibleWidgets, ...jigsawTicket],
     members: turnMembers,
     viewer: turnViewer,
     mine: {
@@ -2236,6 +2248,7 @@ export default function App() {
 
   return (
     <GamesProvider value={games}>
+    <JigsawProvider value={jigsaw}>
     <main
       className={`paper-bg relative h-dvh overflow-hidden ${
         chatOpen ? "has-chat-open" : ""
@@ -2457,6 +2470,7 @@ export default function App() {
               promoted={promoted}
               onPromote={promoteMessage}
               addedWidgets={[...voiceAddedWidgets, ...gameWidgets]}
+              overlay={jigsawOverlay}
               widgetPlacements={widgetPlacements[spaceId] ?? {}}
               widgetDataOverrides={{
                 ...playAsOverrides(baseSpace.widgets, turnViewer),
@@ -2685,9 +2699,12 @@ export default function App() {
         onAnswer={answerDailyQ}
         onClaim={claimSlot}
         onDays={addMyDays}
-        onJoin={games.join}
+        onJoin={jigsawRun && !(games.game && games.game.phase !== "done") ? jigsaw.join : games.join}
       />
       <GameInvite />
+      <JigsawInvite />
+      <JigsawSheet />
+      <JigsawDev />
       <GameSheetTab />
       <GameSheet />
       <ActionDock
@@ -2773,6 +2790,7 @@ export default function App() {
       )}
       <RoomKnowsPage slug={spaceId} roomName={activeSpaceCustomization.name} knows={mockKnows} self={tabIdentity} onChange={correctMockKnows} fixture />
     </main>
+    </JigsawProvider>
     </GamesProvider>
   );
 }

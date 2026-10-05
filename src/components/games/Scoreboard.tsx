@@ -10,6 +10,7 @@ import type { SeeLock } from "../../lib/answerToSee";
 import type { ScoreRow } from "../../lib/games/types";
 import { useGames } from "../../lib/games/useMockGames";
 import { AwardSticker, byStyle, GameFace } from "./parts";
+import { JigsawStart } from "./Jigsaw";
 import "./games.css";
 
 const LOCK: SeeLock = { until: { answered: true }, hides: "ranking", revealsTo: "each" };
@@ -81,6 +82,7 @@ export function Scoreboard() {
       <footer className="sb-foot" style={{ "--n": rows.length } as CSSProperties}>
         <span className="sb-slot">the challenge · standings land here</span>
         {start}
+        <JigsawStart />
       </footer>
     </section>
   );

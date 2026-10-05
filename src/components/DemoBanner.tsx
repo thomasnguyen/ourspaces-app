@@ -24,7 +24,8 @@ export function DemoBanner({ onJoinWaitlist }: { onJoinWaitlist?: (email: string
   }
 
   useEffect(() => {
-    if (!sessionStorage.getItem("ourspaces-demo-notice-seen")) {
+    /* a link that drops you into a game doesn't open on the notice */
+    if (!sessionStorage.getItem("ourspaces-demo-notice-seen") && !/[?&](game|jigsaw)=/.test(window.location.search)) {
       dialog.current?.showModal();
     }
   }, []);

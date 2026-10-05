@@ -8,13 +8,16 @@
 import { isIn } from "../../lib/games/engine";
 import { SCOREBOARD_WIDGET_ID, useGames } from "../../lib/games/useMockGames";
 import { GameCard } from "./GameCard";
-import { AwardSticker, byStyle, GameFace } from "./parts";
+import { useJigsaw } from "../../lib/jigsaw/useMockJigsaw";
+import { AwardSticker, byStyle, GameFace, useNoticeAside } from "./parts";
 import "./games.css";
 
 export function GameInvite() {
   const api = useGames();
   const game = api?.game;
-  if (!api || !game || game.phase === "done" || api.inviteHidden || isIn(game, api.me.name)) return null;
+  const showing = Boolean(api && game && game.phase !== "done" && !api.inviteHidden && !isIn(game, api.me.name));
+  useNoticeAside(showing);
+  if (!api || !game || !showing) return null;
   const lobby = game.phase === "invite";
   const left = game.phaseEndsAt ? Math.max(0, Math.ceil((game.phaseEndsAt - api.now) / 1000)) : undefined;
   return (
@@ -42,9 +45,17 @@ export function GameInvite() {
     is on it says so and takes you to it (joining if you aren't in). */
 export function GameDoor({ onGo }: { onGo: (widgetId: string) => void }) {
   const api = useGames();
+  const jig = useJigsaw();
   if (!api || !api.gameName) return null;
   const game = api.game;
   const on = game && game.phase !== "done";
+  /* a puzzle on the board is a game that's on, too */
+  if (!on && jig?.run?.phase === "on")
+    return (
+      <button type="button" className="gm-door is-on" data-testid="game-door" onClick={() => jig.start()}>
+        <i aria-hidden="true">▶</i>a puzzle is on
+      </button>
+    );
   return (
     <button
       type="button"
