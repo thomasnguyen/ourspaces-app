@@ -24,7 +24,8 @@
  * | # | the write                                        | held by           | verdict                  |
  * |---|--------------------------------------------------|-------------------|--------------------------|
  * | 1 | it overrides others' choices (3 voted for pizza) | anyone or nobody  | ask(those people, stake) |
- * |1b | it overrides only the asker's own choice         | (rows 3-10)       | on to the rows below     |
+ * |   | (a link's write too, lib/deck/edits.ts linkChoice; a choice that names no id is never the asker's own)    |
+ * |1b | it overrides only the asker's own choice (by id) | (rows 3-10)       | on to the rows below     |
  * |1c | an edit code refused for another reason          | anyone or nobody  | never(the refusal)       |
  * | 2 | the space places the last puzzle piece           | anyone or nobody  | never(last one is ours)  |
  * | 3 | a write to a card nobody holds                   | nobody            | go                       |
@@ -62,14 +63,12 @@ export type Verdict = { kind: "go"; handover?: true } | { kind: "ask"; who: Choi
 const own = (l: Lease, by: Hand) =>
   l.by.kind === "space" ? by.kind === "space" : by.kind === "person" ? by.id === l.by.id : by.asker === l.by.id;
 
-/** The choice is the writer's own: the person themself, or the asker (by id, or by name where the card only knows names). */
-const chose = (p: { id?: string; name: string }, by: Hand) => {
-  const name = p.name.trim().toLowerCase();
-  // an id the card knows decides it: a second seat with the same name is someone else (eval/right-of-way X31-X33)
-  if (p.id !== undefined) return p.id === (by.kind === "person" ? by.id : by.asker);
-  if (by.kind === "person") return name === by.name.trim().toLowerCase();
-  return by.askerName !== undefined && name === by.askerName.trim().toLowerCase();
-};
+/**
+ * The choice is the writer's own: the same id (the door resolves every seat to its account first, so a guest seat
+ * folded into an account is that account). A row with only a name is nobody's own: a second seat can take any name
+ * (eval/right-of-way X30, X53), so the person confirms on the card instead.
+ */
+const chose = (p: { id?: string; name: string }, by: Hand) => p.id !== undefined && p.id === (by.kind === "person" ? by.id : by.asker);
 
 export function rightOfWay(write: Write, leases: readonly Lease[]): Verdict {
   const who = write.choice?.people.filter((p) => !chose(p, write.by)) ?? [];
@@ -103,7 +102,13 @@ export const CASES: { n: number | string; name: string; write: Write; leases: Le
   { n: 1, name: "the asker is one of 3 voters: ask the other 2", write: { thing: "poll", by: tara, choice: voted(["u-tara", "u-sam", "u-jo"]) }, leases: [], want: "ask" },
   { n: 1, name: "choices first: others voted, the asker holds the card", write: { thing: "poll", by: tara, choice: voted(["u-holly"]) }, leases: [held("poll", { kind: "person", id: "u-tara", name: "tara" })], want: "ask" },
   { n: "1b", name: "only the asker's own vote", write: { thing: "poll", by: tara, choice: voted(["u-tara"]) }, leases: [], want: "go" },
-  { n: "1b", name: "only the asker's own claim, by name", write: { thing: "list", by: tara, choice: { stake: "tara has towels", people: [{ name: "Tara" }] } }, leases: [], want: "go" },
+  { n: "1b", name: "only the asker's own claim, by id", write: { thing: "list", by: tara, choice: { stake: "tara has towels", people: [{ id: "u-tara", name: "Tara" }] } }, leases: [], want: "go" },
+  // R4: the misses R3 named (eval/right-of-way X23 X30 X34 X35 X36 X53), as rows
+  { n: 1, name: "a claim with only the asker's name: not provably hers (X30, X53)", write: { thing: "list", by: tara, choice: { stake: "tara has towels", people: [{ name: "Tara" }] } }, leases: [], want: "ask" },
+  { n: 1, name: "a link over a hand-set date (X36)", write: { thing: "countdown", by: { kind: "space", askerName: "link" }, choice: { stake: "holly set fri oct 16 by hand", people: [{ id: "u-holly", name: "holly" }] } }, leases: [], want: "ask" },
+  { n: 1, name: "a link re-split that lowers a payment (X35)", write: { thing: "split", by: { kind: "space", askerName: "link" }, choice: { stake: "maya paid $200", people: [{ id: "u-maya", name: "Maya" }] } }, leases: [], want: "ask" },
+  { n: 1, name: "a passed vote resent: only the vote cast since it opened is in the way (X34)", write: { thing: "poll", by: tara, choice: voted(["u-jo"]) }, leases: [], want: "ask" },
+  { n: 5, name: "the asker's other seat, folded into her account (the door resolves it; X23 when linked)", write: { thing: "poll", by: tara }, leases: [held("poll", { kind: "person", id: "u-tara", name: "tara" })], want: "go" },
   { n: "1b", name: "a passed vote, nobody holds it", write: { thing: "poll", by: tara }, leases: [], want: "go" },
   { n: "1b", name: "a passed vote while holly holds it (composed)", write: { thing: "poll", by: tara }, leases: [held("poll")], want: "wait" },
   { n: "1c", name: "edit code refused", write: { thing: "poll", by: tara, refused: "a poll needs two options" }, leases: [], want: "never" },

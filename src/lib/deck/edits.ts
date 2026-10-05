@@ -217,10 +217,10 @@ export function applyEdit(w: { type: string; data: Record<string, unknown> }, op
       return done({ ...d, splits: resplit([...rows, { name, owes: 0, paid: 0 }], d.total) }, `added ${low(name)}`, name, { op: "removePerson", value: name });
     }
     case "removePerson": {
-      const rows = (d.splits as { name: string; owes: number; paid: number }[] | undefined) ?? [];
+      const rows = (d.splits as SplitRow[] | undefined) ?? [];
       const hit = rows.find((r) => low(r.name) === low(str));
       if (!hit) return fail(`${str} isn't on the split`);
-      if (hit.paid > 0 && !consent) return conflict({ key: `person:${low(hit.name)}`, stake: `${low(hit.name)} paid $${hit.paid}`, ask: `take ${low(hit.name)} off the split?`, people: [{ name: hit.name, why: `paid $${hit.paid}` }] });
+      if (hit.paid > 0 && !consent) return conflict({ key: `person:${low(hit.name)}`, stake: `${low(hit.name)} paid ${hit.paid}`, ask: `take ${low(hit.name)} off the split?`, people: [{ ...(hit.userId ? { id: hit.userId } : {}), name: hit.name, why: `paid ${hit.paid}` }] });
       if (rows.length <= 2) return fail("a split needs two people");
       return done({ ...d, splits: resplit(rows.filter((r) => r !== hit), d.total) }, `took ${low(hit.name)} off`, low(hit.name), { op: "addPerson", value: hit.name }, hit.paid > 0 ? { note: `${low(hit.name)}'s $${hit.paid} is off the split · settle it by hand`, people: 1 } : undefined);
     }
@@ -236,8 +236,10 @@ export function applyEdit(w: { type: string; data: Record<string, unknown> }, op
       const logs = (d.logs as Record<string, (number | null)[]> | undefined) ?? {};
       // the people with a check-in logged past the new last day
       const past = Object.entries(logs).filter(([, r]) => r.slice(n).some((x) => x !== null && x !== undefined));
+      // the id a logger's row carries (convex/checkIns.ts stamps it on their first log)
+      const idOf = (name: string) => ((d.people as { name: string; userId?: string }[] | undefined) ?? []).find((p) => p.name === name)?.userId;
       if (past.length && !consent)
-        return conflict({ key: "days", stake: `${named(past.length, low(past[0][0]))} logged past day ${n}`, ask: `cut ${low(d.title) || "the challenge"} to ${n} days?`, people: past.map(([name, r]) => ({ name, why: `logged day ${r.reduce<number>((last, x, i) => (x !== null && x !== undefined ? i + 1 : last), 0)}` })) });
+        return conflict({ key: "days", stake: `${named(past.length, low(past[0][0]))} logged past day ${n}`, ask: `cut ${low(d.title) || "the challenge"} to ${n} days?`, people: past.map(([name, r]) => ({ ...(idOf(name) ? { id: idOf(name) } : {}), name, why: `logged day ${r.reduce<number>((last, x, i) => (x !== null && x !== undefined ? i + 1 : last), 0)}` })) });
       const start = String(d.start ?? ctx.today);
       const cut = past.length ? { logs: Object.fromEntries(Object.entries(logs).map(([k, r]) => [k, r.slice(0, n)])) } : {};
       return done({ ...d, days: n, revealAt: revealOf(start, n), ...cut }, `${n} days now`, `${n}`, { op: "setDays", value: Number(d.days ?? n) }, past.length ? { note: `days ${n + 1}+ cleared · ${people(past.length)}'s logs`, people: past.length } : undefined);
@@ -270,8 +272,40 @@ function mergeWhen(old: string, said: string): string {
   const o = whenOf(old) ?? {};
   return [n.day ?? o.day, n.time ?? o.time].filter(Boolean).join(" ");
 }
+/** A split row; `userId` where the person is known by account (the cabin flow's link and mail payments stamp it). */
+type SplitRow = { name: string; userId?: string; owes: number; paid: number };
+
+/**
+ * A link's write (convex/links.ts) seen the way an edit is: the choices it would undo. Only two link kinds can
+ * touch one: the day-finder's date over a date someone set by hand (asked, with the edit that would land it), and a
+ * re-split that lowers or drops a payment (links.ts `splitAmong` never writes one; this is the check behind it).
+ * The rest fill a source id, a wheel's slices or a title whose time stays, which no one chose.
+ */
+export function linkChoice(w: { type: string; data: Record<string, unknown> }, patch: Record<string, unknown>): (Choice & { op?: EditOp }) | undefined {
+  if (w.type === "countdown" && typeof patch.targetDate === "string") {
+    const op = { op: "setDate", value: patch.targetDate.slice(0, 10) };
+    const r = applyEdit(w, op, { today: "" });
+    return !r.ok && r.choice ? { ...r.choice, op } : undefined;
+  }
+  if (w.type !== "expenseSplit" || !Array.isArray(patch.splits)) return undefined;
+  const next = patch.splits as SplitRow[];
+  const lost = ((w.data.splits as SplitRow[] | undefined) ?? []).filter((r) => r.paid > 0 && !next.some((x) => same1(x, r) && x.paid >= r.paid));
+  if (!lost.length) return undefined;
+  return { key: "paid", stake: `${named(lost.length, low(lost[0].name))} paid into it`, ask: "re-split it without their payments?", people: lost.map((r) => ({ ...(r.userId ? { id: r.userId } : {}), name: r.name, why: `paid ${r.paid}` })) };
+}
+/** The same split row: by id when both carry one, else by name. */
+const same1 = (a: { name: string; userId?: string }, b: { name: string; userId?: string }) => (a.userId && b.userId ? a.userId === b.userId : low(a.name) === low(b.name));
+
+/** The cabin flow (links.ts "yes"): the split among whoever said yes. New people join; a row someone paid into stays as it is. */
+export function splitAmong(yes: { name: string; userId?: string }[], d: Record<string, unknown>): SplitRow[] {
+  const rows = (d.splits as SplitRow[] | undefined) ?? [];
+  const kept = rows.filter((r) => r.paid > 0 || yes.some((y) => same1(y, r)));
+  const added = yes.filter((y) => !rows.some((r) => same1(y, r))).map((y) => ({ name: y.name, ...(y.userId ? { userId: y.userId } : {}), owes: 0, paid: 0 }));
+  return resplit([...kept, ...added], d.total);
+}
+
 /** Even shares of the total; what each already paid comes off their share. */
-function resplit(rows: { name: string; owes: number; paid: number }[], total: unknown) {
+function resplit<R extends { owes: number; paid: number }>(rows: R[], total: unknown) {
   const sum = Number(total) || rows.reduce((a, r) => a + r.paid + r.owes, 0);
   const share = Math.round(sum / Math.max(1, rows.length));
   return rows.map((r) => ({ ...r, owes: Math.max(0, share - r.paid) }));

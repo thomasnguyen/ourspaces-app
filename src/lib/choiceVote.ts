@@ -35,12 +35,20 @@ export type Outcome =
 /** A voter's key on the ballot: their id where the card knows it, else their name. */
 export const voterKey = (p: Voter) => p.id ?? `name:${p.name.trim().toLowerCase()}`;
 
-/** Is this person (a screen's user id and name) one of the voters? Their key if so. */
-export function voterOf(voters: readonly Voter[], userId: string, name: string): string | null {
-  const low = name.trim().toLowerCase();
-  const hit = voters.find((p) => p.id === userId) ?? voters.find((p) => p.id === undefined && p.name.trim().toLowerCase() === low);
+/**
+ * Is this person (a screen's user id) one of the voters? Their key if so. By id only (R4): a voter the card knew
+ * only by name can't be answered for by whoever takes that name, so their vote runs out and keeps it as it is.
+ */
+export function voterOf(voters: readonly Voter[], userId: string, _name?: string): string | null {
+  const hit = voters.find((p) => p.id !== undefined && p.id === userId);
   return hit ? voterKey(hit) : null;
 }
+
+/** The choices in the way now that a vote didn't ask about: made since it opened (choiceVotes.ts `land`, R4). */
+export const since = <P extends Voter>(voters: readonly Voter[], now: readonly P[]) => {
+  const asked = new Set(voters.map(voterKey));
+  return now.filter((p) => !asked.has(voterKey(p)));
+};
 
 export function tally(voters: readonly Voter[], options: readonly { id: string }[], answers: readonly Answer[], expired = false): Outcome {
   const keys = new Set(voters.map(voterKey));

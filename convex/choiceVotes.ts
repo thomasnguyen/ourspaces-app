@@ -5,7 +5,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { applyEdit, fieldsOf, type Choice, type EditOp } from "../src/lib/deck/edits";
 import { rightOfWay as gate } from "../src/lib/rightOfWay";
-import { KEEP, MAX_OPTIONS, tally, voterKey, voterOf } from "../src/lib/choiceVote";
+import { KEEP, MAX_OPTIONS, since, tally, voterKey, voterOf } from "../src/lib/choiceVote";
 import { cardCtx, commitEdit, rightOfWay } from "./rightOfWay";
 
 /**
@@ -73,6 +73,9 @@ export async function openVote(
 async function close(ctx: MutationCtx, vote: Vote, state: string, why: string, extra: Partial<Vote> = {}) {
   const now = Date.now();
   await ctx.db.patch(vote._id, { state, why, closedAt: now, ...extra });
+  // a link that opened it (links.ts writeLinked) is done: a passed change lands as the edit below, a kept choice stays
+  for (const l of await ctx.db.query("links").withIndex("by_space", (q) => q.eq("spaceId", vote.spaceId)).take(100))
+    if (l.vote === vote._id) await ctx.db.patch(l._id, { vote: undefined, resolvedAt: now });
   for (const o of vote.options)
     if (o.writeId) await ctx.db.patch(o.writeId, { outcome: JSON.stringify({ state: state === "change" ? "changed" : state === "keep" ? "kept" : state, ms: now - vote.at, on: vote.stake, why, at: now }) });
 }
@@ -82,14 +85,26 @@ async function land(ctx: MutationCtx, vote: Vote, o: Option, consented: string, 
   const widget = await ctx.db.get(vote.widgetId);
   if (!widget || !o.op) return { landed: "the card is gone; nothing done" };
   const op = JSON.parse(o.op) as EditOp;
-  const r = applyEdit({ type: widget.type, data: widget.data as Record<string, unknown> }, op, await cardCtx(ctx, widget, vote.today, consent));
+  const card = { type: widget.type, data: widget.data as Record<string, unknown> };
+  const r = applyEdit(card, op, await cardCtx(ctx, widget, vote.today, consent));
   if (!r.ok) return { landed: `${r.reason}; nothing done` };
+  const by = { name: o.by ?? "someone", ...(o.byUserId ? { userId: o.byUserId } : {}) };
+  // a choice made since it opened wasn't asked about (R4, eval X34): it's kept, and its people are asked in turn
+  const now = applyEdit(card, op, await cardCtx(ctx, widget, vote.today));
+  const was = !now.ok ? now.choice : undefined;
+  const newer = was ? since(vote.voters, was.people) : [];
+  const choice = was && newer.length ? { ...was, stake: newer.length === 1 ? `${newer[0].name.toLowerCase()} ${newer[0].why}` : `${newer.length} people since`, people: newer } : undefined;
   const own = fieldsOf(widget.type, op.op);
   const door = await rightOfWay(ctx, {
-    kind: "edit", spaceId: widget.spaceId, widgetId: widget._id, by: { name: o.by ?? "someone", ...(o.byUserId ? { userId: o.byUserId } : {}) },
-    fields: r.fields, text: r.text, undo: r.undo, consented,
+    kind: "edit", spaceId: widget.spaceId, widgetId: widget._id, by,
+    fields: r.fields, text: r.text, undo: r.undo, consented, ...(choice ? { choice } : {}),
     replay: { kind: "edit", op, today: vote.today, vote: vote._id, ...(consent ? { consent: true as const } : {}), ...(SETS.has(op.op) ? { set: Object.fromEntries(r.fields.filter((f) => own.includes(f.field)).map((f) => [f.field, f.old ?? null])) } : {}) },
   });
+  if (door.verdict === "ask" && choice) {
+    const kept = `${newer.length} ${widget.type === "poll" ? "vote" : "choice"}${newer.length === 1 ? " since was" : "s since were"} kept`;
+    const next = await openVote(ctx, { widget, choice, op, changed: o.changed ?? "", today: vote.today, by: { name: by.name, userId: o.byUserId ?? "" }, writeId: door.writeId });
+    return { landed: `waiting on ${next.who.map((n) => n.toLowerCase()).join(", ")} · ${kept}` };
+  }
   if (door.verdict === "go") {
     await commitEdit(ctx, widget, r);
     return { landed: "landed", ...(r.cleared ? { note: r.cleared.note } : {}) };

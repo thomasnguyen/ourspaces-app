@@ -5,7 +5,8 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { rightOfWay } from "./rightOfWay";
 import { dateIn } from "../src/lib/deck/needs";
-import { splitWhen } from "../src/lib/deck/edits";
+import { linkChoice, splitAmong, splitWhen } from "../src/lib/deck/edits";
+import { openVote } from "./choiceVotes";
 
 /**
  * Links: a card that waits on another card and fills itself from it (a
@@ -28,6 +29,8 @@ import { splitWhen } from "../src/lib/deck/edits";
  *          "unclaimed" (a list's open items and who hasn't claimed)
  *   tag    the thread's words on the board ("winner names it")
  *   cutAt  a person cut the thread: never resolves again; code never re-ties it
+ *   vote   its write would undo someone's choice (a date set by hand): the vote
+ *          it opened; the link is "asked" until that vote closes, then done
  *
  * Code applies it, never a model: `applyLinks` runs in the mutation that
  * changed the source, and every write a link makes goes through
@@ -107,11 +110,9 @@ async function valueOf(ctx: MutationCtx, link: Doc<"links">, from: Doc<"widgets"
       return iso ? { [link.fill]: iso, startDate: today, event: `${String(t.event ?? "it")} · ${day}` } : undefined;
     }
     case "yes": {
-      // a split among whoever said yes, the total shared again on every answer
-      const yes = ((d.responses as { name: string; status: string }[] | undefined) ?? []).filter((r) => r.status === "yes").map((r) => r.name);
-      const total = Number(t.total) || 0;
-      const share = Math.round(total / Math.max(1, yes.length));
-      return { splits: yes.map((name) => ({ name, owes: share, paid: 0 })) };
+      // a split among whoever said yes, the total shared again on every answer; a row someone paid into stays (R4)
+      const yes = ((d.responses as { name: string; status: string; userId?: string }[] | undefined) ?? []).filter((r) => r.status === "yes");
+      return { splits: splitAmong(yes.map((r) => ({ name: r.name, ...(r.userId ? { userId: r.userId } : {}) })), t) };
     }
     case "unclaimed": {
       // what nobody claimed, for the people who haven't claimed anything
@@ -139,8 +140,16 @@ export async function writeLinked(ctx: MutationCtx, link: Doc<"links">, value: u
   const data = to.data as Record<string, unknown>;
   const fields = Object.entries(patch).map(([field, nv]) => ({ field, old: data[field], new: nv }));
   if (fields.every((f) => JSON.stringify(f.old) === JSON.stringify(f.new))) return false;
-  // the one door every AI write passes (rightOfWay.ts)
-  const door = await rightOfWay(ctx, { kind: "link", spaceId: to.spaceId, widgetId: to._id, by: { name: "link" }, fields, replay: { kind: "link", linkId: link._id, fill: link.fill, value: patch } });
+  // what it would undo, the way an edit is checked (edits.ts linkChoice), then the one door every AI write passes
+  const choice = linkChoice({ type: to.type, data }, patch);
+  const door = await rightOfWay(ctx, { kind: "link", spaceId: to.spaceId, widgetId: to._id, by: { name: "link" }, fields, choice, replay: { kind: "link", linkId: link._id, fill: link.fill, value: patch } });
+  if (door.verdict === "ask" && choice?.op) {
+    // the people whose choice it is decide on the card (choiceVotes.ts); the link waits on that vote, then is done
+    const from = await ctx.db.get(link.from);
+    const by = `the ${from?.type === "availability" ? "day-finder" : "link"}`;
+    const v = await openVote(ctx, { widget: to, choice, op: choice.op, changed: String(choice.op.value), today: new Date(now).toISOString().slice(0, 10), by: { name: by, userId: "" }, writeId: door.writeId });
+    await ctx.db.patch(link._id, { vote: v.voteId });
+  }
   if (door.verdict !== "go") return false;
   const { unfinished: _u, ...rest } = data;
   await ctx.db.patch(to._id, { data: { ...rest, ...patch } as Doc<"widgets">["data"] });
@@ -150,7 +159,8 @@ export async function writeLinked(ctx: MutationCtx, link: Doc<"links">, value: u
 }
 
 async function tryLink(ctx: MutationCtx, link: Doc<"links">, from: Doc<"widgets">, now: number, tapped = false) {
-  if (link.resolvedAt !== undefined || link.cutAt !== undefined) return false;
+  // a vote it opened is still open: the people decide, not the next change of the source
+  if (link.resolvedAt !== undefined || link.cutAt !== undefined || link.vote !== undefined) return false;
   if (!(await resolved(ctx, link, from, now, tapped))) return false;
   const to = await ctx.db.get(link.to);
   if (!to) return false;
@@ -251,22 +261,27 @@ export const cut = mutation({
  */
 export const waiting = query({
   args: { spaceId: v.id("spaces") },
-  returns: v.array(v.object({ id: v.id("links"), from: v.id("widgets"), to: v.id("widgets"), when: v.string(), tag: v.optional(v.string()), state: v.string() })),
+  returns: v.array(v.object({ id: v.id("links"), from: v.id("widgets"), to: v.id("widgets"), when: v.string(), tag: v.optional(v.string()), state: v.string(), asking: v.optional(v.array(v.string())) })),
   handler: async (ctx, { spaceId }) => {
     if (!(await canRead(ctx, spaceId))) return [];
     const rows = await ctx.db.query("links").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(100);
     const shown = rows.filter((l) => l.cutAt === undefined && (l.resolvedAt === undefined || l.tag));
     // a link whose card was deleted has nothing to wait on or thread to
     const alive = await Promise.all(shown.map(async (l) => !!(await ctx.db.get(l.from)) && !!(await ctx.db.get(l.to))));
-    return shown
-      .filter((_, i) => alive[i])
-      .map((l) => ({
-        id: l._id,
-        from: l.from,
-        to: l.to,
-        when: l.when,
-        ...(l.tag ? { tag: l.tag } : {}),
-        state: l.resolvedAt !== undefined ? "done" : l.when.split("|").includes("live") && l.at !== undefined ? "live" : "waiting",
-      }));
+    // asked: the target isn't waiting on its source any more but on the people its vote asked
+    const asking = await Promise.all(shown.map(async (l) => (l.vote && l.resolvedAt === undefined ? ((await ctx.db.get(l.vote))?.voters ?? []).map((p) => p.name.toLowerCase()) : null)));
+    return shown.flatMap((l, i) =>
+      alive[i]
+        ? [{
+            id: l._id,
+            from: l.from,
+            to: l.to,
+            when: l.when,
+            ...(l.tag ? { tag: l.tag } : {}),
+            state: l.resolvedAt !== undefined ? "done" : asking[i] ? "asked" : l.when.split("|").includes("live") && l.at !== undefined ? "live" : "waiting",
+            ...(asking[i] ? { asking: asking[i] } : {}),
+          }]
+        : [],
+    );
   },
 });

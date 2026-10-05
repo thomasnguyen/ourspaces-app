@@ -29,6 +29,29 @@ function convexSafe(value: unknown): unknown {
   );
 }
 
+type Rows = Record<string, unknown>[];
+/**
+ * Choice rows carry their person's seat (R4, the gate treats a name-only row as nobody's own): a split's rows, rsvp
+ * answers, claims and check-in people. `id` maps a name to a seat, or null to leave the row as it is ("you" never).
+ */
+export function stampSeats(type: string, data: Record<string, unknown>, id: (name: string) => string | null): Record<string, unknown> | null {
+  const each = (key: string, f: (r: Record<string, unknown>) => Record<string, unknown>) => {
+    const rows = Array.isArray(data[key]) ? (data[key] as Rows) : [];
+    const next = rows.map(f);
+    return next.some((r, i) => r !== rows[i]) ? { ...data, [key]: next } : null;
+  };
+  const seat = (name: unknown) => (typeof name === "string" && name.trim() && name.trim().toLowerCase() !== "you" ? id(name) : null);
+  const by = (field: string, idField: string) => (r: Record<string, unknown>) => {
+    const s = r[idField] === undefined ? seat(r[field]) : null;
+    return s ? { ...r, [idField]: s } : r;
+  };
+  if (type === "expenseSplit") return each("splits", by("name", "userId"));
+  if (type === "rsvp") return each("responses", by("name", "userId"));
+  if (type === "checkIn") return each("people", by("name", "userId"));
+  if (type === "potluck") return each("items", (r) => (r.claimed ? by("by", "byUserId")(r) : r));
+  return null;
+}
+
 /** One seeded widget, at `at` (the mock spot, or a free one on a live room). */
 async function insertWidget(
   ctx: MutationCtx,
@@ -48,7 +71,7 @@ async function insertWidget(
     h: widget.h,
     z: widget.z,
     rotate: widget.rotate,
-    data: convexSafe(widget.data) as WidgetData,
+    data: convexSafe(stampSeats(widget.type, widget.data as Record<string, unknown>, (name) => seedUserId(slug, name)) ?? widget.data) as WidgetData,
     createdBy,
     createdAt: now,
   });
@@ -636,5 +659,38 @@ export const seedFamily = internalMutation({
       await ctx.scheduler.runAfter(0, internal.roomBrief.refresh, { spaceId: space._id });
     }
     return out;
+  },
+});
+
+/**
+ * R4: name-only choice rows already in the database get their person's seat. A seeded room maps a name to its seeded
+ * cast (seed: ids, which no visitor can hold); a made room to the one member with that name (two with it: left as
+ * is, and the gate asks). Tour rooms without a cast are left alone. One page per run, it schedules the next.
+ */
+export const backfillSeatIds = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())), stamped: v.optional(v.number()), seen: v.optional(v.number()) },
+  returns: v.null(),
+  handler: async (ctx, { cursor = null, stamped = 0, seen = 0 }) => {
+    const page = await ctx.db.query("widgets").paginate({ cursor, numItems: 100 });
+    const rosters = new Map<string, ((name: string) => string | null) | null>();
+    for (const w of page.page) {
+      if (!["expenseSplit", "rsvp", "checkIn", "potluck"].includes(w.type)) continue;
+      seen++;
+      if (!rosters.has(w.spaceId)) {
+        const space = await ctx.db.get(w.spaceId);
+        const members = await ctx.db.query("members").withIndex("by_space", (q) => q.eq("spaceId", w.spaceId)).take(500);
+        const cast = members.filter((m) => m.userId.startsWith("seed:"));
+        const pool = cast.length ? cast : space?.ownerId ? members : [];
+        rosters.set(w.spaceId, pool.length ? (name) => { const hit = pool.filter((m) => m.name.trim().toLowerCase() === name.trim().toLowerCase()); return hit.length === 1 ? hit[0].userId : null; } : null);
+      }
+      const id = rosters.get(w.spaceId);
+      const next = id && stampSeats(w.type, w.data as Record<string, unknown>, id);
+      if (!next) continue;
+      await ctx.db.patch(w._id, { data: next as Doc<"widgets">["data"] });
+      stamped++;
+    }
+    if (!page.isDone) await ctx.scheduler.runAfter(0, internal.seed.backfillSeatIds, { cursor: page.continueCursor, stamped, seen });
+    else console.log(`backfillSeatIds: ${stamped} of ${seen} choice cards stamped`);
+    return null;
   },
 });

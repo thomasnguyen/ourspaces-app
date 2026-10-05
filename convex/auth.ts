@@ -139,6 +139,8 @@ async function createOrUpdateUser(
       email: profile.email,
       emailVerificationTime: now,
     });
+    // the guest seat this browser had is the same person: Right of Way treats it as one hand (rightOfWay.ts personOf)
+    if (guest?.isAnonymous === true && guestId && guestId !== existingUserId) await db.patch(guestId, { mergedInto: existingUserId });
     return existingUserId;
   }
   return await db.insert("users", {

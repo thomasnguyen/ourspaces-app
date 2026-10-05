@@ -14,8 +14,8 @@ export type ThreadLink = {
   from: string;
   to: string;
   tag: string;
-  /** waiting: the second card waits · live: it follows the first until locked · done: filled */
-  state: "waiting" | "live" | "done";
+  /** waiting: the second card waits · asked: its write would undo a choice, the people it's theirs decide on the card · live: it follows the first until locked · done: filled */
+  state: "waiting" | "asked" | "live" | "done";
   when: string;
 };
 

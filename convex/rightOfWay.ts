@@ -1,10 +1,11 @@
 import { v } from "convex/values";
-import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
+import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { seatOf, canRead } from "./seat";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { rightOfWay as gate, type Choice, type Lease, type Verdict } from "../src/lib/rightOfWay";
-import { applyEdit, type EditCtx, type EditOp, type EditResult } from "../src/lib/deck/edits";
+import { applyEdit, linkChoice, type EditCtx, type EditOp, type EditResult } from "../src/lib/deck/edits";
+import { since } from "../src/lib/choiceVote";
 import { pollTallies } from "./votes";
 import { leasesOn } from "./leases";
 import { writeWidgetData } from "./widgets";
@@ -75,7 +76,14 @@ const cut = (x: unknown) => {
   return s.length > 240 ? `${s.slice(0, 237)}…` : s;
 };
 const holderOf = (l: Doc<"leases">): Holder => ({ userId: l.userId, name: l.name, color: l.color, kind: l.kind });
-const asLease = (l: Doc<"leases">): Lease => ({ thing: l.thing, by: { kind: "person", id: l.userId, name: l.name }, kind: l.kind as Lease["kind"] });
+/** A seat's person (R4): a guest seat folded into an account when they joined on it (auth.ts) is that account. */
+export async function personOf(ctx: QueryCtx, userId: string) {
+  const id = ctx.db.normalizeId("users", userId);
+  return (id && (await ctx.db.get(id))?.mergedInto) || userId;
+}
+/** The leases as the gate's hands, each seat resolved to its person (same order as `rows`). */
+const asLeases = (ctx: QueryCtx, rows: Doc<"leases">[]) =>
+  Promise.all(rows.map(async (l): Promise<Lease> => ({ thing: l.thing, by: { kind: "person", id: await personOf(ctx, l.userId), name: l.name }, kind: l.kind as Lease["kind"] })));
 const overlaps = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
@@ -92,10 +100,14 @@ export async function rightOfWay(ctx: MutationCtx, write: AiWrite): Promise<Door
       if (w && overlaps(write.rect, w)) spot.push(l.thing);
     }
   }
-  const v = gate({ thing, by: { kind: "space", ...(write.by.userId ? { asker: write.by.userId } : {}), askerName: write.by.name }, spot, choice: write.choice, refused: write.refused, finishes: write.finishes }, rows.map(asLease));
+  // every id as a person: the asker, the hands, the choosers (a guest seat folded into an account is that account)
+  const asker = write.by.userId ? await personOf(ctx, write.by.userId) : undefined;
+  const hands = await asLeases(ctx, rows);
+  const choice = write.choice && { ...write.choice, people: await Promise.all(write.choice.people.map(async (p) => (p.id ? { ...p, id: await personOf(ctx, p.id) } : p))) };
+  const v = gate({ thing, by: { kind: "space", ...(asker ? { asker } : {}), askerName: write.by.name }, spot, choice, refused: write.refused, finishes: write.finishes }, hands);
   // the lease behind the verdict: who it waits on, or (go) the asker's own hold on it
   const vOn = v.kind === "wait" || v.kind === "never" ? v.on : undefined;
-  const lease = vOn ? rows.find((l) => l.thing === vOn.thing && l.userId === (vOn.by as { id: string }).id) : v.kind === "go" && thing !== undefined ? rows.find((l) => l.thing === thing) : undefined;
+  const lease = vOn ? rows[hands.indexOf(vOn)] : v.kind === "go" && thing !== undefined ? rows.find((l) => l.thing === thing) : undefined;
   const on = lease ? holderOf(lease) : undefined;
   const own = write.choice ? `only ${write.by.name.toLowerCase()}'s own choice (${write.choice.stake}); ` : "";
   const reason =
@@ -108,7 +120,7 @@ export async function rightOfWay(ctx: MutationCtx, write: AiWrite): Promise<Door
             ? own + `${on!.name} is ${DOING[on!.kind] ?? "holding"} it`
             : on && thing === undefined ? `${v.why}; placed it below` : v.why);
   // who else had a hand on it, read straight from the leases (not from the verdict): the ledger checks every go against it
-  const others = [...new Set(rows.filter((l) => l.userId !== write.by.userId && (thing !== undefined || spot?.includes(l.thing))).map((l) => l.name))];
+  const others = [...new Set(rows.filter((l, i) => hands[i].by.kind === "person" && hands[i].by.id !== asker && (thing !== undefined || spot?.includes(l.thing))).map((l) => l.name))];
   const writeId = await log(ctx, write, v.kind, reason, others);
   let pendingId: Id<"pending"> | undefined;
   if (v.kind === "wait" && write.replay && thing !== undefined) {
@@ -174,9 +186,14 @@ async function replay(ctx: MutationCtx, r: Replay, row: Doc<"aiWrites">): Promis
     const widget = row.widgetId && (await ctx.db.get(row.widgetId));
     if (!widget) return { ok: false, why: "the card was deleted while you waited; nothing done" };
     for (const [field, old] of Object.entries(r.set ?? {})) if (JSON.stringify((widget.data as Record<string, unknown>)[field] ?? null) !== JSON.stringify(old ?? null)) return changed;
-    // a choice made while it waited is a new choice: without consent it doesn't land over it
-    const out = applyEdit({ type: widget.type, data: widget.data as Record<string, unknown> }, r.op, await cardCtx(ctx, widget, r.today, r.consent));
+    // a choice made while it waited is a new choice: without consent it doesn't land over it; with a vote's consent,
+    // one made since that vote opened isn't covered by it either (R4)
+    const card = { type: widget.type, data: widget.data as Record<string, unknown> };
+    const out = applyEdit(card, r.op, await cardCtx(ctx, widget, r.today, r.consent));
     if (!out.ok) return changed;
+    const vote = r.consent && r.vote ? await ctx.db.get(r.vote) : null;
+    const now = vote ? applyEdit(card, r.op, await cardCtx(ctx, widget, r.today)) : null;
+    if (vote && now && !now.ok && now.choice && since(vote.voters, now.choice.people).length) return { ok: false, why: "someone chose since the vote; nothing done" };
     await commitEdit(ctx, widget, out);
     return { ok: true };
   }
@@ -187,6 +204,8 @@ async function replay(ctx: MutationCtx, r: Replay, row: Doc<"aiWrites">): Promis
     if (!link || !to || link.resolvedAt !== undefined || link.cutAt !== undefined) return changed;
     // a flow's write is a patch of several fields (links.ts valueOf); the challenge's is one
     const patch = r.value && typeof r.value === "object" && !Array.isArray(r.value) ? (r.value as Record<string, unknown>) : { [r.fill]: r.value };
+    // someone made a choice it would undo while it waited (a payment, a date by hand): not over it (R4)
+    if (linkChoice({ type: to.type, data: to.data as Record<string, unknown> }, patch)) return changed;
     const { unfinished: _u, ...rest } = to.data as Record<string, unknown>;
     await ctx.db.patch(to._id, { data: { ...rest, ...patch } as Doc<"widgets">["data"] });
     await ctx.db.patch(link._id, link.when.split("|").includes("live") ? { at: Date.now() } : { resolvedAt: Date.now() });
@@ -212,6 +231,7 @@ export async function landWaiting(ctx: MutationCtx, spaceId: Id<"spaces">, thing
   const waiting = await ctx.db.query("pending").withIndex("by_thing", (q) => q.eq("spaceId", spaceId).eq("thing", thing)).take(16);
   if (!waiting.length) return;
   const rows = await leasesOn(ctx, spaceId, thing);
+  const hands = await asLeases(ctx, rows);
   const now = Date.now();
   for (const p of waiting) {
     const row = await ctx.db.get(p.writeId);
@@ -219,9 +239,9 @@ export async function landWaiting(ctx: MutationCtx, spaceId: Id<"spaces">, thing
       await ctx.db.delete(p._id);
       continue;
     }
-    const v = gate({ thing, by: { kind: "space", ...(row.byUserId ? { asker: row.byUserId } : {}) } }, rows.map(asLease));
+    const v = gate({ thing, by: { kind: "space", ...(row.byUserId ? { asker: await personOf(ctx, row.byUserId) } : {}) } }, hands);
     if (v.kind === "wait") {
-      const next = rows.find((l) => l.userId === (v.on.by as { id: string }).id);
+      const next = rows[hands.indexOf(v.on)];
       if (next) await ctx.db.patch(p._id, { on: JSON.stringify(holderOf(next)) });
       continue;
     }
@@ -372,7 +392,7 @@ export const probe = internalMutation({
   handler: async (ctx, { spaceId, thing, n }) => {
     const t0 = Date.now();
     let verdict = "";
-    for (let i = 0; i < n; i++) verdict = gate({ thing, by: { kind: "space" } }, (await leasesOn(ctx, spaceId, thing)).map(asLease)).kind;
+    for (let i = 0; i < n; i++) verdict = gate({ thing, by: { kind: "space" } }, await asLeases(ctx, await leasesOn(ctx, spaceId, thing))).kind;
     return { n, ms: Date.now() - t0, verdict };
   },
 });

@@ -121,7 +121,8 @@ const photoWallData = v.object({
 const expenseSplitData = v.object({
   title: v.string(),
   total: v.number(),
-  splits: v.array(v.object({ name: v.string(), owes: v.number(), paid: v.number() })),
+  // userId: the payer's seat where known (links.ts splitAmong, seeds); a row with only a name is nobody's own (R4)
+  splits: v.array(v.object({ name: v.string(), userId: v.optional(v.string()), owes: v.number(), paid: v.number() })),
   kicker: v.optional(v.string()),
   lastEmail: v.optional(
     v.object({
@@ -408,7 +409,8 @@ export const checkInData = v.object({
   days: v.number(),
   revealAt: v.optional(v.string()),
   goal: v.optional(v.number()),
-  people: v.array(v.object({ name: v.string(), color: v.string() })),
+  // userId: stamped on a person's first log (checkIns.ts), so a second seat with the same name can't log or be asked as them
+  people: v.array(v.object({ name: v.string(), color: v.string(), userId: v.optional(v.string()) })),
   logs: v.record(v.string(), v.array(v.union(v.number(), v.null()))),
 });
 

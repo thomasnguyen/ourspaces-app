@@ -5,7 +5,7 @@
  * in a Convex mutation later. No model writes any of it.
  */
 
-export type ChallengePerson = { name: string; color: string };
+export type ChallengePerson = { name: string; color: string; userId?: string };
 
 /** `number`: "I did 40". `done`: a tick, stored as 1. */
 export type CheckInKind = "number" | "done";

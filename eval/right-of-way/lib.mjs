@@ -12,7 +12,7 @@ export const load = () => JSON.parse(fs.readFileSync(path.join(HERE, "scenarios.
 /** The real code, bundled from source in memory: the pure gate and the edit check that finds people's choices. */
 export async function loadGate() {
   const out = await build({
-    stdin: { contents: `export { rightOfWay } from "./src/lib/rightOfWay.ts"; export { applyEdit } from "./src/lib/deck/edits.ts";`, resolveDir: ROOT, loader: "ts" },
+    stdin: { contents: `export { rightOfWay } from "./src/lib/rightOfWay.ts"; export { applyEdit, linkChoice, splitAmong } from "./src/lib/deck/edits.ts";`, resolveDir: ROOT, loader: "ts" },
     bundle: true, format: "esm", platform: "node", write: false, logLevel: "silent",
   });
   return await import("data:text/javascript;base64," + Buffer.from(out.outputFiles[0].text).toString("base64"));
@@ -39,13 +39,19 @@ const overlaps = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h
  * consent when choices are in the way), convex/choiceVotes.ts `land` (a passed vote: consent, no choice),
  * convex/rightOfWay.ts `rightOfWay` (leasesOn's until > now filter, the new card's rect overlap, the gate's Hand),
  * convex/rightOfWay.ts `cardCtx` (a poll's votes and voters' member names) and convex/puzzles.ts (finishes).
+ * Since R4 also: every seat id resolved to its account (the door's `personOf`: a guest seat folded into an account
+ * on joining), a link's patch through `linkChoice` (links.ts `writeLinked`; a "yes" link's patch is `splitAmong`),
+ * and a passed vote's resend carrying the choices made since the vote opened (choiceVotes.ts `land`; who it asked
+ * is read from the consented line, "(holly, sam were asked)").
  */
 export function armA(gate, s, L) {
   const person = (k) => s.people.find((p) => p.id === `u-${k}`) ?? { id: `u-${k}`, name: k };
-  const leases = s.holds.filter((h) => untilOf(h, L) > s.now).map((h) => ({ thing: h.thing, by: { kind: "person", id: person(h.who).id, name: person(h.who).name }, kind: h.kind }));
+  const acct = (id) => s.people.find((p) => p.id === id)?.account ?? id;
+  const chooser = (p) => ({ ...(p.id ? { id: acct(p.id) } : {}), name: p.name });
+  const leases = s.holds.filter((h) => untilOf(h, L) > s.now).map((h) => ({ thing: h.thing, by: { kind: "person", id: acct(person(h.who).id), name: person(h.who).name }, kind: h.kind }));
   const w = s.write;
   const asker = w.by ? person(w.by) : null;
-  const hand = asker ? { kind: "space", asker: asker.id, askerName: asker.name } : { kind: "space", askerName: w.kind === "link" ? "link" : "the space" };
+  const hand = asker ? { kind: "space", asker: acct(asker.id), askerName: asker.name } : { kind: "space", askerName: w.kind === "link" ? "link" : "the space" };
   let input;
   if (w.kind === "edit") {
     const card = s.cards.find((c) => c.id === w.card);
@@ -62,13 +68,17 @@ export function armA(gate, s, L) {
     if (w.consented) {
       const r = gate.applyEdit(data, w.op, { ...ctx, consent: true });
       if (!r.ok) return { verdict: "never", who: [], why: `${r.reason} (refused before the door)` };
-      input = { thing: card.id, by: hand };
+      // the choices in the way now that the vote didn't ask about (made since it opened)
+      const asked = (/\(([^)]*)\)/.exec(w.consented)?.[1] ?? "").replace(/ were asked$/, "").split(", ").filter(Boolean);
+      const now = gate.applyEdit(data, w.op, ctx);
+      const since = !now.ok && now.choice ? now.choice.people.filter((p) => !asked.includes(p.name.toLowerCase())) : [];
+      input = { thing: card.id, by: hand, ...(since.length ? { choice: { stake: `${since.length} since`, people: since.map(chooser) } } : {}) };
     } else {
       const r = gate.applyEdit(data, w.op, ctx);
       if (!r.ok && !r.choice) return { verdict: "never", who: [], why: `${r.reason} (refused before the door)` };
       const c = r.ok ? r : gate.applyEdit(data, w.op, { ...ctx, consent: true });
       if (!c.ok) return { verdict: "never", who: [], why: `${c.reason} (refused before the door)` };
-      input = { thing: card.id, by: hand, ...(r.ok ? {} : { choice: { stake: r.choice.stake, people: r.choice.people.map((p) => ({ ...(p.id ? { id: p.id } : {}), name: p.name })) } }) };
+      input = { thing: card.id, by: hand, ...(r.ok ? {} : { choice: { stake: r.choice.stake, people: r.choice.people.map(chooser) } }) };
     }
   } else if (w.kind === "build") {
     const spot = leases.filter((l) => { const c = s.cards.find((c) => c.id === l.thing); return c && overlaps(w.rect, c.rect); }).map((l) => l.thing);
@@ -77,8 +87,14 @@ export function armA(gate, s, L) {
     input = { by: hand }; // games.ts passes no thing and no rect
   } else if (w.kind === "puzzle") {
     input = { thing: `piece:${w.piece}`, by: { kind: "space" }, finishes: w.placed + 1 >= w.total };
+  } else if (w.kind === "link") {
+    const card = s.cards.find((c) => c.id === w.card);
+    const src = s.cards.find((c) => c.id === w.from);
+    const patch = w.patch ?? (w.value === "yes" ? { splits: gate.splitAmong(src.data.responses.filter((r) => r.status === "yes"), card.data) } : {});
+    const choice = w.patch || w.value ? gate.linkChoice({ type: card.type, data: card.data }, patch) : undefined;
+    input = { thing: w.card, by: hand, ...(choice ? { choice: { stake: choice.stake, people: choice.people.map(chooser) } } : {}) };
   } else {
-    input = { thing: w.card, by: hand }; // link (by "link", no asker) and amend (the asker)
+    input = { thing: w.card, by: hand }; // amend (the asker)
   }
   const v = gate.rightOfWay(input, leases);
   return {

@@ -39,13 +39,15 @@ export const log = mutation({
     if (!me) return null;
     const data = widget.data as CheckInWidgetData;
     const person = data.people.find((p) => p.name.trim().toLowerCase() === me.name.trim().toLowerCase());
-    if (!person) return null;
+    // a row is the seat that first logged on it (R4): a second seat with the same name can't log as them
+    if (!person || (person.userId !== undefined && person.userId !== me.userId)) return null;
+    const people = person.userId ? data.people : data.people.map((p) => (p === person ? { ...p, userId: me.userId } : p));
     const serverDay = Math.round((Date.now() - Date.parse(`${data.start}T00:00:00Z`)) / 86_400_000 - 0.5);
     if (!Number.isInteger(day) || day < 0 || day >= data.days || Math.abs(day - serverDay) > 1) return null;
     const v = value === null ? null : Math.max(0, Math.min(9999, Math.round(value)));
     const row = Array.from({ length: data.days }, (_, i) => data.logs[person.name]?.[i] ?? null);
     row[day] = v;
-    await ctx.db.patch(widgetId, { data: { ...data, logs: { ...data.logs, [person.name]: row } } });
+    await ctx.db.patch(widgetId, { data: { ...data, people, logs: { ...data.logs, [person.name]: row } } });
     await recheck(ctx, widgetId);
     await applyLinks(ctx, widgetId);
     await touchSpace(ctx, spaceId);

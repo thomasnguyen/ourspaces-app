@@ -10,6 +10,7 @@ export const deals = defineTable({ spaceId: v.id("spaces"), run: v.string() }).i
 export const links = defineTable({
   spaceId: v.id("spaces"), from: v.id("widgets"), to: v.id("widgets"), when: v.string(), fill: v.string(), value: v.string(),
   at: v.optional(v.number()), resolvedAt: v.optional(v.number()), tag: v.optional(v.string()), cutAt: v.optional(v.number()),
+  vote: v.optional(v.id("choiceVotes")), // its write would undo a choice: the vote it opened (links.ts writeLinked)
 }).index("by_from", ["from"]).index("by_space", ["spaceId"]);
 
 // Room brief for voice asks (roomBrief.ts); facts = evidence JSON.

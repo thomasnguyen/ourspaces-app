@@ -1773,7 +1773,8 @@ export function LiveSpacePage({
   const flows = useMemo(() => {
     if (!space) return undefined;
     const spaceId = space._id;
-    const threads: ThreadLink[] = (openLinks ?? []).filter((l) => l.tag).map((l) => ({ id: String(l.id), from: String(l.from), to: String(l.to), tag: l.tag!, state: l.state as ThreadLink["state"], when: l.when }));
+    // asked (convex/links.ts): the second card waits on the people whose choice it would undo, not on the first card
+    const threads: ThreadLink[] = (openLinks ?? []).filter((l) => l.tag).map((l) => ({ id: String(l.id), from: String(l.from), to: String(l.to), tag: l.asking ? `${l.tag} · asked ${l.asking.join(", ")}` : l.tag!, state: l.state as ThreadLink["state"], when: l.when }));
     return {
       threads,
       callIt: (widgetId: string) => {
