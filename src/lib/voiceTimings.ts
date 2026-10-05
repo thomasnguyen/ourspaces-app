@@ -61,6 +61,7 @@ export const VOICE_TIMINGS = {
   numberTick: t(360, "assumed", "no measurement", "a number counting up to its value (days, dollars): one arrival long"),
   closeHold: t(320, "assumed", "no measurement", "the finished card held on the stage before it lets go: long enough to read as whole"),
   followUpWait: t(4000, "assumed", "no measurement", "a card named but nothing to put in it: how long the stage waits for more words before it lets the ask go"),
+  replyHold: t(1800, "assumed", "no measurement", "an answer (or another verb's slip) held on the stage before the board takes over: long enough to read one line"),
   foundHold: t(700, "assumed", "no measurement", "the card is already on the board: how long the stage says so before it takes you there"),
 
   // ---- our own motion ----

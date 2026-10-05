@@ -37,11 +37,12 @@ import {
   type ChatMessage,
 } from "./data/chat";
 import { RECAP_LINES, type RecapTurn } from "./data/recap";
-import { DECISION_WIDGET, SPACES_BY_ID, canvasSizeFor, getSpace, getWidgets } from "./data/spaces";
+import { DECISION_WIDGET, SPACES, SPACES_BY_ID, canvasSizeFor, getSpace, getWidgets } from "./data/spaces";
 import { createLabPeerFeed, labPeersRequested } from "./live/labPeers";
 import { dealDemo, deckLabRequested } from "./lib/deck/lab";
 import { mockDeal } from "./lib/deck/mockDeal";
 import { mockFacts } from "./lib/deck/mockFacts";
+import type { MineAct } from "./lib/deck/verbs";
 import { offersFor } from "./lib/deck/suggest";
 import { setVoiceStageBoard, setVoiceStageOffers } from "./lib/voiceStage";
 import { beat } from "./lib/voiceTimings";
@@ -101,8 +102,8 @@ import {
 } from "./lib/buildRoomPresentation";
 import { flushSync } from "react-dom";
 import { flyWidgetIn } from "./lib/flipLanding";
-import { DEFAULT_SPACE_SLUG, lastSpaceSlug, normalSpaceHash, rememberSpaceSlug, slugOfSpaceHash } from "./lib/routes";
-import { pileInsideFrame } from "./lib/frameMembership";
+import { DEFAULT_SPACE_SLUG, knowsHash, lastSpaceSlug, normalSpaceHash, rememberSpaceSlug, slugOfSpaceHash } from "./lib/routes";
+import { pileInsideFrame, widgetIsInsideFrame } from "./lib/frameMembership";
 import {
   linkReplyCounts,
   mockBuildRoomFeed,
@@ -530,6 +531,8 @@ export default function App() {
   // What the room can offer for a card named with nothing in it (the voice stage asks).
   setVoiceStageOffers((card) => offersFor(voiceFacts(), card));
   setVoiceStageBoard((id) => visibleWidgetsRef.current.find((widget) => widget.id === id));
+  // the mock writes, defined further down, for the voice router
+  const voiceVerbRef = useRef<{ recap: () => void; act: (a: MineAct) => void }>({ recap: () => {}, act: () => {} });
   const voiceBuild = useVoiceBuild({
     scrollerRef: canvasViewportRef,
     cardContext: voiceCtx,
@@ -542,6 +545,30 @@ export default function App() {
       const w = visibleWidgetsRef.current.find((x) => x.id === mine.widgetId);
       if (w) storeWidgetData(w.id, withLog(readCheckIn(w.data), mine.name, mine.day, mine.value) as unknown as Widget["data"]);
       return { item: { id: mine.widgetId, card: "checkin", title: mine.title, by: null }, text: `logged ${mine.value} for you · ${mine.title}` };
+    },
+    /* The other verbs in mock: answers from the mock board's facts are the
+       real code path; there is no retrieval (the slip says stand-in), and
+       do-my-part writes the mock overrides a tap would. */
+    verbs: {
+      widgets: () => visibleWidgetsRef.current as never,
+      me: () => ({ name: new URLSearchParams(window.location.search).get("as") ?? voiceMaker.name }),
+      people: () => getSpace(spaceId).members.map((m) => m.name),
+      rooms: () => SPACES.map((sp) => ({ slug: sp.id, name: sp.name })),
+      here: () => spaceId,
+      frameOf: (w) => {
+        const all = visibleWidgetsRef.current;
+        const me = all.find((x) => x.id === w.id);
+        const frame = me ? all.find((fr) => fr.type === "frame" && widgetIsInsideFrame(me, fr)) : undefined;
+        return frame ? String(frame.data.title ?? "").toLowerCase() : "";
+      },
+      recap: () => voiceVerbRef.current.recap(),
+      goRoom: (to) => {
+        window.location.hash = normalSpaceHash(to);
+      },
+      goKnows: () => {
+        window.location.hash = knowsHash(spaceId);
+      },
+      act: (a) => voiceVerbRef.current.act(a),
     },
     deal: async (call, onPartial) => {
       // `?voiceHold=1` keeps the skeleton up for a still (drive voice-build:shell).
@@ -1828,6 +1855,14 @@ export default function App() {
     setRecapHover(null);
   }, [recapOpen]);
 
+  voiceVerbRef.current = {
+    recap: () => openRecap(),
+    act: (a) => {
+      if (a.kind === "rsvp") respondToRsvp(a.widgetId, a.status);
+      else if (a.kind === "vote") voteOnPoll(a.widgetId, a.optionId);
+      else claimSlot(a.widgetId, a.item);
+    },
+  };
   const openRecap = () => {
     setRecapRunId((id) => id + 1);
     setRecapOpen(true);

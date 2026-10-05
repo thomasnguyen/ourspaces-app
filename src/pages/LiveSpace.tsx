@@ -61,7 +61,7 @@ import {
   type ThreadDockPlacement,
   type ThreadDockSize,
 } from "../components/WidgetThreadDock";
-import { getSpace, SPACES_BY_ID } from "../data/spaces";
+import { getSpace, SPACES, SPACES_BY_ID } from "../data/spaces";
 import { getStickerDefinition } from "../data/stickers";
 import type { Widget, WidgetType } from "../data/types";
 import { LinkQuestionStrip } from "../components/LinkQuestionStrip";
@@ -81,7 +81,7 @@ import {
   type RecapTurn,
 } from "../data/recap";
 import { flyWidgetIn } from "../lib/flipLanding";
-import { pileInsideFrame } from "../lib/frameMembership";
+import { pileInsideFrame, widgetIsInsideFrame } from "../lib/frameMembership";
 import { relTime, spaceFromLive, toChatMessage } from "../live/adapt";
 import type { RoundtableReply } from "../widgets/buildroom";
 import {
@@ -114,7 +114,7 @@ import { RSVP_CHOICES, type RsvpStatus } from "../widgets/extras";
 import type { CozyColorStroke } from "../widgets/CozyColorWidget";
 import type { CanvasLayout, LivePeer } from "../live/presenceTypes";
 import { createLabPeerFeed, labPeersRequested } from "../live/labPeers";
-import { DEFAULT_SPACE_SLUG, normalSpaceHash } from "../lib/routes";
+import { DEFAULT_SPACE_SLUG, knowsHash, normalSpaceHash } from "../lib/routes";
 import { useCanvasSpacePan } from "../lib/canvasSpacePan";
 import {
   BUILD_ROOM_CANVAS,
@@ -358,6 +358,9 @@ function RoomPresenceHeartbeat({ roomId, userId }: { roomId: string; userId: str
   useRoomPresence(api.roomPresence, roomId, userId, ROOM_HEARTBEAT_MS);
   return null;
 }
+
+/** What people call each room besides its name, for "take me to …". */
+const VOICE_ROOM_ALSO: Record<string, string[]> = { crew: ["crew", "group chat", "friends"], couple: ["long distance", "us two", "couple"], house: ["house", "roommates"], family: ["family"], league: ["league", "game day"] };
 
 export function LiveSpacePage({
   slug = DEFAULT_SPACE_SLUG,
@@ -842,6 +845,11 @@ export function LiveSpacePage({
     });
     return { widgets, voted };
   }, [adaptedWidgets, identity.userId, roomVotes]);
+  // the board as the voice router reads it (every poll's voters folded in)
+  const turnPollsRef = useRef(turnPolls.widgets);
+  turnPollsRef.current = turnPolls.widgets;
+  const openRecapRef = useRef<() => void>(() => {});
+  const respondToRsvpRef = useRef<(widgetId: string, status: RsvpStatus) => void>(() => {});
   const turnViewer = useMemo<TurnViewer>(
     () => ({
       name: identity.name,
@@ -1541,6 +1549,7 @@ export function LiveSpacePage({
   const warmDeal = useAction(api.voiceBuild.warm);
   const noteDealLanded = useMutation(api.voiceBuild.noteLanded);
   const decideCard = useAction(api.voiceBuild.decide);
+  const answerAsk = useAction(api.voiceBuild.answer);
   /* The room brief's facts (convex/roomBrief.ts): each call is routed by
      them and its tokens resolve against them, on this screen. */
   const [briefNow] = useState(() => Date.now());
@@ -1582,11 +1591,43 @@ export function LiveSpacePage({
       return { item: { id: mine.widgetId, card: "checkin", title: mine.title, by: null }, text: `logged ${mine.value} for you · ${mine.title}` };
     },
     warm: () => void warmDeal({}).catch(() => {}),
+    /* The orb's other verbs (lib/deck/verbs.ts): answer from the room, catch me up,
+       do my part (as you, through the same writes a tap makes), go, games. */
+    verbs: {
+      widgets: () => turnPollsRef.current as never,
+      me: () => ({ name: identity.name, userId: identity.userId }),
+      people: () => roomBrief?.room?.people ?? members.map((m) => m.name),
+      rooms: () => SPACES.map((sp) => ({ slug: sp.id, name: sp.name, also: VOICE_ROOM_ALSO[sp.id] })),
+      here: () => slug,
+      frameOf: (w) => {
+        const frames = adaptedWidgets.filter((x) => x.type === "frame");
+        const me = adaptedWidgets.find((x) => x.id === w.id);
+        const frame = me ? frames.find((fr) => widgetIsInsideFrame(me, fr)) : undefined;
+        return frame ? String(frame.data.title ?? "").toLowerCase() : "";
+      },
+      recap: () => openRecapRef.current(),
+      goRoom: (to) => {
+        window.location.hash = normalSpaceHash(to);
+      },
+      goKnows: () => {
+        window.location.hash = knowsHash(slug);
+      },
+      act: (a) => {
+        if (a.kind === "rsvp") respondToRsvpRef.current(a.widgetId, a.status);
+        else if (a.kind === "vote") handlers.onVote(a.widgetId, a.optionId);
+        else handlers.onClaim(a.widgetId, a.item);
+      },
+      retrieve: async (said) => {
+        if (!space) throw new Error("no space");
+        return await answerAsk({ spaceId: space._id, question: said });
+      },
+    },
     facts: () => roomBrief?.room ?? null,
-    decide: (said, { onBoard, card }) =>
+    decide: (said, { onBoard, card, verb }) =>
       decideCard({
         said,
         card,
+        ...(verb ? { verb: true } : {}),
         room: space?.name ?? "",
         today: voiceToday(),
         people: voicePeople(),
@@ -2269,6 +2310,7 @@ export function LiveSpacePage({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [editingWidgetId, focusedTarget, leaveFocus, pickerOpen]);
 
+  openRecapRef.current = () => openRecap();
   const openRecap = () => {
     setRecapCites([]);
     setRecapHover(null);
@@ -2449,6 +2491,8 @@ export function LiveSpacePage({
     },
     [handlers, identity.name, identity.userId],
   );
+
+  respondToRsvpRef.current = respondToRsvp;
 
   const answerDailyQuestion = useCallback(
     (widgetId: string, text: string) => {

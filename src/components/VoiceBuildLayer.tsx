@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { Widget } from "../data/types";
-import type { AskTrace, StageName, VoiceFound, VoiceLanded, VoiceReceipt, VoiceShell } from "../live/useVoiceBuild";
+import type { AskTrace, StageName, VoiceFound, VoiceLanded, VoiceReceipt, VoiceReply, VoiceShell } from "../live/useVoiceBuild";
 import { feedVoiceStage } from "../lib/voiceStage";
 import type { ResolveNote, RoomFacts } from "../lib/deck";
 
@@ -77,6 +77,7 @@ const STAGE_LABEL: Record<StageName, string> = {
   pause: "pause detected",
   decided: "decide sure (≥ 0.8) back",
   found: "camera on the card already here",
+  answer: "the verb's slip on screen (answer, recap, your part, go)",
   skeleton: "skeleton on screen",
   tentative: "first tentative field",
   "card-full": "card visually complete (tentative or final)",
@@ -232,6 +233,34 @@ function ContextDrawer({
             {l.after !== undefined && ` · ${ms(l.after)} after its last word`}
           </p>
         ))}
+      </section>
+
+      <section>
+        <h3>verb</h3>
+        {t.verb ? (
+          <div data-testid="dev-context-verb">
+            <p>
+              <b>{t.verb.verb}</b> · by {t.verb.by}
+              {t.verb.conf != null && ` (${t.verb.conf.toFixed(2)})`} · {t.verb.why}
+            </p>
+            {t.verb.mine && <p>your part: {t.verb.mine}</p>}
+            {t.verb.answer && (
+              <>
+                <p>
+                  answer ({t.verb.answer.by === "facts" ? "room facts, code, no model" : t.verb.answer.by === "retrieval" ? `retrieved + Ultra${t.verb.answer.ms != null ? `, ${t.verb.answer.ms} ms` : ""}` : t.verb.answer.by}): “{t.verb.answer.text}” · {t.verb.answer.source}
+                </p>
+                <ol className="dev-context-list" data-testid="dev-context-answer-facts">
+                  {t.verb.answer.facts.map((x, i) => (
+                    <li key={i}>{x}</li>
+                  ))}
+                  {!t.verb.answer.facts.length && <li>nothing read</li>}
+                </ol>
+              </>
+            )}
+          </div>
+        ) : (
+          <p>no router (this room has none)</p>
+        )}
       </section>
 
       <section>
@@ -424,6 +453,7 @@ export function VoiceBuildLayer({
   shell,
   landed,
   found,
+  reply,
   receipt,
   leaving,
   traces,
@@ -435,6 +465,8 @@ export function VoiceBuildLayer({
   shell: VoiceShell | null;
   landed: VoiceLanded | null;
   found?: VoiceFound | null;
+  /** Another verb's slip (lib/deck/verbs.ts): an answer, a recap, offers. */
+  reply?: VoiceReply | null;
   receipt: VoiceReceipt | null;
   leaving: boolean;
   traces: AskTrace[];
@@ -444,7 +476,7 @@ export function VoiceBuildLayer({
 }) {
   const [dev] = useState(devMode);
   // The voice stage shows this build on its right half; it reads it through this one call.
-  useEffect(() => feedVoiceStage({ drafts, shell, landed, found: found ?? null, receipt, traces, color, by }), [drafts, shell, landed, found, receipt, traces, color, by]);
+  useEffect(() => feedVoiceStage({ drafts, shell, landed, found: found ?? null, reply: reply ?? null, receipt, traces, color, by }), [drafts, shell, landed, found, reply, receipt, traces, color, by]);
   const [open, setOpen] = useState<number | null>(null);
   const tint = { "--maker": color } as CSSProperties;
   const latest = traces[0];
@@ -497,6 +529,17 @@ export function VoiceBuildLayer({
           </div>,
           found.host,
         )}
+      {reply && !reply.widgetId && (
+        <div key={reply.traceKey} className={`voice-receipt is-miss voice-reply ${leaving ? "is-leaving" : ""}`} data-testid="voice-reply" data-verb={reply.verb} style={tint} role="status">
+          <span>{reply.text}</span>
+          {reply.source && <span className="voice-reply-source">{reply.source}</span>}
+          {reply.offers?.map((o, i) => (
+            <button type="button" key={i} className="voice-found-next" data-testid={`voice-reply-offer-${i}`} onClick={o.run}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
       {receipt && !receipt.ok && (
         <p
           key={receipt.key}
@@ -518,6 +561,19 @@ export function VoiceBuildLayer({
         >
           {!latest ? (
             <span>voice · no ask yet</span>
+          ) : latest.verb && latest.verb.verb !== "make" ? (
+            <>
+              <span data-testid="dev-readout-route">
+                {latest.verb.verb} · {latest.verb.by}
+              </span>
+              <span data-testid="voice-receipt" data-verb={latest.verb.verb}>
+                {latest.verb.answer?.by === "retrieval" ? "retrieved + Ultra" : latest.verb.answer?.by === "stand-in" ? "stand-in · no model" : "code, no model"} · last word → slip{" "}
+                {latest.stages.answer === null ? "…" : ms(latest.stages.answer).replace("+", "")}
+              </span>
+              <span>
+                {latest.calls.length + latest.decides.length} model call{latest.calls.length + latest.decides.length === 1 ? "" : "s"} · nothing built
+              </span>
+            </>
           ) : latest.found?.outcome === "pointed" && latest.found.why.startsWith("do my part") ? (
             <>
               <span data-testid="dev-readout-route">do my part</span>

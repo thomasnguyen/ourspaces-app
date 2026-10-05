@@ -23,6 +23,7 @@ import {
   parseDeal,
   roomContext,
 } from "../src/lib/deck";
+import { VERB_CHOICES, VERB_LETTERS, VERB_Q } from "../src/lib/deck/verbs";
 
 /**
  * Say it → it builds (path-to-win §3 "The engine"), split in two so the room
@@ -444,6 +445,8 @@ export const decide = action({
     match: v.optional(v.string()),
     /** Ask the card letter (default). False when code's guess is already sure: only the yes/no goes out. */
     card: v.optional(v.boolean()),
+    /** Also ask make-or-answer (a question code can't place; lib/deck/verbs.ts). */
+    verb: v.optional(v.boolean()),
   },
   returns: v.object({
     onBoard: v.union(
@@ -456,6 +459,10 @@ export const decide = action({
         error: v.union(v.string(), v.null()),
       }),
     ),
+    verb: v.union(
+      v.null(),
+      v.object({ verb: v.string(), conf: v.union(v.number(), v.null()), ms: v.number(), usage: v.union(v.null(), v.object({ prompt: v.number(), completion: v.number() })) }),
+    ),
     card: v.union(v.string(), v.null()),
     conf: v.union(v.number(), v.null()),
     top: v.array(v.object({ card: v.string(), p: v.number() })),
@@ -467,7 +474,17 @@ export const decide = action({
     const context = roomContext({ room: args.room, today: args.today, people: args.people.slice(0, 12) });
     const prefix = { context, board: args.board.slice(0, 24).map((t) => t.slice(0, 40)), said: args.said.trim().slice(0, 240) };
     const skipped: Awaited<ReturnType<typeof chooseLetter>> = { status: 0, letter: null, conf: null, top: [], usage: null, ms: 0 };
-    const [r, b] = await Promise.all([
+    const verbQ = args.verb
+      ? chooseLetter({
+          model: "ultra",
+          messages: [
+            decideMessages(prefix)[0],
+            { role: "user" as const, content: `${prefix.context}${prefix.board.length ? `\nOn the board: ${prefix.board.join(" · ")}` : ""}\nSaid: "${prefix.said}"\n\n${VERB_Q}` },
+          ],
+          letters: VERB_LETTERS,
+        })
+      : null;
+    const [r, b, vq] = await Promise.all([
       args.card === false ? skipped : chooseLetter({ model: "ultra", messages: decideMessages(prefix), letters: DECIDE_LETTERS }),
       args.onBoard && prefix.board.length
         ? chooseLetter({
@@ -476,10 +493,12 @@ export const decide = action({
             letters: BOARD_LETTERS,
           })
         : null,
+      verbQ,
     ]);
     const cardOf = (l: string) => DECIDE_CHOICES[DECIDE_LETTERS.indexOf(l)] ?? l;
     const usageOf = (u: typeof r.usage) => (u ? { prompt: u.prompt_tokens ?? 0, completion: u.completion_tokens ?? 0 } : null);
     return {
+      verb: vq && vq.letter ? { verb: VERB_CHOICES[VERB_LETTERS.indexOf(vq.letter)] ?? vq.letter, conf: vq.conf, ms: vq.ms, usage: usageOf(vq.usage) } : null,
       onBoard: b
         ? {
             yes: b.letter === "A",
@@ -496,6 +515,83 @@ export const decide = action({
       usage: r.usage ? { prompt: r.usage.prompt_tokens ?? 0, completion: r.usage.completion_tokens ?? 0 } : null,
       error: r.error ? `${r.status || "fetch"}: ${r.error.slice(0, 160)}` : null,
     };
+  },
+});
+
+/* ---------- Answer: "what did we decide for saturday?" when the room's facts don't cover it ---------- */
+
+const ASK_STOP = new Set("a an the of for to on in at is are was were be do does did who whos whose what whats when where which how our we us it this that and or with my me i you has have hasnt any anyone s".split(" "));
+const askWords = (x: string) => new Set(x.toLowerCase().replace(/['’]s\b/g, "").split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 1 && !ASK_STOP.has(w)).map((w) => w.replace(/(es|s)$/, "")));
+
+/**
+ * Ask the space, as a slip: the board's cards and the chat (the same snapshot
+ * ask-the-space grounds on), ranked by the question's words in code, the top
+ * six numbered, then one short Ultra call that may only answer from them and
+ * must say which one. Code checks the answer: every number and every name in
+ * it must be in that snippet, or it's "doesn't know". Writes nothing.
+ */
+type AnswerOut = {
+  answer: { text: string; source: string; widgetId?: string; facts: string[] } | null;
+  why: string;
+  ms: number;
+  usage: { prompt: number; completion: number } | null;
+  snippets: string[];
+};
+export const answer = action({
+  args: { spaceId: v.id("spaces"), question: v.string() },
+  returns: v.object({
+    answer: v.union(v.null(), v.object({ text: v.string(), source: v.string(), widgetId: v.optional(v.string()), facts: v.array(v.string()) })),
+    why: v.string(),
+    ms: v.number(),
+    usage: v.union(v.null(), v.object({ prompt: v.number(), completion: v.number() })),
+    snippets: v.array(v.string()),
+  }),
+  handler: async (ctx, args): Promise<AnswerOut> => {
+    const t0 = Date.now();
+    const q = args.question.trim().slice(0, 200);
+    const snap: { widgets: { id: string; type: string; summary: string }[]; chat: { from: string; text: string }[] } = await ctx.runQuery(internal.recap.snapshot, { spaceId: args.spaceId });
+    const want = askWords(q);
+    const pool = [
+      ...snap.widgets.map((w) => ({ text: w.summary.slice(0, 220), widgetId: w.id as string | undefined, source: `the ${w.type} card` })),
+      ...snap.chat.map((m) => ({ text: `${m.from}: ${m.text}`.slice(0, 220), widgetId: undefined, source: `${m.from.toLowerCase()} in the chat` })),
+    ];
+    const ranked = pool
+      .map((p) => ({ ...p, n: [...askWords(p.text)].filter((w) => want.has(w)).length }))
+      .filter((p) => p.n > 0)
+      .sort((a, b) => b.n - a.n)
+      .slice(0, 6);
+    const snippets = ranked.map((p, i) => `[${i + 1}] ${p.text}`);
+    if (!ranked.length) return { answer: null, why: "nothing on the board or in the chat shares a word with the question", ms: Date.now() - t0, usage: null, snippets };
+    const result = await streamChat({
+      model: "ultra",
+      maxTokens: 60,
+      messages: [
+        {
+          role: "system",
+          content:
+            'You answer a question about a group of friends\' shared space using only the numbered snippets. Reply with one JSON line: {"answer":"<at most 14 words, lowercase, plain>","from":<snippet number>}. If the snippets don\'t say, reply {"answer":null}. Never guess a name, date, place or amount.',
+        },
+        { role: "user", content: `${snippets.join("\n")}\n\nQuestion: ${q}` },
+      ],
+    });
+    const usage = result.usage ? { prompt: result.usage.prompt_tokens ?? 0, completion: result.usage.completion_tokens ?? 0 } : null;
+    let parsed: { answer?: unknown; from?: unknown } = {};
+    try {
+      parsed = JSON.parse(/\{[\s\S]*\}/.exec(result.content)?.[0] ?? "{}");
+    } catch {
+      return { answer: null, why: `unreadable: ${result.content.slice(0, 80)}`, ms: Date.now() - t0, usage, snippets };
+    }
+    const from = ranked[Number(parsed.from) - 1];
+    if (typeof parsed.answer !== "string" || !parsed.answer.trim() || !from) return { answer: null, why: "the model says the snippets don't say", ms: Date.now() - t0, usage, snippets };
+    const text = parsed.answer.trim().toLowerCase().slice(0, 120);
+    // The truth check: every number and every capitalised word of the snippet's people must come from that snippet.
+    const src = from.text.toLowerCase();
+    const numbers = text.match(/\d+/g) ?? [];
+    const people = [...new Set(snap.chat.map((m) => m.from.toLowerCase()))];
+    const named = people.filter((p) => new RegExp(`\\b${p}\\b`).test(text));
+    const bad = [...numbers.filter((n) => !src.includes(n)), ...named.filter((p) => !src.includes(p))];
+    if (bad.length) return { answer: null, why: `answer said ${bad.join(", ")}, not in snippet ${parsed.from}`, ms: Date.now() - t0, usage, snippets };
+    return { answer: { text, source: from.source, ...(from.widgetId ? { widgetId: from.widgetId } : {}), facts: [from.text] }, why: `snippet ${parsed.from}`, ms: Date.now() - t0, usage, snippets };
   },
 });
 

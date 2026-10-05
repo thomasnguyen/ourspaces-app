@@ -32,6 +32,7 @@ import type { Schema } from "../lib/deck/schema";
 import { expandRecipe, isRecipe, recipeLead, type RecipePart } from "../lib/deck/recipes";
 import { guessCards } from "../lib/deck/guess";
 import { shortlistDeck } from "../lib/deck/shortlist";
+import { answerFor, goFor, mineFor, routeVerb, type Answer, type MineAct, type Verb, type VerbPick } from "../lib/deck/verbs";
 import type { VoiceEnd, VoiceHooks } from "../lib/voice";
 
 /**
@@ -105,6 +106,8 @@ export type BoardVerdict = { yes: boolean; conf: number | null; ms: number; usag
 export type DecideAnswer = {
   /** The yes/no "already on the board?", when it was asked. */
   onBoard?: BoardVerdict | null;
+  /** The verb letter (make or answer), when code couldn't place a question. */
+  verb?: { verb: string; conf: number | null; ms: number; usage: { prompt: number; completion: number } | null } | null;
   card: string | null;
   conf: number | null;
   top: { card: string; p: number }[];
@@ -182,6 +185,17 @@ export type AskTrace = {
     cardAsked?: boolean;
     onBoard?: BoardVerdict | null;
   }[];
+  /** The router: which verb, how it was decided, and for an answer what it was read from. */
+  verb: {
+    verb: Verb;
+    by: "code" | "decide" | "offers" | "tapped";
+    why: string;
+    conf?: number | null;
+    /** The answer, its source, and the facts or snippets it used. */
+    answer?: { text: string; source: string; facts: string[]; by: "facts" | "retrieval" | "unknown" | "stand-in"; ms?: number };
+    /** What do my part did, offered or refused. */
+    mine?: string;
+  } | null;
   /** The "already here" answer: code's check at the pause, the model's yes/no, and what was done. */
   found: {
     check: ExistingCheck;
@@ -225,7 +239,7 @@ export type AskTrace = {
   ok: boolean | null;
 };
 
-const STAGES = ["pause", "decided", "found", "skeleton", "tentative", "card-full", "first-field", "card-local", "committed", "card-on-screen", "cluster-local", "cluster-on-screen"] as const;
+const STAGES = ["pause", "decided", "found", "answer", "skeleton", "tentative", "card-full", "first-field", "card-local", "committed", "card-on-screen", "cluster-local", "cluster-on-screen"] as const;
 export type StageName = (typeof STAGES)[number];
 
 /** The ring in the maker's colour around the card being built (or, before
@@ -255,6 +269,19 @@ export type VoiceFound = {
   next: "spin" | null;
   /** Something was done on it for you (do my part): the slip says what. */
   done?: string;
+};
+/** A non-build verb's slip: an answer, a recap, a refusal, offers to tap. Nothing is written by it. */
+export type VoiceReply = {
+  traceKey: number;
+  verb: Verb;
+  text: string;
+  source?: string;
+  /** The card it came from (the camera is there), when there is one. */
+  widgetId?: string;
+  /** Two readings, or two cards that fit: tap one. */
+  offers?: { label: string; run: () => void }[];
+  /** "code" (facts), "model" (retrieval), "stand-in" (mock). */
+  by: string;
 };
 export type VoiceReceipt =
   | { ok: true; key: number; cards: string[]; model: string | null; ms: number | null; widgetId: string }
@@ -419,6 +446,7 @@ type Dec = {
   /** The widget code matched when it went out (the yes/no was asked about it). */
   matchId: string | null;
   onBoard: BoardVerdict | null;
+  verb: DecideAnswer["verb"] | null;
   done: Promise<void>;
 };
 
@@ -510,6 +538,10 @@ type Session = {
   pointed: boolean;
   /** Do my part: what was done on the card pointed at ("logged 40 for you"). */
   foundText?: string;
+  /** Code's verb for the words so far. */
+  verb: VerbPick | null;
+  /** An offer said "make a card": the router is skipped this time. */
+  forceMake?: boolean;
   /** Code matches the words so far to a widget already here: no new skeleton over the board until that's settled. */
   matching: string | null;
   steady: number;
@@ -527,6 +559,31 @@ type Session = {
   trace: AskTrace;
 };
 
+type BoardW = { id: string; type: string; data: Record<string, unknown> };
+export type RetrieveOut = { answer: Answer | null; why: string; ms: number; usage: { prompt: number; completion: number } | null; snippets: string[] };
+export type VerbHooks = {
+  /** The board as loaded (every poll's voters folded in). */
+  widgets: () => BoardW[];
+  me: () => { name: string; userId?: string };
+  people: () => string[];
+  rooms: () => { slug: string; name: string; also?: string[] }[];
+  here: () => string;
+  /** The frame a card sits in ("Maya's bday"), for "for friday" style words. */
+  frameOf?: (w: BoardW) => string;
+  recap: (said: string) => void;
+  goRoom: (slug: string) => void;
+  goKnows: () => void;
+  /** The tap's own write, as the speaker. */
+  act: (a: MineAct) => void;
+  /** Ask the space (retrieval + one small model call); absent in mock. */
+  retrieve?: (said: string) => Promise<RetrieveOut>;
+  /** Start a game (games aren't on main yet: a later task replaces this). */
+  game?: (said: string) => string;
+};
+
+/** Games aren't on main yet: the one place a later task plugs them in. */
+export const startGame = (_said: string) => "games are coming";
+
 export function useVoiceBuild({
   scrollerRef,
   deal,
@@ -540,6 +597,7 @@ export function useVoiceBuild({
   decide,
   board,
   myPart,
+  verbs,
 }: {
   scrollerRef: RefObject<HTMLElement | null>;
   /** `onPartial` gets the answer so far, and `done` once the stream is whole. */
@@ -552,8 +610,10 @@ export function useVoiceBuild({
   facts?: () => RoomFacts | null;
   /** Do my part: "i did 40" logs the speaker's own number on a running check-in (code, no model). Returns the card, or null. */
   myPart?: (said: string) => { item: BoardItem; text: string } | null;
-  /** The one-letter card pick (live only); `onBoard` also asks the "already on the board?" yes/no. */
-  decide?: (said: string, opts: { onBoard: string | null; card: boolean }) => Promise<DecideAnswer>;
+  /** The one-letter card pick (live only); `onBoard` also asks the "already on the board?" yes/no; `verb` the make-or-answer letter. */
+  decide?: (said: string, opts: { onBoard: string | null; card: boolean; verb: boolean }) => Promise<DecideAnswer>;
+  /** The other verbs (lib/deck/verbs.ts): what the room hands the router. */
+  verbs?: VerbHooks;
   /** The widgets on the board now, for the "already here" check. Without `decide` (mock), code's check alone answers, as a stand-in. */
   board?: () => BoardItem[];
   cardContext: () => CardContext;
@@ -573,8 +633,9 @@ export function useVoiceBuild({
   const [traces, setTraces] = useState<AskTrace[]>([]);
   /** The slip is on its way out (it leaves on glide, then unmounts). */
   const [leaving, setLeaving] = useState(false);
-  const room = useRef({ deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board, myPart });
-  room.current = { deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board, myPart };
+  const room = useRef({ deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board, myPart, verbs });
+  room.current = { deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board, myPart, verbs };
+  const [reply, setReply] = useState<VoiceReply | null>(null);
   const session = useRef<Session | null>(null);
   const clearTimer = useRef(0);
   const shellTimer = useRef(0);
@@ -597,7 +658,7 @@ export function useVoiceBuild({
     const t = { ...s.trace, stages: { ...s.trace.stages } };
     for (const name of STAGES) {
       const at = s.marks[name];
-      t.stages[name] = at !== undefined && s.lastWordAt ? Math.round(at - s.lastWordAt) : null;
+      t.stages[name] = at !== undefined && at >= 0 && s.lastWordAt ? Math.round(at - s.lastWordAt) : null;
     }
     (window as unknown as { __voiceTrace?: AskTrace }).__voiceTrace = t;
     setTraces((all) => [t, ...all.filter((x) => x.key !== t.key)].slice(0, 10));
@@ -895,7 +956,9 @@ export function useVoiceBuild({
   /** One decide call for these words (the yes/no too when code matched a widget). */
   const sendDecide = (s: Session, text: string, ask: NonNullable<typeof decide>): Dec => {
     const match = existingFor(text, room.current.board?.() ?? []);
-    const cardAsked = needsCardDecide(text);
+    const pick = s.verb;
+    const verbAsked = !!pick && pick.verb === "answer" && !pick.sure;
+    const cardAsked = needsCardDecide(text) && (!pick || pick.verb === "make" || verbAsked);
     let done = () => {};
     const d: Dec = {
       seq: s.decides.length,
@@ -907,6 +970,7 @@ export function useVoiceBuild({
       back: false,
       matchId: match.ok ? match.item.id : null,
       onBoard: null,
+      verb: null,
       done: new Promise<void>((r) => (done = r)),
     };
     s.decides.push(d);
@@ -924,11 +988,11 @@ export function useVoiceBuild({
       cardAsked,
     };
     s.trace.decides.push(row);
-    void ask(text, { onBoard: match.ok ? `${match.item.card} "${match.item.title}"` : null, card: cardAsked })
+    void ask(text, { onBoard: match.ok ? `${match.item.card} "${match.item.title}"` : null, card: cardAsked, verb: verbAsked })
       .then(
         (a) => {
           Object.assign(row, { back: Math.round(performance.now() - s.t0), card: a.card, conf: a.conf, top: a.top, error: a.error, usage: a.usage, onBoard: a.onBoard ?? null });
-          Object.assign(d, { back: true, card: a.card, conf: a.conf, top: a.top, onBoard: a.onBoard ?? null });
+          Object.assign(d, { back: true, card: a.card, conf: a.conf, top: a.top, onBoard: a.onBoard ?? null, verb: a.verb ?? null });
           if (session.current !== s || !sure(d) || (s.decided && s.decided.seq > d.seq)) return;
           s.decided = d;
           mark(s, "decided");
@@ -962,8 +1026,12 @@ export function useVoiceBuild({
     if (text.split(/\s+/).length < 2) return;
     const n = norm(text);
     if (s.decides.some((d) => d.norm === n) || s.decides.length >= DECIDE_MAX) return;
-    // Only when code can't say the card (no cue, or two), or the words match a card already here (the yes/no).
-    if (!needsCardDecide(text) && !existingFor(text, room.current.board?.() ?? []).ok) return;
+    // Only when code can't say the card (no cue, or two), the words match a card already here (the yes/no),
+    // or code can't say whether a question wants a card or an answer (the verb letter). Not for the other verbs.
+    const pick = s.verb;
+    const tie = !!pick && pick.verb === "answer" && !pick.sure;
+    if (pick && pick.verb !== "make" && !tie) return;
+    if (!tie && !needsCardDecide(text) && !existingFor(text, room.current.board?.() ?? []).ok) return;
     if (s.decInFlight >= DECIDE_IN_FLIGHT) {
       s.decQueued = true;
       return;
@@ -1010,6 +1078,7 @@ export function useVoiceBuild({
       decInFlight: 0,
       decQueued: false,
       decided: null,
+      verb: null,
       proposals: new Map(),
       pointed: false,
       matching: null,
@@ -1033,6 +1102,7 @@ export function useVoiceBuild({
         decides: [],
         skeletons: [],
         decideMoves: 0,
+        verb: null,
         found: null,
         held: [],
         route: null,
@@ -1061,6 +1131,7 @@ export function useVoiceBuild({
     setReceipt(null);
     setLanded(null);
     setFound(null);
+    setReply(null);
     setLeaving(false);
     setShell(null);
     setDrafts([]);
@@ -1091,6 +1162,23 @@ export function useVoiceBuild({
       }
       s.text = text;
       s.trace.words.push({ text, ms: Math.round(performance.now() - s.t0) });
+      // The router (code, 0 ms): another verb than make shows no skeleton and sends no fill.
+      const vh = room.current.verbs;
+      s.verb = vh ? routeVerb(text, { people: vh.people(), me: vh.me().name }) : null;
+      if (s.verb && s.verb.verb !== "make" && !s.forceMake && !s.reopened && !s.commitP) {
+        if (s.shown) {
+          s.shown = null;
+          s.fromModel = false;
+          s.tent = null;
+          setDrafts([]);
+          setShell(null);
+        }
+        window.clearTimeout(s.steady);
+        maybeDecide.current(s);
+        // a question that names a card the room may not have: the fill still goes out, in case it's a make
+        if (!s.verb.sure && guessCard(text)) maybeFire.current(s);
+        return;
+      }
       const guess = guessCard(text);
       if (guess && guess !== s.guess) {
         s.guess = guess;
@@ -1126,6 +1214,8 @@ export function useVoiceBuild({
   const ready = useCallback((text: string) => {
     const s = session.current;
     if (!s || s.reopened) return false;
+    // "catch me up", "let's play most likely to": whole as said, even on a hanging word
+    if (s.verb?.sure && (s.verb.verb === "recap" || s.verb.verb === "game")) return true;
     return !!pickFinal(s, text, room.current.facts?.() ?? null)?.cardOk;
   }, []);
 
@@ -1136,6 +1226,7 @@ export function useVoiceBuild({
         setReceipt(null);
         setLanded(null);
         setFound(null);
+        setReply(null);
         setLeaving(false);
       }, LEAVE_MS);
     }, RECEIPT_MS);
@@ -1326,6 +1417,195 @@ export function useVoiceBuild({
     [leave, mark, markNext, publish, scrollerRef, traceAnswer],
   );
 
+  /** A non-build verb's slip on the stage (and above the dock): nothing is written, the ask is over. */
+  const say = (s: Session, r: Omit<VoiceReply, "traceKey">) => {
+    setReply({ ...r, traceKey: s.key });
+    setShell(null);
+    setDrafts([]);
+    s.trace.done = true;
+    s.trace.ok = true;
+    markNext(s, "answer");
+    void nextFrame().then(() => publish(s));
+    if (!r.offers?.length) leave();
+  };
+  const askRef = useRef<(said: string, end: VoiceEnd) => Promise<void>>(async () => {});
+
+  /**
+   * The router at the pause (lib/deck/verbs.ts). True when the ask was another
+   * verb than make and is handled; false = build a card as before.
+   */
+  const routeAt = async (s: Session, said: string, end: VoiceEnd, round: number): Promise<boolean> => {
+    const vh = room.current.verbs!;
+    const me = vh.me();
+    const pick = routeVerb(said, { people: vh.people(), me: me.name });
+    s.verb = pick;
+    s.trace.verb = { verb: pick.verb, by: "code", why: pick.why };
+    if (pick.verb === "make") return false;
+    const stale = () => session.current !== s || s.round !== round;
+    const widgets = vh.widgets();
+    const frames = vh.frameOf ?? (() => "");
+    const itemOf = (id: string): BoardItem | null => {
+      const it = room.current.board?.().find((b) => b.id === id);
+      if (it) return it;
+      const w = widgets.find((x) => x.id === id);
+      return w ? { id, card: w.type, title: "", by: null } : null;
+    };
+    /** The camera goes to the card and the slip on it says `text`; the stage says it first. */
+    const pointWith = (verb: Verb, widgetId: string | undefined, text: string, source?: string, by = "code") => {
+      const it = widgetId ? itemOf(widgetId) : null;
+      s.foundText = source ? `${text} · ${source}` : text;
+      if (it) {
+        s.trace.found = { check: { ok: true, item: it, shared: [], why: verb }, verdict: null, outcome: "dealt", why: `${verb}: ${text}` };
+        // marked before pointAt publishes, so the published trace has the slip's time
+        markNext(s, "answer");
+        setReply({ traceKey: s.key, verb, text, source, widgetId: it.id, by });
+        if (pointAt(s, it)) return;
+        setReply(null);
+      }
+      say(s, { verb, text, source, by });
+    };
+    const answered = (a: Answer, how: "facts" | "retrieval", ms?: number) => {
+      s.trace.verb = { ...s.trace.verb!, verb: "answer", answer: { text: a.text, source: a.source, facts: a.facts, by: how, ms } };
+      pointWith("answer", a.widgetId, a.text, `from ${a.source}`, how === "facts" ? "code" : "model");
+    };
+    const dontKnow = (by: "unknown" | "stand-in", why: string, facts: string[] = []) => {
+      const text = "the space doesn't know that yet";
+      s.trace.verb = { ...s.trace.verb!, verb: "answer", answer: { text, source: why, facts, by } };
+      say(s, { verb: "answer", text, source: by === "stand-in" ? "stand-in · no model in mock" : undefined, by: by === "stand-in" ? "stand-in" : "model" });
+    };
+    const retrieveAndSay = async () => {
+      if (!vh.retrieve) return dontKnow("stand-in", "mock: no retrieval");
+      const t0 = performance.now();
+      const out = await vh.retrieve(said).catch((e) => ({ answer: null, why: String(e).slice(0, 120), ms: 0, usage: null, snippets: [] }) as RetrieveOut);
+      if (stale()) return;
+      s.trace.calls.push({ text: said, ms: Math.round(t0 - s.t0), spec: false, used: true, card: "answer", usage: out.usage ? { model: "Ultra", ...out.usage } : null });
+      if (out.answer) answered({ ...out.answer, facts: out.snippets }, "retrieval", Math.round(performance.now() - t0));
+      else dontKnow("unknown", out.why, out.snippets);
+    };
+
+    switch (pick.verb) {
+      case "recap":
+        say(s, { verb: "recap", text: "catching you up", by: "code" });
+        vh.recap(said);
+        return true;
+      case "game":
+        say(s, { verb: "game", text: (vh.game ?? startGame)(said), by: "code" });
+        return true;
+      case "edit":
+        say(s, { verb: "edit", text: "can't change cards yet", by: "code" });
+        return true;
+      case "go": {
+        const t = goFor(said, vh.rooms(), room.current.board?.() ?? [], vh.here());
+        if (!t) {
+          say(s, { verb: "go", text: "couldn't find that here", by: "code" });
+        } else if (t.kind === "card") {
+          pointWith("go", t.item.id, `here's ${t.item.title}`);
+        } else if (t.kind === "room") {
+          say(s, { verb: "go", text: `going to ${t.name}`, by: "code" });
+          window.setTimeout(() => vh.goRoom(t.slug), 500);
+        } else {
+          say(s, { verb: "go", text: "what this space knows", by: "code" });
+          window.setTimeout(() => vh.goKnows(), 500);
+        }
+        return true;
+      }
+      case "mine": {
+        if (pick.refuse) {
+          s.trace.verb!.mine = `refused: for ${pick.refuse}`;
+          say(s, { verb: "mine", text: `i can only do your part · ${pick.refuse.toLowerCase()} can say it`, by: "code" });
+          return true;
+        }
+        // "i did 40": your own number on a running check-in (the F2 path)
+        const logged = room.current.myPart?.(said);
+        if (logged) {
+          s.trace.verb!.mine = logged.text;
+          pointWith("mine", logged.item.id, logged.text);
+          return true;
+        }
+        const plan = mineFor(said, widgets, me.name, me.userId, frames);
+        if (!plan) return false;
+        if (plan.kind === "do") {
+          vh.act(plan.act);
+          s.trace.verb!.mine = `${plan.act.kind} on "${plan.act.title}" as ${me.name}`;
+          pointWith("mine", plan.act.widgetId, plan.text);
+        } else if (plan.kind === "offers") {
+          s.trace.verb = { ...s.trace.verb!, by: "offers", mine: `offered: ${plan.acts.map((a) => a.label).join(" | ")} (${plan.why})` };
+          say(s, {
+            verb: "mine",
+            text: "which one?",
+            source: plan.why,
+            by: "code",
+            offers: plan.acts.map((a) => ({
+              label: a.label,
+              run: () => {
+                vh.act(a.act);
+                s.trace.verb = { ...s.trace.verb!, by: "tapped", mine: `tapped: ${a.label}` };
+                setReply(null);
+                pointWith("mine", a.act.widgetId, a.act.kind === "vote" ? `voted ${a.act.label} for you` : a.act.kind === "claim" ? `you're down for ${a.act.item}` : `done · ${a.act.title}`);
+              },
+            })),
+          });
+        } else {
+          s.trace.verb!.mine = plan.text;
+          say(s, { verb: "mine", text: plan.text, by: "code" });
+        }
+        return true;
+      }
+      case "answer": {
+        const code = answerFor(said, room.current.facts?.() ?? null, widgets, frames);
+        if (code) {
+          answered(code, "facts");
+          return true;
+        }
+        if (!pick.sure) {
+          // A question naming a card the room doesn't have: the decide's verb letter breaks the tie.
+          let verb: string | null = null;
+          let conf: number | null = null;
+          const ask = room.current.decide;
+          if (ask) {
+            const n = norm(said);
+            const d = s.decides.find((x) => x.norm === n) ?? sendDecide(s, said, ask);
+            await Promise.race([d.done, new Promise((r) => setTimeout(r, 2000))]);
+            if (stale()) return true;
+            if (d.verb && (d.verb.conf ?? 0) >= DECIDE_BAR) verb = d.verb.verb;
+            conf = d.verb?.conf ?? null;
+          }
+          s.trace.verb = { ...s.trace.verb!, by: verb ? "decide" : "offers", conf, why: `${pick.why}; no fact answers it; decide ${verb ?? "unsure"}${conf !== null ? ` ${conf.toFixed(2)}` : ""}` };
+          if (verb === "make") {
+            s.trace.verb.verb = "make";
+            return false;
+          }
+          if (!verb) {
+            // Not sure: both readings as offers, nothing asked, nothing built.
+            say(s, {
+              verb: "answer",
+              text: "a card, or an answer?",
+              by: ask ? "code" : "stand-in",
+              offers: [
+                { label: `make it: ${said}`, run: () => {
+                  setReply(null);
+                  s.trace.verb = { ...s.trace.verb!, verb: "make", by: "tapped" };
+                  s.forceMake = true;
+                  s.trace.done = false;
+                  void askRef.current(said, end);
+                } },
+                { label: "answer it", run: () => {
+                  setReply(null);
+                  s.trace.verb = { ...s.trace.verb!, by: "tapped" };
+                  void retrieveAndSay();
+                } },
+              ],
+            });
+            return true;
+          }
+        }
+        await retrieveAndSay();
+        return true;
+      }
+    }
+    return false;
+  };
+
   const ask = useCallback(
     async (said: string, end: VoiceEnd) => {
       const s = session.current;
@@ -1341,6 +1621,11 @@ export function useVoiceBuild({
       s.trace.how = end.how;
       const late: AskTrace["late"][number] | null = round > 1 ? { text: said, ms: Math.round(performance.now() - s.t0), outcome: "…" } : null;
       if (late) s.trace.late.push(late);
+      // The router: another verb than make is handled here and nothing is built.
+      if (room.current.verbs && !s.reopened && !s.commitP && !s.forceMake) {
+        const handled = await routeAt(s, said, end, round);
+        if (handled || session.current !== s || s.round !== round) return;
+      }
       // Do my part: your own number on a running check-in, logged by code; the camera goes to the card.
       const mine = !s.reopened && !s.commitP ? room.current.myPart?.(said) : null;
       if (mine) {
@@ -1615,6 +1900,8 @@ export function useVoiceBuild({
     [buildRecipe, ctxNow, fill, fire, leave, mark, markNext, note, pointAt, publish, scrollerRef, show, traceAnswer],
   );
 
+  askRef.current = ask;
+
   /** The board as this screen should draw it: the synced widgets plus any
       local card not yet replaced by its synced copy. */
   const withDrafts = useCallback(
@@ -1629,5 +1916,5 @@ export function useVoiceBuild({
   );
 
   const voice: VoiceHooks = { start, words, ask, ready };
-  return { voice, withDrafts, drafts, shell, landed, found, receipt, leaving, traces };
+  return { voice, withDrafts, drafts, shell, landed, found, reply, receipt, leaving, traces };
 }

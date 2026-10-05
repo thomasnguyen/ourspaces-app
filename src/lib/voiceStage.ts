@@ -70,8 +70,12 @@ export type StageBuild = {
   cluster: { box: { x: number; y: number; w: number; h: number }; cards: Widget[] } | null;
   /** The ask pointed at a card the board already has instead of dealing one: that card. */
   found: { widgetId: string; host: HTMLElement; title: string } | null;
+  /** Another verb than make (an answer, a recap, your part, go): its slip, and offers to tap. No card. */
+  reply: StageReply | null;
   maker: { name: string; color: string };
 };
+
+export type StageReply = { verb: string; text: string; source?: string; widgetId?: string; offers?: { label: string; run: () => void }[] };
 
 /** What the live code must provide: exactly these fields of `useVoiceBuild`'s
     return value, plus the maker. */
@@ -81,6 +85,8 @@ export type StageFeed = {
   landed: { widgetId: string; host: HTMLElement; traceKey: number } | null;
   /** The build's "already here" (useVoiceBuild `found`). */
   found?: { widgetId: string; host: HTMLElement; traceKey: number; title: string } | null;
+  /** Another verb's slip (useVoiceBuild `reply`). */
+  reply?: (StageReply & { traceKey: number }) | null;
   receipt: { ok: boolean; key: number } | null;
   traces: Array<{ key: number; said: string; how: string | null; notes?: Array<{ token: string; kind: string; detail: string }> }>;
   color: string;
@@ -127,11 +133,13 @@ export function feedVoiceStage(feed: StageFeed) {
   const frame = feed.drafts.length > 1 ? feed.drafts.find((d) => d.type === "frame") : undefined;
   const draft = (frame ? feed.drafts.find((d) => d.type === "checkIn") : feed.drafts[0]) ?? feed.drafts[0] ?? null;
   const draftKey = draft ? Number(/^voice-draft-(\d+)-/.exec(draft.id)?.[1]) : NaN;
-  const key = Number.isFinite(draftKey) ? draftKey : (feed.found?.traceKey ?? feed.landed?.traceKey ?? feed.receipt?.key ?? (feed.shell ? feed.traces[0]?.key : undefined));
+  const key = Number.isFinite(draftKey) ? draftKey : (feed.reply?.traceKey ?? feed.found?.traceKey ?? feed.landed?.traceKey ?? feed.receipt?.key ?? (feed.shell ? feed.traces[0]?.key : undefined));
   let next: StageBuild | null = null;
   if (key !== undefined) {
     const same = current?.key === key ? current : null;
-    const foundHere = feed.found?.traceKey === key ? feed.found : null;
+    const replyHere = feed.reply?.traceKey === key ? feed.reply : null;
+    // an answer pointed at its card: the stage says the answer, never "already here"
+    const foundHere = feed.found?.traceKey === key && !replyHere ? feed.found : null;
     const there = foundHere ? (boardWidget?.(foundHere.widgetId) ?? null) : null;
     // the draft is dropped once its synced copy is on the board: keep showing the last one
     const widget = there ?? draft ?? same?.widget ?? null;
@@ -167,7 +175,8 @@ export function feedVoiceStage(feed: StageFeed) {
       placed,
       failed: feed.receipt?.key === key && !feed.receipt.ok,
       sources: [...new Set(parts.flatMap((p) => (p.room ? [p.room] : [])))],
-      found: feed.found?.traceKey === key ? { widgetId: feed.found.widgetId, host: feed.found.host, title: feed.found.title } : null,
+      found: foundHere ? { widgetId: foundHere.widgetId, host: foundHere.host, title: foundHere.title } : null,
+      reply: replyHere ? { verb: replyHere.verb, text: replyHere.text, source: replyHere.source, widgetId: replyHere.widgetId, offers: replyHere.offers } : (same?.reply ?? null),
       maker: { name: feed.by, color: feed.color },
     };
   }

@@ -28,6 +28,7 @@ import {
   type StageBuild,
   type StageOffer,
   type StagePart,
+  type StageReply,
 } from "../lib/voiceStage";
 import { beat, timingCounts, VOICE_TIMINGS, voiceSlow } from "../lib/voiceTimings";
 import { VoiceOrb } from "./VoiceOrb";
@@ -387,6 +388,36 @@ function StageCluster({ cluster }: { cluster: NonNullable<StageBuild["cluster"]>
 
 /** The card on the right half: the build's real widget, larger than on the
     board, in a dashed ring of the maker's colour until it is whole. */
+const VERB_LABEL: Record<string, string> = { answer: "Answer", recap: "Catching up", mine: "Your part", go: "Going", game: "Games", edit: "Edit" };
+
+/** Another verb than make: no card, one plain slip (and offers to tap). The design pass styles it. */
+function StageReplySlip({ reply }: { reply: StageReply }) {
+  return (
+    <div className="voice-two-reply" data-testid="voice-stage-reply" data-verb={reply.verb} onClick={(event) => event.stopPropagation()}>
+      <p className="voice-two-reply-text">{reply.text}</p>
+      {reply.source && <p className="voice-two-reply-source">{reply.source}</p>}
+      {reply.offers?.length ? (
+        <div className="voice-two-offers" data-testid="voice-stage-choices">
+          {reply.offers.map((offer, i) => (
+            <button
+              type="button"
+              key={i}
+              className="voice-two-offer"
+              data-testid={`voice-stage-choice-${i}`}
+              onClick={() => {
+                playSound("tap");
+                offer.run();
+              }}
+            >
+              {offer.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function StageCard({
   build,
   reveal,
@@ -714,7 +745,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
   const held = useRef<{ at: number; build: StageBuild } | null>(null);
   if (fresh?.widget) held.current = { at: openedAt.current, build: fresh };
   const kept = phase !== "closed" && held.current?.at === openedAt.current ? held.current.build : null;
-  const build = fresh?.widget ? fresh : fresh && kept ? { ...kept, found: fresh.found, failed: fresh.failed } : (kept ?? fresh);
+  const build = fresh?.widget ? fresh : fresh && kept ? { ...kept, found: fresh.found, failed: fresh.failed, reply: fresh.reply } : (kept ?? fresh);
   const buildRef = useRef(build);
   buildRef.current = build;
   const reveal = useReveal(build, freeze);
@@ -752,6 +783,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
 
   // ---- the board already has this card (the build's own check): say so, then go to it ----
   const found = build?.found ?? null;
+  const reply = build?.reply ?? null;
 
   // `&level=0.8` pins the loudness the orb and the waveform show
   const pinned = useRef(Number(params.get("level")));
@@ -858,6 +890,12 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
   useEffect(() => {
     if (!two || phase !== "open" || freeze) return;
     if (voice.state !== "idle") busy.current = true;
+    if (reply) {
+      // an answer, a recap, your part: said on the stage, then the board takes over (offers wait for a tap)
+      markStageBeat("reply");
+      const id = window.setTimeout(() => close(), reply.offers?.length ? 12000 : beat("replyHold"));
+      return () => window.clearTimeout(id);
+    }
     if (found) {
       markStageBeat("found");
       const onto = found.host.querySelector<HTMLElement>(`[data-widget-id="${found.widgetId}"]`) ?? undefined;
@@ -875,7 +913,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
       const id = window.setTimeout(() => close(), 300);
       return () => window.clearTimeout(id);
     }
-  }, [two, phase, freeze, whole, failed, found, voice.state, close]);
+  }, [two, phase, freeze, whole, failed, found, reply, voice.state, close]);
   useEffect(() => {
     if (phase === "closed") busy.current = false;
   }, [phase]);
@@ -1016,7 +1054,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
           <div className="voice-two-bar">
             <span className="voice-stage-status" data-testid="voice-stage-status" data-mood={voice.muted ? "muted" : listening ? "listening" : "working"}>
               <i aria-hidden="true" />
-              {voice.muted ? "Muted" : listening ? "Listening" : found ? "Already here" : whole ? "Placing" : "Building"}
+              {voice.muted ? "Muted" : listening ? "Listening" : reply ? (VERB_LABEL[reply.verb] ?? "Done") : found ? "Already here" : whole ? "Placing" : "Building"}
             </span>
             {controls(done)}
           </div>
@@ -1035,7 +1073,9 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
           </div>
         </section>
         <section className="voice-two-right" data-testid="voice-stage-right" data-state={state}>
-          {build?.kind && build.widget ? (
+          {reply && voice.state !== "listening" ? (
+            <StageReplySlip reply={reply} />
+          ) : build?.kind && build.widget ? (
             <StageCard key={build.key} build={build} reveal={reveal} fly={card} asking={asking} offers={offers} onOffer={takeOffer} found={Boolean(found)} />
           ) : (
             !voice.transcript &&

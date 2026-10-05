@@ -27440,3 +27440,14 @@ body:has(.demo-banner) .settings-sheet {
     animation: none;
   }
 }
+
+/* A verb's slip with no card under it (an answer the room doesn't have, a
+   recap, offers): above the dock, like a miss. */
+.voice-reply {
+  gap: 10px;
+  color: white;
+}
+
+.voice-reply-source {
+  color: color-mix(in oklab, white 60%, transparent);
+}
