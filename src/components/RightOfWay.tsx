@@ -5,7 +5,7 @@
  * on purpose; a design pass follows. Data: convex/leases.ts `forRoom`,
  * convex/rightOfWay.ts `room`. Mock: a scripted second person (lib/rowMock.ts).
  */
-import { useEffect, useLayoutEffect, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -83,10 +83,7 @@ function Halo({ host, lease, leaving }: { host: HTMLElement | null; lease: RowLe
 
 /** Halos for everything held by someone other than me. */
 export function RowHalos({ host, leases, me }: { host: HTMLElement | null; leases: RowLease[]; me: string }) {
-  const [items, setItems] = useState<(RowLease & { key: string })[]>([]);
-  useEffect(() => {
-    setItems(leases.filter((l) => l.userId !== me).map((l) => ({ ...l, key: `${l.thing}:${l.userId}` })));
-  }, [leases, me]);
+  const items = useMemo(() => leases.filter((l) => l.userId !== me).map((l) => ({ ...l, key: `${l.thing}:${l.userId}` })), [leases, me]);
   const shown = useLeaving(items);
   return (
     <>
@@ -162,7 +159,8 @@ function Ghost({ host, ghost, mine, onCancel, leaving }: { host: HTMLElement | n
 }
 
 export function RowGhosts({ host, ghosts, me, onCancel }: { host: HTMLElement | null; ghosts: RowGhost[]; me: string; onCancel: (id: string) => void }) {
-  const items = useLeaving(ghosts.map((g) => ({ ...g, key: g.id })));
+  const keyed = useMemo(() => ghosts.map((g) => ({ ...g, key: g.id })), [ghosts]);
+  const items = useLeaving(keyed);
   return (
     <>
       {items.map((g) => (
@@ -178,7 +176,7 @@ export function settledLine(s: { by: string; byUserId?: string; text: string; ou
   if (!o) return null;
   const mine = s.byUserId === me;
   if (o.state === "landed") return `${mine ? "" : `${s.by.toLowerCase()} `}${s.text} (waited ${(o.ms / 1000).toFixed(1)} s for ${o.on.toLowerCase()})`;
-  if (!mine || o.state === "cancelled") return null;
+  if (!mine || o.state === "cancelled" || o.state === "replaced") return null;
   return o.why ?? "that changed while you waited; nothing done";
 }
 

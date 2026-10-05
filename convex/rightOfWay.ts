@@ -84,17 +84,24 @@ export async function rightOfWay(ctx: MutationCtx, write: AiWrite): Promise<Door
     }
   }
   const v = gate({ thing, by: { kind: "space", ...(write.by.userId ? { asker: write.by.userId } : {}) }, spot, refused: write.refused, finishes: write.finishes }, rows.map(asLease));
-  const lease = v.kind !== "go" && v.on ? rows.find((l) => l.thing === v.on!.thing && l.userId === (v.on!.by as { id: string }).id) : undefined;
+  // the lease behind the verdict: who it waits on, or (go) the asker's own hold on it
+  const lease = v.kind !== "go" && v.on ? rows.find((l) => l.thing === v.on!.thing && l.userId === (v.on!.by as { id: string }).id) : v.kind === "go" && thing !== undefined ? rows.find((l) => l.thing === thing) : undefined;
   const on = lease ? holderOf(lease) : undefined;
   const reason =
     v.kind === "go"
-      ? rows.some((l) => l.thing === thing) ? `${rows.find((l) => l.thing === thing)!.name} holds it: their own hand` : "nobody holds it"
+      ? lease ? `${lease.name} holds it: their own hand` : "nobody holds it"
       : v.kind === "wait"
         ? `${on!.name} is ${DOING[on!.kind] ?? "holding"} it`
         : v.kind === "never" && on && thing === undefined ? `${v.why}; placed it below` : v.why;
   const writeId = await log(ctx, write, v.kind, reason);
   let pendingId: Id<"pending"> | undefined;
   if (v.kind === "wait" && write.replay && thing !== undefined) {
+    // a late word re-sends the same edit ("rename it to taco" → "… taco tuesday"): the newer one replaces the waiting one
+    for (const old of await ctx.db.query("pending").withIndex("by_thing", (q) => q.eq("spaceId", write.spaceId).eq("thing", thing)).take(16)) {
+      const r = JSON.parse(old.write) as Replay;
+      const row = await ctx.db.get(old.writeId);
+      if (row?.byUserId === write.by.userId && r.kind === "edit" && write.replay.kind === "edit" && r.op.op === write.replay.op.op) await close(ctx, old, "replaced");
+    }
     pendingId = await ctx.db.insert("pending", { spaceId: write.spaceId, thing, writeId, write: JSON.stringify(write.replay), on: JSON.stringify(on), at: Date.now() });
     await ctx.scheduler.runAfter(WAIT_MS, internal.rightOfWay.expire, { pendingId });
   }
@@ -193,11 +200,11 @@ export async function landWaiting(ctx: MutationCtx, spaceId: Id<"spaces">, thing
   }
 }
 
-async function close(ctx: MutationCtx, p: Doc<"pending">, state: "expired" | "cancelled") {
+async function close(ctx: MutationCtx, p: Doc<"pending">, state: "expired" | "cancelled" | "replaced") {
   await ctx.db.delete(p._id);
   const on = JSON.parse(p.on) as Holder;
   const now = Date.now();
-  await ctx.db.patch(p.writeId, { outcome: JSON.stringify({ state, ms: now - p.at, on: on.name, why: state === "expired" ? `${on.name} held it past 30 s; nothing done` : "cancelled", at: now }) });
+  await ctx.db.patch(p.writeId, { outcome: JSON.stringify({ state, ms: now - p.at, on: on.name, why: state === "expired" ? `${on.name} held it past 30 s; nothing done` : state, at: now }) });
 }
 
 export const expire = internalMutation({
@@ -257,7 +264,7 @@ export const heldBack = query({
   handler: async (ctx, { spaceId }) => {
     const rows = await ctx.db.query("aiWrites").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(200);
     return rows
-      .filter((r) => r.verdict === "wait" || r.verdict === "never" || r.verdict === "refused")
+      .filter((r) => (r.verdict === "wait" || r.verdict === "never" || r.verdict === "refused") && !r.outcome?.includes('"replaced"'))
       .slice(0, 8)
       .map((r) => ({ id: r._id, at: r.at, kind: r.kind, by: r.by, verdict: r.verdict, reason: r.reason ?? "", text: r.text ?? "", ...(r.outcome ? { outcome: r.outcome } : {}) }));
   },

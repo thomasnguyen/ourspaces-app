@@ -1245,6 +1245,7 @@ function WidgetCardComponent({
           <button
             type="button"
             className="widget-edit-button"
+            data-testid="widget-edit-button"
             onClick={(event) => {
               event.stopPropagation();
               onEdit?.(widget.id);

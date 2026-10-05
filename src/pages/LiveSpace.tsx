@@ -2795,6 +2795,12 @@ export function LiveSpacePage({
       : recapCites.concat(payoffFlashId ? [payoffFlashId] : []),
     [payoffFlashId, recapCites, recapHover],
   );
+  /* the editor panel open on a card is typing in it: the card is held until it closes */
+  useEffect(() => {
+    if (!editingWidgetId) return;
+    holds.start(editingWidgetId, "type");
+    return () => holds.stop(editingWidgetId, "type");
+  }, [editingWidgetId, holds.start, holds.stop]);
   const startCanvasGesture = useCallback((widget: Widget, kind: CanvasGestureKind) => {
     holds.start(widget.id, "drag");
     handlers.onGestureStart(widget, kind);

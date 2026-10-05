@@ -48,7 +48,9 @@ import { setVoiceStageBoard, setVoiceStageOffers } from "./lib/voiceStage";
 import { beat } from "./lib/voiceTimings";
 import { boardItems } from "./lib/deck/existing";
 import { useVoiceBuild } from "./live/useVoiceBuild";
-import { VoiceBuildLayer } from "./components/VoiceBuildLayer";
+import { EditSlips, VoiceBuildLayer } from "./components/VoiceBuildLayer";
+import { HeldBack, RowGhosts, RowHalos, withGhosts } from "./components/RightOfWay";
+import { useRowMock } from "./lib/rowMock";
 import {
   MAIL_LAB_CAKE_ID,
   MAIL_LAB_HIDDEN,
@@ -2015,6 +2017,12 @@ export default function App() {
     }
     return grouped;
   }, [currentLocalMessages, spaceId]);
+  /* Right of Way, mock: a scripted second person holding a card (lib/rowMock.ts, ?row=held|ghost|land) */
+  const rowMock = useRowMock(getSpace(spaceId).widgets, getSpace(spaceId).members);
+  const rowGhostData = useMemo(
+    () => Object.fromEntries(withGhosts(getSpace(spaceId).widgets.filter((w) => rowMock.ghosts.some((g) => g.thing === w.id)), rowMock.ghosts, rowMock.leases).map((w) => [w.id, w.data])),
+    [rowMock, spaceId],
+  );
 
   if (route === "cursors") {
     return <DeferredRoute><CursorLab /></DeferredRoute>;
@@ -2561,6 +2569,8 @@ export default function App() {
               widgetDataOverrides={{
                 ...playAsOverrides(baseSpace.widgets, turnViewer),
                 ...(widgetDataOverrides[spaceId] ?? {}),
+                ...rowGhostData,
+                ...rowMock.overrides,
               }}
               onClaim={claimSlot}
               claimantId="you"
@@ -2776,6 +2786,20 @@ export default function App() {
         onSave={saveSpace}
       />
       <VoiceBuildLayer {...voiceBuild} color={voiceMaker.color} by={voiceMaker.name} />
+      {rowMock.leases.length + rowMock.ghosts.length > 0 || rowMock.slip ? (
+        <>
+          <RowHalos host={canvasScaleLayerRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null} leases={rowMock.leases} me="you" />
+          <RowGhosts host={canvasScaleLayerRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null} ghosts={rowMock.ghosts} me="you" onCancel={() => {}} />
+          <EditSlips
+            slips={rowMock.slip ? [rowMock.slip] : []}
+            host={canvasScaleLayerRef.current?.querySelector<HTMLElement>(".space-canvas") ?? null}
+            at={(id) => {
+              const w = visibleWidgets.find((x) => x.id === id);
+              return w ? { x: w.x, y: w.y } : null;
+            }}
+          />
+        </>
+      ) : null}
       <YourTurn
         roomKey={spaceId}
         items={turnItems}
@@ -2875,7 +2899,7 @@ export default function App() {
           <span>editing this space</span>
         </div>
       )}
-      <RoomKnowsPage slug={spaceId} roomName={activeSpaceCustomization.name} knows={mockKnows} self={tabIdentity} onChange={correctMockKnows} fixture />
+      <RoomKnowsPage slug={spaceId} roomName={activeSpaceCustomization.name} knows={mockKnows} self={tabIdentity} onChange={correctMockKnows} fixture heldBack={rowMock.heldBack ? <HeldBack rows={rowMock.heldBack} /> : undefined} />
     </main>
     </JigsawProvider>
     </GamesProvider>

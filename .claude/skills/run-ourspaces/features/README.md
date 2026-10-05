@@ -25,6 +25,7 @@ id named here exists in `src/`.
 | [family](family.md) | the family | board · logged · final · knows |
 | [check-in](check-in.md) | family board | open · logging · logged · mina · final |
 | [standings](standings.md) | family board | locked · open · unlocked · final |
+| [right-of-way](right-of-way.md) | crew | held · ghost · land · knows (mock, scripted holder) · liveknows (lane) + the two-browser take |
 
 ## Header format
 

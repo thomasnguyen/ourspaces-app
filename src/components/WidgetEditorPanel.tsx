@@ -588,6 +588,7 @@ export function WidgetEditorPanel({
               <label className="widget-editor-field">
                 <span>Question</span>
                 <textarea
+                  data-testid="widget-editor-title"
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
                   rows={3}
@@ -1038,6 +1039,7 @@ export function WidgetEditorPanel({
           <button
             type="submit"
             className="widget-editor-save"
+            data-testid="widget-editor-save"
             disabled={
               (
                 !isFrame &&
