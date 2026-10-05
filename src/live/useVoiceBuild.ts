@@ -1590,6 +1590,7 @@ export function useVoiceBuild({
                 setReply({ traceKey: s.key, verb: "edit", text: out.text, by: "code" });
                 return;
               }
+              playSound("place"); // the change landed on the card: the one landing sound, once
               const writeId = out.writeId;
               if (!writeId || !vh.undo) return;
               const undo = async () => {

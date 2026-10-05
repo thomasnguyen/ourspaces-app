@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import type { Widget } from "../data/types";
 import type { AskTrace, StageName, VoiceEdit, VoiceFound, VoiceLanded, VoiceReceipt, VoiceReply, VoiceShell } from "../live/useVoiceBuild";
 import { feedVoiceStage, replyTone } from "../lib/voiceStage";
+import { playSound } from "../lib/sounds";
 import type { ResolveNote, RoomFacts } from "../lib/deck";
 
 /** The dev readout (one thin strip) and its drawer show on the dev lane, or
@@ -80,11 +81,14 @@ function UndoButton({ undo }: { undo: () => Promise<string> }) {
   );
 }
 
-/** The card under a slip takes the hit once, as the slip arrives (other screens see a change land, not just a label). */
+/** The card under a slip takes the hit once, as the slip arrives (other screens see a change land, not just a label),
+    with the one landing sound: someone else's edit, or a change that waited its turn. */
 function SlipHit({ host, widgetId }: { host: HTMLElement; widgetId: string }) {
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = window.setTimeout(() => playSound("place"), 260);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return () => window.clearTimeout(t);
     host.querySelector(`[data-widget-id="${widgetId}"] .widget-group-body`)?.animate([{ scale: "1.045 0.955" }, { scale: "1" }], { duration: 360, delay: 260, easing: "cubic-bezier(0.2, 0.9, 0.3, 1.18)" });
+    return () => window.clearTimeout(t);
   }, [host, widgetId]);
   return null;
 }
