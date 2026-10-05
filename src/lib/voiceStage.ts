@@ -79,6 +79,19 @@ export type StageBuild = {
 
 export type StageReply = { verb: string; text: string; source?: string; widgetId?: string; offers?: { label: string; run: () => void }[] };
 
+/** What kind of thing the space is saying, read off the reply: it did or knows
+    something (say), it won't or can't (no), it needs you to pick (ask), it's
+    waiting on someone (wait). The slip's tab and colour follow. */
+export function replyTone(reply: { verb: string; text: string; offers?: unknown[] }): { tone: "say" | "no" | "ask" | "wait"; tab: string } {
+  const t = reply.text.toLowerCase();
+  if (reply.offers?.length) return { tone: "ask", tab: "which one?" };
+  if (t.startsWith("waiting on ")) return { tone: "wait", tab: "not yet" };
+  if (/\bwon't\b|\bcan only\b|\bonly acts\b/.test(t)) return { tone: "no", tab: "the space won't" };
+  if (/doesn't know|don't know|couldn't|can't|which card|no card|nothing done|not on the board|coming/.test(t)) return { tone: "no", tab: reply.verb === "answer" ? "not yet" : "can't do that" };
+  const tab = ({ answer: "the space knows", recap: "catching you up", mine: "done, as you", go: "going there", game: "games", edit: "changed" } as Record<string, string>)[reply.verb] ?? "the space";
+  return { tone: "say", tab };
+}
+
 /** What the live code must provide: exactly these fields of `useVoiceBuild`'s
     return value, plus the maker. */
 export type StageFeed = {

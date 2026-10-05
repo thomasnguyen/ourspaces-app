@@ -29,6 +29,7 @@ import {
   type StageOffer,
   type StagePart,
   type StageReply,
+  replyTone,
 } from "../lib/voiceStage";
 import { beat, timingCounts, VOICE_TIMINGS, voiceSlow } from "../lib/voiceTimings";
 import { VoiceOrb } from "./VoiceOrb";
@@ -391,11 +392,17 @@ function StageCluster({ cluster }: { cluster: NonNullable<StageBuild["cluster"]>
     board, in a dashed ring of the maker's colour until it is whole. */
 const VERB_LABEL: Record<string, string> = { answer: "Answer", recap: "Catching up", mine: "Your part", go: "Going", game: "Games", edit: "Edit" };
 
-/** Another verb than make: no card, one plain slip (and offers to tap). The design pass styles it. */
+/** Another verb than make: no card, one slip (and offers to tap). The slip's
+    tab says what kind of thing the space is saying; the first clause is the
+    headline, the rest sits under it, so a long answer stacks instead of running wide. */
 function StageReplySlip({ reply }: { reply: StageReply }) {
+  const { tone, tab } = replyTone(reply);
+  const [head, ...more] = reply.text.split(" · ");
   return (
-    <div className="voice-two-reply" data-testid="voice-stage-reply" data-verb={reply.verb} onClick={(event) => event.stopPropagation()}>
-      <p className="voice-two-reply-text">{reply.text}</p>
+    <div className="voice-two-reply" data-testid="voice-stage-reply" data-verb={reply.verb} data-tone={tone} onClick={(event) => event.stopPropagation()}>
+      <span className="voice-two-reply-tab">{tab}</span>
+      <p className="voice-two-reply-text">{head}</p>
+      {more.length > 0 && <p className="voice-two-reply-more">{more.join(" · ")}</p>}
       {reply.source && <p className="voice-two-reply-source">{reply.source}</p>}
       {reply.offers?.length ? (
         <div className="voice-two-offers" data-testid="voice-stage-choices">

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { Widget } from "../data/types";
 import type { AskTrace, StageName, VoiceEdit, VoiceFound, VoiceLanded, VoiceReceipt, VoiceReply, VoiceShell } from "../live/useVoiceBuild";
-import { feedVoiceStage } from "../lib/voiceStage";
+import { feedVoiceStage, replyTone } from "../lib/voiceStage";
 import type { ResolveNote, RoomFacts } from "../lib/deck";
 
 /** The dev readout (one thin strip) and its drawer show on the dev lane, or
@@ -80,6 +80,15 @@ function UndoButton({ undo }: { undo: () => Promise<string> }) {
   );
 }
 
+/** The card under a slip takes the hit once, as the slip arrives (other screens see a change land, not just a label). */
+function SlipHit({ host, widgetId }: { host: HTMLElement; widgetId: string }) {
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    host.querySelector(`[data-widget-id="${widgetId}"] .widget-group-body`)?.animate([{ scale: "1.045 0.955" }, { scale: "1" }], { duration: 360, delay: 260, easing: "cubic-bezier(0.2, 0.9, 0.3, 1.18)" });
+  }, [host, widgetId]);
+  return null;
+}
+
 /** Every other screen: an AI edit lands on the card with a small slip, "juno added ramen". */
 export function EditSlips({ slips, host, at }: { slips: { id: string; widgetId: string; text: string; color: string }[]; host: HTMLElement | null; at: (widgetId: string) => { x: number; y: number } | null }) {
   if (!host) return null;
@@ -90,6 +99,7 @@ export function EditSlips({ slips, host, at }: { slips: { id: string; widgetId: 
         if (!p) return null;
         return createPortal(
           <div key={slip.id} className="voice-slip is-found is-edit" style={{ "--maker": slip.color, left: p.x, top: p.y } as CSSProperties}>
+            <SlipHit host={host} widgetId={slip.widgetId} />
             <span className="voice-landed voice-found" data-testid="voice-edit-slip" data-widget-ref={slip.widgetId}>
               {slip.text}
             </span>
@@ -610,7 +620,8 @@ export function VoiceBuildLayer({
           found.host,
         )}
       {reply && !reply.widgetId && (
-        <div key={reply.traceKey} className={`voice-receipt is-miss voice-reply ${leaving ? "is-leaving" : ""}`} data-testid="voice-reply" data-verb={reply.verb} style={tint} role="status">
+        <div key={reply.traceKey} className={`voice-receipt is-miss voice-reply ${leaving ? "is-leaving" : ""}`} data-testid="voice-reply" data-verb={reply.verb} data-tone={replyTone(reply).tone} style={tint} role="status">
+          <b className="voice-reply-tab">{replyTone(reply).tab}</b>
           <span>{reply.text}</span>
           {reply.source && <span className="voice-reply-source">{reply.source}</span>}
           {reply.offers?.map((o, i) => (

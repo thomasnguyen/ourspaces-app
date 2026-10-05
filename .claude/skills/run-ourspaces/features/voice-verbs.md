@@ -8,14 +8,14 @@ states:
   dontknow: ?mock=1&voicePace=talk&voice=when's sam's birthday? | click dock-voice-orb | wait voice-stage-reply | sleep 500
   recap: ?mock=1&voicePace=talk&voice=catch me up | click dock-voice-orb | wait css:.recap-panel | sleep 900
   mine: ?mock=1&voicePace=talk&voice=vote matcha | click dock-voice-orb | wait voice-stage-reply | sleep 2800
-  refuse: ?mock=1&voicePace=talk&voice=put maya down for balloons | click dock-voice-orb | wait voice-stage-reply | sleep 500
+  refuse: ?mock=1&as=Rio&voicePace=talk&voice=put maya down for balloons | click dock-voice-orb | wait voice-stage-reply | sleep 500
   tie: ?mock=1&voicePace=talk&voice=who's coming to karaoke night? | click dock-voice-orb | wait voice-stage-choice-0 | sleep 400
   go: ?mock=1&voicePace=talk&voice=show me the cake poll | click dock-voice-orb | wait voice-stage-reply | sleep 2800
   room: ?mock=1&voicePace=talk&voice=take me to the family | click dock-voice-orb | wait voice-stage-reply | sleep 1500
   game: ?mock=1&voicePace=talk&voice=let's play most likely to | click dock-voice-orb | wait voice-stage-reply | sleep 500
   edit: ?mock=1&voicePace=talk&voice=add ramen to the dinner poll | click dock-voice-orb | wait voice-stage-reply | sleep 500
   drawer: ?mock=1&timing=1&voicePace=talk&voice=when's maya's birthday? | click dock-voice-orb | wait voice-stage-reply | sleep 2800 | click dev-readout | wait dev-context-verb | sleep 300
-  refusesay: ?mock=1&voicePace=talk&voice=put maya down for balloons | sleep 600
+  refusesay: ?mock=1&as=Rio&voicePace=talk&voice=put maya down for balloons | sleep 600
   tiesay: ?mock=1&voicePace=talk&voice=vote matcha | sleep 600
   answersay: ?mock=1&voicePace=talk&voice=when's maya's birthday? | sleep 600
   liveanswer: ?enter=1&timing=1&voicePace=talk&voice=when's maya's birthday? | wait css:[data-widget-id] | sleep 4000

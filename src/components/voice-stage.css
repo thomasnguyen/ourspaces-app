@@ -997,17 +997,19 @@ body.voice-stage-up .voice-slip {
   color: var(--color-lime);
 }
 
-/* A voice edit (lib/deck/edits.ts): the part that changes lights up as it lands.
-   Plain on purpose; a design pass follows. */
+/* A voice edit (lib/deck/edits.ts): the part that changes is lime. Dashed
+   ink while you're still talking, solid once it's sent: the same marks as a
+   change waiting on the board (right-of-way.css). */
 .voice-two-card [data-edit-changed] {
-  outline: 3px solid var(--color-lime);
+  outline: 2px solid var(--color-ink);
   outline-offset: 2px;
   border-radius: 10px;
+  background: var(--color-lime) !important;
+  color: var(--color-ink);
   animation: voice-edit-pop calc(var(--dur-arrive) * var(--slow, 1)) var(--ease-pop) backwards;
 }
 .voice-two-card [data-edit-changed="tentative"] {
   outline-style: dashed;
-  opacity: 0.75;
 }
 @keyframes voice-edit-pop {
   from {
@@ -1576,27 +1578,123 @@ body.voice-stage-up .voice-found-pulse {
   }
 }
 
-/* Another verb than make (an answer, a recap, your part, go): one plain slip,
-   no card. Kept plain on purpose; the design pass styles it. */
+/* THE SPACE SAYS SOMETHING — one slip, everywhere. An answer, a refusal,
+   "which one?", your part done, a wait: a cream paper slip with an ink edge
+   and a hard ink shadow, a small tab that says what kind of thing it is
+   (lime: it did or it knows · orange: it won't · ink: it's asking you), one
+   headline, the rest under it, and where it came from with the room's
+   orange pip. The same slip rides the card on the board (index.css
+   .voice-slip) and sits above the dock (.voice-reply). */
 .voice-two-reply {
+  position: relative;
   display: grid;
+  justify-items: start;
   gap: 10px;
-  max-width: min(520px, 90%);
-  animation: voice-ask-in calc(var(--dur-arrive) * var(--slow)) var(--ease-pop) backwards;
+  width: fit-content;
+  max-width: min(640px, 94%);
+  padding: 34px 34px 26px;
+  border: 2px solid var(--color-ink);
+  border-radius: 20px;
+  background: var(--color-card);
+  box-shadow: 7px 7px 0 var(--color-ink);
+  color: var(--color-ink);
+  rotate: -1deg;
+  transform-origin: 12% 100%;
+  animation: voice-reply-in calc(var(--dur-arrive) * var(--slow)) var(--ease-pop) backwards;
+}
+
+.voice-two-reply-tab {
+  position: absolute;
+  top: -13px;
+  left: 22px;
+  padding: 4px 11px 5px;
+  border: 2px solid var(--color-ink);
+  border-radius: 999px;
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font: 700 13px/1.2 var(--font-sans);
+  white-space: nowrap;
+}
+
+.voice-two-reply[data-tone="no"] .voice-two-reply-tab {
+  background: var(--color-trip);
+}
+
+.voice-two-reply[data-tone="ask"] .voice-two-reply-tab {
+  background: var(--color-ink);
+  color: var(--color-card);
 }
 
 .voice-two-reply-text {
   margin: 0;
-  color: white;
   font-family: var(--font-display);
-  font-size: clamp(26px, 2.8vw, 42px);
+  font-size: clamp(28px, 3.1vw, 46px);
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.05;
+  text-wrap: balance;
+}
+
+.voice-two-reply-more {
+  margin: 0;
+  font: 600 clamp(16px, 1.3vw, 19px) / 1.3 var(--font-sans);
+  text-wrap: balance;
 }
 
 .voice-two-reply-source {
-  margin: 0;
-  color: color-mix(in oklab, white 60%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 0;
+  color: var(--color-muted);
   font: 500 14px/1.3 var(--font-sans);
+}
+
+.voice-two-reply-source::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--color-trip);
+}
+
+/* which one? each reading is a key on the slip */
+.voice-two-reply .voice-two-offers {
+  margin-top: 6px;
+}
+
+.voice-two-reply .voice-two-offers > button {
+  border: 2px solid var(--color-ink);
+  background: var(--color-card);
+  box-shadow: 3px 3px 0 var(--color-ink);
+  font: 700 16px/1.2 var(--font-sans);
+}
+
+.voice-two-reply .voice-two-offers > button:hover {
+  background: var(--color-lime);
+}
+
+@keyframes voice-reply-in {
+  from {
+    opacity: 0;
+    rotate: -4deg;
+    scale: 0.9;
+    translate: 0 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .voice-two-reply {
+    margin-top: 16px;
+    max-width: calc(100vw - 40px);
+    padding: 24px 20px 18px;
+    box-shadow: 5px 5px 0 var(--color-ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-two-reply {
+    animation: none;
+  }
 }

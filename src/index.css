@@ -27297,17 +27297,21 @@ body:has(.demo-banner) .settings-sheet {
   }
 }
 
-/* The slip: taped over the landed card's top-left corner. */
+/* The slip: taped over the landed card's top-left corner. One of the family
+   "the space says something" (voice-stage.css .voice-two-reply): an ink edge,
+   a hard ink shadow, ink words on the colour of whoever asked. */
 .voice-slip {
   position: absolute;
   z-index: 99990;
   display: flex;
   overflow: hidden;
-  border: 2px solid var(--color-card);
-  border-radius: var(--radius-pill);
-  color: white;
-  font: 600 12px/1.2 var(--font-sans);
-  white-space: nowrap;
+  max-width: 340px;
+  border: 2px solid var(--color-ink);
+  border-radius: 13px;
+  box-shadow: 3px 3px 0 var(--color-ink);
+  color: var(--color-ink);
+  font: 600 13px/1.25 var(--font-sans);
+  text-wrap: balance;
   pointer-events: none;
   rotate: -1.5deg;
   transform: translate(12px, -62%);
@@ -27371,10 +27375,11 @@ body:has(.demo-banner) .settings-sheet {
   position: absolute;
   z-index: 99989;
   box-sizing: content-box;
-  margin: -8px;
+  margin: -9px;
   padding: 6px;
-  border: 3px solid var(--maker);
+  border: 4px solid var(--maker);
   border-radius: 24px;
+  box-shadow: 0 0 0 2px var(--color-ink);
   pointer-events: none;
   opacity: 0;
   animation: voice-found-pulse var(--dur-hero) var(--ease-glide) 420ms both;
@@ -27403,12 +27408,14 @@ body:has(.demo-banner) .settings-sheet {
 }
 
 .voice-found-next {
-  padding: 5px 12px 5px 9px;
+  flex: 0 0 auto;
+  padding: 5px 12px 5px 10px;
   border: 0;
-  border-left: 2px solid var(--color-card);
+  border-left: 2px solid var(--color-ink);
   background: var(--color-ink);
-  color: white;
+  color: var(--color-lime);
   font: inherit;
+  font-weight: 700;
   cursor: pointer;
   pointer-events: auto;
 }
@@ -27443,11 +27450,56 @@ body:has(.demo-banner) .settings-sheet {
 
 /* A verb's slip with no card under it (an answer the room doesn't have, a
    recap, offers): above the dock, like a miss. */
-.voice-reply {
-  gap: 10px;
-  color: white;
+.voice-receipt.is-miss.voice-reply {
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 12px 16px 11px;
+  border: 2px solid var(--color-ink);
+  border-radius: 16px;
+  background: var(--color-card);
+  box-shadow: 4px 4px 0 var(--color-ink);
+  color: var(--color-ink);
+  font: 600 15px/1.3 var(--font-sans);
+  white-space: normal;
+  text-wrap: balance;
+}
+
+.voice-reply > * + *::before {
+  content: none;
+}
+
+.voice-reply-tab {
+  position: absolute;
+  top: -12px;
+  left: 14px;
+  padding: 3px 9px 4px;
+  border: 2px solid var(--color-ink);
+  border-radius: 999px;
+  background: var(--color-lime);
+  color: var(--color-ink) !important;
+  font: 700 11px/1.2 var(--font-sans);
+  white-space: nowrap;
+}
+
+.voice-reply[data-tone="no"] .voice-reply-tab {
+  background: var(--color-trip);
+}
+
+.voice-reply[data-tone="ask"] .voice-reply-tab {
+  background: var(--color-ink);
+  color: var(--color-card) !important;
 }
 
 .voice-reply-source {
-  color: color-mix(in oklab, white 60%, transparent);
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.voice-reply .voice-found-next {
+  border: 2px solid var(--color-ink);
+  border-radius: 999px;
+  background: var(--color-card);
+  box-shadow: 2px 2px 0 var(--color-ink);
+  color: var(--color-ink);
 }
