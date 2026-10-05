@@ -129,6 +129,10 @@ export function useVoice(hooks: VoiceHooks = {}) {
   const lastWordAt = useRef(0);
   const listenTimer = useRef(0);
   const listening = useRef(false);
+  // voice stage (components/VoiceStage.tsx): mute, starter chips, cancel
+  const [muted, setMuted] = useState(false);
+  const mutedRef = useRef(false);
+  const micRef = useRef<MediaStream | null>(null);
 
   const finish = useCallback((how: VoiceEnd["how"] = "done") => {
     window.clearInterval(listenTimer.current);
@@ -157,6 +161,7 @@ export function useVoice(hooks: VoiceHooks = {}) {
   }, []);
 
   const hear = useCallback((text: string) => {
+    if (mutedRef.current) return;
     if (text && text !== said.current) {
       if (!said.current) performance.mark("voice:first-word");
       lastWordAt.current = performance.now();
@@ -194,7 +199,10 @@ export function useVoice(hooks: VoiceHooks = {}) {
 
     const script = new URLSearchParams(window.location.search).get("voice");
     if (script) {
-      stopRef.current = runScript(script, level, hear, () => finish("pause"));
+      // `&stageHold=1` keeps the scripted ask open for a still of the stage
+      const hold = new URLSearchParams(window.location.search).has("stageHold");
+      if (hold) window.clearInterval(listenTimer.current);
+      stopRef.current = runScript(script, level, hear, hold ? () => {} : () => finish("pause"));
       return;
     }
 
@@ -228,6 +236,7 @@ export function useVoice(hooks: VoiceHooks = {}) {
       stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true },
       });
+      micRef.current = stream;
       audio = new AudioContext();
       const analyser = audio.createAnalyser();
       analyser.fftSize = 512;
@@ -256,5 +265,33 @@ export function useVoice(hooks: VoiceHooks = {}) {
     [],
   );
 
-  return { state, transcript, level, start, finish };
+  // ---- voice stage additions: one block, nothing above depends on it ----
+  /** Mute stops the mic and drops what it hears; the ask stays open. */
+  const mute = useCallback((on: boolean) => {
+    mutedRef.current = on;
+    setMuted(on);
+    micRef.current?.getAudioTracks().forEach((track) => (track.enabled = !on));
+  }, []);
+  /** A starter chip: stop listening and put these words in as the ask. */
+  const say = useCallback(
+    (text: string) => {
+      stopRef.current();
+      stopRef.current = () => {};
+      level.current = 0;
+      mutedRef.current = false;
+      hear(text);
+    },
+    [hear],
+  );
+  /** Close without asking anything (Escape). */
+  const cancel = useCallback(() => {
+    say("");
+    window.clearTimeout(workTimer.current);
+    setState("idle");
+  }, [say]);
+  useEffect(() => {
+    if (state !== "listening") mute(false);
+  }, [state, mute]);
+
+  return { state, transcript, level, start, finish, muted, mute, say, cancel };
 }

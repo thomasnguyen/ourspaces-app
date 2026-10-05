@@ -1,13 +1,22 @@
 ---
 route: #/space/crew
 ready: dock-voice-orb
-testids: dock-voice-orb dock-voice-text dock-voice-done
+testids: dock-voice-orb dock-voice-text dock-voice-done voice-stage voice-stage-status voice-stage-wave voice-stage-text voice-stage-chip-0 voice-stage-chip-1 voice-stage-chip-2 voice-stage-mute voice-stage-finish
 states:
   idle: ?voice=Make a space for our Tahoe weekend
-  listening: ?voice=Make a space for our Tahoe weekend | click dock-voice-orb | wait dock-voice-text | sleep 1600
-  working: ?voice=Make a space for our Tahoe weekend | click dock-voice-orb | wait dock-voice-text | sleep 1600 | click dock-voice-done | sleep 250
+  open: ?stage=1 | wait voice-stage | sleep 1300
+  quiet: ?voice=Make a space for our Tahoe weekend&stage=1&stageHold=1&level=0.12 | wait voice-stage | sleep 3300
+  loud: ?voice=Make a space for our Tahoe weekend&stage=1&stageHold=1&level=0.9 | wait voice-stage | sleep 3300
+  working: ?voice=Make a space for our Tahoe weekend | click dock-voice-orb | wait voice-stage | sleep 1500 | click voice-stage-finish | sleep 900
+  dock-listening: ?voice=Make a space for our Tahoe weekend&stage=0 | click dock-voice-orb | wait dock-voice-text | sleep 2200
+  idle-glass: ?orb=glass&voice=Make a space for our Tahoe weekend
+  open-glass: ?orb=glass&stage=1 | wait voice-stage | sleep 1300
+  quiet-glass: ?orb=glass&voice=Make a space for our Tahoe weekend&stage=1&stageHold=1&level=0.12 | wait voice-stage | sleep 3300
+  loud-glass: ?orb=glass&voice=Make a space for our Tahoe weekend&stage=1&stageHold=1&level=0.9 | wait voice-stage | sleep 3300
+  working-glass: ?orb=glass&voice=Make a space for our Tahoe weekend | click dock-voice-orb | wait voice-stage | sleep 1500 | click voice-stage-finish | sleep 900
 take:
-  ask: idle real 60fps 280f warmup 1500 focus css:.action-dock | 20 click dock-voice-orb | 130 click dock-voice-done
+  ask: idle real 60fps 330f warmup 1500 | 20 click dock-voice-orb
+  ask-glass: idle-glass real 60fps 330f warmup 1500 | 20 click dock-voice-orb
 ---
 # Voice orb (dock)
 

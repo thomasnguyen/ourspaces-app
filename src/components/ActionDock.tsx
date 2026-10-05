@@ -22,7 +22,7 @@ import {
 } from "../lib/radio";
 import { playSound } from "../lib/sounds";
 import { useVoice, type VoiceHooks } from "../lib/voice";
-import { VoiceOrb } from "./VoiceOrb";
+import { useVoiceStage } from "./VoiceStage";
 
 /** First-tap questions — shown until the thread has a turn. */
 const RECAP_STARTERS = ["what's still undecided?", "who hasn't answered?", "what did I miss in chat?"];
@@ -209,29 +209,38 @@ function DockSound({
     your words take the bar. A pause ends the ask (tap again, or done, to end
     it sooner). `hooks` hear the words as they come and get the finished ask
     (the room builds from them, src/live/useVoiceBuild.ts); the orb stays
-    working until it settles. */
+    working until it settles. The tap also opens the voice stage
+    (VoiceStage.tsx): the orb itself leaves its seat here and flies up into
+    it; while the stage is up the dock rests, and when it lets go the orb
+    lands back in the seat and the strip below carries on. */
 function DockVoice({ hooks }: { hooks?: VoiceHooks }) {
   const voice = useVoice(hooks);
+  const seat = useRef<HTMLButtonElement>(null);
+  const stage = useVoiceStage(voice, seat);
+  const mood = stage.up ? "idle" : voice.state;
   const listening = voice.state === "listening";
   const text = voice.transcript.length > 46 ? `…${voice.transcript.slice(-45)}` : voice.transcript;
   const toggle = () => {
     playSound("tap");
     if (listening) voice.finish("done");
-    else void voice.start();
+    else {
+      void voice.start();
+      stage.open();
+    }
   };
 
   return (
-    <div className={`dock-voice is-${voice.state}`}>
+    <div className={`dock-voice is-${mood}`}>
       <button
         type="button"
         className="dock-voice-orb"
         data-testid="dock-voice-orb"
         onClick={toggle}
         title={listening ? "Done talking" : "Talk to the space"}
-      >
-        <VoiceOrb state={voice.state} level={voice.level} size={58} />
-      </button>
-      {voice.state === "idle" && (
+        ref={seat}
+      />
+      {stage.layer}
+      {mood === "idle" && (
         <button type="button" className="dock-voice-ask" onClick={toggle}>
           say what to add
         </button>
@@ -248,7 +257,7 @@ function DockVoice({ hooks }: { hooks?: VoiceHooks }) {
               listening
             </span>
           )}
-          {listening && (
+          {mood === "listening" && (
             <button type="button" className="dock-voice-done" data-testid="dock-voice-done" onClick={toggle}>
               done
             </button>
