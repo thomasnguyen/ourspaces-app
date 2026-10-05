@@ -261,6 +261,8 @@ const RECEIPT_MS = 6000;
 const DRAFT = "voice-draft-";
 const LIFTED_Z = 99990; // a skeleton floating over the board until it has a spot
 
+/** Words that name a recipe: the group's lead card is the skeleton (src/lib/deck/recipes.ts). */
+const RECIPE_CUE = /\bchallenge\b/i;
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
 const nextFrame = () => new Promise<number>((r) => requestAnimationFrame(() => r(performance.now())));
@@ -641,6 +643,15 @@ export function useVoiceBuild({
   /** The words' guess, as a skeleton (only while no model answer is filling it). */
   const showGuess = useCallback(
     (s: Session) => {
+      // A recipe word ("challenge") names the group: its lead card shows, whatever an earlier pick or fill said.
+      if (RECIPE_CUE.test(s.text) && s.shown !== "checkin" && !s.reopened && !s.pointed && !s.matching) {
+        s.fromModel = false;
+        s.tent = null;
+        s.trace.skeletons.push({ card: "checkin", by: "guess", ms: Math.round(performance.now() - s.t0) });
+        s.shown = "checkin";
+        show(s, [skeletonWidget("checkin", { id: `${DRAFT}${s.key}-0`, ctx: skelCtx("checkin"), said: s.text }).widget]);
+        return;
+      }
       // Once the model has written into the skeleton, only the model changes it.
       if (s.fromModel || s.reopened || s.pointed || s.matching) return;
       // A sure decide fills in when the words named nothing. It beats the
@@ -707,6 +718,8 @@ export function useVoiceBuild({
         // A newer call's first fields go over the card already shown, not over blanks.
         if (s.tent?.card === card) settings = { ...s.tent.settings, ...settings };
       }
+      // a fill for older words that missed the recipe word doesn't move the recipe's skeleton
+      if (RECIPE_CUE.test(s.text) && card !== "checkin") return;
       if (s.tent && s.tent.key === card + JSON.stringify(settings)) {
         s.shownSeq = Math.max(s.shownSeq, sp.seq);
         return;

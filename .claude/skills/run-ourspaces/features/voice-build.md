@@ -29,8 +29,8 @@ states:
   dishessay: ?stage=0&enter=1&timing=1&voicePace=talk&voice=who's on dishes tonight #/space/house | sleep 1400
   dishesspin: ?stage=0&enter=1&timing=1&voicePace=talk&voice=who's on dishes tonight #/space/house | sleep 1200 | click dock-voice-orb | wait voice-found-spin | sleep 900 | click voice-found-spin | sleep 2500
   mockalready: ?stage=0&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-found | sleep 1600
-  hero: ?enter=1&timing=1&voicePace=talk&voice=set up a push-up challenge for the four of us #/space/family | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 1800
-  herosay: ?enter=1&timing=1&voicePace=talk&voice=set up a push-up challenge for the four of us #/space/family | sleep 1400
+  hero: ?enter=1&as=Dev&timing=1&voicePace=talk&voice=set up a push-up challenge for the four of us #/space/family | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 1800
+  herosay: ?enter=1&as=Dev&timing=1&voicePace=talk&voice=set up a push-up challenge for the four of us #/space/family | sleep 1400
   mockhero: ?family=hero&stage=0&voicePace=talk&voice=set up a push-up challenge for the four of us #/space/family | click dock-voice-orb | wait voice-landed | sleep 2600
   mockalreadydrawer: ?stage=0&timing=1&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-found | sleep 1200 | click dev-readout | wait dev-context-found | sleep 300
 take:

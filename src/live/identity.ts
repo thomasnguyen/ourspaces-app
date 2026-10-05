@@ -117,7 +117,15 @@ function load(): LiveIdentity {
 }
 
 export function getIdentity(): LiveIdentity {
-  if (!current) current = load();
+  if (!current) {
+    current = load();
+    // `?as=Dev`: this tab sits in that seat (takes, the demo video); the name sticks for the tab
+    const as = new URLSearchParams(window.location.search).get("as");
+    if (as && as !== current.name) {
+      current = { ...current, name: as, avatarUrl: getAvatarSrc(as) };
+      window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(current));
+    }
+  }
   return current;
 }
 
