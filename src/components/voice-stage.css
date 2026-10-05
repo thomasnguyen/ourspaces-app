@@ -713,6 +713,20 @@
   animation-delay: calc(var(--i) * 70ms * var(--slow));
 }
 
+/* the frame and the card the ask is about arrive on one beat; the rest gather round */
+.voice-two-cluster-card[data-type="frame"],
+.voice-two-cluster-card[data-type="checkIn"] {
+  animation-delay: 0ms;
+}
+
+/* a crisp silhouette that holds through the flight to the board */
+.voice-two-cluster {
+  border-radius: 26px;
+  outline: 3px solid var(--color-ink);
+  box-shadow: 10px 10px 0 var(--color-ink);
+  filter: none;
+}
+
 /* a group is wider than one card: it takes the gap beside the words */
 @media (min-width: 641px) {
   .voice-two-card[data-group] {
@@ -1010,6 +1024,7 @@ body.voice-stage-up .voice-slip {
 }
 .voice-two-card [data-edit-changed="tentative"] {
   outline-style: dashed;
+  background: var(--color-card) !important;
 }
 @keyframes voice-edit-pop {
   from {

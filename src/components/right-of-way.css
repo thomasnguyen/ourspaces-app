@@ -1,10 +1,11 @@
 /* RIGHT OF WAY — the halo and the ghost (components/RightOfWay.tsx).
    Two marks, one rule: solid is a person's hand, dashed is the space waiting.
    A held card wears a thick flat frame in its holder's colour with their
-   name on a tab. A change waiting on them is a lime row with a dashed ink
-   edge and a ticket hanging off the card's bottom edge. On let-go the frame
-   draws in, the ticket turns lime, goes up into the card and the row pops:
-   a handover. The puzzle's ghost (index.css .jigsaw-ghost) uses the same
+   name on a tab. A change waiting on them is a paper row with a dashed ink
+   edge and an ink ticket hanging off the card's bottom edge. Lime is kept
+   for the landing: on let-go the frame draws in, the ticket turns lime and
+   goes up into the card, and the row snaps solid in a lime flash, then
+   settles to look like its neighbours: a handover. The puzzle's ghost (index.css .jigsaw-ghost) uses the same
    dashed ink + lime. */
 
 .row-halo {
@@ -49,12 +50,12 @@
   font-weight: 800;
 }
 
-/* the waiting change, on the card: lime, dashed ink edge */
+/* the waiting change, on the card: paper, dashed ink edge (lime is the landing's) */
 [data-ghost-changed] {
   outline: 2px dashed var(--color-ink);
   outline-offset: 2px;
   border-radius: 10px;
-  background: var(--color-lime) !important;
+  background: var(--color-card) !important;
   color: var(--color-ink);
 }
 [data-ghost-changed="remove"] {
@@ -89,15 +90,20 @@
   transform-origin: 50% 0;
   animation: row-ticket-in var(--dur-arrive) var(--ease-pop) backwards;
 }
-.row-ghost-what b {
-  color: var(--color-lime);
-  font-weight: 700;
+.row-ghost-what {
+  opacity: 0.7;
 }
+.row-ghost-what b {
+  font-weight: 600;
+}
+/* the dominant words: who it is waiting on */
 .row-ghost-on {
   display: inline-flex;
+  order: -1;
   align-items: center;
   gap: 6px;
-  opacity: 0.75;
+  color: var(--color-lime);
+  font-weight: 700;
 }
 .row-ghost-on b {
   padding: 2px 8px;
@@ -136,7 +142,7 @@
     background var(--dur-quick) var(--ease-glide),
     color var(--dur-quick) var(--ease-glide);
 }
-.row-ghost.is-landing .row-ghost-what b {
+.row-ghost.is-landing .row-ghost-on {
   color: var(--color-ink);
 }
 .row-ghost.is-landing .row-ghost-on b {
@@ -194,16 +200,16 @@
 @keyframes row-landed {
   0% {
     background: var(--color-lime);
-    outline: 2px solid var(--color-ink);
+    outline: 3px solid var(--color-ink);
     outline-offset: 2px;
-    scale: 1.05;
+    scale: 1.09 0.92;
   }
-  25% {
+  22% {
     scale: 1;
   }
-  60% {
+  65% {
     background: var(--color-lime);
-    outline: 2px solid var(--color-ink);
+    outline: 3px solid var(--color-ink);
     outline-offset: 2px;
   }
   100% {
