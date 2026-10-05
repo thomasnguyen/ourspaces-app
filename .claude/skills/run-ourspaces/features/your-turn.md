@@ -1,37 +1,37 @@
 ---
 route: #/space/crew
 ready: your-turn-tab
-testids: your-turn your-turn-tab your-turn-close your-turn-item your-turn-go your-turn-choice your-turn-answer your-turn-more your-turn-clear rail-turn
+testids: your-turn your-turn-tab your-turn-item your-turn-go your-turn-choice your-turn-answer your-turn-more your-turn-clear rail-turn
 states:
   badge: ?as=Rio
-  rio: ?as=Rio&turn=open | wait your-turn
-  ash: ?as=Ash&turn=open | wait your-turn
-  guest: ?turn=open | wait your-turn
-  pressed: ?as=Rio | click your-turn-tab | wait your-turn | sleep 500
-  mid: ?as=Rio&turn=open | click css:[data-testid="your-turn-item"][data-kind="rsvp"] [data-choice="yes"] | sleep 240
-  next: ?as=Rio&turn=open | click css:[data-testid="your-turn-item"][data-kind="rsvp"] [data-choice="yes"] | sleep 1100
-  more: ?as=Rio&turn=open | click your-turn-more | sleep 400
-  house: ?as=theo&turn=open #/space/house | wait your-turn
-  couple: ?turn=open #/space/couple | wait your-turn
+  rio: ?as=Rio | click dock-recap | wait your-turn | sleep 700
+  ash: ?as=Ash | click dock-recap | wait your-turn | sleep 700
+  guest: | click dock-recap | wait your-turn | sleep 700
+  mid: ?as=Rio | click dock-recap | wait your-turn | sleep 500 | click css:.yt-item.is-top [data-choice="yes"] | sleep 240
+  next: ?as=Rio | click dock-recap | wait your-turn | sleep 500 | click css:.yt-item.is-top [data-choice="yes"] | sleep 1100
+  more: ?as=Rio | click dock-recap | wait your-turn | sleep 500 | click your-turn-more | sleep 400
+  house: ?as=theo #/space/house | click dock-recap | wait your-turn | sleep 700
+  couple: #/space/couple | click dock-recap | wait your-turn | sleep 700
   rail: ?as=Rio #/space/house | wait rail-turn
 take:
-  clear: badge real 60fps 540f | 60 click your-turn-tab | 130 click your-turn-go | 250 click css:.yt-item.is-top [data-choice="yes"] | 370 click css:.yt-item.is-top [data-choice="1"]
+  clear: badge real 60fps 540f | 60 click dock-recap | 170 click css:.yt-item.is-top [data-choice="yes"] | 290 click css:.yt-item.is-top [data-choice="1"] | 410 click your-turn-go
 ---
 # Your turn
 
-**For a user:** a small orange count sits on the dock's orb when something in
-the room is waiting on *you*; nothing else shows unasked. Press it and a pile
-of paper tickets opens above the dock: "you in? maya's bday · in 5 days ·
-4 in, just you left". The top ticket is open with its one tap (`in · maybe ·
-can't`, the poll's options, the days, the open slots, or an answer box); the
-next two peek out above it and `+N` holds the rest. Doing it, there or on the
-card itself, strikes the ticket, drops it, the count goes down and the next
-one is already underneath. After the last: a black `✓ that's you done` stamp,
-then the count is gone. Nobody with nothing waiting sees anything (`?as=Maya`).
+**For a user:** a small orange count rides the dock's `✦` key (catch me up)
+when something in the room is waiting on *you*; nothing else shows unasked.
+Press `✦` and "what moved" opens with a "waiting on you" section at the top:
+a pile of paper tickets, "you in? maya's bday · in 5 days · 4 in, just you
+left". The top ticket is open with its one tap (`in · maybe · can't`, the
+poll's options, the days, the open slots, or an answer box); the next two peek
+out under it and `+N` holds the rest. Doing it, there or on the card itself,
+strikes the ticket, drops it, the count goes down and the next one is already
+underneath. After the last: `✓ that's you done`, then the section and the
+count are gone. Nobody with nothing waiting sees anything (`?as=Maya`).
 
 A guest (not joined; in mock, anyone not on the room's list) gets a white
-count and the pile labelled `jump in` with a `nothing's on you yet` tag: at
-most three, one of each kind, no backlog.
+count and the section labelled `jump in` with `nothing's on you yet`: at most
+three, one of each kind, no backlog.
 
 **Computed, never stored:** `yourTurn()` in `src/lib/yourTurn.ts` is a pure
 function over the widgets the room already loaded. Per widget type:
@@ -53,25 +53,27 @@ the card's frame) + how much of the room has already answered.
 (`Rio` has four things, `Ash` has the cake vote, `Maya` none, `theo` in the house has the wheel).
 `?turn=open` starts with the pile open and holds it there.
 
-**Drive:** `your-turn-tab` is the count on the orb (opens / shuts the pile);
-`your-turn-close` is the pile's own label. `your-turn-choice` (with
-`data-choice`) does the top ticket; `your-turn-go` on the top ticket pans the
-board to the card and rings it lime (`.is-your-turn`), on a ticket behind it
-brings that one to the front; `your-turn-more` shows all (on a phone: deals
-the next ticket); `your-turn-clear` is the stamp. `rail-turn` is the small
-count on another room's tile (mock, `?as=`).
+**Drive:** `click dock-recap` opens the panel; `your-turn` is the section.
+`your-turn-tab` is the count on the key (not clickable itself, the key is).
+`your-turn-choice` (with `data-choice`) does the top ticket; `your-turn-go`
+on the top ticket pans the board to the card and rings it lime
+(`.is-your-turn`), on a ticket behind it brings that one to the front;
+`your-turn-more` shows all (on a phone: deals the next ticket);
+`your-turn-clear` is the done line. `rail-turn` is the small count on another
+room's tile (mock, `?as=`).
 
-**Behaviour:** the pile never opens itself; a new item only raises the count.
-A press or pan on the board shuts it (its own fly-to doesn't). Same layout at
-every width; a phone shows one ticket at a time. The count is portalled into
-`.action-dock` and steps out with the other keys during a voice ask.
+**Behaviour:** nothing opens itself; a new item only raises the count. The
+count and the section are portalled into the dock's `dock-recap` key and
+`.recap-panel` (no edit to `ActionDock`), so they follow the panel on every
+width and step out with the other keys during a voice ask.
 
 **Code:** `src/lib/yourTurn.ts` (logic, `mockViewer`, `playAsOverrides`,
 `mockWaitingByRoom`) · `src/components/YourTurn.tsx` + `yourTurn.css` ·
-mounts: `src/App.tsx` (mock, next to `ActionDock`; `claimSlot` / `addMyDays`
+mounts: `src/App.tsx` (mock, before `ActionDock`; `claimSlot` / `addMyDays`
 write the mock overrides) and `src/pages/LiveSpace.tsx` (live).
 
 **Gotchas:** Availability's own "You" row is tab-local, so the ticket writes
-a real row. Tried and dropped: a row of three tickets over the dock, a list slip under
-who's-here, and the pile open on entry in the header band (covered cards
-below 1400px, weak on phones).
+a real row. In live the panel also runs the recap model, so opening it
+for a ticket costs a call. Tried and dropped: a row of three tickets over the
+dock, a list slip under who's-here, the pile open on entry in the header
+band, and a count on the orb with its own pile above the dock.

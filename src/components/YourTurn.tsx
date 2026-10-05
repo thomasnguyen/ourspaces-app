@@ -1,11 +1,18 @@
 /**
- * "your turn" — a small count on the dock's orb; press it and a pile of
- * tickets opens above the dock saying what's waiting on you, one tap each.
+ * "your turn" — a small count on the dock's ✦ key; "catch me up" then opens
+ * with what's waiting on you at the top, one tap each, above what moved.
  * A self-contained layer: it takes the items `lib/yourTurn.ts` computed plus
- * the room's own handlers, and owns nothing but whether the pile is open and
- * the half second a finished card takes to leave.
+ * the room's own handlers, portals itself into the dock's key and panel, and
+ * owns nothing but the half second a finished card takes to leave.
  */
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import { panToWidget } from "../lib/recapBoard";
 import { TURN_SHOWN, type TurnItem, type TurnViewer } from "../lib/yourTurn";
@@ -23,12 +30,6 @@ const LEAVE_MS = 640;
 const CLEAR_MS = 2400;
 const PULSE_MS = 1700;
 const PHONE = "(max-width: 800px)";
-
-/** `?turn=open` starts with the pile open and holds it there — the state a
-    take needs without clicking its way to it. */
-function turnParam() {
-  return new URLSearchParams(window.location.search).get("turn") ?? "";
-}
 
 /** Fly the board to the card and ring it once. The ring is a class straight
     on the DOM, the way the recap's reading scan does it: transient, unowned. */
@@ -67,27 +68,24 @@ export function YourTurn({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const items = useMemo(() => latest, [sig]);
 
-  const param = useMemo(turnParam, []);
-  /* shut until asked for: the room shows a count on the orb and nothing else */
-  const startOpen = () => param === "open";
-  const [open, setOpen] = useState(startOpen);
-  const [dock, setDock] = useState<Element | null>(null);
+  /* where it lives: the count on the ✦ key, the tickets in that key's panel.
+     Both belong to the room page's dock; found, not passed. */
+  const [key, setKey] = useState<Element | null>(null);
+  const [panel, setPanel] = useState<Element | null>(null);
   const [all, setAll] = useState(false);
   const [topKey, setTopKey] = useState("");
-  const [leaving, setLeaving] = useState<Array<{ item: TurnItem; wasTop: boolean }>>([]);
+  const [leaving, setLeaving] = useState<
+    Array<{ item: TurnItem; wasTop: boolean }>
+  >([]);
   const [cleared, setCleared] = useState(false);
   const [settled, setSettled] = useState(false);
   const [draft, setDraft] = useState("");
   const [picked, setPicked] = useState<Record<string, string>>({});
-  const prev = useRef<{ room: string; items: TurnItem[] }>({ room: roomKey, items });
+  const prev = useRef<{ room: string; items: TurnItem[] }>({
+    room: roomKey,
+    items,
+  });
   const lastTop = useRef("");
-  const rootRef = useRef<HTMLElement>(null);
-  const flying = useRef(0);
-  const flyTo = (widgetId: string) => {
-    flying.current = Date.now() + 1200;
-    goToTurnWidget(widgetId);
-  };
-
   const top = items.find((item) => item.key === topKey) ?? items[0];
 
   /* The list is computed, so "done" is an item that stopped being there.
@@ -101,21 +99,24 @@ export function YourTurn({
       setAll(false);
       setTopKey("");
       setDraft("");
-      setOpen(startOpen());
       return;
     }
     const gone = before.items
       .filter((item) => !items.some((next) => next.key === item.key))
       .map((item) => ({ item, wasTop: item.key === lastTop.current }));
-    // something new needs you: the count goes up, the pile stays shut
-    if (items.some((item) => !before.items.some((old) => old.key === item.key))) setCleared(false);
+    // something new needs you: the count goes up, nothing opens
+    if (items.some((item) => !before.items.some((old) => old.key === item.key)))
+      setCleared(false);
     if (gone.length === 0) return;
     setLeaving((current) => [...current, ...gone]);
     setDraft("");
     const keys = gone.map(({ item }) => item.key);
     // timers are left to run: a second card finishing mid-exit must not strand the first
     window.setTimeout(
-      () => setLeaving((current) => current.filter(({ item }) => !keys.includes(item.key))),
+      () =>
+        setLeaving((current) =>
+          current.filter(({ item }) => !keys.includes(item.key)),
+        ),
       LEAVE_MS,
     );
     if (items.length === 0) {
@@ -136,30 +137,14 @@ export function YourTurn({
     return () => window.clearTimeout(timer);
   }, []);
 
-  // the count lives on the dock, by the orb; the dock is the room page's
   useEffect(() => {
-    const el = document.querySelector(".action-dock");
-    if (el !== dock) setDock(el);
+    const nextKey = document.querySelector(
+      '.action-dock [data-testid="dock-recap"]',
+    );
+    const nextPanel = document.querySelector(".action-dock .recap-panel");
+    if (nextKey !== key) setKey(nextKey);
+    if (nextPanel !== panel) setPanel(nextPanel);
   });
-
-  /* Once you go back to the board the pile shuts; it never opens itself. */
-  useEffect(() => {
-    if (!open || !settled || param === "open") return;
-    const tuck = (event: Event) => {
-      // the pile's own "take me there" pans the board; that isn't you leaving
-      if (event.type === "scroll" && Date.now() < flying.current) return;
-      const target = event.target as Element | null;
-      if (rootRef.current?.contains(target)) return;
-      if (event.type === "scroll" ? !target?.classList?.contains("space-scroll") : !target?.closest(".space-canvas, .widget-group")) return;
-      setOpen(false);
-    };
-    window.addEventListener("pointerdown", tuck, true);
-    document.addEventListener("scroll", tuck, true);
-    return () => {
-      window.removeEventListener("pointerdown", tuck, true);
-      document.removeEventListener("scroll", tuck, true);
-    };
-  }, [open, param, settled]);
 
   const rows = useMemo<Row[]>(() => {
     const shown = all ? items : items.slice(0, TURN_SHOWN);
@@ -173,33 +158,32 @@ export function YourTurn({
 
   if (rows.length === 0 && !cleared) return null;
 
+  const guest = viewer.standing === "guest";
   const badge =
-    dock && items.length > 0
+    key && items.length > 0
       ? createPortal(
-          <button
-            type="button"
-            className={`yt-badge${viewer.standing === "guest" ? " is-guest" : ""}${open ? " is-open" : ""}${settled ? " is-settled" : ""}`}
+          <span
+            className={`yt-badge${guest ? " is-guest" : ""}${settled ? " is-settled" : ""}`}
             data-testid="your-turn-tab"
-            title={viewer.standing === "guest" ? "what the room's on" : "your turn"}
-            onClick={() => setOpen((value) => !value)}
+            title={guest ? "what the room's on" : "your turn"}
           >
             <b key={items.length}>{items.length}</b>
-          </button>,
-          dock,
+          </span>,
+          key,
         )
       : null;
-  if (!open && rows.length > 0 && !cleared) return badge;
+  if (!panel) return badge;
 
-  const guest = viewer.standing === "guest";
   // a phone shows one card at a time, so everything else is "more"
   const phone = window.matchMedia(PHONE).matches;
   const more = items.length - Math.min(items.length, phone ? 1 : TURN_SHOWN);
-  const label = guest ? "jump in" : "your turn";
+  const label = guest ? "jump in" : "waiting on you";
 
   const choose = (item: TurnItem, choice: string) => {
     setPicked((current) => ({ ...current, [item.key]: choice }));
     if (item.act === "vote") onVote?.(item.widgetId, choice);
-    if (item.act === "rsvp") onRsvp?.(item.widgetId, choice as "yes" | "maybe" | "no");
+    if (item.act === "rsvp")
+      onRsvp?.(item.widgetId, choice as "yes" | "maybe" | "no");
     if (item.act === "claim") onClaim?.(item.widgetId, choice);
     if (item.act === "days") onDays?.(item.widgetId, Number(choice));
   };
@@ -212,137 +196,156 @@ export function YourTurn({
 
   return (
     <>
-    {badge}
-    <aside
-      ref={rootRef}
-      className={`your-turn${guest ? " is-guest" : ""}${all ? " is-all" : ""}`}
-      data-testid="your-turn"
-      data-count={items.length}
-    >
-      {rows.length === 0 ? (
-        <p className="yt-clear" data-testid="your-turn-clear">
-          <span className="yt-clear-mark" aria-hidden="true">
-            ✓
-          </span>
-          {guest ? "you're in on all of it" : "that's you done"}
-        </p>
-      ) : (
-        <>
-          <button
-            type="button"
-            className="yt-tab"
-            data-testid="your-turn-close"
-            onClick={() => setOpen(false)}
-            title="put it away"
-          >
-            <span>{label}</span>
-            <i aria-hidden="true">×</i>
-          </button>
-          <ol className="yt-pile">
-            {rows.map(({ item, done, wasTop }, index) => {
-              const isTop = !done && item.key === top?.key;
-              const unfolded = isTop || (done && wasTop);
-              return (
-                <li
-                  key={item.key}
-                  className={`yt-item kind-${item.kind}${unfolded ? " is-top" : ""}${done ? " is-done" : ""}${item.soft ? " is-soft" : ""}`}
-                  data-testid="your-turn-item"
-                  data-kind={item.kind}
-                  style={{ "--i": Math.max(0, index - leaving.length) } as CSSProperties}
-                >
-                  <button
-                    type="button"
-                    className="yt-go"
-                    data-testid="your-turn-go"
-                    title={isTop ? "show me the card" : undefined}
-                    onClick={() => {
-                      // a card behind comes to the front; the front one flies you to its widget
-                      if (!isTop) {
-                        setTopKey(item.key);
-                        setDraft("");
-                        return;
+      {badge}
+      {createPortal(
+        <aside
+          className={`your-turn${guest ? " is-guest" : ""}${all ? " is-all" : ""}`}
+          data-testid="your-turn"
+          data-count={items.length}
+        >
+          {rows.length === 0 ? (
+            <p className="yt-clear" data-testid="your-turn-clear">
+              <span className="yt-clear-mark" aria-hidden="true">
+                ✓
+              </span>
+              {guest ? "you're in on all of it" : "that's you done"}
+            </p>
+          ) : (
+            <>
+              <p className="yt-tab">
+                <span>{label}</span>
+                <b>{items.length}</b>
+              </p>
+              <ol className="yt-pile">
+                {rows.map(({ item, done, wasTop }, index) => {
+                  const isTop = !done && item.key === top?.key;
+                  const unfolded = isTop || (done && wasTop);
+                  return (
+                    <li
+                      key={item.key}
+                      className={`yt-item kind-${item.kind}${unfolded ? " is-top" : ""}${done ? " is-done" : ""}${item.soft ? " is-soft" : ""}`}
+                      data-testid="your-turn-item"
+                      data-kind={item.kind}
+                      style={
+                        {
+                          "--i": Math.max(0, index - leaving.length),
+                        } as CSSProperties
                       }
-                      flyTo(item.widgetId);
-                    }}
-                  >
-                    <span className="yt-verb">{done ? "done ✓" : item.verb}</span>
-                    <span className="yt-name">{item.title}</span>
-                    <span className="yt-arrow" aria-hidden="true">
-                      ↗
-                    </span>
-                  </button>
-                  <div className="yt-fold">
-                    <div className="yt-fold-in">
-                      <p className="yt-meta">
-                        {item.when && <em>{item.when}</em>}
-                        <span>{item.waiting}</span>
-                      </p>
-                      {item.act === "answer" ? (
-                        <form className="yt-answer" onSubmit={(event) => answer(event, item)}>
-                          <input
-                            value={isTop ? draft : ""}
-                            onChange={(event) => setDraft(event.target.value)}
-                            placeholder="your answer…"
-                            data-testid="your-turn-answer"
-                            disabled={!isTop}
-                          />
-                          <button type="submit" disabled={!isTop || !draft.trim()}>
-                            send
-                          </button>
-                        </form>
-                      ) : item.act !== "go" && item.choices.length > 0 ? (
-                        <div className="yt-choices">
-                          {item.choices.map((choice) => (
-                            <button
-                              key={choice.id}
-                              type="button"
-                              className={picked[item.key] === choice.id ? "is-picked" : ""}
-                              data-testid="your-turn-choice"
-                              data-choice={choice.id}
-                              disabled={!isTop}
-                              onClick={() => choose(item, choice.id)}
+                    >
+                      <button
+                        type="button"
+                        className="yt-go"
+                        data-testid="your-turn-go"
+                        title={isTop ? "show me the card" : undefined}
+                        onClick={() => {
+                          // a card behind comes to the front; the front one flies you to its widget
+                          if (!isTop) {
+                            setTopKey(item.key);
+                            setDraft("");
+                            return;
+                          }
+                          goToTurnWidget(item.widgetId);
+                        }}
+                      >
+                        <span className="yt-verb">
+                          {done ? "done ✓" : item.verb}
+                        </span>
+                        <span className="yt-name">{item.title}</span>
+                        <span className="yt-arrow" aria-hidden="true">
+                          ↗
+                        </span>
+                      </button>
+                      <div className="yt-fold">
+                        <div className="yt-fold-in">
+                          <p className="yt-meta">
+                            {item.when && <em>{item.when}</em>}
+                            <span>{item.waiting}</span>
+                          </p>
+                          {item.act === "answer" ? (
+                            <form
+                              className="yt-answer"
+                              onSubmit={(event) => answer(event, item)}
                             >
-                              {choice.label}
-                            </button>
-                          ))}
+                              <input
+                                value={isTop ? draft : ""}
+                                onChange={(event) =>
+                                  setDraft(event.target.value)
+                                }
+                                placeholder="your answer…"
+                                data-testid="your-turn-answer"
+                                disabled={!isTop}
+                              />
+                              <button
+                                type="submit"
+                                disabled={!isTop || !draft.trim()}
+                              >
+                                send
+                              </button>
+                            </form>
+                          ) : item.act !== "go" && item.choices.length > 0 ? (
+                            <div className="yt-choices">
+                              {item.choices.map((choice) => (
+                                <button
+                                  key={choice.id}
+                                  type="button"
+                                  className={
+                                    picked[item.key] === choice.id
+                                      ? "is-picked"
+                                      : ""
+                                  }
+                                  data-testid="your-turn-choice"
+                                  data-choice={choice.id}
+                                  disabled={!isTop}
+                                  onClick={() => choose(item, choice.id)}
+                                >
+                                  {choice.label}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="yt-choices">
+                              <button
+                                type="button"
+                                disabled={!isTop}
+                                onClick={() => goToTurnWidget(item.widgetId)}
+                              >
+                                take me there
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="yt-choices">
-                          <button type="button" disabled={!isTop} onClick={() => flyTo(item.widgetId)}>
-                            take me there
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-          {guest && <p className="yt-guest-note">nothing's on you yet</p>}
-          {more > 0 && (
-            <button
-              type="button"
-              className="yt-more"
-              data-testid="your-turn-more"
-              onClick={() => {
-                // a phone shows one card: +N deals the next one instead
-                if (phone && top) {
-                  const next = items[(items.indexOf(top) + 1) % items.length];
-                  setAll(true);
-                  setTopKey(next.key);
-                  setDraft("");
-                  return;
-                }
-                setAll((value) => !value);
-              }}
-            >
-              {all && !phone ? "fewer" : `+${more}`}
-            </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+              {guest && <p className="yt-guest-note">nothing's on you yet</p>}
+              {more > 0 && (
+                <button
+                  type="button"
+                  className="yt-more"
+                  data-testid="your-turn-more"
+                  onClick={() => {
+                    // a phone shows one card: +N deals the next one instead
+                    if (phone && top) {
+                      const next =
+                        items[(items.indexOf(top) + 1) % items.length];
+                      setAll(true);
+                      setTopKey(next.key);
+                      setDraft("");
+                      return;
+                    }
+                    setAll((value) => !value);
+                  }}
+                >
+                  {all && !phone ? "fewer" : `+${more}`}
+                </button>
+              )}
+            </>
           )}
-        </>
+        </aside>,
+        panel,
       )}
-    </aside>
     </>
   );
 }

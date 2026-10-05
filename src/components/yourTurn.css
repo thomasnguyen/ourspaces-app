@@ -1,36 +1,21 @@
-/* "your turn" — a count on the dock's orb; pressed, a small pile of paper
-   tickets opens above the dock. Black sticker label, cream tickets, lime on
-   the tick. Tokens come from @theme in index.css. */
+/* "your turn" — a count on the dock's ✦ key, and a small pile of paper
+   tickets at the top of the "what moved" panel that key opens. Cream tickets
+   on the black panel, lime on the tick. Tokens come from @theme in index.css. */
 
-.your-turn {
-  --yt-delay: 0ms;
-  position: fixed;
-  z-index: 66;
-  bottom: 96px;
-  left: calc(50% + 48px);
-  display: flex;
-  width: 364px;
-  max-width: calc(100vw - 24px);
-  flex-direction: column;
-  align-items: stretch;
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  translate: -50% 0;
-  pointer-events: none;
+/* ── the count: rides the ✦ key, the one thing the room shows unasked.
+   The room palette's orange-red, since the app has no red of its own ── */
+.action-dock button:has(> .yt-badge) {
+  position: relative;
+  overflow: visible;
 }
 
-/* ── the count: sits on the orb, the one thing the room shows unasked.
-   The room palette's orange-red, since the app has no red of its own ── */
 .yt-badge {
   position: absolute;
   z-index: 3;
-  top: -15px;
-  left: 40px;
+  top: -7px;
+  right: -7px;
   display: grid;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  padding: 4px;
+  pointer-events: none;
   animation: yt-badge-in var(--dur-arrive) var(--ease-pop) 900ms both;
 }
 
@@ -40,29 +25,23 @@
 
 .yt-badge b {
   display: grid;
-  min-width: 22px;
-  height: 22px;
+  min-width: 20px;
+  height: 20px;
   place-items: center;
   border-radius: var(--radius-pill);
   background: var(--color-trip);
   box-shadow: 0 0 0 2.5px var(--color-sticker);
   color: var(--color-ink);
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
-  padding: 0 6px;
+  padding: 0 5px;
   animation: yt-badge-in var(--dur-base) var(--ease-pop) both;
-  transition: transform var(--dur-quick) var(--ease-glide);
-}
-
-.yt-badge:hover b {
-  transform: scale(1.12);
 }
 
 /* a guest owes nothing: same count, no colour */
-.yt-badge.is-guest b,
-.yt-badge.is-open b {
+.yt-badge.is-guest b {
   background: white;
 }
 
@@ -73,88 +52,59 @@
   }
 }
 
-/* the dock's other keys step out for a voice ask; so does this */
-.action-dock:has(.dock-voice:not(.is-idle)) .yt-badge,
-.has-entry-gate .yt-badge {
-  display: none;
+/* ── the section: sits between the panel's head and what moved ── */
+.recap-panel > .recap-panel-head {
+  order: -2;
 }
 
-.your-turn > * {
-  pointer-events: auto;
+.your-turn {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: stretch;
+  order: -1;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  padding-bottom: 6px;
 }
 
-/* something else has the floor: the gate, chat, an editor, a frame or card
-   in focus */
-main:has(.recap-panel) .your-turn,
-main:has(.dock-voice:not(.is-idle)) .your-turn,
-.has-entry-gate .your-turn,
-.has-chat-open .your-turn,
-.has-editor-open .your-turn,
-.has-frame-focus .your-turn,
-.has-widget-focus .your-turn,
-.has-photo-gallery .your-turn {
-  display: none;
-}
-
-/* the first-visit hint ("try the cake poll") says less than the pile does */
-main:has(.your-turn) .welcome-pill {
-  display: none;
-}
-
-/* ── the label: a black sticker that names the pile and tucks it ── */
 .yt-tab {
-  z-index: 30;
-  display: inline-flex;
-  max-width: 100%;
-  align-self: flex-start;
+  display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 -10px 12px;
-  order: -1;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--color-sticker);
-  box-shadow: 0 4px 0 rgba(45, 22, 31, 0.22);
-  color: white;
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 0.01em;
+  margin: 0 0 9px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   line-height: 1;
-  padding: 6px 7px 6px 13px;
-  transform: rotate(-2deg);
-  animation: yt-rise var(--dur-arrive) var(--ease-pop) both;
-  animation-delay: var(--yt-delay);
-  transition: transform var(--dur-quick) var(--ease-glide);
+  text-transform: uppercase;
 }
 
-.yt-tab:hover {
-  transform: rotate(-2deg) translateY(-1px);
-}
-
-.yt-tab:active {
-  transform: rotate(-2deg) scale(0.96);
-}
-
-.yt-tab i {
+.yt-tab b {
   display: grid;
-  width: 20px;
-  height: 20px;
+  min-width: 18px;
+  height: 18px;
   place-items: center;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.16);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 500;
+  background: var(--color-trip);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0;
+  padding: 0 5px;
+}
+
+.your-turn.is-guest .yt-tab b {
+  background: white;
 }
 
 /* ── the pile: the top card open, the rest peeking out from under it ── */
 .yt-pile {
   position: relative;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -163,13 +113,12 @@ main:has(.your-turn) .welcome-pill {
 .yt-item {
   position: relative;
   z-index: calc(10 - var(--i));
-  margin: 0 calc(4px + var(--i) * 8px) -9px;
-  border-radius: 13px 13px 6px 6px;
-  background: color-mix(in srgb, var(--color-card) 88%, var(--color-mat));
-  box-shadow: 0 -1px 0 rgba(45, 22, 31, 0.1);
-  transform-origin: 50% 100%;
+  margin: -9px calc(4px + var(--i) * 8px) 0;
+  border-radius: 6px 6px 13px 13px;
+  background: color-mix(in srgb, var(--color-card) 82%, var(--color-mat));
+  transform-origin: 50% 0;
   animation: yt-rise var(--dur-arrive) var(--ease-pop) both;
-  animation-delay: calc(var(--yt-delay) + 60ms + var(--i) * 70ms);
+  animation-delay: calc(80ms + var(--i) * 60ms);
   transition:
     margin var(--dur-base) var(--ease-glide),
     background-color var(--dur-base) var(--ease-glide);
@@ -180,13 +129,12 @@ main:has(.your-turn) .welcome-pill {
   margin: 0;
   border-radius: 16px;
   background: var(--color-card);
-  box-shadow: 0 6px 0 rgba(45, 22, 31, 0.22);
 }
 
 @keyframes yt-rise {
   from {
     opacity: 0;
-    transform: translateY(18px) scale(0.96);
+    transform: translateY(-14px) scale(0.96);
   }
 }
 
@@ -200,13 +148,13 @@ main:has(.your-turn) .welcome-pill {
   background: none;
   color: inherit;
   cursor: pointer;
-  padding: 7px 12px 15px;
+  padding: 15px 12px 7px;
   text-align: left;
 }
 
 .yt-item.is-top .yt-go {
   align-items: flex-start;
-  padding: 17px 14px 0;
+  padding: 14px 14px 0;
 }
 
 .yt-verb {
@@ -317,8 +265,12 @@ main:has(.your-turn) .welcome-pill {
   margin-top: 9px;
 }
 
-.yt-choices button,
-.yt-answer button {
+/* the dock styles every button inside it; these are named back explicitly */
+.action-dock .yt-choices button,
+.action-dock .yt-answer button {
+  width: auto;
+  height: auto;
+  min-height: 0;
   border: 0;
   border-radius: var(--radius-pill);
   background: none;
@@ -336,18 +288,18 @@ main:has(.your-turn) .welcome-pill {
     transform var(--dur-instant) var(--ease-glide);
 }
 
-.yt-choices button:not(:disabled):hover,
-.yt-answer button:not(:disabled):hover {
+.action-dock .yt-choices button:not(:disabled):hover,
+.action-dock .yt-answer button:not(:disabled):hover {
   background: var(--color-sticker);
   color: white;
 }
 
-.yt-choices button:active {
+.action-dock .yt-choices button:active {
   transform: scale(0.95);
 }
 
-.yt-choices button.is-picked,
-.yt-choices button.is-picked:hover {
+.action-dock .yt-choices button.is-picked,
+.action-dock .yt-choices button.is-picked:hover {
   background: var(--color-lime);
   color: var(--color-ink);
 }
@@ -358,7 +310,7 @@ main:has(.your-turn) .welcome-pill {
   margin-top: 9px;
 }
 
-.yt-answer input {
+.action-dock .yt-answer input {
   min-width: 0;
   flex: 1;
   border: 0;
@@ -370,24 +322,34 @@ main:has(.your-turn) .welcome-pill {
   padding: 7px 14px;
 }
 
-.yt-answer input::placeholder {
+.action-dock .yt-answer input::placeholder {
   color: var(--color-muted);
 }
 
-.yt-answer button:disabled {
+.action-dock .yt-answer button:disabled {
   cursor: default;
   opacity: 0.35;
 }
 
-.yt-more {
+.action-dock .yt-go {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--color-ink);
+}
+
+.action-dock .yt-more {
   position: absolute;
-  z-index: 31;
-  top: 3px;
-  right: 14px;
+  top: -5px;
+  right: 0;
+  width: auto;
+  height: auto;
+  min-height: 0;
   border: 0;
   border-radius: var(--radius-pill);
-  background: var(--color-sticker);
-  box-shadow: 0 3px 0 rgba(45, 22, 31, 0.22);
+  background: rgba(255, 255, 255, 0.14);
   color: white;
   cursor: pointer;
   font-family: var(--font-display);
@@ -395,29 +357,17 @@ main:has(.your-turn) .welcome-pill {
   font-weight: 800;
   line-height: 1;
   padding: 6px 9px;
-  transform: rotate(3deg);
-  animation: yt-rise var(--dur-arrive) var(--ease-pop) both;
-  animation-delay: var(--yt-delay);
 }
 
 /* a guest is told straight: this is the room's business, not a debt */
 .yt-guest-note {
   position: absolute;
-  z-index: 31;
-  top: 4px;
-  right: 12px;
+  top: 0;
+  right: 0;
   margin: 0;
-  border-radius: var(--radius-pill);
-  background: var(--color-sticker);
-  box-shadow: 0 3px 0 rgba(45, 22, 31, 0.22);
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.55);
   font-size: 12px;
-  font-weight: 500;
   line-height: 1;
-  padding: 6px 10px;
-  transform: rotate(1.5deg);
-  animation: yt-rise var(--dur-arrive) var(--ease-pop) both;
-  animation-delay: calc(var(--yt-delay) + 120ms);
 }
 
 /* ── done: the name is struck, the label turns to a lime tick, the card
@@ -430,8 +380,8 @@ main:has(.your-turn) .welcome-pill {
 .yt-item.is-done.is-top {
   position: absolute;
   z-index: 20;
+  top: 0;
   right: 0;
-  bottom: 0;
   left: 0;
 }
 
@@ -463,26 +413,22 @@ main:has(.your-turn) .welcome-pill {
 @keyframes yt-drop {
   to {
     opacity: 0;
-    transform: translateY(30px) rotate(3deg);
+    transform: translateY(24px) rotate(3deg);
   }
 }
 
-/* ── nothing left: one stamp, then it's gone ── */
+/* ── nothing left: one stamp, then the section is gone ── */
 .yt-clear {
   display: inline-flex;
-  align-self: center;
+  align-self: flex-start;
   align-items: center;
   gap: 9px;
   margin: 0;
-  border-radius: var(--radius-pill);
-  background: var(--color-sticker);
-  box-shadow: 0 5px 0 rgba(45, 22, 31, 0.22);
   color: white;
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 800;
   line-height: 1;
-  padding: 9px 18px 9px 9px;
   transform: rotate(-2deg);
   animation:
     yt-clear-in var(--dur-arrive) var(--ease-snap) both,
@@ -510,7 +456,7 @@ main:has(.your-turn) .welcome-pill {
 @keyframes yt-clear-out {
   to {
     opacity: 0;
-    transform: rotate(-2deg) translateY(14px);
+    transform: rotate(-2deg) translateY(10px);
   }
 }
 
@@ -561,35 +507,10 @@ main:has(.your-turn) .welcome-pill {
   padding: 0 5px;
 }
 
-/* ── phone: the top ticket only, full width above the dock ── */
+/* ── phone: the top ticket only; +N deals the next ── */
 @media (max-width: 800px) {
-  .your-turn {
-    right: 12px;
-    bottom: 166px;
-    left: 12px;
-    width: auto;
-    max-width: none;
-    translate: none;
-  }
-
   .your-turn .yt-item:not(.is-top) {
     display: none;
-  }
-
-  .yt-item.is-top .yt-go {
-    padding: 16px 12px 0;
-  }
-
-  .yt-item.is-top .yt-name {
-    font-size: 17px;
-  }
-
-  .yt-fold-in {
-    padding: 0 12px;
-  }
-
-  .yt-item.is-top .yt-fold-in {
-    padding-bottom: 12px;
   }
 
   .yt-meta span {
@@ -597,32 +518,11 @@ main:has(.your-turn) .welcome-pill {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
-  .yt-choices {
-    flex-wrap: nowrap;
-  }
-
-  .yt-choices button {
-    overflow: hidden;
-    min-width: 0;
-    flex: 0 1 auto;
-    padding: 9px 13px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .yt-guest-note {
-    display: none;
-  }
-
 }
 
 @media (prefers-reduced-motion: reduce) {
   .yt-badge,
   .yt-badge b,
-  .yt-tab,
-  .yt-more,
-  .yt-guest-note,
   .yt-item,
   .yt-item.is-done,
   .yt-item.is-done .yt-verb,
@@ -637,8 +537,7 @@ main:has(.your-turn) .welcome-pill {
   }
 
   .yt-fold,
-  .yt-item,
-  .yt-tab {
+  .yt-item {
     transition: none;
   }
 }
