@@ -12,10 +12,13 @@
 }
 .link-thread-svg {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  overflow: visible;
+}
+.link-thread-layer:not(.is-board) .link-thread-svg {
   width: 100%;
   height: 100%;
-  overflow: visible;
 }
 .link-thread-line {
   stroke: var(--color-ink);
@@ -123,7 +126,7 @@
 /* "call it": a poll or a day-finder someone else waits on */
 .card-call-it {
   position: absolute;
-  right: 12px;
+  left: 14px;
   bottom: -14px;
   z-index: 6;
   padding: 5px 12px;

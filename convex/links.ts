@@ -102,7 +102,8 @@ async function valueOf(ctx: MutationCtx, link: Doc<"links">, from: Doc<"widgets"
       if (best < 0) return undefined;
       const today = new Date(link._creationTime).toISOString().slice(0, 10);
       const iso = dateIn(days[best], today)?.iso;
-      return iso ? { [link.fill]: iso, startDate: today, event: `${String(t.event ?? "it")} · ${days[best].toLowerCase()}` } : undefined;
+      const day = /^\d{4}-/.test(days[best]) ? ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date(`${iso}T12:00:00Z`).getUTCDay()] : days[best].toLowerCase();
+      return iso ? { [link.fill]: iso, startDate: today, event: `${String(t.event ?? "it")} · ${day}` } : undefined;
     }
     case "yes": {
       // a split among whoever said yes, the total shared again on every answer
@@ -248,8 +249,11 @@ export const waiting = query({
   returns: v.array(v.object({ id: v.id("links"), from: v.id("widgets"), to: v.id("widgets"), when: v.string(), tag: v.optional(v.string()), state: v.string() })),
   handler: async (ctx, { spaceId }) => {
     const rows = await ctx.db.query("links").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(100);
-    return rows
-      .filter((l) => l.cutAt === undefined && (l.resolvedAt === undefined || l.tag))
+    const shown = rows.filter((l) => l.cutAt === undefined && (l.resolvedAt === undefined || l.tag));
+    // a link whose card was deleted has nothing to wait on or thread to
+    const alive = await Promise.all(shown.map(async (l) => !!(await ctx.db.get(l.from)) && !!(await ctx.db.get(l.to))));
+    return shown
+      .filter((_, i) => alive[i])
       .map((l) => ({
         id: l._id,
         from: l.from,

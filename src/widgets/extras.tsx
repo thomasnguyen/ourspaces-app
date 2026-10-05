@@ -2,6 +2,10 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, 
 import type { Widget } from "../data/types";
 import { MemberFace } from "../components/MemberFace";
 import { playSound } from "../lib/sounds";
+import { useContext } from "react";
+import { BoardLinkContext } from "./challenge";
+import { getIdentity } from "../live/identity";
+import { getDataMode } from "../live/dataMode";
 import {
   DEFAULT_STATION_ID,
   getRadioSnapshot,
@@ -784,9 +788,20 @@ export function AvailabilityWidget({ widget, style }: { widget: Widget; style: S
   const recommendedDay = recommendedIndex >= 0 ? days[recommendedIndex] : "";
   const recommendedCount = recommendedIndex >= 0 ? counts[recommendedIndex] : 0;
 
+  const { onWidgetData } = useContext(BoardLinkContext);
   const toggleYourAvailability = (day: string) => {
     setYourSlots((current) => ({ ...current, [day]: !current[day] }));
     playSound("tap");
+    // live: your row is written to the card (your name's row, or a new one), so a day-finder can resolve (convex/links.ts)
+    if (onWidgetData && getDataMode() === "live") {
+      const me = getIdentity().name;
+      const i = days.indexOf(day);
+      const mine = members.find((m) => m.name.toLowerCase() === me.toLowerCase());
+      const slots = days.map((_, k) => (k === i ? !(mine?.slots?.[k] ?? false) : Boolean(mine?.slots?.[k])));
+      const next = mine ? members.map((m) => (m === mine ? { ...m, slots } : m)) : [...members, { name: me, slots }];
+      onWidgetData(widget.id, { ...widget.data, members: next });
+      setYourSlots({});
+    }
   };
 
   const hasSchedule = days.length > 0 && members.length > 0;

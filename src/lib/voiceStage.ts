@@ -283,6 +283,12 @@ export type AskOutcome = {
   askedMs: number[];
 };
 let outcome: AskOutcome | null = null;
+/** The stage holds the ask open for a missing field: the build sends no speculative call meanwhile. */
+let asking = false;
+export const setStageAsking = (on: boolean) => {
+  asking = on;
+};
+export const stageAsking = () => asking;
 export function setAskOutcome(o: AskOutcome | null) {
   outcome = o;
 }

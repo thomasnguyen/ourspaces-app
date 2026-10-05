@@ -180,7 +180,7 @@ export function yourTurn(input: TurnInput): TurnItem[] {
     /* a card you started and walked away from (C1, lib/deck/needs.ts): its empty slot is yours to fill */
     const unfinished = data.unfinished as { by?: string; byUserId?: string; slot?: string; card?: string } | undefined;
     if (unfinished) {
-      if (isMe(unfinished.by, unfinished.byUserId) && !guest)
+      if (isMe(unfinished.by, unfinished.byUserId))
         push(widget, {
           kind: "finish",
           verb: "your turn",

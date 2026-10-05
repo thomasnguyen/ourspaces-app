@@ -28,6 +28,7 @@ import {
   onVoiceStageRelease,
   stageBeats,
   setAskOutcome,
+  setStageAsking,
   voiceStageBuild,
   voiceStageFacts,
   voiceStageOffers,
@@ -873,6 +874,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
   advanceRef.current = advance;
   useEffect(() => {
     voiceRef.current.hold(needy || bare);
+    setStageAsking(needy || bare);
     if (!needy && !bare) {
       askRun.current = null;
       askedBare.current = false;

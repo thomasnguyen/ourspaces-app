@@ -169,7 +169,8 @@ export const CATALOG = [
     type: "expenseSplit",
     settings: { title: text(32), total: num(1, 100000), paidBy: text(24, { optional: true }) },
     edits: { addPerson: text(24), removePerson: text(24), rename: text(32) },
-    needs: [need("title", "split what?", "add what it's for", "text", (w) => !!w.topic || w.number !== null), need("total", "split how much?", "add the total", "number", (w) => w.number !== null)],
+    // the title is the model's ("the bill", "the cabin"); the total only the person knows
+    needs: [need("total", "split how much?", "add the total", "number", (w) => w.number !== null)],
     build: (s, ctx) => {
       const payer = s.paidBy ?? ctx.by;
       const share = Math.round(s.total / Math.max(1, ctx.people.length));

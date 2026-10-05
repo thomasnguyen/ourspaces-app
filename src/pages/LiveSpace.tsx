@@ -3047,6 +3047,7 @@ export function LiveSpacePage({
                 onCheckIn={handlers.onCheckIn}
                 waiting={waitingOn}
                 flows={flows}
+                onWidgetData={handlers.onUpdate}
                 onPlaylistTune={handlers.onPlaylistTune}
                 onLetterOpen={handlers.onLetterOpen}
                 buildRoomFeed={buildRoomFeed}

@@ -73,6 +73,12 @@ export function LinkThreads({
       if (!root || !canvas) return;
       const c = canvas.getBoundingClientRect();
       const scale = c.width / Math.max(1, canvas.offsetWidth);
+      // the layer is as big as the board (an svg with no size paints nothing)
+      const svg = root.querySelector("svg");
+      if (svg && svg.getAttribute("width") !== String(canvas.scrollWidth)) {
+        svg.setAttribute("width", String(canvas.scrollWidth));
+        svg.setAttribute("height", String(canvas.scrollHeight));
+      }
       const box = (id: string): Box | null => {
         const el = canvas.querySelector<HTMLElement>(`[data-widget-id="${id}"]`);
         if (!el) return null;

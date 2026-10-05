@@ -75,7 +75,9 @@ function pair(a: string, b: string) {
   };
 }
 const whereFor = (s: { meal?: string; day?: string }) => `where for ${(s.meal ?? "dinner").toLowerCase()}${s.day ? ` ${s.day.toLowerCase()}` : ""}?`;
-const hangTitle = (s: { what?: string }) => (s.what ? `when can we all do ${s.what.toLowerCase()}` : "when can we all hang out");
+/** What the hangout is for, when the words said one ("a movie"); the ask itself ("when can we all hang out") isn't one. */
+const hangWhat = (s: { what?: string }) => (s.what && !/\b(when|hang|free|meet|get together)\b/i.test(s.what) ? s.what.toLowerCase() : null);
+const hangTitle = (s: { what?: string }) => (hangWhat(s) ? `when can we all do ${hangWhat(s)}` : "when can we all hang out");
 
 export const RECIPES = [
   recipe({
@@ -139,7 +141,7 @@ export const RECIPES = [
       const at = pair("availability", "countdown");
       return [
         { key: "availability", card: "availability", settings: { title: hangTitle(s), days: s.days }, ...at.a, z: 7, rotate: -0.6, batch: 0 },
-        { key: "countdown", card: "countdown", settings: { event: (s.what ?? "hanging out").toLowerCase(), date: "2000-01-01" }, blank: "date", ...at.b, z: 7, rotate: 2, batch: 1 },
+        { key: "countdown", card: "countdown", settings: { event: hangWhat(s) ?? "hanging out", date: "2000-01-01" }, blank: "date", ...at.b, z: 7, rotate: 2, batch: 1 },
       ];
     },
   }),
@@ -213,7 +215,7 @@ export function expandRecipe(id: string, slots: Record<string, unknown>, ctx: Ca
   const parts = (def.parts as (s: unknown, c: CardContext) => RecipePart[])(slots, ctx);
   return parts.map((p) => {
     const l = def.links.find((x) => x.to === p.key);
-    return l ? { ...p, link: { from: l.from, when: l.when, fill: l.fill, value: l.value } } : p;
+    return l ? { ...p, link: { from: l.from, when: l.when, fill: l.fill, value: l.value, ...(l.tag ? { tag: l.tag } : {}), ...(l.at ? { at: l.at } : {}) } } : p;
   });
 }
 

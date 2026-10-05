@@ -30,7 +30,7 @@ import {
 } from "../lib/deck";
 import type { Schema } from "../lib/deck/schema";
 import { expandRecipe, flowFor, getRecipe, isFlow, isRecipe, recipeLead, type RecipePart } from "../lib/deck/recipes";
-import { takeAskOutcome, type AskOutcome } from "../lib/voiceStage";
+import { stageAsking, takeAskOutcome, type AskOutcome } from "../lib/voiceStage";
 import { dateIn } from "../lib/deck/needs";
 import { guessCards } from "../lib/deck/guess";
 import { shortlistDeck } from "../lib/deck/shortlist";
@@ -994,7 +994,8 @@ export function useVoiceBuild({
 
   maybeFire.current = (s: Session) => {
     const text = s.text;
-    if (session.current !== s || s.ended || !text || sentenceHangs(text)) return;
+    // the stage is asking for a missing field: the words so far can't make the card, so no speculative fill goes out
+    if (session.current !== s || s.ended || !text || sentenceHangs(text) || stageAsking()) return;
     const n = text.split(/\s+/).length;
     if (!(guessCard(text) || sure(s.decided) ? n >= 2 : n >= SPEC_MIN_WORDS)) return;
     const hint = hintFor(s, room.current.facts?.() ?? null, text);
@@ -1076,7 +1077,7 @@ export function useVoiceBuild({
   maybeDecide.current = (s: Session) => {
     const ask = room.current.decide;
     const text = s.text;
-    if (!ask || session.current !== s || s.ended || !text || sentenceHangs(text)) return;
+    if (!ask || session.current !== s || s.ended || !text || sentenceHangs(text) || stageAsking()) return;
     if (text.split(/\s+/).length < 2) return;
     const n = norm(text);
     if (s.decides.some((d) => d.norm === n) || s.decides.length >= DECIDE_MAX) return;
@@ -1374,7 +1375,7 @@ export function useVoiceBuild({
       const m = measure(scrollerRef.current) ?? s.m;
       if (!m) return fail("no canvas");
       // the group is placed as one footprint (the frame round it, or a flow's pair side by side)
-      const size = { w: Math.max(...kept.map((k) => k.part!.at.x + k.part!.size.w)), h: Math.max(...kept.map((k) => k.part!.at.y + k.part!.size.h)) };
+      const size = { w: Math.max(...kept.map((k) => k.part!.at.x + k.part!.size.w)), h: Math.max(...kept.map((k) => k.part!.at.y + Math.max(k.part!.size.h, k.widget.h))) };
       const placeRoom = { widgets: m.board, view: m.view, bounds: m.bounds, selected: room.current.selectedId?.() ?? null, held: room.current.held?.() };
       const [spot] = placeCards([size], placeRoom);
       s.trace.place = `recipe group ${size.w}×${size.h}: ${placeReason([size], [spot], placeRoom)}`;
@@ -1949,7 +1950,7 @@ export function useVoiceBuild({
               const r = applyCard(raw, pc, { id: `${DRAFT}${s.key}-${kept.length}`, z: part.z, ...(part.blank ? { blank: part.blank } : {}), ...(unfinished ? { unfinished: { by: c.by } } : {}) });
               // a flow's cards carry the thread's tag on this screen only (the stage draws the pair with its thread)
               const tag = flow ? (getRecipe(item.card.card)!.links[0]?.tag ?? "linked") : undefined;
-              if (r.ok) kept.push({ card: raw as DealtCard, widget: { ...r.widget, w: part.size.w, h: part.size.h, ...(part.rotate !== undefined ? { rotate: part.rotate } : {}), ...(tag ? { data: { ...r.widget.data, flowTag: tag } } : {}) }, people: pc.people, part, ...(part.blank ? { blank: part.blank } : {}), ...(unfinished ? { unfinished: true } : {}) });
+              if (r.ok) kept.push({ card: raw as DealtCard, widget: { ...r.widget, w: part.size.w, h: Math.max(part.size.h, r.widget.h), ...(part.rotate !== undefined ? { rotate: part.rotate } : {}), ...(tag ? { data: { ...r.widget.data, flowTag: tag } } : {}) }, people: pc.people, part, ...(part.blank ? { blank: part.blank } : {}), ...(unfinished ? { unfinished: true } : {}) });
               cards.push(r.ok ? { card: part.card, ok: true } : { card: part.card, ok: false, reason: r.reason });
             }
             continue;

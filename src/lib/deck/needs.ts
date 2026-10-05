@@ -26,6 +26,9 @@ const WORD_NUM: Record<string, number> = { a: 1, one: 1, two: 2, three: 3 };
 
 /** A date in the words, as the next such day from `today` (YYYY-MM-DD), and the phrase it came from. */
 export function dateIn(text: string, today: string): { iso: string; phrase: string } | null {
+  // a plain date ("2026-10-09", a day-finder's column) is itself
+  const iso = /\b(\d{4}-\d{2}-\d{2})\b/.exec(text);
+  if (iso && !Number.isNaN(Date.parse(`${iso[1]}T12:00:00Z`))) return { iso: iso[1], phrase: iso[0] };
   const m = DATE_PHRASE.exec(text.toLowerCase());
   if (!m) return null;
   // "last sat" is a day that's gone, not one to count to
