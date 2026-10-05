@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
-import { describe, parseReply, HERE, ROOT } from "./lib.mjs";
+import { describe, parseReply, HERE } from "./lib.mjs";
 
 /** Token Factory list prices, $ per token (GET /v1/models, 2026-10-05). */
 const PRICE = { "nvidia/nemotron-3-super-120b-a12b": [0.3e-6, 0.9e-6], "nvidia/Nemotron-3-Ultra-550b-a55b": [1e-6, 3e-6] };
@@ -66,11 +66,8 @@ export function cached(cfg, trial = 1) {
 }
 
 function key() {
-  if (process.env.NEBIUS_API_KEY) return process.env.NEBIUS_API_KEY;
-  const local = path.join(ROOT, "nebius/judge/.env.nebius");
-  const m = fs.existsSync(local) && /^\s*(?:export\s+)?NEBIUS_API_KEY\s*=\s*["']?([^"'\s]+)/m.exec(fs.readFileSync(local, "utf8"));
-  if (!m) throw new Error("set NEBIUS_API_KEY (a Nebius Token Factory key) to run --live");
-  return m[1];
+  if (!process.env.NEBIUS_API_KEY) throw new Error("set NEBIUS_API_KEY (a Nebius Token Factory key) to run --live");
+  return process.env.NEBIUS_API_KEY;
 }
 
 /** One call per scenario not yet answered in this trial; 4 at a time; every reply (or failure) appended as a row. */
