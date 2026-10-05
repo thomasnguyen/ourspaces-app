@@ -210,3 +210,34 @@ export function lineFor(row: StandingRow, rows: StandingRow[], data: CheckInData
   if (row.missedYesterday) return { text: `missed ${weekdayOf(data, Math.max(0, Math.min(day, data.days - 1) - 1))} · back on it today` };
   return { text: `nothing from ${name} yet today` };
 }
+
+/* ---------- do my part: "i did 40" ---------- */
+
+const I_DID = /\b(?:i(?:'ve|\s+have|\s+just)?\s+(?:did|done|logged|got|hit|ran|walked|swam)|log(?:ged)?|put me down for)\s+(\d{1,4})\b/i;
+const I_DID_IT = /\b(?:i\s+(?:did|done)\s+(?:it|mine|today'?s?)|done for today|i'?m done today)\b/i;
+
+/**
+ * "i did 40" in a room with a running check-in the speaker is in: which card,
+ * which day, what number. Code only (no model): only the speaker's own row,
+ * only today. Null when the words aren't a log or nothing is running for them.
+ */
+export function myPartFor(
+  said: string,
+  widgets: { id: string; type: string; data: Record<string, unknown> }[],
+  me: string,
+  now = new Date(),
+): { widgetId: string; day: number; value: number; title: string; name: string } | null {
+  const n = I_DID.exec(said)?.[1];
+  const tick = !n && I_DID_IT.test(said);
+  if (!n && !tick) return null;
+  for (const w of [...widgets].reverse()) {
+    if (w.type !== "checkIn") continue;
+    const data = readCheckIn(w.data);
+    const person = findPerson(data, me);
+    const day = loggableDay(data, now);
+    if (!person || day < 0 || isRevealed(data, now)) continue;
+    if (tick && data.kind !== "done") continue;
+    return { widgetId: w.id, day, value: data.kind === "done" ? 1 : Number(n), title: data.title, name: person.name };
+  }
+  return null;
+}

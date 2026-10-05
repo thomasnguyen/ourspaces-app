@@ -479,7 +479,7 @@ export function VoiceBuildLayer({
             onClick={dev ? () => openFor(found.traceKey) : undefined}
           >
             <span className="voice-landed voice-found" data-testid="voice-found" data-widget-ref={found.widgetId} data-card={found.card}>
-              already here{found.by ? ` · ${found.by} made it` : ""}
+              {found.done ?? <>already here{found.by ? ` · ${found.by} made it` : ""}</>}
             </span>
             {found.next === "spin" && (
               <button
@@ -518,6 +518,14 @@ export function VoiceBuildLayer({
         >
           {!latest ? (
             <span>voice · no ask yet</span>
+          ) : latest.found?.outcome === "pointed" && latest.found.why.startsWith("do my part") ? (
+            <>
+              <span data-testid="dev-readout-route">do my part</span>
+              <span data-testid="voice-receipt" data-found="1">
+                code, no model · last word → camera {latest.stages.found === null ? "…" : ms(latest.stages.found).replace("+", "")}
+              </span>
+              <span>your row only</span>
+            </>
           ) : latest.found?.outcome === "pointed" ? (
             <>
               <span data-testid="dev-readout-route">already here</span>

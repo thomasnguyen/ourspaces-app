@@ -1,3 +1,4 @@
+import { myPartFor, readCheckIn, withLog } from "./lib/challenge";
 import {
   lazy,
   Suspense,
@@ -533,6 +534,15 @@ export default function App() {
     scrollerRef: canvasViewportRef,
     cardContext: voiceCtx,
     facts: voiceFacts,
+    // "i did 40" (mock): the speaker's seat on the check-in, stored like a tap
+    myPart: (said) => {
+      const seat = new URLSearchParams(window.location.search).get("as") ?? voiceMaker.name;
+      const mine = myPartFor(said, visibleWidgetsRef.current as never, seat);
+      if (!mine) return null;
+      const w = visibleWidgetsRef.current.find((x) => x.id === mine.widgetId);
+      if (w) storeWidgetData(w.id, withLog(readCheckIn(w.data), mine.name, mine.day, mine.value) as unknown as Widget["data"]);
+      return { item: { id: mine.widgetId, card: "checkin", title: mine.title, by: null }, text: `logged ${mine.value} for you · ${mine.title}` };
+    },
     deal: async (call, onPartial) => {
       // `?voiceHold=1` keeps the skeleton up for a still (drive voice-build:shell).
       if (new URLSearchParams(window.location.search).has("voiceHold")) await new Promise(() => {});

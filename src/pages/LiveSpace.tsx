@@ -27,6 +27,7 @@ import { RoomKnowsDoor, RoomKnowsPage } from "../components/RoomKnows";
 import { standing } from "../lib/roomKnows";
 import { useVoiceBuild } from "../live/useVoiceBuild";
 import { boardItems } from "../lib/deck";
+import { myPartFor } from "../lib/challenge";
 import { Canvas, SpaceHeader } from "../components/Canvas";
 import { ClaimCard, type RoomContext } from "../components/ClaimCard";
 import { SettingsSheet } from "../components/SettingsSheet";
@@ -1573,6 +1574,13 @@ export function LiveSpacePage({
       colors: Object.fromEntries((roomKnows?.people ?? []).filter((p) => p.color).map((p) => [p.name, p.color])),
     }),
     selectedId: voiceSelectedId,
+    // "i did 40": your own row on a running check-in, through the same as-yourself mutation as a tap
+    myPart: (said) => {
+      const mine = myPartFor(said, adaptedWidgets as never, identity.name);
+      if (!mine) return null;
+      handlers.onCheckIn(mine.widgetId, mine.day, mine.value);
+      return { item: { id: mine.widgetId, card: "checkin", title: mine.title, by: null }, text: `logged ${mine.value} for you · ${mine.title}` };
+    },
     warm: () => void warmDeal({}).catch(() => {}),
     facts: () => roomBrief?.room ?? null,
     decide: (said, { onBoard }) =>

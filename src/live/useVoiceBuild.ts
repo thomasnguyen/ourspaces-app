@@ -244,6 +244,8 @@ export type VoiceFound = {
   by: string | null;
   /** The obvious next step the slip offers (never done for you). */
   next: "spin" | null;
+  /** Something was done on it for you (do my part): the slip says what. */
+  done?: string;
 };
 export type VoiceReceipt =
   | { ok: true; key: number; cards: string[]; model: string | null; ms: number | null; widgetId: string }
@@ -479,6 +481,8 @@ type Session = {
   proposals: Map<string, Set<number>>;
   /** The ask ended on a widget already on the board: nothing more is drawn. */
   pointed: boolean;
+  /** Do my part: what was done on the card pointed at ("logged 40 for you"). */
+  foundText?: string;
   /** Code matches the words so far to a widget already here: no new skeleton over the board until that's settled. */
   matching: string | null;
   steady: number;
@@ -508,6 +512,7 @@ export function useVoiceBuild({
   facts,
   decide,
   board,
+  myPart,
 }: {
   scrollerRef: RefObject<HTMLElement | null>;
   /** `onPartial` gets the answer so far, and `done` once the stream is whole. */
@@ -518,6 +523,8 @@ export function useVoiceBuild({
   amend?: (a: { widgetId: string; nonce: string; card: Kept }) => Promise<unknown>;
   /** The room brief's facts (live only): routes each call and resolves its tokens. */
   facts?: () => RoomFacts | null;
+  /** Do my part: "i did 40" logs the speaker's own number on a running check-in (code, no model). Returns the card, or null. */
+  myPart?: (said: string) => { item: BoardItem; text: string } | null;
   /** The one-letter card pick (live only); `onBoard` also asks the "already on the board?" yes/no. */
   decide?: (said: string, opts: { onBoard: string | null }) => Promise<DecideAnswer>;
   /** The widgets on the board now, for the "already here" check. Without `decide` (mock), code's check alone answers, as a stand-in. */
@@ -539,8 +546,8 @@ export function useVoiceBuild({
   const [traces, setTraces] = useState<AskTrace[]>([]);
   /** The slip is on its way out (it leaves on glide, then unmounts). */
   const [leaving, setLeaving] = useState(false);
-  const room = useRef({ deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board });
-  room.current = { deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board };
+  const room = useRef({ deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board, myPart });
+  room.current = { deal, commit, amend, cardContext, selectedId, warm, onLanded, facts, decide, board, myPart };
   const session = useRef<Session | null>(null);
   const clearTimer = useRef(0);
   const shellTimer = useRef(0);
@@ -1127,7 +1134,8 @@ export function useVoiceBuild({
         card: item.card,
         title: item.title,
         by: item.by,
-        next: item.card === "wheel" ? "spin" : null,
+        next: item.card === "wheel" && !s.foundText ? "spin" : null,
+        ...(s.foundText ? { done: s.foundText } : {}),
       });
       markNext(s, "found");
       void nextFrame().then(() => publish(s));
@@ -1297,6 +1305,13 @@ export function useVoiceBuild({
       s.trace.how = end.how;
       const late: AskTrace["late"][number] | null = round > 1 ? { text: said, ms: Math.round(performance.now() - s.t0), outcome: "…" } : null;
       if (late) s.trace.late.push(late);
+      // Do my part: your own number on a running check-in, logged by code; the camera goes to the card.
+      const mine = !s.reopened && !s.commitP ? room.current.myPart?.(said) : null;
+      if (mine) {
+        s.trace.found = { check: { ok: true, item: mine.item, shared: [], why: "do my part" }, verdict: null, outcome: "dealt", why: `do my part: ${mine.text} (code, no model)` };
+        s.foundText = mine.text;
+        if (pointAt(s, mine.item)) return;
+      }
       let sp = pickFinal(s, said, room.current.facts?.() ?? null) ?? fire(s, said, false);
       s.final = sp;
       s.trace.calls.forEach((c, i) => (c.used = i === sp.seq));

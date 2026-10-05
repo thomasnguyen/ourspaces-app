@@ -62,6 +62,27 @@ type CanvasCursor = {
   gesture?: LiveGesture;
 };
 
+/** The family's phone column follows the board's reading order (src/data/family.css
+    stacks the cards in DOM order): each frame, then its cards (the challenge
+    first), so a voice-built group lands in the column where it sits on the
+    board, not at the end. Stacking on the board is by z, so this changes nothing there. */
+function readingOrder(widgets: Widget[]): Widget[] {
+  const frames = widgets.filter((w) => w.type === "frame");
+  const frameOf = (w: Widget) =>
+    w.type === "frame" ? w : frames.find((f) => w.x + w.w / 2 >= f.x && w.x + w.w / 2 <= f.x + f.w && w.y + w.h / 2 >= f.y && w.y + w.h / 2 <= f.y + f.h);
+  const rank = (w: Widget) => (w.type === "frame" ? 0 : w.type === "checkIn" ? 1 : w.type === "standings" ? 2 : 3);
+  const key = (w: Widget) => {
+    const f = frameOf(w);
+    return [f ? Math.round(f.y / 80) : Math.round(w.y / 80), f ? f.x : w.x, rank(w), Math.round(w.y / 80), w.x];
+  };
+  return [...widgets].sort((a, b) => {
+    const ka = key(a);
+    const kb = key(b);
+    for (let i = 0; i < ka.length; i++) if (ka[i] !== kb[i]) return ka[i] - kb[i];
+    return 0;
+  });
+}
+
 export function Canvas({
   spaceId,
   selectedWidgetId,
@@ -377,7 +398,7 @@ export function Canvas({
   const focusedWidgetId =
     focusedTargetKind === "widget" ? focusedTargetId : "";
   const widgetCards = useMemo(
-    () => widgets.map((widget) => (
+    () => (spaceId === "family" ? readingOrder(widgets) : widgets).map((widget) => (
       <WidgetCard
         key={widget.id}
         widget={widget}

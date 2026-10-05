@@ -8,6 +8,7 @@ states:
   logged: ?mock=1 | sleep 600 | click checkin-today | wait checkin-logger | click checkin-log | sleep 900
   mina: ?mock=1&as=mina | sleep 600
   final: ?mock=1&challenge=final | sleep 600
+  mypart: ?mock=1&as=casey&stage=0&voicePace=talk&voice=i did 40 | click dock-voice-orb | wait voice-found | sleep 1400
 take:
   log: open real 30fps 150f focus checkin | 20 click checkin-today | 50 click checkin-more | 80 click checkin-log
 ---
@@ -72,6 +73,16 @@ with a full-width `log it`.
 `widgetLabels.ts`, `templates.ts` (hidden from the add tray until it has
 an editor) · provider in `Canvas.tsx`, mock store in `App.tsx`
 (`storeWidgetData`).
+
+**Do my part (voice):** "i did 40" (also "logged 40", "put me down for
+40", "i did it" on a `done` check-in) in a room with a running check-in
+you're in logs today's number on **your own row only**: `myPartFor`
+(`src/lib/challenge.ts`, code, no model) finds the card, the room logs it
+through the same as-yourself path as a tap (`checkIns.log` live), the
+camera goes to the card and the slip says "logged 40 for you · push-ups";
+your standings open. Not you in it, nothing running, or a number in a
+sentence that isn't a log ("add 40 chairs"): the ask goes on as a normal
+build. Hooked in `useVoiceBuild` `ask` (`myPart`), before any card is dealt.
 
 **Live (lane):** the family is seeded on dev (`seed:seedFamily`, see
 [family](family.md)). Sit in a seat by naming yourself Casey/Dev/… at the
