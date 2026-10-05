@@ -975,6 +975,8 @@ body.voice-stage-up .voice-slip {
 /* the question sits on the card's shoulder, pointing at its empty title */
 .voice-two-ask {
   flex-basis: 100%;
+  /* clear of the pin that sticks up out of some cards */
+  margin-bottom: 8px;
   color: white;
   font-family: var(--font-display);
   font-size: clamp(24px, 2.5vw, 38px);
