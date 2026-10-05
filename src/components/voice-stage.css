@@ -679,22 +679,6 @@
   }
 }
 
-/* being built: a dashed ring in the maker's colour. Whole: it goes solid and lets go. */
-.voice-two-fly::before {
-  position: absolute;
-  inset: -12px;
-  border: 3px dashed color-mix(in oklab, var(--maker, white) 72%, white);
-  border-radius: 30px;
-  content: "";
-  pointer-events: none;
-  animation: voice-ring-breathe calc(900ms * var(--slow)) ease-in-out infinite alternate;
-}
-
-.voice-two-card[data-state="complete"] .voice-two-fly::before {
-  border-style: solid;
-  animation: voice-ring-release calc(var(--dur-base) * var(--slow)) var(--ease-glide) forwards;
-}
-
 @keyframes voice-ring-breathe {
   to {
     border-color: color-mix(in oklab, var(--maker, white) 45%, transparent);
@@ -739,10 +723,6 @@
 
 .voice-stage.is-two[data-phase="closing"] .voice-two-fly {
   animation: none;
-}
-
-.voice-stage.is-two[data-phase="closing"] .voice-two-fly::before {
-  display: none;
 }
 
 .voice-stage.is-two[data-phase="closing"] .voice-two-card-body {
@@ -956,9 +936,6 @@ body.voice-stage-up .voice-slip {
     animation-delay: 0ms;
   }
 
-  .voice-two-fly::before {
-    animation: none;
-  }
 }
 
 /* on the stage the card is being made, not used: no comment chip, no handles */
@@ -996,18 +973,6 @@ body.voice-stage-up .voice-slip {
     filter: blur(6px);
     translate: -14px 0;
   }
-}
-
-/* asked: the ring stops breathing and holds, waiting on you */
-.voice-two-card[data-state="asking"] .voice-two-fly::before {
-  border-color: white;
-  animation: voice-ring-wait calc(1200ms * var(--slow)) var(--ease-glide) infinite;
-}
-
-.voice-two-card[data-state="found"] .voice-two-fly::before {
-  border-color: var(--color-lime);
-  border-style: solid;
-  animation: none;
 }
 
 @keyframes voice-ring-wait {
@@ -1195,8 +1160,349 @@ body.voice-stage-found .voice-receipt.is-miss {
     animation-delay: 0ms;
   }
 
-  .voice-two-card[data-state="asking"] .voice-two-fly::before,
-  .voice-two-words.is-asking::after {
+}
+
+
+/* ================= pass three: the moves =================
+   The orb's flight is driven per frame (VoiceStage.tsx `fly`); what lands
+   around it is here. */
+
+/* the orb arrives: one flat ring leaves the ball as it settles */
+.voice-stage-thump {
+  position: absolute;
+  inset: 0;
+  border: 2px solid white;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  animation: voice-thump calc(var(--dur-stage) * var(--slow, 1)) var(--ease-glide) calc(640ms * var(--slow, 1)) 1;
+}
+
+@keyframes voice-thump {
+  from {
+    opacity: 0.6;
+    scale: 0.94;
+  }
+
+  to {
+    opacity: 0;
+    scale: 1.28;
+  }
+}
+
+/* the left column waits for the orb to land, then comes up under it */
+.voice-two-left > :not(.voice-stage-orb) {
+  animation-delay: calc((520ms + var(--j, 0) * 60ms) * var(--slow));
+}
+
+.voice-two-left > .voice-stage-status {
+  --j: 0;
+}
+
+.voice-two-left > .voice-stage-wave-wrap {
+  --j: 1;
+}
+
+.voice-two-left > .voice-two-words {
+  --j: 2;
+}
+
+.voice-two-left > .voice-stage-controls {
+  --j: 3;
+}
+
+/* the card is dealt out of the orb: it leaves small from where the orb is,
+   turns as it comes, and stands up in its place */
+.voice-two-fly {
+  animation: voice-card-in calc(var(--dur-stage) * var(--slow)) var(--ease-pop) backwards;
+}
+
+@keyframes voice-card-in {
+  0% {
+    opacity: 0;
+    rotate: -18deg;
+    scale: 0.08;
+    translate: var(--deal-x, 0) var(--deal-y, 34px);
+  }
+
+  22% {
+    opacity: 1;
+  }
+}
+
+/* being built: ants march round it in the maker's colour */
+.voice-two-ring {
+  position: absolute;
+  inset: -12px;
+  width: calc(100% + 24px);
+  height: calc(100% + 24px);
+  overflow: visible;
+  fill: none;
+  pointer-events: none;
+  stroke: color-mix(in oklab, var(--maker, white) 70%, white);
+  stroke-dasharray: 10 9;
+  stroke-linecap: round;
+  stroke-width: 3;
+  transform-origin: 50% 50%;
+  animation: voice-ring-march calc(700ms * var(--slow)) linear infinite;
+}
+
+.voice-two-ring rect {
+  width: calc(100% - 3px);
+  height: calc(100% - 3px);
+}
+
+@keyframes voice-ring-march {
+  to {
+    stroke-dashoffset: -19;
+  }
+}
+
+/* asked: the ants stop and the ring waits, white */
+.voice-two-card[data-state="asking"] .voice-two-ring {
+  stroke: white;
+  animation: voice-ring-wait calc(1200ms * var(--slow)) var(--ease-glide) infinite;
+}
+
+/* whole: the line closes, then lets go; the card takes one small breath */
+.voice-two-card[data-state="complete"] .voice-two-ring {
+  stroke: var(--color-lime);
+  stroke-dasharray: none;
+  animation: voice-ring-release calc(var(--dur-arrive) * var(--slow)) var(--ease-glide) forwards;
+}
+
+.voice-two-card[data-state="complete"] .voice-two-card-body {
+  animation: voice-card-done calc(var(--dur-arrive) * var(--slow)) var(--ease-pop);
+}
+
+@keyframes voice-card-done {
+  35% {
+    scale: 1.035;
+  }
+}
+
+.voice-two-card[data-state="found"] .voice-two-ring {
+  stroke: var(--color-lime);
+  stroke-dasharray: none;
+  animation: none;
+}
+
+.voice-stage.is-two[data-phase="closing"] .voice-two-fly {
+  animation: none;
+}
+
+.voice-stage.is-two[data-phase="closing"] .voice-two-ring {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  /* phone: the card rises from below into the lower half */
+  @keyframes voice-card-in {
+    from {
+      opacity: 0;
+      scale: 0.9;
+      translate: 0 46vh;
+    }
+  }
+
+  .voice-two-fly {
+    animation-duration: calc(var(--dur-arrive) * var(--slow));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-stage-thump,
+  .voice-two-ring {
     animation: none;
+  }
+
+  .voice-two-fly {
+    animation-name: voice-stage-fade;
+  }
+
+  .voice-two-card[data-state="complete"] .voice-two-card-body {
+    animation: none;
+  }
+}
+
+
+/* ================= pass three: the stills ================= */
+
+/* the room is still the room behind the stage: a little more of it shows */
+.voice-stage.is-two::before {
+  background: color-mix(in oklch, var(--color-sticker) 76%, transparent);
+  backdrop-filter: blur(26px) saturate(1.35);
+}
+
+/* one bar under the orb: what it is doing, then the two keys, small */
+.voice-two-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.voice-stage.is-two .voice-two-bar .voice-stage-status {
+  margin: 0;
+  padding: 9px 16px 9px 13px;
+  font-size: 15px;
+}
+
+/* working: the dot stops blinking and turns with the orb's colour */
+.voice-stage-status[data-mood="working"] i {
+  background: var(--color-couple);
+  animation: none;
+}
+
+.voice-stage.is-two .voice-two-bar .voice-stage-controls {
+  gap: 8px;
+  margin: 0;
+  animation: none;
+}
+
+.voice-stage.is-two .voice-two-bar .voice-stage-controls b {
+  display: none;
+}
+
+.voice-stage.is-two .voice-two-bar .voice-stage-controls svg {
+  width: 38px;
+  height: 38px;
+  padding: 10px;
+}
+
+.voice-stage.is-two .voice-two-bar .voice-stage-finish svg {
+  background: white;
+  padding: 10px;
+}
+
+/* nothing said yet: the line is ready, not greyed out */
+.voice-two-words.is-hint {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* what it can build: quiet rows you can play, one line each */
+.voice-two-try {
+  max-width: none;
+  gap: 4px;
+}
+
+.voice-two-try > button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 999px;
+  margin-left: -8px;
+  color: rgba(255, 255, 255, 0.78);
+  padding: 9px 20px 10px 8px;
+  font-size: clamp(18px, 1.75vw, 25px);
+  white-space: nowrap;
+  transition:
+    background var(--dur-quick) var(--ease-glide),
+    color var(--dur-quick) var(--ease-glide),
+    translate var(--dur-quick) var(--ease-glide);
+}
+
+/* the play key: a flat disc with a triangle cut from two borders */
+.voice-two-try > button i {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background var(--dur-quick) var(--ease-glide);
+}
+
+.voice-two-try > button i::after {
+  position: absolute;
+  top: 50%;
+  left: 54%;
+  border-block: 6px solid transparent;
+  border-left: 10px solid white;
+  content: "";
+  translate: -50% -50%;
+}
+
+.voice-two-try > button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  translate: 4px 0;
+}
+
+.voice-two-try > button:hover i {
+  background: var(--color-lime);
+}
+
+.voice-two-try > button:hover i::after {
+  border-left-color: var(--color-ink);
+}
+
+@media (max-width: 640px) {
+  .voice-two-bar {
+    justify-content: center;
+    margin-top: -6px;
+  }
+
+  /* phone keeps its thumb bar along the bottom */
+  .voice-stage.is-two .voice-two-bar .voice-stage-controls {
+    gap: 12px;
+  }
+
+  .voice-stage.is-two .voice-two-bar .voice-stage-controls b {
+    display: block;
+  }
+
+  .voice-stage.is-two .voice-two-bar .voice-stage-controls svg {
+    width: 52px;
+    height: 52px;
+    padding: 15px;
+  }
+
+  .voice-stage.is-two .voice-two-bar .voice-stage-controls .voice-stage-finish svg {
+    width: 24px;
+    height: 24px;
+    background: none;
+    padding: 0;
+  }
+
+  .voice-two-try > button {
+    margin-left: 0;
+    padding: 6px 14px 7px 6px;
+    font-size: 16px;
+    white-space: normal;
+    text-align: left;
+  }
+
+  .voice-two-try > button i {
+    width: 28px;
+    height: 28px;
+  }
+
+  .voice-two-try {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  .voice-stage.is-two .voice-two-bar .voice-stage-mute b {
+    display: none;
+  }
+
+  .voice-two-sources {
+    font-size: 13px;
+  }
+}
+
+/* letting go: the two paths can cross; the card passes in front of the orb */
+.voice-stage.is-two[data-phase="closing"] .voice-two-fly {
+  z-index: 3;
+}
+
+@media (max-width: 640px) {
+  /* the thumb bar is pinned to the stage, so its bar may only fade in:
+     a moving ancestor would carry it along */
+  .voice-two-left > .voice-two-bar {
+    animation-name: voice-stage-fade;
   }
 }

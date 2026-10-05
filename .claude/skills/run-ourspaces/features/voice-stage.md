@@ -54,6 +54,15 @@ the board, where the "said it" slip appears. Phone: orb on top, words under
 it, the card rising from below. Nothing said yet: four asks on the right you
 can tap to hear said.
 
+**The moves.** Up: the orb presses down into the dock, then leaves on one
+arc, stretching along its travel while it is fast, grows the whole way and
+lands with a small swell and one flat ring. The card is dealt out of the
+orb (it leaves small from the orb, turns, stands up) inside a ring of
+marching ants in your colour; whole, the ring closes lime and lets go.
+Down: the orb flies the arc back and lands in the dock with a squash, the
+bar gives under it; the card passes in front of it on its way to the board.
+Status and the two keys (mute, finish) share one bar under the orb.
+
 **It asks for the rest.** Name a card with nothing to put in it ("add a
 poll") and the pause does not end the ask: the ring goes white and waits,
 "what's it about?" lands on the card's shoulder (`voice-stage-ask`), your
@@ -136,7 +145,8 @@ beats) · `src/lib/voiceFillPlan.ts` · `src/lib/voiceTimings.ts` ·
 `src/lib/deck/mockDeal.ts` (simulated answer on the measured clock, scripted
 asks) · `src/lib/deck/mockFacts.ts` · `src/lib/deck/suggest.ts` · mock wiring in `src/App.tsx`.
 
-**Gotchas:** flights use `performance.now()`, never the rAF timestamp (the
+**Gotchas:** the orb flies to its full canvas box (1.6 × the slot), never the
+slot itself: aim at the slot and it travels small and snaps at the end. Flights use `performance.now()`, never the rAF timestamp (the
 driver speeds the animation clock on load and the two drift apart). The
 stage card is the real `WidgetCard` under CSS `zoom`; it inherits ink from
 `.voice-two-card-body`. While the stage is up `body.voice-stage-up` hides

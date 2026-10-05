@@ -93,23 +93,55 @@ const boxOf = (el: Element): Box => {
   return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width };
 };
 
-/** Fly `host` from one box to another. It stays where layout put it; only
-    its transform moves, re-aimed every frame because the dock it lands in is
-    still settling. x runs on a slower curve than y, so the path is an arc. */
-function fly(host: HTMLElement, from: () => Box, to: () => Box, ms: number, grow: (t: number) => number, done: () => void) {
+/** The orb's flight between the dock and the stage. It stays where layout
+    put it; only its transform moves, re-aimed every frame because the dock it
+    lands in is still settling. The path is one arc (it leaves the dock going
+    up and comes into the stage going sideways, and back the same way), the
+    ball stretches along its travel while it is fast, and with `press` it
+    first pushes down into the dock before it goes. */
+function fly(host: HTMLElement, from: () => Box, to: () => Box, ms: number, o: { grow: (t: number) => number; press?: number }, done: () => void) {
   host.style.transform = "";
   const home = boxOf(host);
   const started = performance.now();
+  const press = o.press ?? 0;
   let raf = 0;
+  let last: { x: number; y: number } | null = null;
+  let stretch = 1;
   // performance.now(), not the rAF timestamp: the two clocks can drift apart
   const frame = () => {
     const p = Math.min(1, (performance.now() - started) / ms);
     const a = from();
     const b = to();
-    const x = a.x + (b.x - a.x) * sway(p);
-    const y = a.y + (b.y - a.y) * glide(p);
-    const w = a.w + (b.w - a.w) * grow(p);
-    host.style.transform = `translate(${x - home.x}px, ${y - home.y}px) scale(${w / home.w})`;
+    let x = a.x;
+    let y = a.y;
+    let w = a.w;
+    let angle = 0;
+    if (p < press) {
+      // anticipation: down into the seat, and smaller, before the jump
+      const q = Math.sin((p / press) * Math.PI);
+      y = a.y + a.w * 0.06 * q;
+      w = a.w * (1 - 0.14 * q);
+    } else {
+      const t = (p - press) / (1 - press);
+      const e = glide(t);
+      // the corner the arc bends round: over the dock, level with the stage
+      const low = a.y > b.y ? a : b;
+      const high = a.y > b.y ? b : a;
+      const cx = low.x + (high.x - low.x) * 0.16;
+      const cy = high.y + (low.y - high.y) * 0.1;
+      const u = 1 - e;
+      x = u * u * a.x + 2 * u * e * cx + e * e * b.x;
+      y = u * u * a.y + 2 * u * e * cy + e * e * b.y;
+      w = a.w + (b.w - a.w) * o.grow(t);
+      if (last) {
+        const speed = Math.hypot(x - last.x, y - last.y);
+        stretch += (1 + Math.min(0.22, (speed / Math.max(80, w)) * 0.8) - stretch) * 0.5;
+        if (speed > 0.5) angle = Math.atan2(y - last.y, x - last.x);
+      }
+    }
+    last = { x, y };
+    const k = w / home.w;
+    host.style.transform = `translate(${x - home.x}px, ${y - home.y}px) rotate(${angle}rad) scale(${k * stretch}, ${k / Math.sqrt(stretch)}) rotate(${-angle}rad)`;
     if (p < 1) raf = requestAnimationFrame(frame);
     else done();
   };
@@ -354,6 +386,17 @@ function StageCard({
 }) {
   const body = useRef<HTMLDivElement>(null);
   useArrivals(body, build.key);
+  // it is dealt out of the orb: where the orb is, from where the card will stand
+  useLayoutEffect(() => {
+    const el = fly.current;
+    const stage = el?.closest<HTMLElement>(".voice-two");
+    const orb = stage?.querySelector(".voice-stage-orb");
+    if (!el || !stage || !orb) return;
+    const o = orb.getBoundingClientRect();
+    const frame = stage.getBoundingClientRect();
+    el.style.setProperty("--deal-x", `${o.left + o.width / 2 - (frame.left + el.offsetLeft + el.offsetWidth / 2)}px`);
+    el.style.setProperty("--deal-y", `${o.top + o.height / 2 - (frame.top + el.offsetTop + el.offsetHeight / 2)}px`);
+  }, [fly]);
   const widget = reveal.widget;
   // the size is fixed by the card type, so the card doesn't breathe as rows land
   const scale = useMemo(() => (widget ? stageScale(widget.w, widget.h) : 1), [widget?.type, widget?.w]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -395,6 +438,9 @@ function StageCard({
         )}
       </header>
       <div className="voice-two-fly" ref={fly}>
+        <svg className="voice-two-ring" aria-hidden="true">
+          <rect x="1.5" y="1.5" rx="28" />
+        </svg>
         <div className="voice-two-card-body" ref={body} style={{ zoom: scale }}>
           <WidgetCard widget={{ ...widget, x: 0, y: 0, z: 1, rotate: 0 }} spaceId={spaceInHash()} canvasScale={scale} />
         </div>
@@ -701,7 +747,11 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
     slot.current.appendChild(host);
     flight.current();
     if (still()) return;
-    flight.current = fly(host, () => from, () => boxOf(slot.current ?? host.parentElement!), beat("stageOpen"), pop, () => {
+    const there = () => {
+      const box = boxOf(slot.current ?? host.parentElement!);
+      return { ...box, w: box.w * 1.6 };
+    };
+    flight.current = fly(host, () => from, there, beat("stageOpen"), { grow: pop, press: 0.12 }, () => {
       host.style.transform = "";
     });
   }, [phase, host]);
@@ -725,6 +775,10 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
         if (--left) return;
         host.style.transform = "";
         seat.current?.appendChild(host);
+        if (!still()) {
+          host.animate([{ scale: "1.2 0.82", translate: "0 5%" }, { scale: "1", translate: "0 0" }], { duration: 360, easing: POP });
+          seat.current?.closest(".action-dock")?.animate([{ translate: "0 0" }, { translate: "0 5px", offset: 0.3 }, { translate: "0 0" }], { duration: 360, easing: GLIDE });
+        }
         document.body.classList.remove("voice-stage-up");
         setPhase("closed");
       };
@@ -732,7 +786,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
       if (still() || !seat.current) window.setTimeout(land, 200);
       else {
         const from = boxOf(host);
-        stopOrb = fly(host, () => from, () => seatBox(seat.current!), beat("orbHome"), glide, land);
+        stopOrb = fly(host, () => from, () => seatBox(seat.current!), beat("orbHome"), { grow: glide }, land);
       }
       const b = buildRef.current;
       let stopCard = () => {};
@@ -916,7 +970,9 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
         <h2 className="voice-stage-question" style={{ "--i": 0 } as CSSProperties}>
           What are we doing together?
         </h2>
-        <div className="voice-stage-orb" ref={slot} />
+        <div className="voice-stage-orb" ref={slot}>
+            <i className="voice-stage-thump" aria-hidden="true" />
+          </div>
         <span className="voice-stage-status" data-testid="voice-stage-status" style={{ "--i": 2 } as CSSProperties}>
           <i aria-hidden="true" />
           {voice.muted ? "Muted" : "Listening"}
@@ -953,22 +1009,26 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
     >
       <div className="voice-two">
         <section className="voice-two-left" data-testid="voice-stage-left">
-          <div className="voice-stage-orb" ref={slot} />
-          <span className="voice-stage-status" data-testid="voice-stage-status">
-            <i aria-hidden="true" />
-            {voice.muted ? "Muted" : listening ? "Listening" : duplicate && failed ? "Already here" : whole ? "Placing" : "Building"}
-          </span>
+          <div className="voice-stage-orb" ref={slot}>
+            <i className="voice-stage-thump" aria-hidden="true" />
+          </div>
+          <div className="voice-two-bar">
+            <span className="voice-stage-status" data-testid="voice-stage-status" data-mood={voice.muted ? "muted" : listening ? "listening" : "working"}>
+              <i aria-hidden="true" />
+              {voice.muted ? "Muted" : listening ? "Listening" : duplicate && failed ? "Already here" : whole ? "Placing" : "Building"}
+            </span>
+            {controls(done)}
+          </div>
           <div className="voice-stage-wave-wrap">
             <StageWave level={voice.muted || !listening ? silent : level} />
           </div>
           {voice.transcript ? (
             <StageWords text={voice.transcript} live={listening} kind={build?.kind ?? null} asking={asking} />
           ) : (
-            <p className="voice-two-words is-hint" data-testid="voice-stage-text">
-              Say what to add.
+            <p className="voice-two-words is-hint is-asking" data-testid="voice-stage-text">
+              Say what to add
             </p>
           )}
-          {controls(done)}
         </section>
         <section className="voice-two-right" data-testid="voice-stage-right" data-state={state}>
           {build?.kind && build.widget ? (
@@ -989,7 +1049,8 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
                       voice.play(ask.say);
                     }}
                   >
-                    “{ask.say}”
+                    <i aria-hidden="true" />
+                    {ask.say}
                   </button>
                 ))}
               </div>
