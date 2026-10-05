@@ -27081,6 +27081,208 @@ body:has(.demo-banner) .settings-sheet {
   }
 }
 
+/* The ring around a skeleton: the card itself is WidgetCard (a local draft,
+   data-widget-id="voice-draft-…"); the ring follows its box frame by frame. */
+.voice-shell.is-ring {
+  z-index: 99995;
+  box-sizing: content-box;
+  margin: -8px;
+  padding: 6px;
+  border-radius: 24px;
+  background: none;
+}
+
+/* A local draft: not touchable, glides to its spot and grows to its size. */
+.widget-group[data-widget-id^="voice-draft-"] {
+  pointer-events: none;
+  transition:
+    left var(--dur-stage) var(--ease-glide),
+    top var(--dur-stage) var(--ease-glide),
+    width var(--dur-base) var(--ease-glide),
+    height var(--dur-base) var(--ease-glide),
+    min-height var(--dur-base) var(--ease-glide);
+}
+
+/* No clear spot in view yet: it floats over the board until placed. */
+.widget-group[data-voice-draft="lifted"] > .widget-group-body {
+  filter: drop-shadow(0 18px 28px color-mix(in oklab, var(--color-ink) 34%, transparent));
+}
+
+/* Filled by the answer: it takes the hit and settles. */
+.widget-group[data-voice-draft="card"] > .widget-group-body {
+  animation: voice-draft-settle var(--dur-stage) var(--ease-pop) both;
+}
+
+@keyframes voice-draft-settle {
+  0% {
+    scale: 0.97;
+  }
+  45% {
+    scale: 1.02 0.985;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+/* Dev only (dev lane or ?timing=1): the last ask's numbers, under the live
+   strip, and the drawer it opens with everything behind the ask. */
+.dev-readout {
+  position: fixed;
+  z-index: 72;
+  bottom: 3px;
+  left: 134px;
+  display: flex;
+  gap: 8px;
+  max-width: calc(100vw - 150px);
+  overflow: hidden;
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--color-card) 82%, transparent);
+  color: var(--color-muted);
+  font: 500 10.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dev-readout > * + *::before {
+  content: "· ";
+  opacity: 0.6;
+}
+
+.dev-readout:hover {
+  color: var(--color-ink);
+}
+
+.dev-context {
+  position: fixed;
+  z-index: 200;
+  bottom: 26px;
+  left: 16px;
+  width: min(460px, calc(100vw - 32px));
+  max-height: min(72vh, 720px);
+  overflow: auto;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--color-ink);
+  border-radius: 10px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  font: 400 12px/1.45 var(--font-sans);
+}
+
+.dev-context-head {
+  position: sticky;
+  top: -12px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: -12px -14px 8px;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid color-mix(in oklab, var(--color-ink) 14%, transparent);
+  background: var(--color-card);
+}
+
+.dev-context-head span {
+  flex: 1;
+  color: var(--color-muted);
+}
+
+.dev-context-head button {
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dev-context-head button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.dev-context section + section {
+  margin-top: 10px;
+}
+
+.dev-context h3 {
+  margin: 0 0 3px;
+  color: var(--color-muted);
+  font: 600 11px/1.3 var(--font-sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dev-context p {
+  margin: 0;
+}
+
+.dev-context pre,
+.dev-context code,
+.dev-context-list,
+.dev-context td {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.dev-context pre {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--color-ink) 6%, transparent);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.dev-context-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dev-context-list code {
+  display: inline-block;
+  min-width: 64px;
+  color: var(--color-muted);
+}
+
+.dev-context table {
+  border-collapse: collapse;
+}
+
+.dev-context td {
+  padding: 1px 12px 1px 0;
+}
+
+.dev-context td + td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dev-context-bad {
+  color: var(--color-couple);
+}
+
+.voice-slip.is-dev {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .dev-readout {
+    left: 8px;
+    max-width: calc(100vw - 16px);
+  }
+
+  .dev-context {
+    left: 8px;
+    bottom: 24px;
+    width: calc(100vw - 16px);
+  }
+}
+
 /* The slip: taped over the landed card's top-left corner. */
 .voice-slip {
   position: absolute;

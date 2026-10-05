@@ -38,16 +38,17 @@ ${EXAMPLE}
 Every line is one complete JSON object that closes before the newline. Only deck ids are valid cards. Settings values are plain strings, numbers or arrays, never strings holding JSON.`;
 }
 
-/** The user turn: the room trimmed to what matters, then the words. */
-export function dealTurn(r: {
-  room: string;
-  today: string;
-  people: string[];
-  selected?: string;
-  said: string;
-}): string {
+/** The room as the model sees it, trimmed to what matters. Everything the
+    model is told about the room is this one string (the dev drawer shows it
+    verbatim), so richer room context only ever changes what goes in here. */
+export function roomContext(r: { room: string; today: string; people: string[]; selected?: string }): string {
   const sel = r.selected ? ` · selected: ${r.selected}` : "";
-  return `Room: ${r.room} · today ${r.today} · ${r.people.join(", ")}${sel}\nSaid: "${r.said}"`;
+  return `Room: ${r.room} · today ${r.today} · ${r.people.join(", ")}${sel}`;
+}
+
+/** The user turn: the room context, then the words. */
+export function dealTurn(r: { context: string; said: string }): string {
+  return `${r.context}\nSaid: "${r.said}"`;
 }
 
 export type DealItem =

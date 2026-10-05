@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useAction, useConvexConnectionState, useMutation } from "convex/react";
+import { useAction, useConvex, useConvexConnectionState, useMutation } from "convex/react";
 import { useQuery, usePaginatedQuery } from "convex-helpers/react/cache";
 import { useStream } from "@convex-dev/persistent-text-streaming/react";
 import type { StreamId } from "@convex-dev/persistent-text-streaming";
@@ -1471,41 +1471,80 @@ export function LiveSpacePage({
      gesture on the strip because it is the only place that work is visible
      at all; see the note in SpaceLiveStrip. */
   const spaceWork = useSpaceWork(mode === "live" && space ? String(space._id) : undefined);
-  /* Say it → it builds: the orb's finished ask goes to Nemotron through
-     convex/voiceBuild.ts, which commits each dealt card with createWidget,
-     so sync lands it on every screen (src/live/useVoiceBuild.ts). */
+  /* Say it → it builds (src/live/useVoiceBuild.ts): while you talk, code
+     shows the card it guesses and phrases go to Nemotron early through
+     convex/voiceBuild.ts `deal` (cards only, streamed back through `live`);
+     on the pause the card renders here first, then `commit` writes it and
+     sync lands it on every screen. */
+  const convex = useConvex();
   const dealCards = useAction(api.voiceBuild.deal);
+  const commitCards = useMutation(api.voiceBuild.commit);
+  const warmDeal = useAction(api.voiceBuild.warm);
   const noteDealLanded = useMutation(api.voiceBuild.noteLanded);
+  const voicePeople = () =>
+    [...new Set([identity.name, ...presence.peers.map((peer) => peer.name), ...members.map((m) => m.name)])].slice(0, 8);
+  const voiceToday = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  };
+  const voiceSelectedId = () => (focusedTarget?.kind === "widget" ? focusedTarget.id : selectedWidgetId) ?? null;
   const voiceBuild = useVoiceBuild({
     scrollerRef: viewportRef,
-    deal: async (req) => {
-      if (!space) return { ok: false, cards: [], model: null };
-      const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-      const people = [...new Set([identity.name, ...presence.peers.map((peer) => peer.name), ...members.map((m) => m.name)])].slice(0, 8);
-      const selId = focusedTarget?.kind === "widget" ? focusedTarget.id : selectedWidgetId;
+    cardContext: () => ({ by: identity.name, people: voicePeople(), today: voiceToday() }),
+    selectedId: voiceSelectedId,
+    warm: () => void warmDeal({}).catch(() => {}),
+    deal: async (call, onPartial) => {
+      if (!space) throw new Error("no space");
+      const selId = voiceSelectedId();
       const sel = selId ? adaptedWidgets.find((w) => w.id === selId) : undefined;
       const selData = (sel?.data ?? {}) as { title?: unknown; question?: unknown; event?: unknown };
       const selName = [selData.title, selData.question, selData.event].find((t) => typeof t === "string") as string | undefined;
-      const result = await dealCards({
-        spaceId: space._id,
-        said: req.said,
-        room: space.name,
-        today,
-        by: identity.name,
-        people,
-        createdBy: identity.userId,
-        ...(sel ? { selected: selName ? `${sel.type} "${selName.slice(0, 60)}"` : sel.type, selectedId: sel.id } : {}),
-        board: req.board,
-        view: req.view,
-        bounds: req.bounds,
-        anchor: req.anchor,
-        z: 1000,
+      // The answer as it streams (mirrored into the ask's deals row).
+      const watch = convex.watchQuery(api.voiceBuild.live, { spaceId: space._id, nonce: call.nonce });
+      const stop = watch.onUpdate(() => {
+        const live = watch.localQueryResult();
+        if (live?.answer) onPartial(live.answer);
       });
-      return { ok: result.ok, model: result.model, dealId: result.dealId, cards: result.cards.map((c) => ({ card: c.card, widgetId: String(c.widgetId) })) };
+      try {
+        const r = await dealCards({
+          spaceId: space._id,
+          said: call.said,
+          nonce: call.nonce,
+          spec: call.spec,
+          room: space.name,
+          today: voiceToday(),
+          people: voicePeople(),
+          ...(sel ? { selected: selName ? `${sel.type} "${selName.slice(0, 60)}"` : sel.type } : {}),
+        });
+        return {
+          dealId: r.dealId,
+          model: r.model,
+          context: r.context,
+          answer: r.answer,
+          error: r.error,
+          modelMs: { firstLine: r.firstLineMs, total: r.totalMs },
+        };
+      } finally {
+        stop();
+      }
     },
-    onLanded: (dealId, ms) => void noteDealLanded({ dealId: dealId as never, landedMs: ms }).catch(() => {}),
+    commit: async ({ dealId, cards }) => {
+      if (!space) return [];
+      const ids = await commitCards({
+        spaceId: space._id,
+        ...(dealId ? { dealId: dealId as Id<"deals"> } : {}),
+        by: identity.name,
+        people: voicePeople(),
+        today: voiceToday(),
+        createdBy: identity.userId,
+        cards: cards.map((c) => ({ card: JSON.stringify(c.card), x: c.widget.x, y: c.widget.y, z: c.widget.z })),
+      });
+      return ids.map(String);
+    },
+    onLanded: (dealId, ms, trace) =>
+      void noteDealLanded({ dealId: dealId as Id<"deals">, landedMs: ms, trace: JSON.stringify({ stages: trace.stages, calls: trace.calls.length, guess: trace.guesses.at(-1)?.card ?? null, guessAgreed: trace.guessAgreed }) }).catch(() => {}),
   });
+  const canvasWidgets = useMemo(() => voiceBuild.withDrafts(adaptedWidgets), [voiceBuild.withDrafts, adaptedWidgets]);
   /* The header always needs a number to print, so an unloaded count reads as
      quiet rather than falling through to the seeded roster. The strip can
      stay silent until the real one lands, so it gets the raw value. */
@@ -2561,7 +2600,7 @@ export function LiveSpacePage({
               <Canvas
                 key={`${slug}:board`}
                 spaceId={slug}
-                widgets={adaptedWidgets}
+                widgets={canvasWidgets}
                 cursors={liveCursors}
                 labPeers={labPeers}
                 members={members}
@@ -2885,9 +2924,9 @@ export function LiveSpacePage({
         promoted={Boolean(promotable && promotedMessageIds.has(promotable.id))}
         highlightMessageId={highlightMessageId}
       />
-      <VoiceBuildLayer {...voiceBuild} color={identity.color} by={identity.name} model="Lightning" />
+      <VoiceBuildLayer {...voiceBuild} color={identity.color} by={identity.name} />
       <ActionDock
-        onVoiceAsk={voiceBuild.ask}
+        voice={voiceBuild.voice}
         recapOpen={recapOpen}
         recapRunId={recapRunId}
         recapLines={recapLines}

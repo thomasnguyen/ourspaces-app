@@ -69,6 +69,8 @@ export async function streamChat(opts: {
   maxTokens?: number;
   thinking?: boolean;
   onLine?: (line: string, ms: number) => void;
+  /** The whole answer so far, after every piece of it that arrives. */
+  onText?: (content: string, ms: number) => void;
 }): Promise<StreamResult> {
   const t0 = Date.now();
   const ms = () => Date.now() - t0;
@@ -144,6 +146,7 @@ export async function streamChat(opts: {
         }
         if (!text) continue;
         out.content += text;
+        opts.onText?.(out.content, ms());
         pending += text;
         let cut;
         while ((cut = pending.indexOf("\n")) >= 0) {
@@ -158,6 +161,21 @@ export async function streamChat(opts: {
   }
   out.totalMs = ms();
   return out;
+}
+
+/** A free request to Token Factory (the model list, no tokens): wakes the
+ * action runtime and the connection before a voice ask needs them. */
+export async function pingTokenFactory(): Promise<{ status: number; ms: number }> {
+  const key = nebiusKey();
+  const t0 = Date.now();
+  if (!key) return { status: 0, ms: 0 };
+  try {
+    const res = await fetch(`${NEBIUS_BASE_URL}/models`, { headers: { Authorization: `Bearer ${key}` } });
+    await res.body?.cancel();
+    return { status: res.status, ms: Date.now() - t0 };
+  } catch {
+    return { status: 0, ms: Date.now() - t0 };
+  }
 }
 
 /** Times one request from inside a Convex action: the real path the app

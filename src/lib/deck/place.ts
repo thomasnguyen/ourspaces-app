@@ -148,3 +148,33 @@ export function placeCards(
   const pick = best ?? { x: minX, y: bottom + HELD_GAP, l: layouts[0] };
   return pick.l.at.map((p) => ({ x: Math.round(pick.x + p.x), y: Math.round(pick.y + p.y) }));
 }
+
+/** Why `placeCards` put a cluster where it did, in a few words (the dev drawer reads it). */
+export function placeReason(
+  cards: ReadonlyArray<{ w: number; h: number }>,
+  spots: ReadonlyArray<Placement>,
+  room: PlaceRoom,
+): string {
+  if (!spots.length) return "nothing to place";
+  const x = Math.min(...spots.map((s) => s.x));
+  const y = Math.min(...spots.map((s) => s.y));
+  const r = {
+    x,
+    y,
+    w: Math.max(...spots.map((s, i) => s.x + cards[i].w)) - x,
+    h: Math.max(...spots.map((s, i) => s.y + cards[i].h)) - y,
+  };
+  const where = inside(r, room.view)
+    ? "in your view"
+    : room.bounds && inside(r, room.bounds)
+      ? "off your view (no clear spot in it)"
+      : "past the board's content (no clear spot on it)";
+  const near = room.selected
+    ? `beside the selected ${room.selected}`
+    : room.anchor
+      ? room.anchor.x === r.x && room.anchor.y === r.y
+        ? "right where the skeleton was"
+        : "nearest clear spot to the skeleton"
+      : "nearest clear spot to the middle of your view";
+  return `${near}, ${where}; clear of ${room.widgets.length} objects`;
+}

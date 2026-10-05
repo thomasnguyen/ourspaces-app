@@ -39,7 +39,7 @@ import { RECAP_LINES, type RecapTurn } from "./data/recap";
 import { DECISION_WIDGET, canvasSizeFor, getSpace, getWidgets } from "./data/spaces";
 import { createLabPeerFeed, labPeersRequested } from "./live/labPeers";
 import { dealDemo, deckLabRequested } from "./lib/deck/lab";
-import { standInDeal } from "./lib/deck/standIn";
+import { STAND_IN_ANSWER } from "./lib/deck/standIn";
 import { useVoiceBuild } from "./live/useVoiceBuild";
 import { VoiceBuildLayer } from "./components/VoiceBuildLayer";
 import {
@@ -483,23 +483,33 @@ export default function App() {
   const nextWidgetZ = useRef(1000);
   const canvasViewportRef = useRef<HTMLDivElement>(null);
   /* A voice ask in mock mode: no backend, so the stand-in (lib/deck/standIn.ts)
-     deals one fixed card through the real apply/place path. */
+     answers one fixed poll and the room runs the real guess/skeleton/apply/place path on it. */
   const voiceMaker = getIdentity();
   const voiceBuild = useVoiceBuild({
     scrollerRef: canvasViewportRef,
-    deal: async (req) => {
-      const people = [voiceMaker.name, ...getSpace(spaceId).members.map((m) => m.name)];
+    cardContext: () => {
       const today = new Date();
       const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-      // A fixed pause so mock shots can see the shell. Not a latency: the receipt shows no ms here.
+      const people = [voiceMaker.name, ...getSpace(spaceId).members.map((m) => m.name)];
+      return { by: voiceMaker.name, people: [...new Set(people)], today: iso };
+    },
+    deal: async () => {
+      // A fixed pause so mock shots can see the skeleton. Not a latency: nothing is timed here.
       await new Promise((r) => setTimeout(r, 600));
-      // `?voiceHold=1` keeps the shell up for a still (drive voice-build:shell).
+      // `?voiceHold=1` keeps the skeleton up for a still (drive voice-build:shell).
       if (new URLSearchParams(window.location.search).has("voiceHold")) await new Promise(() => {});
-      const dealt = standInDeal({ by: voiceMaker.name, people: [...new Set(people)], today: iso }, req);
+      return { dealId: null, model: null, context: null, answer: STAND_IN_ANSWER, error: null };
+    },
+    commit: async ({ cards }) => {
+      const dealt = cards.map((c, i) => ({ ...c.widget, id: `voice-standin-${Date.now().toString(36)}-${i}` }));
       setAddedWidgets((current) => ({ ...current, [spaceId]: [...(current[spaceId] ?? []), ...dealt] }));
-      return { ok: dealt.length > 0, model: null, cards: dealt.map((w) => ({ card: w.type, widgetId: w.id })) };
+      return dealt.map((w) => w.id);
     },
   });
+  const voiceAddedWidgets = useMemo(
+    () => voiceBuild.withDrafts(addedWidgets[spaceId] ?? []),
+    [voiceBuild.withDrafts, addedWidgets, spaceId],
+  );
   const canvasStageRef = useRef<HTMLDivElement>(null);
   const canvasScaleLayerRef = useRef<HTMLDivElement>(null);
   const canvasScaleRef = useRef(1);
@@ -2288,7 +2298,7 @@ export default function App() {
               onDailyReact={reactToDailyAnswer}
               promoted={promoted}
               onPromote={promoteMessage}
-              addedWidgets={addedWidgets[spaceId] ?? []}
+              addedWidgets={voiceAddedWidgets}
               widgetPlacements={widgetPlacements[spaceId] ?? {}}
               widgetDataOverrides={widgetDataOverrides[spaceId] ?? {}}
               localCommentCounts={commentCounts}
@@ -2502,9 +2512,9 @@ export default function App() {
         onClose={() => setSpaceDraft(null)}
         onSave={saveSpace}
       />
-      <VoiceBuildLayer {...voiceBuild} color={voiceMaker.color} by={voiceMaker.name} model={null} />
+      <VoiceBuildLayer {...voiceBuild} color={voiceMaker.color} by={voiceMaker.name} />
       <ActionDock
-        onVoiceAsk={voiceBuild.ask}
+        voice={voiceBuild.voice}
         recapOpen={recapOpen}
         recapRunId={recapRunId}
         recapTurns={recapTurns}

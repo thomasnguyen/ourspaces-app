@@ -21,7 +21,7 @@ import {
   subscribeRadio,
 } from "../lib/radio";
 import { playSound } from "../lib/sounds";
-import { useVoice, type VoiceAsk } from "../lib/voice";
+import { useVoice, type VoiceHooks } from "../lib/voice";
 import { VoiceOrb } from "./VoiceOrb";
 
 /** First-tap questions — shown until the thread has a turn. */
@@ -206,16 +206,17 @@ function DockSound({
 
 /** Talk to the space: the dock's lead action. Tap the orb or the prompt
     beside it: the orb lifts and listens, the rest of the dock steps back and
-    your words take the bar; tap again (or done) to send. `onAsk` gets the
-    words (the room deals a card from them, src/live/useVoiceBuild.ts); the
-    orb stays working until it settles. */
-function DockVoice({ onAsk }: { onAsk?: VoiceAsk }) {
-  const voice = useVoice(onAsk);
+    your words take the bar. A pause ends the ask (tap again, or done, to end
+    it sooner). `hooks` hear the words as they come and get the finished ask
+    (the room builds from them, src/live/useVoiceBuild.ts); the orb stays
+    working until it settles. */
+function DockVoice({ hooks }: { hooks?: VoiceHooks }) {
+  const voice = useVoice(hooks);
   const listening = voice.state === "listening";
   const text = voice.transcript.length > 46 ? `…${voice.transcript.slice(-45)}` : voice.transcript;
   const toggle = () => {
     playSound("tap");
-    if (listening) voice.finish();
+    if (listening) voice.finish("done");
     else void voice.start();
   };
 
@@ -285,7 +286,7 @@ export function ActionDock({
   onRecapJumpWidget,
   radioRoom,
   onRadioTune,
-  onVoiceAsk,
+  voice,
 }: {
   recapOpen: boolean;
   recapRunId: number;
@@ -314,8 +315,8 @@ export function ActionDock({
   onRecapJumpWidget?: (widgetId: string) => void;
   radioRoom?: DockRadioRoom;
   onRadioTune?: (widgetId: string, tune: { stationId: string; playing: boolean }) => void;
-  /** A finished voice ask; the orb works until the promise settles. */
-  onVoiceAsk?: VoiceAsk;
+  /** The room listening along to a voice ask; the orb works until its ask settles. */
+  voice?: VoiceHooks;
 }) {
   const [revealed, setRevealed] = useState(0);
   const [draft, setDraft] = useState("");
@@ -692,7 +693,7 @@ export function ActionDock({
         </div>
       )}
 
-      <DockVoice onAsk={onVoiceAsk} />
+      <DockVoice hooks={voice} />
       <span className="action-dock-divider" aria-hidden="true" />
       <button
         type="button"

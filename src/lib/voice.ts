@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { sentenceHangs } from "./deck/guess";
 
 /** The dock orb's three moods: resting, hearing you, and chewing on it. */
 export type VoiceState = "idle" | "listening" | "working";
@@ -29,28 +30,58 @@ function follow(level: { current: number }, target: number) {
   level.current += (target - level.current) * (target > level.current ? 0.35 : 0.08);
 }
 
+/** One scripted word's spoken length: ~180 words a minute, longer words longer. */
+function wordMs(word: string) {
+  const syllables = Math.max(1, word.toLowerCase().replace(/[^a-z]/g, "").match(/[aeiouy]+/g)?.length ?? 1);
+  return 200 + 70 * syllables;
+}
+
+/** A hesitation mid-ask, written into a script as "…" or "...". */
+const HESITATE = /^(…|\.\.\.)$/;
+
 /** `?voice=Make a space for our Tahoe weekend` plays a scripted ask instead of
     the mic: words land one at a time and the level fakes a speaking voice.
-    Frame-capture takes have no microphone, so this is how the orb gets filmed. */
+    Frame-capture takes have no microphone, so this is how the orb gets filmed.
+    Default pace: a word every 300 ms, shown as it starts. `&voicePace=talk`:
+    each word takes its spoken length and shows when it ends (the way a
+    recogniser hands words over), and "…" in the script is a hesitation of
+    `&voicePause=` ms (900 by default). The script never ends the ask itself:
+    the pause after its last word does, the same as with a real voice. */
 function runScript(
   script: string,
   level: { current: number },
   onText: (text: string) => void,
   onDone: () => void,
 ) {
-  const words = script.split(/\s+/).filter(Boolean);
-  const wordMs = 300;
+  const q = new URLSearchParams(window.location.search);
+  const talk = q.get("voicePace") === "talk";
+  const pause = Number(q.get("voicePause") ?? 900) || 900;
+  const tokens = script.replace(/(\S)(…|\.\.\.)/g, "$1 $2").split(/\s+/).filter(Boolean);
+  // Each word: when it starts and ends being said, ms from the tap.
+  const words: { word: string; from: number; to: number }[] = [];
+  let at = 0;
+  for (const token of tokens) {
+    if (HESITATE.test(token)) {
+      at += pause;
+      continue;
+    }
+    const len = talk ? wordMs(token) : 300;
+    words.push({ word: token, from: at, to: at + len });
+    at += len + (talk ? 30 : 0);
+  }
+  const end = words.length ? words[words.length - 1].to : 0;
   const started = performance.now();
   let raf = 0;
   const tick = () => {
     const t = performance.now() - started;
-    const spoken = Math.min(words.length, Math.floor(t / wordMs) + 1);
-    onText(words.slice(0, spoken).join(" "));
-    const inWord = (t % wordMs) / wordMs;
-    const talking = t < words.length * wordMs;
+    const spoken = words.filter((w) => (talk ? w.to <= t : w.from <= t)).length;
+    onText(words.slice(0, Math.max(talk ? 0 : 1, spoken)).map((w) => w.word).join(" "));
+    const word = words.find((w) => w.from <= t && t < w.to);
+    const inWord = word ? (t - word.from) / (word.to - word.from) : 0;
     const syllable = Math.sin(inWord * Math.PI) * (0.55 + 0.35 * Math.sin(t / 97));
-    follow(level, talking ? Math.max(0, syllable) : 0);
-    if (t > words.length * wordMs + 700) {
+    follow(level, word ? Math.max(0, syllable) : 0);
+    // Safety only: the listener ends the ask on the pause long before this.
+    if (t > end + 5000) {
       onDone();
       return;
     }
@@ -60,29 +91,59 @@ function runScript(
   return () => cancelAnimationFrame(raf);
 }
 
+/** How an ask ended: the pause after the last word, or the done button. */
+export type VoiceEnd = { how: "pause" | "done"; lastWordAt: number; endedAt: number };
+
 /** What the room does with a finished ask. The orb stays "working" until the
     returned promise settles; without one it rests after 1.4 s as before. */
-export type VoiceAsk = (said: string) => Promise<unknown> | void;
+export type VoiceAsk = (said: string, end: VoiceEnd) => Promise<unknown> | void;
 
-export function useVoice(onAsk?: VoiceAsk) {
+/** The room listening along: `start` on the tap, `words` every time the
+    transcript changes, `ask` once it ends. */
+export type VoiceHooks = {
+  start?: () => void;
+  words?: (text: string) => void;
+  ask?: VoiceAsk;
+};
+
+/** Quiet after the last word that ends the ask. */
+const PAUSE_MS = 650;
+/** …unless the words stop mid-thought ("add a poll for…"): then wait longer. */
+const HANG_MS = 1600;
+/** A loud room can't hold an ask open past this much quiet from the recogniser. */
+const MAX_QUIET_MS = 2600;
+/** Nothing said at all: give up. */
+const NOTHING_MS = 9000;
+
+export function useVoice(hooks: VoiceHooks = {}) {
   const [state, setState] = useState<VoiceState>("idle");
   const [transcript, setTranscript] = useState("");
   const said = useRef("");
-  const askRef = useRef(onAsk);
-  askRef.current = onAsk;
+  const hooksRef = useRef(hooks);
+  hooksRef.current = hooks;
   /** Read by the orb every frame; never goes through React. */
   const level = useRef(0);
   const stopRef = useRef<() => void>(() => {});
   const workTimer = useRef(0);
+  /** performance.now() of the newest words: the last word, once the ask ends. */
+  const lastWordAt = useRef(0);
+  const listenTimer = useRef(0);
+  const listening = useRef(false);
 
-  const finish = useCallback(() => {
+  const finish = useCallback((how: VoiceEnd["how"] = "done") => {
+    window.clearInterval(listenTimer.current);
+    if (!listening.current) return;
+    listening.current = false;
+    const endedAt = performance.now();
+    if (how === "pause") performance.mark("voice:pause");
     stopRef.current();
     stopRef.current = () => {};
     level.current = 0;
+    if (lastWordAt.current) performance.mark("voice:last-word", { startTime: lastWordAt.current });
     setState("working");
     window.clearTimeout(workTimer.current);
     const text = said.current.trim();
-    const pending = text ? askRef.current?.(text) : undefined;
+    const pending = text ? hooksRef.current.ask?.(text, { how, lastWordAt: lastWordAt.current, endedAt }) : undefined;
     if (!pending) {
       workTimer.current = window.setTimeout(() => setState("idle"), 1400);
       return;
@@ -96,18 +157,44 @@ export function useVoice(onAsk?: VoiceAsk) {
   }, []);
 
   const hear = useCallback((text: string) => {
+    if (text && text !== said.current) {
+      if (!said.current) performance.mark("voice:first-word");
+      lastWordAt.current = performance.now();
+      hooksRef.current.words?.(text);
+    }
     said.current = text;
     setTranscript(text);
   }, []);
 
+  /* A pause is the end: no new words for PAUSE_MS while the voice is quiet. */
+  const listenForPause = useCallback(() => {
+    const startedAt = performance.now();
+    window.clearInterval(listenTimer.current);
+    listenTimer.current = window.setInterval(() => {
+      const now = performance.now();
+      if (!said.current) {
+        if (now - startedAt > NOTHING_MS) finish("pause");
+        return;
+      }
+      const quiet = now - lastWordAt.current;
+      const wait = sentenceHangs(said.current) ? HANG_MS : PAUSE_MS;
+      if ((quiet > wait && level.current < 0.2) || quiet > MAX_QUIET_MS) finish("pause");
+    }, 25);
+  }, [finish]);
+
   const start = useCallback(async () => {
     window.clearTimeout(workTimer.current);
+    performance.mark("voice:tap");
+    lastWordAt.current = 0;
     hear("");
     setState("listening");
+    listening.current = true;
+    hooksRef.current.start?.();
+    listenForPause();
 
     const script = new URLSearchParams(window.location.search).get("voice");
     if (script) {
-      stopRef.current = runScript(script, level, hear, finish);
+      stopRef.current = runScript(script, level, hear, () => finish("pause"));
       return;
     }
 
@@ -158,12 +245,13 @@ export function useVoice(onAsk?: VoiceAsk) {
     } catch {
       // No mic permission: the orb still shows it's listening, it just can't swell.
     }
-  }, [finish, hear]);
+  }, [finish, hear, listenForPause]);
 
   useEffect(
     () => () => {
       stopRef.current();
       window.clearTimeout(workTimer.current);
+      window.clearInterval(listenTimer.current);
     },
     [],
   );

@@ -11,7 +11,7 @@ id named here exists in `src/`.
 | [recap](recap.md) | crew dock | closed · open · landed |
 | [dock](dock.md) | crew dock | idle · sound · recap |
 | [deck](deck.md) | crew board | one · four · eight · beside |
-| [voice-build](voice-build.md) | crew (lane) | room · ask · mock · gate · say |
+| [voice-build](voice-build.md) | crew (lane) | room · ask · hesitate · drawer · mock · shell · mockdrawer · gate · say |
 
 ## Header format
 
