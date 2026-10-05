@@ -5,6 +5,17 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **The orb's verbs, and the room-facts regression fixed (Oct 5, V1, dev lane).** Each ask's prompt
+  shows only the 6–8 cards its words could mean (`lib/deck/shortlist.ts`) and the decide runs only when
+  the keyword guess is empty or names two cards: room facts 1,302 → 1,063 ms (second browser 1,288),
+  plain 610, hero first card 990; cost per room-fact ask $0.0075 → $0.0031. A router before the deck
+  (`lib/deck/verbs.ts`): questions answered from room facts by code (~0.68 s, no model) or by retrieval
+  (`voiceBuild.answer`, ~1.2 s), "catch me up" opens the recap, "i'm in for friday" / "vote coffee" /
+  "put me down for ice" act as you (offers when two cards fit, refused for others), "take me to the
+  family" / "show me the cake poll" / the knows page, games and edit say they're coming. Slip on the
+  stage, then on the card it came from. Rough: a voted non-first poll doesn't repaint on other screens;
+  "where's the sign-up list" with two lists finds nothing. Write-up `nebius/eval/v1-verbs.md`.
+
 - **One main: the voice stage, your turn and the room's brain together (Oct 5, dev lane).** `your-turn`
   and `orb-stage` merged into main (real merge commits) and deployed to the dev preview. Your turn now
   reads every poll in a live room (`votes.inSpace`, no schema change); a member (email-joined) gets

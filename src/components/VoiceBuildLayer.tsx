@@ -431,7 +431,7 @@ function ContextDrawer({
       )}
       <section>
         <h3>7 · stages, from the last word</h3>
-        {mock ? (
+        {mock && !nonMake ? (
           <p>simulated from measurements (src/lib/voiceTimings.ts): no model ran, so nothing here was timed</p>
         ) : (
           <table>
