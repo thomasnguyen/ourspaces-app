@@ -115,7 +115,13 @@ import { ShipRoom } from "./components/ShipRoom";
 import type { RoomOrigin } from "./components/CanvasRoom";
 import type { BuildRoomLink } from "./data/buildroom";
 import { pendingLinkRows, scheduleMockResolve } from "./lib/mockArrival";
-import { YourTurn } from "./components/YourTurn";
+import { YourTurn, goToTurnWidget } from "./components/YourTurn";
+import { GameDoor, GameInvite, GameSheet, GameSheetTab } from "./components/games/GameInvite";
+import { GAME_WIDGET_ID, GamesProvider, KEEPSAKE_WIDGET_ID, SCOREBOARD_WIDGET_ID, useMockGames, type CastPerson } from "./lib/games/useMockGames";
+import { GAME_SPOTS, KEEPSAKE_SPOTS, hasGames } from "./data/games";
+import { JigsawDev, JigsawInvite, JigsawSheet, JigsawWorld } from "./components/games/Jigsaw";
+import { JigsawProvider, useMockJigsaw, withJigsaw, JIGSAW_WIDGET_ID } from "./lib/jigsaw/useMockJigsaw";
+import { hasJigsaw } from "./data/jigsaw";
 import { mockViewer, mockWaitingByRoom, playAsOverrides, yourTurn } from "./lib/yourTurn";
 
 const CursorLab = lazy(() =>
@@ -2086,6 +2092,60 @@ export default function App() {
   }
 
   const baseSpace = getSpace(spaceId);
+  /* Games, mock: the room's game with simulated players (lib/games). The
+     cast is the people on "what this space knows"; you play as `?as=`, as
+     the second half of a room of two, or as yourself. */
+  const gameCastOf = useCallback((room: string): CastPerson[] => {
+    const people = mockRoomKnows(room, "").people;
+    return people.length ? people : getSpace(room).members.map(({ name, color }) => ({ name, color }));
+  }, []);
+  const gameMeOf = useCallback(
+    (room: string) => {
+      const cast = gameCastOf(room);
+      const viewer = mockViewer(cast.map((person) => person.name));
+      const person = viewer.standing === "member" ? cast.find((p) => p.name === viewer.name) : cast.length === 2 ? cast[1] : undefined;
+      return person ? { name: person.name, color: person.color } : { name: "You", color: tabIdentity.color };
+    },
+    [gameCastOf, tabIdentity.color],
+  );
+  const gamesOnly = useMockGames({ room: spaceId, meOf: gameMeOf, castOf: gameCastOf, flyTo: goToTurnWidget });
+  /* the jigsaw: its own mat on the board; what it leaves joins the same scoreboard */
+  const jigsaw = useMockJigsaw({ room: spaceId, meOf: gameMeOf, castOf: gameCastOf, flyTo: goToTurnWidget });
+  const games = withJigsaw(gamesOnly, jigsaw);
+  const jigsawOverlay = useMemo(() => <JigsawWorld />, []);
+  const gameWidgets: Widget[] = hasGames(spaceId)
+    ? [
+        { id: SCOREBOARD_WIDGET_ID, type: "scoreboard", ...GAME_SPOTS[spaceId].board, w: 300, h: 110 + 49 * Math.min(7, games.rows.length) + 96 + (hasJigsaw(spaceId) ? 44 : 0) + (games.seatName && !(games.game && games.game.phase !== "done") ? 48 : 0), z: 4, data: { title: "scoreboard" } },
+        ...(games.game
+          ? [
+              {
+                id: GAME_WIDGET_ID,
+                type: "game" as const,
+                ...GAME_SPOTS[spaceId].card,
+                w: 400,
+                h: 560,
+                z: 5,
+                data: {
+                  title: games.game.name,
+                  name: games.game.name,
+                  phase: games.game.phase,
+                  startedBy: games.game.startedBy.name,
+                  players: games.game.players.map((player) => player.name),
+                  youIn: games.game.players.some((player) => player.name === games.me.name),
+                  round: games.game.round + 1,
+                  rounds: games.game.rounds.length,
+                  /* the person a hot seat is about gets their own ticket */
+                  ...(games.game.seat?.length === 1 && games.game.seat[0].name === games.me.name ? { ticket: "you're in the hot seat", waiting: `${games.game.startedBy.name.toLowerCase()} started a game about you. sit down` } : {}),
+                },
+              },
+            ]
+          : []),
+        /* what a finished hot seat leaves on the board */
+        ...(games.keepsake && KEEPSAKE_SPOTS[spaceId]
+          ? [{ id: KEEPSAKE_WIDGET_ID, type: "keepsake" as const, ...KEEPSAKE_SPOTS[spaceId], w: 304, h: 112 + 37 * games.keepsake.rows.length, z: 6, data: { title: games.keepsake.title } }]
+          : []),
+      ]
+    : [];
   const activeSpaceCustomization =
     spaceDraft ??
     spaceCustomizations[spaceId] ??
@@ -2095,6 +2155,7 @@ export default function App() {
     ...baseSpace.widgets,
     ...(addedWidgets[spaceId] ?? []),
     ...(promoted && spaceId === "crew" ? [DECISION_WIDGET] : []),
+    ...gameWidgets,
   ]
     .filter((widget) => !(deletedWidgetIds[spaceId] ?? []).includes(widget.id))
     .map((widget) => ({
@@ -2105,8 +2166,13 @@ export default function App() {
   visibleWidgetsRef.current = visibleWidgets;
   const turnMembers = baseSpace.members.map((member) => member.name);
   const turnViewer = mockViewer(turnMembers);
+  /* a puzzle you're not in is an invitation too: the same "your turn" ticket */
+  const jigsawRun = jigsaw.run?.phase === "on" && !jigsaw.run.result && !jigsaw.run.joined ? jigsaw.run : undefined;
+  const jigsawTicket: Widget[] = jigsawRun
+    ? [{ id: JIGSAW_WIDGET_ID, type: "game", x: 0, y: 0, w: 0, h: 0, z: 0, data: { title: "a puzzle", name: "a puzzle", phase: "round", startedBy: jigsawRun.startedBy.name, players: jigsaw.sims.map((sim) => sim.name), youIn: false, waiting: `${jigsaw.placed} of ${jigsaw.options.pieces} pieces in. jump in` } }]
+    : [];
   const turnItems = yourTurn({
-    widgets: visibleWidgets,
+    widgets: [...visibleWidgets, ...jigsawTicket],
     members: turnMembers,
     viewer: turnViewer,
     mine: {
@@ -2245,6 +2311,8 @@ export default function App() {
   );
 
   return (
+    <GamesProvider value={games}>
+    <JigsawProvider value={jigsaw}>
     <main
       className={`paper-bg relative h-dvh overflow-hidden ${
         chatOpen ? "has-chat-open" : ""
@@ -2271,6 +2339,7 @@ export default function App() {
         onSelectSpace={selectSpace}
         onCreateClick={openPicker}
         waiting={mockWaitingByRoom(SPACES_BY_ID, { widgetDataOverrides, pollSelections, rsvpSelections, dailyAnswers })}
+        gameOn={games.onIn}
         self={tabIdentity}
         settingsOpen={settingsOpen}
         onSettingsClick={() => setSettingsOpen((open) => !open)}
@@ -2287,7 +2356,12 @@ export default function App() {
         spaceId={spaceId}
         addOpen={pickerOpen}
         onAddClick={openPicker}
-        knowsDoor={<RoomKnowsDoor slug={spaceId} count={standing(mockKnows)} />}
+        knowsDoor={
+          <>
+            <RoomKnowsDoor slug={spaceId} count={standing(mockKnows)} />
+            <GameDoor onGo={goToTurnWidget} />
+          </>
+        }
         spaceMeta={activeSpaceCustomization}
         roomEditing={Boolean(spaceDraft)}
         onEditSpace={openSpaceEditor}
@@ -2460,7 +2534,8 @@ export default function App() {
               onDailyReact={reactToDailyAnswer}
               promoted={promoted}
               onPromote={promoteMessage}
-              addedWidgets={voiceAddedWidgets}
+              addedWidgets={[...voiceAddedWidgets, ...gameWidgets]}
+              overlay={jigsawOverlay}
               widgetPlacements={widgetPlacements[spaceId] ?? {}}
               widgetDataOverrides={{
                 ...playAsOverrides(baseSpace.widgets, turnViewer),
@@ -2689,7 +2764,14 @@ export default function App() {
         onAnswer={answerDailyQ}
         onClaim={claimSlot}
         onDays={addMyDays}
+        onJoin={jigsawRun && !(games.game && games.game.phase !== "done") ? jigsaw.join : games.join}
       />
+      <GameInvite />
+      <JigsawInvite />
+      <JigsawSheet />
+      <JigsawDev />
+      <GameSheetTab />
+      <GameSheet />
       <ActionDock
         voice={voiceHooks}
         recapOpen={recapOpen}
@@ -2773,5 +2855,7 @@ export default function App() {
       )}
       <RoomKnowsPage slug={spaceId} roomName={activeSpaceCustomization.name} knows={mockKnows} self={tabIdentity} onChange={correctMockKnows} fixture />
     </main>
+    </JigsawProvider>
+    </GamesProvider>
   );
 }

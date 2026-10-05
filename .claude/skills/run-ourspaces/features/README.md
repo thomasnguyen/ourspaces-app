@@ -16,6 +16,11 @@ id named here exists in `src/`.
 | [deck](deck.md) | crew board | one · four · eight · beside |
 | [your-turn](your-turn.md) | crew dock (✦ key + recap panel) | badge · rio · ash · guest · mid · next · more · house · couple · rail · live (lane) |
 | [voice-build](voice-build.md) | crew (lane) | room · ask · hesitate · drawer · mock · shell · mockdrawer · gate · say |
+| [games](games.md) | crew, house, couple | idle · start · invited · ticket · rail · lobby · round · answered · reveal (-b, -c) · awards · late · knows · house · couple |
+| [most-likely-to](most-likely-to.md) | crew, house, couple | round · reveal · split · awards · house · two · two-match |
+| [scoreboard](scoreboard.md) | crew, house | locked · open · after · house |
+| [jigsaw](jigsaw.md) | crew | start · playing · ghost · late · last · done (+ takes: start · work · yield · nod · reach · hold · finish) |
+| [hot-seat](hot-seat.md) | crew, house, couple | lobby · round · reveal · slider · done · keepsake · seat-* (Maya's view) · other · house · two (+ takes: reveal · seat, and -phone) |
 | [room-brain](room-brain.md) | crew, house, couple, family | door · open · visit · forget · told · empty · live |
 | [family](family.md) | the family | board · logged · final · knows |
 | [check-in](check-in.md) | family board | open · logging · logged · mina · final |

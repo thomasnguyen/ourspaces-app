@@ -1,3 +1,6 @@
+import { GameCard } from "./games/GameCard";
+import { Scoreboard } from "./games/Scoreboard";
+import { Keepsake } from "./games/HotSeat";
 import {
   memo,
   useCallback,
@@ -785,6 +788,15 @@ function WidgetCardComponent({
           disabled={!onWheelSpin && spaceId !== "widget-lab"}
         />
       );
+      break;
+    case "game":
+      content = <GameCard />;
+      break;
+    case "scoreboard":
+      content = <Scoreboard />;
+      break;
+    case "keepsake":
+      content = <Keepsake />;
       break;
     case "dualClock":
       content = <DualClockWidget widget={widget} style={inner} />;

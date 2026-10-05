@@ -95,6 +95,10 @@ Left on the widget layer: no editor forms yet for the four build-room types
 
 ---
 
+### Games (mock only, Oct 5)
+
+`game` and `scoreboard` are widget types with no stored data yet: the mock page injects them (crew, house, couple) and they read the room's game through `useGames()`. A game is one card with a life (invite → rounds → reveal → awards); "most likely to" is the first one, with prompts written from each room's "what this space knows" facts. See `.claude/skills/run-ourspaces/features/games.md` for states, test ids and the data shape a live version would store.
+
 ## 0. the dev guild — slug `buildroom` (`#/`, bottle-green `torch` theme)
 
 **Status: built.** Seven members, 2048×1016 (`BUILD_ROOM_CANVAS`; the live row

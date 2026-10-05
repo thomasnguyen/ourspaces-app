@@ -1,0 +1,664 @@
+/* THE JIGSAW — a photo from the room, cut up on a mat on the board.
+   Everything that travels is a transform written by lib/jigsaw/engine.ts;
+   this file is the paper, the ink and the discrete beats. */
+
+.jg-world {
+  position: absolute;
+  z-index: 100000;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* the first-visit tip steps aside for the mat (a body class, not :has(): :has() re-styles the page on every piece) */
+body.jg-on .welcome-pill {
+  display: none;
+}
+
+/* the room's own wandering cursors step out while the same people play */
+body.jg-on .space-canvas > .live-cursor-positioner {
+  display: none;
+}
+
+.jg-spot {
+  position: absolute;
+}
+
+/* the photo's place on the wall while it's out */
+.jg-out {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 2px dashed color-mix(in srgb, var(--color-ink) 45%, transparent);
+  background: var(--color-mat);
+  color: color-mix(in srgb, var(--color-ink) 60%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+  rotate: -2deg;
+  animation: jg-fade var(--dur-base) var(--ease-glide) 120ms both;
+}
+
+.jg-mat {
+  position: relative;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.jg-card {
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--color-ink);
+  border-radius: 30px;
+  background: var(--color-card);
+  box-shadow: 7px 9px 0 rgba(0, 0, 0, 0.45);
+  transform-origin: 20% 20%;
+  animation: jg-mat-in var(--dur-stage) var(--ease-pop) both;
+  transition:
+    opacity var(--dur-arrive) var(--ease-glide),
+    scale var(--dur-arrive) var(--ease-glide);
+}
+
+.jg-mat[data-stage="return"] .jg-card {
+  opacity: 0;
+  scale: 0.97;
+}
+
+.jg-mat[data-stage="return"] .jg-cursor,
+.jg-mat[data-stage="return"] .jg-hand,
+.jg-mat[data-stage="return"] .jg-done {
+  display: none;
+}
+
+.jg-head {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--color-ink);
+}
+
+.jg-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px 6px 10px;
+  white-space: nowrap;
+}
+
+.jg-kicker i {
+  color: var(--color-lime);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.jg-faces {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  --face: 26px;
+}
+
+.jg-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.jg-who.is-space i {
+  width: 20px;
+  height: 20px;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: var(--color-sticker);
+  box-shadow: 0 0 0 1.5px var(--color-ink);
+}
+
+.jg-tally {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.jg-tally b {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.jg-tally span {
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.jg-frame {
+  position: absolute;
+  background: color-mix(in srgb, var(--color-mat) 62%, var(--color-card));
+  outline: 2px dashed color-mix(in srgb, var(--color-ink) 38%, transparent);
+  outline-offset: 5px;
+}
+
+/* ---------- a piece ---------- */
+
+.jg-p {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.jg-mat[data-stage="fly"] .jg-p,
+.jg-mat[data-stage="return"] .jg-p {
+  visibility: hidden;
+}
+
+.jg-in {
+  transition: scale var(--dur-quick) var(--ease-glide);
+}
+
+.jg-p svg {
+  display: block;
+  overflow: visible;
+}
+
+.jg-p image,
+.jg-edge {
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.jg-edge {
+  fill: none;
+  stroke: var(--color-ink);
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.jg-shadow {
+  fill: var(--color-ink);
+  opacity: 0.5;
+  stroke: var(--color-ink);
+  stroke-linejoin: round;
+  stroke-width: 0;
+  translate: 2px 3px;
+  transition:
+    translate var(--dur-quick) var(--ease-glide),
+    opacity var(--dur-quick) var(--ease-glide);
+}
+
+/* the halo: a flat outline in the holder's colour. Not a glow. */
+.jg-halo {
+  fill: none;
+  opacity: 0;
+  stroke: var(--by);
+  stroke-linejoin: round;
+  stroke-width: 12;
+}
+
+.jg-p.is-held .jg-in {
+  scale: 1.06;
+}
+
+.jg-p.is-held .jg-halo {
+  opacity: 1;
+}
+
+.jg-p.is-held .jg-shadow {
+  stroke-width: 12;
+  translate: 7px 9px;
+}
+
+.jg-p.is-held image,
+.jg-p.is-held .jg-edge {
+  cursor: grabbing;
+}
+
+.jg-p.is-placed .jg-shadow {
+  opacity: 0;
+}
+
+.jg-p.is-placed .jg-edge {
+  stroke: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  stroke-width: 1.1;
+  transition: opacity var(--dur-stage) var(--ease-glide);
+}
+
+.jg-p.is-placed image,
+.jg-p.is-placed .jg-edge {
+  cursor: default;
+  pointer-events: none;
+}
+
+.jg-mat[data-stage="whole"] .jg-edge {
+  opacity: 0;
+}
+
+.jg-tag {
+  position: absolute;
+  z-index: 2;
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  background: var(--by);
+  color: var(--on);
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 4px 9px 5px;
+  translate: -50% -100%;
+  white-space: nowrap;
+  animation: jg-tag-in var(--dur-base) var(--ease-pop) both;
+}
+
+/* ---------- the ghost: the space's move, waiting its turn ---------- */
+
+.jg-ghost {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  animation: jg-fade var(--dur-base) var(--ease-glide) both;
+  transition:
+    opacity var(--dur-arrive) var(--ease-glide),
+    scale var(--dur-arrive) var(--ease-glide);
+}
+
+.jg-ghost svg {
+  display: block;
+  overflow: visible;
+}
+
+.jg-ghost path {
+  fill: color-mix(in srgb, var(--color-card) 70%, transparent);
+  stroke: var(--color-ink);
+  stroke-dasharray: 7 6;
+  stroke-linecap: round;
+  stroke-width: 2.6;
+  animation: jg-march 900ms linear infinite;
+}
+
+.jg-ghost.is-go path {
+  animation-duration: 320ms;
+}
+
+.jg-ghost.is-leaving {
+  opacity: 0;
+  scale: 0.94;
+}
+
+/* the words ride above every piece; the outline stays under them */
+.jg-ghost.is-words {
+  z-index: 95000;
+}
+
+.jg-ghost-tag {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  box-shadow: 0 0 0 2px white;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 6px 10px 7px;
+  translate: -50% 0;
+  white-space: nowrap;
+}
+
+.jg-ghost-tag i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--by);
+}
+
+/* ---------- hands ---------- */
+
+.jg-mat .jg-cursor,
+.jg-hand {
+  z-index: 100000;
+}
+
+.jg-hand {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.jg-hand svg {
+  display: block;
+  margin: -3px 0 0 -4px;
+  overflow: visible;
+}
+
+.jg-hand path {
+  fill: var(--color-sticker);
+  stroke: white;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+  paint-order: stroke;
+}
+
+.jg-hand-tag {
+  position: absolute;
+  top: 20px;
+  left: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  box-shadow: 0 0 0 2px white;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 6px 10px 7px 8px;
+  white-space: nowrap;
+}
+
+.jg-hand-tag i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-lime);
+}
+
+.jg-hand[data-state="last"] .jg-hand-tag {
+  background: var(--color-lime);
+  color: var(--color-ink);
+  animation: jg-tag-in var(--dur-arrive) var(--ease-pop) both;
+}
+
+.jg-hand[data-state="last"] .jg-hand-tag i {
+  background: var(--color-ink);
+}
+
+/* ---------- the finish ---------- */
+
+.jg-whole {
+  position: absolute;
+  z-index: 90000;
+  object-fit: cover;
+  pointer-events: none;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* kept mounted (and decoded) under the play so the finish never hitches */
+.jg-mat[data-stage="play"] .jg-whole {
+  z-index: 0;
+  opacity: 0;
+}
+
+.jg-mat[data-stage="whole"] .jg-whole {
+  animation: jg-whole-in var(--dur-stage) var(--ease-snap) both;
+  transform-origin: 50% 50%;
+}
+
+.jg-mat[data-stage="return"] .jg-whole {
+  box-shadow: 5px 6px 0 rgba(0, 0, 0, 0.45);
+}
+
+.jg-flash {
+  position: absolute;
+  z-index: 90001;
+  background: white;
+  pointer-events: none;
+  animation: jg-flash var(--dur-stage) var(--ease-glide) both;
+}
+
+.jg-done {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 90002;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  color: var(--color-ink);
+  animation: jg-tag-in var(--dur-arrive) var(--ease-pop) 260ms both;
+}
+
+.jg-done strong {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.jg-done span {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.jg-done .gm-go {
+  margin-top: 14px;
+}
+
+.jg-mat[data-stage="whole"] .jg-p.is-loose,
+.jg-mat[data-stage="whole"] .jg-ghost {
+  display: none;
+}
+
+/* the slip the puzzle leaves on the photo */
+.jg-slip {
+  position: absolute;
+  display: grid;
+  width: 220px;
+  gap: 3px;
+  border: 2px solid var(--color-ink);
+  border-radius: 4px;
+  background: var(--color-card);
+  box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.45);
+  color: var(--color-ink);
+  padding: 8px 10px 9px;
+  rotate: 3deg;
+  animation: jg-slip-in var(--dur-stage) var(--ease-pop) 120ms both;
+}
+
+.jg-slip b {
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.jg-slip span {
+  color: var(--color-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+/* the scoreboard's second way in */
+.jg-start {
+  justify-self: stretch;
+  color: var(--color-ink);
+  text-align: center;
+}
+
+.jg-dev {
+  position: fixed;
+  z-index: 70;
+  right: 12px;
+  bottom: 3px;
+  margin: 0;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--color-card) 82%, transparent);
+  color: var(--color-muted);
+  font: 500 10.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 1px 6px;
+  pointer-events: none;
+}
+
+.jg-sheet {
+  display: none;
+}
+
+@keyframes jg-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes jg-mat-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    rotate: -1.5deg;
+  }
+}
+
+@keyframes jg-tag-in {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+@keyframes jg-march {
+  to {
+    stroke-dashoffset: -13;
+  }
+}
+
+@keyframes jg-whole-in {
+  0% {
+    opacity: 0;
+    scale: 1;
+  }
+  35% {
+    opacity: 1;
+    scale: 1.045;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes jg-flash {
+  0% {
+    opacity: 0;
+    scale: 1;
+  }
+  18% {
+    opacity: 0.92;
+  }
+  35% {
+    scale: 1.045;
+  }
+  100% {
+    opacity: 0;
+    scale: 1;
+  }
+}
+
+@keyframes jg-slip-in {
+  from {
+    opacity: 0;
+    scale: 0.7;
+    rotate: -6deg;
+  }
+}
+
+/* ---------- a phone: the picture on top, the tray under it ---------- */
+
+@media (max-width: 800px) {
+  .jg-sheet {
+    position: fixed;
+    z-index: 400;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+    background: var(--color-card);
+    animation: gm-sheet-up var(--dur-stage) var(--ease-glide) both;
+  }
+
+  .jg-sheet .jg-mat {
+    transform: scale(var(--k));
+    transform-origin: 0 0;
+  }
+
+  .jg-mat.is-phone .jg-card {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    animation: none;
+  }
+
+  .jg-mat.is-phone .jg-head {
+    top: 14px;
+    right: 14px;
+    left: 14px;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+
+  .jg-mat.is-phone .jg-faces {
+    order: 3;
+    width: 100%;
+    margin: 0;
+    --face: 22px;
+  }
+
+  .jg-mat.is-phone .jg-tally {
+    margin-left: auto;
+  }
+
+  .jg-leave {
+    border: 2px solid color-mix(in srgb, var(--color-ink) 40%, transparent);
+    border-radius: var(--radius-pill);
+    color: var(--color-ink);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 9px;
+  }
+
+  /* the tray: where loose pieces live */
+  .jg-mat.is-phone .jg-card::after {
+    position: absolute;
+    top: 372px;
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    border: 2px dashed color-mix(in srgb, var(--color-ink) 26%, transparent);
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--color-mat) 40%, var(--color-card));
+    content: "";
+  }
+
+  .jg-dev {
+    right: 6px;
+    left: 6px;
+    font-size: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jg-ghost path {
+    animation: none;
+  }
+}

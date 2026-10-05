@@ -32,10 +32,10 @@ export type TurnMine = {
   answers: Record<string, string | undefined>;
 };
 
-export type TurnKind = "rsvp" | "poll" | "question" | "days" | "signup" | "wheel" | "letter" | "checkin" | "chore";
+export type TurnKind = "rsvp" | "poll" | "question" | "days" | "signup" | "wheel" | "letter" | "checkin" | "chore" | "game";
 
 /** How the item is done from the stack: one choice, a typed line, or a trip. */
-export type TurnAct = "vote" | "rsvp" | "claim" | "days" | "answer" | "go";
+export type TurnAct = "vote" | "rsvp" | "claim" | "days" | "answer" | "go" | "join";
 
 export type TurnChoice = { id: string; label: string };
 
@@ -332,6 +332,29 @@ export function yourTurn(input: TurnInput): TurnItem[] {
         act: "go",
         choices: [],
         base: 26,
+      });
+      continue;
+    }
+
+    /* a game someone started and you're not in: an invitation is a ticket,
+       and it stays until the game ends */
+    if (widget.type === "game") {
+      const players = listOf<string>(data.players);
+      if (!data.phase || data.phase === "done" || data.youIn || players.some((name) => isMe(name))) continue;
+      push(widget, {
+        kind: "game",
+        verb: "join",
+        title: typeof data.ticket === "string" ? data.ticket : `${lower(data.startedBy)} started ${lower(data.name)}`,
+        waiting:
+          typeof data.waiting === "string"
+            ? data.waiting
+            : data.phase === "invite"
+            ? `${players.length} in, starting any second`
+            : `${players.length} playing, round ${Number(data.round)} of ${Number(data.rounds)}. jump in`,
+        act: "join",
+        choices: [{ id: "join", label: "join" }],
+        base: 200,
+        answered: players.length,
       });
       continue;
     }

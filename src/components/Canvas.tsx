@@ -1,3 +1,4 @@
+import { AwardDots } from "./games/GameInvite";
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { PeerCursor } from "./PeerCursor";
 import {
@@ -134,6 +135,7 @@ export function Canvas({
   widgets: widgetsProp,
   cursors: cursorsProp,
   labPeers = null,
+  overlay = null,
   onClaim,
   claimantId,
   onWheelSpin,
@@ -208,6 +210,8 @@ export function Canvas({
   cursors?: CanvasCursor[];
   /** `?peers=N` on a mock space: hands that aren't anyone (src/live/labPeers.ts) */
   labPeers?: LabPeerFeed | null;
+  /** drawn on the board above the cards, in board coordinates (the jigsaw) */
+  overlay?: ReactNode;
   members?: SpaceMember[];
   spaceName?: string;
   hereCount?: number;
@@ -563,6 +567,8 @@ export function Canvas({
         />
       ))}
 
+      {overlay}
+
       {placingItem && viewportRef && onPlaceItem && onPlaceCancel && (
         <PlacementGhost
           item={placingItem}
@@ -886,7 +892,10 @@ export function SpaceHeader({
                 {visibleOnline.length > 0 && (
                   <div className="header-seed-faces" aria-hidden="true">
                     {visibleOnline.map((member) => (
-                      <MemberFace key={member.name} name={member.name} size="md" />
+                      <span key={member.name} className="gm-face-wrap">
+                        <MemberFace name={member.name} size="md" />
+                        <AwardDots name={member.name} max={2} />
+                      </span>
                     ))}
                     {hiddenOnlineCount > 0 && (
                       <span className="header-face-overflow">+{hiddenOnlineCount}</span>
