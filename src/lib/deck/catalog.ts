@@ -11,7 +11,7 @@
 import type { Widget, WidgetType } from "../../data/types";
 import { RADIO_STATIONS } from "../radio";
 import { WIDGET_SIZES } from "../widgetDefaults";
-import { date, list, num, oneOf, rows, text, zone, type Infer, type Schema } from "./schema";
+import { date, list, num, oneOf, rows, text, zone, type Field, type Infer, type Schema } from "./schema";
 
 /** What the room knows when a card turns into a widget. */
 export type CardContext = {
@@ -42,6 +42,8 @@ type CardDef<Id extends string, S extends Schema> = {
   settings: S;
   build: (s: Infer<S>, ctx: CardContext) => Widget["data"];
   rotate?: number;
+  /** Voice edits (lib/deck/edits.ts): the closed set of changes this card takes, op → its value. Code applies them, never the model. */
+  edits?: Record<string, Field>;
 };
 
 const card = <const Id extends string, S extends Schema>(def: CardDef<Id, S>) => def;
@@ -56,6 +58,7 @@ export const CATALOG = [
     use: "the group votes on one question",
     type: "poll",
     settings: { question: text(80), options: list(2, 5, { itemMax: 32 }) },
+    edits: { addOption: text(32), removeOption: text(32), rename: text(80) },
     build: (s, ctx) => ({
       question: s.question,
       options: s.options.map((label, i) => ({ id: LETTERS[i], label, votes: 0, total: 0, voters: [] })),
@@ -67,6 +70,7 @@ export const CATALOG = [
     use: "a shared list people claim or tick off: who's bringing what, packing, chores",
     type: "potluck",
     settings: { title: text(40), items: list(2, 8, { itemMax: 28 }) },
+    edits: { addItem: text(28), removeItem: text(28), rename: text(40) },
     build: (s) => ({
       title: s.title,
       kicker: "sign-up sheet",
@@ -80,6 +84,7 @@ export const CATALOG = [
     use: "counts down the days to a date",
     type: "countdown",
     settings: { event: text(32), date: date() },
+    edits: { setDate: date(), rename: text(32) },
     build: (s, ctx) => ({ event: s.event, targetDate: s.date, startDate: ctx.today, hyped: [ctx.by] }),
   }),
   card({
@@ -87,6 +92,7 @@ export const CATALOG = [
     use: "who's in or out for one event",
     type: "rsvp",
     settings: { title: text(40), when: text(24, { optional: true }) },
+    edits: { setWhen: text(24), rename: text(40) },
     build: (s, ctx) => ({
       title: s.when ? `${s.title} · ${s.when}` : s.title,
       responses: [],
@@ -141,6 +147,7 @@ export const CATALOG = [
     use: "split a shared cost: who paid and who owes",
     type: "expenseSplit",
     settings: { title: text(32), total: num(1, 100000), paidBy: text(24, { optional: true }) },
+    edits: { addPerson: text(24), removePerson: text(24), rename: text(32) },
     build: (s, ctx) => {
       const payer = s.paidBy ?? ctx.by;
       const share = Math.round(s.total / Math.max(1, ctx.people.length));
@@ -158,6 +165,7 @@ export const CATALOG = [
     use: "a day-by-day plan for a trip or a weekend",
     type: "itinerary",
     settings: { title: text(32), days: rows(["day", "plan"], 1, 6, { itemMax: 36 }) },
+    edits: { setDay: text(36), rename: text(32) },
     build: (s) => ({ title: s.title, days: s.days }),
   }),
   card({
@@ -217,6 +225,7 @@ export const CATALOG = [
       days: num(1, 14, { optional: true }),
       goal: num(1, 100000, { optional: true }),
     },
+    edits: { setDays: num(1, 30), rename: text(32) },
     build: (s, ctx) => {
       const days = s.days ?? 7;
       return {

@@ -1,6 +1,7 @@
 import { query, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
+import { rightOfWay } from "./rightOfWay";
 
 /**
  * Links: a card that waits on another card and fills itself from it (a
@@ -49,11 +50,14 @@ function valueOf(link: Doc<"links">, from: Doc<"widgets">): unknown {
 
 /**
  * The one write a link makes: the target's `fill` field set to `value`.
- * Right of Way goes here (never move or override what someone holds).
+ * It passes the one door first (rightOfWay.ts), like every AI write.
  */
 export async function writeLinked(ctx: MutationCtx, link: Doc<"links">, value: unknown, now: number) {
   const to = await ctx.db.get(link.to);
   if (!to || value === undefined) return false;
+  // the one door every AI write passes (rightOfWay.ts)
+  const door = await rightOfWay(ctx, { kind: "link", spaceId: to.spaceId, widgetId: to._id, by: { name: "link" }, fields: [{ field: link.fill, old: (to.data as Record<string, unknown>)[link.fill], new: value }] });
+  if (door.verdict !== "go") return false;
   await ctx.db.patch(to._id, { data: { ...(to.data as object), [link.fill]: value } as Doc<"widgets">["data"] });
   await ctx.db.patch(link._id, { resolvedAt: now });
   return true;

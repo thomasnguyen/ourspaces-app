@@ -24,6 +24,7 @@ import {
   roomContext,
 } from "../src/lib/deck";
 import { VERB_CHOICES, VERB_LETTERS, VERB_Q } from "../src/lib/deck/verbs";
+import { rightOfWay } from "./rightOfWay";
 
 /**
  * Say it → it builds (path-to-win §3 "The engine"), split in two so the room
@@ -310,6 +311,9 @@ export const commit = mutation({
       });
       if (!applied.ok) continue;
       const w = applied.widget;
+      // the one door every AI write passes (rightOfWay.ts): a new card, all its fields new
+      const door = await rightOfWay(ctx, { kind: "build", spaceId: args.spaceId, by: { name: args.by, userId: args.createdBy }, fields: [{ field: "card", old: null, new: { type: w.type, title: (w.data as Record<string, unknown>).title ?? (w.data as Record<string, unknown>).question ?? (w.data as Record<string, unknown>).event ?? null } }] });
+      if (door.verdict !== "go") continue;
       const rotate = c.rotate ?? w.rotate;
       // What widgets.createWidget does, without a nested mutation in the hot path.
       const id = await ctx.db.insert("widgets", {
@@ -414,6 +418,8 @@ export const amend = mutation({
     const applied = applyCard(raw, { by: args.by, people: room, today: args.today }, { z: widget.z, assignees: args.assignees?.slice(0, 8) });
     if (!applied.ok) return false;
     const w = applied.widget;
+    const door = await rightOfWay(ctx, { kind: "build", spaceId: args.spaceId, widgetId: args.widgetId, by: { name: args.by, userId: args.createdBy }, fields: [{ field: "data", old: widget.data, new: w.data }] });
+    if (door.verdict !== "go") return false;
     await ctx.db.patch(args.widgetId, { type: w.type, w: w.w, h: w.h, data: w.data as never });
     return true;
   },

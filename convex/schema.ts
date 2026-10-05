@@ -135,6 +135,13 @@ export default defineSchema({
     spaceId: v.id("spaces"), from: v.id("widgets"), to: v.id("widgets"), when: v.string(), fill: v.string(), value: v.string(),
     at: v.optional(v.number()), resolvedAt: v.optional(v.number()),
   }).index("by_from", ["from"]).index("by_space", ["spaceId"]),
+  // Every AI write through the one door (rightOfWay.ts): kind edit|undo|link|build, fields = JSON [{field,old,new}],
+  // verdict go|wait|ask (or refused: an edit that would undo people's choices), undo = the inverse op JSON.
+  aiWrites: defineTable({
+    spaceId: v.id("spaces"), widgetId: v.optional(v.id("widgets")), kind: v.string(), by: v.string(), byUserId: v.optional(v.string()),
+    fields: v.string(), verdict: v.string(), reason: v.optional(v.string()), text: v.optional(v.string()), undo: v.optional(v.string()),
+    undone: v.optional(v.boolean()), at: v.number(),
+  }).index("by_space", ["spaceId"]),
   // Room brief for voice asks (roomBrief.ts); facts = evidence JSON.
   briefs: defineTable({ spaceId: v.id("spaces"), text: v.string(), facts: v.string(), at: v.number() }).index("by_space", ["spaceId"]),
 

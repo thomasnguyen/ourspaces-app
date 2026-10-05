@@ -8,6 +8,7 @@
  * both readings instead of guessing. Pure: no React, no Convex.
  */
 import type { BoardItem } from "./existing";
+import { isEditSaid } from "./edits";
 import { guessCards } from "./guess";
 import type { RoomFacts } from "./resolve";
 
@@ -49,7 +50,7 @@ const othersNamed = (t: string, people: string[], me: string) =>
   people.filter((p) => p.toLowerCase() !== me.toLowerCase() && new RegExp(`\\b${p.toLowerCase()}\\b`).test(t));
 
 /** Code's verb for these words (0 ms). */
-export function routeVerb(said: string, ctx: { people: string[]; me: string }): VerbPick {
+export function routeVerb(said: string, ctx: { people: string[]; me: string; selected?: boolean }): VerbPick {
   const t = clean(said);
   if (!t) return { verb: "make", sure: false, why: "no words" };
   if (RECAP.test(t)) return { verb: "recap", sure: true, why: `"${RECAP.exec(t)![0]}"` };
@@ -66,7 +67,8 @@ export function routeVerb(said: string, ctx: { people: string[]; me: string }): 
   if (GO.test(t) && !/^show me (who|what|when|where|how)\b/.test(t)) return { verb: "go", sure: true, why: `"${GO.exec(t)![0]}"` };
   if (/^(where'?s|where is) (the|our|my) /.test(t) && CARD_NOUN.test(t)) return { verb: "go", sure: true, why: "where's the <card>" };
   if (/\b(what this (space|room) knows|knows page)\b/.test(t)) return { verb: "go", sure: true, why: "the knows page" };
-  // Edit: "add ramen to the dinner poll" (not "add a poll to the board")
+  // Edit (lib/deck/edits.ts): "add ramen to the dinner poll", "take pizza off", "move it to 7:30", "make the challenge 10 days"
+  if (isEditSaid(t, Boolean(ctx.selected))) return { verb: "edit", sure: true, why: `an edit: "${t.split(" ").slice(0, 3).join(" ")}…"${ctx.selected ? " (a card is selected)" : ""}` };
   const edit = /^(add|put) (.+?) (to|on|onto|in|into) (the|our|my) (.+)$/.exec(t);
   if (edit && !/^(a|an|another|one|some|new) /.test(edit[2]) && !CARD_NOUN.test(edit[2]) && CARD_NOUN.test(edit[5]))
     return { verb: "edit", sure: true, why: `"${edit[2]}" into the ${edit[5]}` };

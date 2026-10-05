@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { widgetDataValidator, type PotluckData } from "./widgetData";
 import schema from "./schema";
@@ -190,12 +190,17 @@ export const updateWidgetData = mutation({
   handler: async (ctx, { id, spaceId, data }) => {
     const widget = await widgetInSpace(ctx, id, spaceId);
     if (!widget) return null;
-    await ctx.db.patch(id, { data });
-    const field = editedLabels(widget.type, widget.data, data);
-    if (field) await noteOutcome(ctx, widget, { kind: "edited", field });
-    // a card waiting on this one may resolve now
-    await applyLinks(ctx, id);
-    await touchSpace(ctx, spaceId);
+    await writeWidgetData(ctx, widget, data);
     return null;
   },
 });
+
+/** A card's data, written the way the card's own edit writes it: the outcome log, its links, the room's stamp. Voice edits (edits.ts) come through here too. */
+export async function writeWidgetData(ctx: MutationCtx, widget: Doc<"widgets">, data: Doc<"widgets">["data"]) {
+  await ctx.db.patch(widget._id, { data });
+  const field = editedLabels(widget.type, widget.data, data);
+  if (field) await noteOutcome(ctx, widget, { kind: "edited", field });
+  // a card waiting on this one may resolve now
+  await applyLinks(ctx, widget._id);
+  await touchSpace(ctx, widget.spaceId);
+}
