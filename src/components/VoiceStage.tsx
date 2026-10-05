@@ -390,7 +390,7 @@ function StageCluster({ cluster }: { cluster: NonNullable<StageBuild["cluster"]>
 
 /** The card on the right half: the build's real widget, larger than on the
     board, in a dashed ring of the maker's colour until it is whole. */
-const VERB_LABEL: Record<string, string> = { answer: "Answer", recap: "Catching up", mine: "Your part", go: "Going", game: "Games", edit: "Edit" };
+const VERB_LABEL: Record<string, string> = { answer: "answering", recap: "catching up", mine: "your part", go: "going", game: "games", edit: "changing it" };
 
 /** Another verb than make: no card, one slip (and offers to tap). The slip's
     tab says what kind of thing the space is saying; the first clause is the
@@ -1018,7 +1018,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
           <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" />
           {voice.muted && <path className="voice-stage-slash" d="M4 4l16 16" />}
         </svg>
-        <b>{voice.muted ? "Unmute" : "Mute"}</b>
+        <b>{voice.muted ? "unmute" : "mute"}</b>
       </button>
       <button
         type="button"
@@ -1032,7 +1032,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 12.5l4.5 4.5L19 7.5" />
         </svg>
-        <b>Finish</b>
+        <b>finish</b>
       </button>
     </div>
   );
@@ -1055,7 +1055,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
           </div>
         <span className="voice-stage-status" data-testid="voice-stage-status" style={{ "--i": 2 } as CSSProperties}>
           <i aria-hidden="true" />
-          {voice.muted ? "Muted" : "Listening"}
+          {voice.muted ? "muted" : "listening"}
         </span>
         <div className="voice-stage-wave-wrap" style={{ "--i": 3 } as CSSProperties}>
           <StageWave level={voice.muted ? silent : level} />
@@ -1095,7 +1095,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
           <div className="voice-two-bar">
             <span className="voice-stage-status" data-testid="voice-stage-status" data-mood={voice.muted ? "muted" : listening ? "listening" : "working"}>
               <i aria-hidden="true" />
-              {voice.muted ? "Muted" : listening ? "Listening" : reply ? (VERB_LABEL[reply.verb] ?? "Done") : build?.edit ? "Changing it" : found ? "Already here" : whole ? "Placing" : "Building"}
+              {voice.muted ? "muted" : listening ? "listening" : reply ? (VERB_LABEL[reply.verb] ?? "done") : build?.edit ? "changing it" : found ? "already here" : whole ? "placing" : "building"}
             </span>
             {controls(done)}
           </div>
@@ -1108,7 +1108,7 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
               <StageWords text={voice.transcript} live={listening} kind={build?.kind ?? null} asking={asking} />
             ) : (
               <p className="voice-two-words is-hint is-asking" data-testid="voice-stage-text">
-                Say what to add
+                say what to add
               </p>
             )}
           </div>
