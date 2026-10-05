@@ -175,6 +175,8 @@ function ContextDrawer({
   const t = traces[index];
   if (!t) return null;
   const mock = t.model === null;
+  // another verb than make: the card sections (guess, decide, route, context, cards, spot) don't apply
+  const nonMake = !!t.verb && t.verb.verb !== "make";
   return (
     <aside className="dev-context" data-testid="dev-context-drawer" aria-label="What happened on this ask">
       <header className="dev-context-head">
@@ -263,6 +265,12 @@ function ContextDrawer({
         )}
       </section>
 
+      {nonMake ? (
+        <section>
+          <p>not a card ask: no guess, no deal, no route, no context sent{t.calls.length ? ` · ${t.calls.length} retrieval call${t.calls.length === 1 ? "" : "s"} (Ultra)` : ""}{t.decides.length ? ` · ${t.decides.length} decide` : ""}</p>
+        </section>
+      ) : (
+      <>
       <section>
         <h3>2 · code's guess</h3>
         <p>
@@ -419,6 +427,8 @@ function ContextDrawer({
         <p>{t.place ?? "—"}</p>
       </section>
 
+      </>
+      )}
       <section>
         <h3>7 · stages, from the last word</h3>
         {mock ? (
