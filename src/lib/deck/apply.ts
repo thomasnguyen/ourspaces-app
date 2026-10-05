@@ -1,0 +1,59 @@
+import type { Widget } from "../../data/types";
+import { cardSize, getCard, CARD_IDS, type CardContext, type DealtCard } from "./catalog";
+import { checkSettings, type Schema } from "./schema";
+
+export type CardCheck =
+  | { ok: true; card: DealtCard; notes: string[] }
+  | { ok: false; reason: string };
+
+/**
+ * One parsed line of model output → a typed card, or a reason. Accepts
+ * `{"card","settings"}` and the flat `{"card","question",…}` slip. Never throws.
+ */
+export function checkCard(raw: unknown): CardCheck {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { ok: false, reason: "not an object" };
+  const { card: id, settings, ...flat } = raw as Record<string, unknown>;
+  if (typeof id !== "string") return { ok: false, reason: "no card id" };
+  const def = getCard(id.trim().toLowerCase());
+  if (!def) return { ok: false, reason: `unknown card ${id} (deck: ${CARD_IDS.join(", ")})` };
+  const r = checkSettings(def.settings as Schema, settings ?? flat);
+  if (!r.ok) return { ok: false, reason: `${def.id}: ${r.reason}` };
+  return { ok: true, card: { card: def.id, settings: r.value } as DealtCard, notes: r.notes };
+}
+
+export type Applied =
+  | { ok: true; widget: Widget; notes: string[] }
+  | { ok: false; reason: string };
+
+/**
+ * A dealt card → the widget row the canvas renders and Convex stores, at
+ * (0, 0): `placeCards` decides where it goes. Pure; takes raw model output
+ * or an already-checked card.
+ */
+export function applyCard(
+  card: unknown,
+  ctx: CardContext,
+  opts: { id?: string; z?: number } = {},
+): Applied {
+  const checked = checkCard(card);
+  if (!checked.ok) return checked;
+  const def = getCard(checked.card.card)!;
+  const size = cardSize(def);
+  // `build` is typed per card; the union lookup loses the pairing, the check above restores it.
+  const build = def.build as (s: unknown, c: CardContext) => Widget["data"];
+  return {
+    ok: true,
+    notes: checked.notes,
+    widget: {
+      id: opts.id ?? `deck-${def.id}-${Date.now().toString(36)}`,
+      type: def.type,
+      x: 0,
+      y: 0,
+      w: size.w,
+      h: size.h,
+      z: opts.z ?? 30,
+      ...("rotate" in def ? { rotate: def.rotate } : {}),
+      data: build(checked.card.settings, ctx),
+    },
+  };
+}

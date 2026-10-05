@@ -5,6 +5,8 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **The deck (2026-10-04):** `src/lib/deck/` — 17 existing widgets as typed cards a model can deal, `applyCard` (model JSON → widget row, rejects with a reason), `placeCards` (pure placement), `deckPrompt` + streaming `parseDeal` in the spike's one-card-per-line format. Prompt ≈ 2.8k chars / ~714 tokens. Not wired to the voice orb or Nemotron yet; next: the live call path, plus check-in / standings / pills cards. Lab: `?mock=1&deck=8#/space/crew`.
+
 - **Voice orb in the dock (2026-10-04):** the orb from the voice concepts
   (`nebius/refs/voice/01`) now leads the bottom dock in every space. Code,
   not an image: a WebGL shader in the crew/couple/trip colours. Tap → it lifts,

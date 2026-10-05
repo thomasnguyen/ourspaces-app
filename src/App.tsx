@@ -38,6 +38,7 @@ import {
 import { RECAP_LINES, type RecapTurn } from "./data/recap";
 import { DECISION_WIDGET, canvasSizeFor, getSpace, getWidgets } from "./data/spaces";
 import { createLabPeerFeed, labPeersRequested } from "./live/labPeers";
+import { dealDemo, deckLabRequested } from "./lib/deck/lab";
 import {
   MAIL_LAB_CAKE_ID,
   MAIL_LAB_HIDDEN,
@@ -393,6 +394,54 @@ export default function App() {
   const [editingWidgetId, setEditingWidgetId] = useState("");
   const [promoted, setPromoted] = useState(false);
   const [addedWidgets, setAddedWidgets] = useState<Record<string, Widget[]>>({});
+  /* `?deck=4` — the deck lab (src/lib/deck/lab.ts): a canned answer dealt
+     through parseDeal → applyCard → placeCards into the view you're looking at. */
+  useEffect(() => {
+    const lab = mockModeRequested() ? deckLabRequested() : null;
+    if (!lab) return;
+    const timer = window.setTimeout(() => {
+      const scroller = canvasViewportRef.current;
+      const canvas = scroller?.querySelector<HTMLElement>(".space-canvas");
+      if (!scroller || !canvas) return;
+      const scale = canvas.getBoundingClientRect().width / canvas.offsetWidth || 1;
+      const c = canvas.getBoundingClientRect();
+      const s = scroller.getBoundingClientRect();
+      const dockTop = document.querySelector(".action-dock")?.getBoundingClientRect().top ?? s.bottom;
+      const left = Math.max(s.left, c.left);
+      const top = Math.max(s.top, c.top);
+      const view = {
+        x: (left - c.left) / scale,
+        y: (top - c.top) / scale,
+        w: (Math.min(s.right, window.innerWidth) - left) / scale,
+        h: (Math.min(s.bottom, dockTop) - top) / scale,
+      };
+      // The board as drawn: tilt and content-grown heights included.
+      const board = Array.from(canvas.querySelectorAll<HTMLElement>("[data-widget-id]"), (el) => {
+        const r = el.getBoundingClientRect();
+        return { id: el.dataset.widgetId ?? "", x: (r.left - c.left) / scale, y: (r.top - c.top) / scale, w: r.width / scale, h: r.height / scale };
+      });
+      const people = getSpace(spaceId).members.map((m) => m.name);
+      const dealt = dealDemo(
+        lab,
+        { by: people[0] ?? "You", people, today: new Date().toISOString().slice(0, 10) },
+        board,
+        view,
+        { x: 0, y: 0, w: canvasSizeFor(spaceId).width, h: canvasSizeFor(spaceId).height },
+      );
+      setAddedWidgets((current) => ({ ...current, [spaceId]: dealt }));
+      // If the cluster landed outside the view, bring the camera to it.
+      // Two frames later, so the new cards already extend the scroll area.
+      const cardTop = Math.min(...dealt.map((w) => w.y));
+      const cardLeft = Math.min(...dealt.map((w) => w.x));
+      if (dealt.length && (cardTop < view.y || cardTop > view.y + view.h - 120 || cardLeft > view.x + view.w - 120)) {
+        requestAnimationFrame(() => requestAnimationFrame(() => scroller.scrollTo({
+          left: scroller.scrollLeft + (cardLeft - view.x - 24) * scale,
+          top: scroller.scrollTop + (cardTop - view.y - 24) * scale,
+        })));
+      }
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [spaceId]);
   const [widgetPlacements, setWidgetPlacements] = useState<
     Record<string, Record<string, WidgetPlacement>>
   >({});

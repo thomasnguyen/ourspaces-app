@@ -294,6 +294,8 @@ opens the space) · `components/JoinForm.tsx` (email → six digits →
 `live/adapt.ts` `spaceFromLive` (live row → the shape the canvas chrome reads;
 without it a new space renders as the group chat).
 
+**lib/deck/** — the deck a model deals from (no model call in here): `catalog.ts` (17 cards → existing widget types, settings schemas, `build`, `footprint`; left out: frame, sticker, media, linkCard/linkShelf, weather/sports/backendLive, chat, letter, cozyColor, the build room four) · `schema.ts` (field DSL: `Infer` types + `checkSettings`, never throws) · `apply.ts` (`checkCard`, `applyCard` → a `Widget` at 0,0) · `place.ts` (`placeCards`: one cluster in reading order, beside the selection or nearest clear spot in the view, never on a widget, wider berth for held ones) · `prompt.ts` (`deckPrompt`, `dealTurn`, `parseDeal` — commits each object as its brace closes) · `lab.ts` (`?mock=1&deck=<1-8>[&deckSel=<id>]`, hooked in App.tsx next to `addedWidgets`). Print: `node scripts/print-deck.mjs [--prompt]`. Feature file `features/deck.md`.
+
 **lib/** — `routes.ts` (hash + invite URLs) · `widgetDefaults.ts`
 (`WIDGET_BLUEPRINTS`) · `widgetLabels.ts` · `recapBoard.ts` (catch-me-up ↔
 board: `recapTargetsOf` card labels, `citesIn` title/type-word matching for

@@ -10,6 +10,7 @@ id named here exists in `src/`.
 | [wheel](wheel.md) | house | idle · spinning · landed |
 | [recap](recap.md) | crew dock | closed · open · landed |
 | [dock](dock.md) | crew dock | idle · sound · recap |
+| [deck](deck.md) | crew board | one · four · eight · beside |
 
 ## Header format
 
