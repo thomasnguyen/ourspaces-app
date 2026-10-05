@@ -12,6 +12,8 @@
     min-height: 0 !important;
     height: auto !important;
   }
+  /* the room's name takes two lines here: keep the first frame label clear of the header chips */
+  .paper-bg[data-space-id="family"] .space-canvas::before { content: ""; flex: none; height: 22px; }
   .paper-bg[data-space-id="family"] .widget-group {
     position: relative !important;
     inset: auto !important;
