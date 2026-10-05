@@ -80,7 +80,7 @@ export const CREW_WIDGET_THREADS: Record<string, ChatThread> = {
   },
   countdown: {
     widgetId: "countdown",
-    label: "7 days left",
+    label: "6 days left",
     messages: [
       { id: "c1", from: "Kenji", text: "that's a saturday right", time: "1h" },
       { id: "c2", from: "Sam", text: "yep perfect for backyard", time: "45m" },

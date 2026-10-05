@@ -12,6 +12,33 @@ function isoDaysFromNow(days: number): string {
   ).padStart(2, "0")}`;
 }
 
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+/** "nov 6" style, `days` from today — seeded trip dates stay in the future. */
+function monthDayFromNow(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+/** The japan trip: starts about a month out. Getters, so the dates are read
+ * when the room is seeded or refreshed, not when this module first loaded. */
+function japanItinerary() {
+  const start = 32;
+  return {
+    get title() {
+      return `japan · ${monthDayFromNow(start)}–${monthDayFromNow(start + 8).split(" ")[1]}`;
+    },
+    get days() {
+      return [
+        { day: monthDayFromNow(start), plan: "land HND · ramen night" },
+        { day: monthDayFromNow(start + 2), plan: "kyoto day trip" },
+        { day: monthDayFromNow(start + 5), plan: "??? — forward a booking" },
+      ];
+    },
+  };
+}
+
 const CREW_MEMBERS = [
   { name: "Maya", color: "#7c5cff", online: true },
   { name: "Jules", color: "#e63da8", online: true },
@@ -210,8 +237,12 @@ export const CREW_WIDGETS: Widget[] = [
     rotate: -1.8,
     data: {
       event: "maya's bday 🎂",
-      targetDate: isoDaysFromNow(7),
-      startDate: isoDaysFromNow(-5),
+      get targetDate() {
+        return isoDaysFromNow(6);
+      },
+      get startDate() {
+        return isoDaysFromNow(-5);
+      },
       hyped: ["Maya", "Jules", "Sam", "Kenji"],
     },
   },
@@ -357,6 +388,8 @@ export const CREW_WIDGETS: Widget[] = [
         { label: "matcha cake recipe", url: "bonappetit.com", by: "Maya" },
         { label: "sam's place (maps)", url: "maps.google.com", by: "Sam" },
         { label: "party playlist", url: "open.spotify.com", by: "Jules" },
+        { label: "tacos on 4th (maps)", url: "maps.google.com", by: "Ash" },
+        { label: "ramen on 3rd (maps)", url: "maps.google.com", by: "Rio" },
       ],
     },
   },
@@ -469,15 +502,60 @@ export const CREW_WIDGETS: Widget[] = [
     h: 200,
     z: 2,
     rotate: 1,
+    data: japanItinerary(),
+  },
+  // ── past dinners: finished polls, the top vote won ──
+  {
+    id: "poll-last-sat",
+    type: "poll",
+    x: 1392,
+    y: 60,
+    w: 200,
+    h: 170,
+    z: 3,
+    rotate: -1,
     data: {
-      title: "japan · nov 6–14",
-      days: [
-        { day: "nov 6", plan: "land HND · ramen night" },
-        { day: "nov 8", plan: "kyoto day trip" },
-        { day: "nov 11", plan: "??? — forward a booking" },
+      question: "where we ate last sat?",
+      options: [
+        { id: "a", label: "sam's place", votes: 4, total: 6, voters: ["Maya", "Jules", "Sam", "Kenji"] },
+        { id: "b", label: "tacos on 4th", votes: 2, total: 6, voters: ["Rio", "Ash"] },
       ],
     },
   },
+  {
+    id: "poll-fri-ramen",
+    type: "poll",
+    x: 1392,
+    y: 290,
+    w: 200,
+    h: 170,
+    z: 3,
+    rotate: 1,
+    data: {
+      question: "friday dinner?",
+      options: [
+        { id: "a", label: "ramen on 3rd", votes: 3, total: 5, voters: ["Maya", "Rio", "Kenji"] },
+        { id: "b", label: "sam's place", votes: 2, total: 5, voters: ["Jules", "Sam"] },
+      ],
+    },
+  },
+  {
+    id: "poll-cook-or-out",
+    type: "poll",
+    x: 1392,
+    y: 520,
+    w: 200,
+    h: 170,
+    z: 3,
+    data: {
+      question: "cook or takeout?",
+      options: [
+        { id: "a", label: "cook", votes: 4, total: 6, voters: ["Maya", "Jules", "Sam", "Ash"] },
+        { id: "b", label: "takeout", votes: 2, total: 6, voters: ["Kenji", "Rio"] },
+      ],
+    },
+  },
+
   {
     id: "availability",
     type: "availability",
@@ -657,8 +735,12 @@ export const COUPLE_WIDGETS: Widget[] = [
     rotate: -2,
     data: {
       event: "half-year ♥",
-      targetDate: isoDaysFromNow(142),
-      startDate: isoDaysFromNow(-10),
+      get targetDate() {
+        return isoDaysFromNow(142);
+      },
+      get startDate() {
+        return isoDaysFromNow(-10);
+      },
       hyped: ["ren", "sky"],
     },
   },
@@ -673,8 +755,12 @@ export const COUPLE_WIDGETS: Widget[] = [
     rotate: 2,
     data: {
       event: "SFO ✈",
-      targetDate: isoDaysFromNow(47),
-      startDate: isoDaysFromNow(-30),
+      get targetDate() {
+        return isoDaysFromNow(47);
+      },
+      get startDate() {
+        return isoDaysFromNow(-30);
+      },
       hyped: ["ren", "sky"],
     },
   },
@@ -777,6 +863,41 @@ export const COUPLE_WIDGETS: Widget[] = [
       text: "hey you,\n\nI walked past the bakery on Sokcho street and it smelled like that morning we got lost. 47 days now. I keep counting.\n\nMail one back: ustwo@agentmail.to — it lands right here.\n\nlove, ren",
       receivedAt: Date.now() - 2 * 86_400_000,
       sealed: true,
+    },
+  },
+  {
+    id: "us-usual-days",
+    type: "availability",
+    x: 330,
+    y: 650,
+    w: 300,
+    h: 190,
+    z: 3,
+    data: {
+      title: "our usual call days",
+      days: ["Wed", "Sat", "Sun"],
+      members: [
+        { name: "sky", slots: [true, true, false] },
+        { name: "ren", slots: [true, true, true] },
+      ],
+      best: "Sat",
+      tone: "sky",
+    },
+  },
+  {
+    id: "us-call-times",
+    type: "note",
+    x: 640,
+    y: 780,
+    w: 280,
+    h: 130,
+    z: 2,
+    rotate: -1,
+    data: {
+      text: "sat 7pm your time = sun 11am mine. same call, two clocks",
+      author: "ren",
+      tone: "warm",
+      kicker: "our call",
     },
   },
   {
@@ -887,6 +1008,38 @@ export const HOUSE_WIDGETS: Widget[] = [
         { from: "theo", text: "the dishwasher is CLEAN btw" },
         { from: "marco", text: "rent due friday 🙏" },
         { from: "noor", text: "watered your plant. you're welcome" },
+      ],
+    },
+  },
+  {
+    id: "house-away",
+    type: "frame",
+    x: 48,
+    y: 640,
+    w: 300,
+    h: 150,
+    z: 1,
+    data: { title: "theo is out this week", subtitle: "back sunday" },
+  },
+  {
+    id: "house-chores",
+    type: "potluck",
+    x: 368,
+    y: 640,
+    w: 400,
+    h: 190,
+    z: 3,
+    rotate: 1,
+    data: {
+      title: "chores this week",
+      kicker: "house chores",
+      tone: "butter",
+      openCount: 1,
+      items: [
+        { name: "trash + recycling", by: "gigi", claimed: true },
+        { name: "bathroom", by: "marco", claimed: true },
+        { name: "vacuum", by: "noor", claimed: true },
+        { name: "restock dish soap", by: null, claimed: false },
       ],
     },
   },
