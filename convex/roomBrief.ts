@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery, query, type QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
+import type { RoomFacts } from "../src/lib/deck/resolve";
 
 /**
  * The room brief (path-to-win §3 "The room has a brain"): a few short lines a
@@ -79,7 +80,7 @@ const EMOJI_RE = /\p{Extended_Pictographic}/u;
 type Fact = { kind: string; what: string; n: number; from: string[] };
 /** One line of the brief and the rows behind it ("votes 5 · widgets rsvp"). */
 type BriefLine = { text: string; src: string };
-export type Brief = { text: string; facts: Fact[]; lines: BriefLine[] };
+export type Brief = { text: string; facts: Fact[]; lines: BriefLine[]; room: RoomFacts };
 
 type Data = Record<string, unknown>;
 const str = (x: unknown) => (typeof x === "string" ? x.trim() : "");
@@ -248,6 +249,7 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
   /* Live polls (leader from the votes table) and RSVPs. */
   const live: string[] = [];
   const pollFacts: Fact[] = [];
+  const pollRows: RoomFacts["polls"] = [];
   polls.forEach((p, i) => {
     if (!own.includes(p)) return;
     const options = ((p.data as Data).options as { id: string; label: string }[] | undefined) ?? [];
@@ -257,11 +259,13 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
     const [topId, top] = [...per.entries()].sort((a, b) => b[1] - a[1])[0] ?? ["", 0];
     const tied = [...per.values()].filter((n) => n === top).length > 1;
     const label = options.find((o) => o.id === topId)?.label;
+    pollRows.push({ title: titleOf(p), options: options.map((o) => o.label), leader: total && label && !tied ? label : null, lead: top, votes: total });
     if (!total || !label) return;
     live.push(`"${titleOf(p)}": ${tied ? "tied" : `${label} leads ${top} of ${total}`}`);
     pollFacts.push({ kind: "poll", what: `${titleOf(p)} → ${tied ? "tied" : label}`, n: total, from: [`${total} votes`] });
   });
   let rsvpRows = 0;
+  const rsvps: RoomFacts["rsvps"] = [];
   for (const w of own.filter((w) => w.type === "rsvp")) {
     const d = w.data as { responses?: { name?: string; status?: string }[]; waitingOn?: string[] };
     const rs = d.responses ?? [];
@@ -272,6 +276,7 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
     if (of("no").length) parts.push(`no ${of("no").join(", ")}`);
     if (of("maybe").length) parts.push(`maybe ${of("maybe").join(", ")}`);
     if (d.waitingOn?.length) parts.push(`no answer yet ${d.waitingOn.join(", ")}`);
+    rsvps.push({ title: titleOf(w), yes: of("yes") as string[], no: of("no") as string[], maybe: of("maybe") as string[], waiting: d.waitingOn ?? [] });
     live.push(`"${titleOf(w)}": ${parts.join("; ")}`);
   }
 
@@ -364,7 +369,83 @@ export async function buildBrief(ctx: QueryCtx, spaceId: Id<"spaces">, now = Dat
     { kind: "group", what: ruleNote, n: group.length, from: [`${roster.length} member rows`] },
     ...pollFacts, ...dayFacts, ...timeFacts, ...termFacts,
   ];
-  return { text, facts, lines: lines.map(({ text, src }) => ({ text, src })) };
+  const room = factsOf({ name: space.name, today, t0, group, away, rsvps, polls: pollRows, own, zones, said, dayNo });
+  return { text, facts, lines: lines.map(({ text, src }) => ({ text, src })), room };
+}
+
+/**
+ * The brief's facts as data, for the room tokens (`src/lib/deck/resolve.ts`):
+ * the same rows the text is built from, so a token and a brief line never
+ * disagree. Shown whole by `inspect` and `roomFacts`.
+ */
+function factsOf(r: {
+  name: string;
+  today: string;
+  t0: number;
+  group: string[];
+  away: Map<string, string>;
+  rsvps: RoomFacts["rsvps"];
+  polls: RoomFacts["polls"];
+  own: Doc<"widgets">[];
+  zones: { label: string; tz: string }[];
+  said: Doc<"widgets">[];
+  dayNo: (iso: string) => number;
+}): RoomFacts {
+  const of = (type: string) => r.own.filter((w) => w.type === type);
+  const splits = of("expenseSplit").map((w) => {
+    const d = w.data as { total?: number; splits?: { name: string; paid?: number }[]; lastEmail?: { label?: string } };
+    const ss = d.splits ?? [];
+    const top = [...ss].sort((a, b) => (b.paid ?? 0) - (a.paid ?? 0))[0];
+    return {
+      title: titleOf(w),
+      also: d.lastEmail?.label ? [d.lastEmail.label] : [],
+      total: d.total ?? 0,
+      people: ss.map((s) => s.name),
+      payer: top?.paid ? top.name : null,
+      paid: top?.paid ?? 0,
+    };
+  });
+  const wheels = of("wheel").map((w) => {
+    const d = w.data as { slices?: { label: string }[]; resultIndex?: number; spinNonce?: number };
+    return { title: titleOf(w), options: (d.slices ?? []).map((x) => x.label), last: d.slices?.[d.resultIndex ?? -1]?.label ?? null };
+  });
+  const lists = of("potluck").map((w) => ({
+    title: titleOf(w),
+    items: (((w.data as Data).items as { name?: string }[] | undefined) ?? []).map((it) => clip(str(it.name), 24)).filter(Boolean).slice(0, 8),
+  }));
+  const places: string[] = [];
+  for (const w of [...of("linkShelf"), ...of("linkCard")]) {
+    const d = w.data as { links?: { label?: string; url?: string }[]; label?: string; title?: string; url?: string };
+    for (const l of d.links ?? [{ label: d.label ?? d.title, url: d.url }]) {
+      const label = str(l.label);
+      if (label && (/maps|yelp|opentable|resy/i.test(str(l.url)) || /\b(place|spot|restaurant|cafe|bar)\b/i.test(label))) places.push(label.replace(/\s*\((maps|map)\)\s*$/i, ""));
+    }
+  }
+  const dates = of("countdown")
+    .map((w) => ({ title: titleOf(w), date: str((w.data as Data).targetDate) }))
+    .filter((c) => /^\d{4}-\d{2}-\d{2}$/.test(c.date))
+    .map((c) => ({ ...c, days: r.dayNo(c.date) - r.t0 }))
+    .sort((a, b) => a.days - b.days);
+  const board = r.said
+    .filter((w) => CARD_NAME[w.type] && w.type !== "frame" && titleOf(w))
+    .map((w) => ({ card: CARD_NAME[w.type], title: titleOf(w) }));
+  const titles = r.said.map(titleOf).filter((t) => /\p{L}/u.test(t));
+  return {
+    room: r.name,
+    today: r.today,
+    people: r.group,
+    away: [...r.away].map(([name, why]) => ({ name, why })),
+    rsvps: r.rsvps,
+    polls: r.polls,
+    splits,
+    wheels,
+    lists,
+    places,
+    dates,
+    clocks: r.zones,
+    board,
+    lowercase: titles.length >= 4 && titles.filter((t) => /^[^\p{L}]*\p{Ll}/u.test(t)).length / titles.length >= 0.7,
+  };
 }
 
 /** Rebuilds one room's brief and stores it. */
@@ -375,7 +456,7 @@ export const refresh = internalMutation({
     const now = Date.now();
     const brief = await buildBrief(ctx, spaceId, now);
     if (!brief) return null;
-    const row = { spaceId, text: brief.text, facts: JSON.stringify({ lines: brief.lines, facts: brief.facts }), at: now };
+    const row = { spaceId, text: brief.text, facts: JSON.stringify({ lines: brief.lines, facts: brief.facts, room: brief.room }), at: now };
     const old = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
     if (old) await ctx.db.replace("briefs", old._id, row);
     else await ctx.db.insert("briefs", row);
@@ -415,18 +496,40 @@ export const getBrief = internalQuery({
 });
 
 const lineV = v.object({ text: v.string(), src: v.string() });
+const names = v.array(v.string());
+/** `RoomFacts` as a validator, for the inspector and `roomFacts`. */
+const roomV = v.object({
+  room: v.string(),
+  today: v.string(),
+  people: names,
+  away: v.array(v.object({ name: v.string(), why: v.string() })),
+  rsvps: v.array(v.object({ title: v.string(), yes: names, no: names, maybe: names, waiting: names })),
+  polls: v.array(v.object({ title: v.string(), options: names, leader: v.union(v.string(), v.null()), lead: v.number(), votes: v.number() })),
+  splits: v.array(v.object({ title: v.string(), also: names, total: v.number(), people: names, payer: v.union(v.string(), v.null()), paid: v.number() })),
+  wheels: v.array(v.object({ title: v.string(), options: names, last: v.union(v.string(), v.null()) })),
+  lists: v.array(v.object({ title: v.string(), items: names })),
+  places: names,
+  dates: v.array(v.object({ title: v.string(), date: v.string(), days: v.number() })),
+  clocks: v.array(v.object({ label: v.string(), tz: v.string() })),
+  board: v.array(v.object({ card: v.string(), title: v.string() })),
+  lowercase: v.boolean(),
+});
 
 /** For the dev inspector: the stored brief, its age, and which table and how
  * many rows back each line. Read-only, and nothing in it that the room
  * doesn't already show everyone in it (names, board text, counts). */
 export const inspect = query({
   args: { spaceId: v.id("spaces"), now: v.number() },
-  returns: v.union(v.null(), v.object({ text: v.string(), chars: v.number(), at: v.number(), ageMs: v.number(), lines: v.array(lineV) })),
+  returns: v.union(
+    v.null(),
+    v.object({ text: v.string(), chars: v.number(), at: v.number(), ageMs: v.number(), lines: v.array(lineV), room: v.optional(roomV) }),
+  ),
   handler: async (ctx, { spaceId, now }) => {
     const row = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
     if (!row) return null;
-    const lines = (JSON.parse(row.facts) as { lines?: BriefLine[] }).lines ?? [];
-    return { text: row.text, chars: row.text.length, at: row.at, ageMs: Math.max(0, now - row.at), lines };
+    // Briefs stored before the room facts existed have no `room` until the next refresh.
+    const { lines = [], room } = JSON.parse(row.facts) as { lines?: BriefLine[]; room?: RoomFacts };
+    return { text: row.text, chars: row.text.length, at: row.at, ageMs: Math.max(0, now - row.at), lines, ...(room ? { room } : {}) };
   },
 });
 
@@ -439,5 +542,27 @@ export const preview = internalQuery({
     if (!space) return null;
     const brief = await buildBrief(ctx, space._id, now);
     return brief && { text: brief.text, chars: brief.text.length, lines: brief.lines, facts: JSON.stringify(brief.facts) };
+  },
+});
+
+/** The room facts the tokens expand from, from the stored brief (what the ask
+ * will read). Dev and the token resolver's eval read this. */
+export const getRoomFacts = internalQuery({
+  args: { spaceId: v.id("spaces") },
+  returns: v.union(v.null(), roomV),
+  handler: async (ctx, { spaceId }) => {
+    const row = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
+    return row ? ((JSON.parse(row.facts) as { room?: RoomFacts }).room ?? null) : null;
+  },
+});
+
+/** Dev check: fresh room facts by slug, without storing them. */
+export const roomFacts = internalQuery({
+  args: { slug: v.string(), now: v.number() },
+  returns: v.union(v.null(), roomV),
+  handler: async (ctx, { slug, now }) => {
+    const space = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", slug)).first();
+    if (!space) return null;
+    return (await buildBrief(ctx, space._id, now))?.room ?? null;
   },
 });
