@@ -104,7 +104,7 @@ for (const cfg of Object.keys(CONFIGS)) {
       config: cfg, trial, model: CONFIGS[cfg].model, thinking: CONFIGS[cfg].thinking, n: which.length,
       clear: t, ambiguous: tally(which.filter((s) => s.label.ambiguous), answers),
       groups: full ? byGroup(answers) : undefined, kinds: full ? byKind(answers) : undefined, labels: full ? byLabel(answers) : undefined,
-      ms: { median: median(ms), p90: pct(ms, 0.9), max: Math.max(...ms) }, tokens: { in: tin, out: tout }, usd: dollars, usdPerDecision: dollars / which.length,
+      ms: { median: median(ms), p90: pct(ms, 0.9), max: Math.max(...ms) }, msAnswered: (() => { const m = which.filter((s) => rows[s.id].answer).map((s) => rows[s.id].ms); return { median: median(m), p90: pct(m, 0.9), max: Math.max(...m) }; })(), failed: which.filter((s) => !rows[s.id].answer).map((s) => ({ id: s.id, why: rows[s.id].error ?? `finish ${rows[s.id].finish}`, ms: rows[s.id].ms })), tokens: { in: tin, out: tout }, usd: dollars, usdPerDecision: dollars / which.length,
       misses: which.filter((s) => judge(s.label, answers[s.id]) !== "right").map((s) => ({ id: s.id, ambiguous: Boolean(s.label.ambiguous), want: s.label.verdict, wantWho: s.label.who, got: answers[s.id] ?? null, result: judge(s.label, answers[s.id]) })),
     };
   }
@@ -112,11 +112,13 @@ for (const cfg of Object.keys(CONFIGS)) {
   const a = cached(cfg, 1), b = cached(cfg, 2);
   const both = data.subset.filter((id) => a[id] && b[id]);
   if (both.length) {
-    const flips = both.filter((id) => (a[id].answer?.verdict ?? "invalid") !== (b[id].answer?.verdict ?? "invalid"));
+    const valid = both.filter((id) => a[id].answer && b[id].answer);
+    const flips = valid.filter((id) => a[id].answer.verdict !== b[id].answer.verdict);
+    const invalid = both.filter((id) => !a[id].answer || !b[id].answer);
     const sub = list.filter((s) => both.includes(s.id));
     const t1 = tally(sub, Object.fromEntries(both.map((id) => [id, a[id].answer]))), t2 = tally(sub, Object.fromEntries(both.map((id) => [id, b[id].answer])));
-    out.arms[`${cfg}#variance`] = { n: both.length, verdictFlips: flips.length, flipped: flips, trial1: { right: t1.right, harmful: t1.harmful, held: t1.held }, trial2: { right: t2.right, harmful: t2.harmful, held: t2.held } };
-    console.log(`${CONFIGS[cfg].label} variance on ${both.length}: ${flips.length} verdicts changed between trials (${flips.join(", ") || "none"}); right ${t1.right} → ${t2.right}, harmful ${t1.harmful} → ${t2.harmful}, wrongly held ${t1.held} → ${t2.held}`);
+    out.arms[`${cfg}#variance`] = { n: both.length, validPairs: valid.length, verdictFlips: flips.length, flipped: flips, invalidInATrial: invalid, trial1: { right: t1.right, harmful: t1.harmful, held: t1.held }, trial2: { right: t2.right, harmful: t2.harmful, held: t2.held } };
+    console.log(`${CONFIGS[cfg].label} variance on ${both.length}: ${flips.length} of ${valid.length} valid pairs changed verdict (${flips.join(", ") || "none"}), ${invalid.length} invalid in a trial (${invalid.join(", ") || "none"}); right ${t1.right} → ${t2.right}, harmful ${t1.harmful} → ${t2.harmful}, wrongly held ${t1.held} → ${t2.held}`);
   }
 }
 fs.writeFileSync(path.join(HERE, "results.json"), JSON.stringify(out, null, 1));
