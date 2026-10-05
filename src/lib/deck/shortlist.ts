@@ -43,6 +43,8 @@ export function shortlistDeck(r: {
   facts?: string[];
   /** The board's own cards, by deck card and title. */
   board?: { card: string; title: string }[];
+  /** The flow code picked with the room's facts (null: none); unset = from the words alone. */
+  flow?: string | null;
 }): Shortlist {
   const out: string[] = [];
   const why: string[] = [];
@@ -55,7 +57,7 @@ export function shortlistDeck(r: {
   };
   const named = guessCards(r.said);
   // a flow's words name it (code): it leads, its two cards follow
-  const flow = flowFor(r.said);
+  const flow = r.flow !== undefined ? r.flow : flowFor(r.said);
   if (flow) add([flow], "the words name a flow");
   // "challenge" names the recipe; its lead card (the check-in) is the cue
   if (/\bchallenge\b/i.test(r.said)) add(["challenge"], "the words say challenge");

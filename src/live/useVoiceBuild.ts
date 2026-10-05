@@ -517,7 +517,7 @@ const needsCardDecide = (said: string) => new Set(guessCards(said)).size !== 1;
 function deckFor(s: Session, f: RoomFacts | null, route: AskRoute, said: string, hint: string | null) {
   const decided = s.decides.filter((d) => d.back && d.card).at(-1);
   const picks = decided ? [decided.card!, ...decided.top.filter((t) => t.p >= 0.15).map((t) => t.card)] : [];
-  return shortlistDeck({ said, decided: [...(hint ? [hint] : []), ...picks], facts: route.facts, board: f?.board });
+  return shortlistDeck({ said, decided: [...(hint ? [hint] : []), ...picks], facts: route.facts, board: f?.board, flow: flowFor(said, f) });
 }
 
 /** The call to finish on for these words: the one told the decided card, else the newest. */
