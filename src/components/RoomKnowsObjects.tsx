@@ -175,7 +175,13 @@ function body(line: KnowLine, ctx: KnowsCtx): { form: string; head?: ReactNode; 
   }
   if (kind === "places") {
     const at = line.text.indexOf(":");
-    const spots = line.text.slice(at + 1).split(",").map((s) => s.trim()).filter(Boolean);
+    // a place's own comma ("lake loop, 5 mi") stays inside its slip: a piece that starts with a number belongs to the one before
+    const spots = line.text
+      .slice(at + 1)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .reduce<string[]>((all, s) => (all.length && /^\d/.test(s) ? [...all.slice(0, -1), `${all[all.length - 1]}, ${s}`] : [...all, s]), []);
     const lead = /and (.+?) is ahead in ".*" (\d+ of \d+)/.exec(line.why);
     return {
       form: "slips",
@@ -357,7 +363,7 @@ export function KnowObject({ line, ctx, i }: { line: KnowLine; ctx: KnowsCtx; i:
         ) : made ? (
           <span className={`knows-tag is-${line.status}`}>{line.status}</span>
         ) : (
-          <button type="button" className="knows-act" data-testid="room-knows-forget" onClick={() => ctx.onChange({ kind: "forget", key: line.key, text: line.text })}>
+          <button type="button" className="knows-act is-forget" data-testid="room-knows-forget" onClick={() => ctx.onChange({ kind: "forget", key: line.key, text: line.text })}>
             cross out
           </button>
         )}

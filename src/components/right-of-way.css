@@ -212,14 +212,72 @@
   }
 }
 
-/* What this space knows: "what it held back" */
+/* What this space knows: "what it held back". Paper like the rest of the
+   wall: one slip per time it waited or wouldn't, the ask on top, a stamp for
+   what it did (lime: it waited and landed · dashed: still waiting or dropped
+   · orange: it didn't). The sheet runs the full width under the others. */
+.knows-sheet.is-d {
+  grid-column: 1 / -1;
+}
+.knows-sec.row-held-back ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px 18px;
+}
 .row-held-back li {
   display: grid;
-  gap: 2px;
-  font: 400 14px/1.35 var(--font-sans);
+  width: min(100%, 320px);
+  gap: 9px;
+  padding: 13px 15px 14px;
+  border: 2px solid var(--color-ink);
+  border-radius: 14px;
+  background: var(--color-card);
+  box-shadow: 4px 4px 0 var(--color-ink);
+  color: var(--color-ink);
+  font: 500 13px/1.35 var(--font-sans);
+  rotate: calc((mod(var(--i, 0), 3) - 1) * 0.7deg);
+  animation: row-held-in var(--dur-arrive) var(--ease-pop) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
 }
 .row-held-asked {
-  opacity: 0.65;
+  font: 800 17px/1.15 var(--font-display);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.row-held-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 8px;
+  color: var(--color-muted);
+}
+.row-held-line b {
+  padding: 3px 9px 4px;
+  border: 2px solid var(--color-ink);
+  border-radius: 999px;
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.row-held-back li[data-tone="dropped"] .row-held-line b,
+.row-held-back li[data-tone="waiting"] .row-held-line b {
+  border-style: dashed;
+  background: transparent;
+}
+.row-held-back li[data-tone="never"] .row-held-line b {
+  background: var(--color-trip);
+}
+.row-held-back li[data-tone="aside"] .row-held-line b {
+  background: var(--color-card);
+}
+@keyframes row-held-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    translate: 0 8px;
+  }
 }
 .row-held-empty {
   opacity: 0.6;
@@ -240,7 +298,8 @@
   .row-halo.is-letting-go,
   .row-ghost,
   .row-ghost-dots i,
-  [data-ghost-landed] {
+  [data-ghost-landed],
+  .row-held-back li {
     animation: none;
   }
   .row-halo.is-letting-go {

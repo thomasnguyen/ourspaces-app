@@ -612,6 +612,23 @@ button.knows-fact:not(:disabled):hover .knows-go {
   color: white;
 }
 
+/* "cross out" waits for the pointer: a wall of pills on every object read as a form. Touch keeps them. */
+@media (hover: hover) {
+  .knows-act.is-forget {
+    opacity: 0;
+    transition:
+      opacity var(--dur-quick) var(--ease-glide),
+      background var(--dur-quick) var(--ease-glide),
+      color var(--dur-quick) var(--ease-glide),
+      border-color var(--dur-quick) var(--ease-glide);
+  }
+
+  .knows-line:hover .knows-act.is-forget,
+  .knows-act.is-forget:focus-visible {
+    opacity: 1;
+  }
+}
+
 .knows-tag {
   padding: 2px 9px 3px;
   border-radius: var(--radius-pill);

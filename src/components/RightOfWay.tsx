@@ -238,18 +238,26 @@ export function HeldBack({ rows }: { rows: HeldBackRow[] }) {
           {rows.map((r) => {
             const o = r.outcome ? parse<{ state: string; ms: number; on: string; why?: string }>(r.outcome) : null;
             const asked = r.by === "the space" ? `the space's hand: ${r.text || r.kind}` : `${r.by.toLowerCase()} asked: ${r.text || r.kind}`;
-            const line =
+            // a stamp (what it did about it) and the rest of the line
+            const [tone, stamp, rest] =
               r.verdict === "wait"
                 ? o
-                  ? `waited ${(o.ms / 1000).toFixed(1)} s for ${o.on.toLowerCase()} · ${o.state === "landed" ? "then it landed" : o.state === "expired" ? "gave up after 30 s" : o.state === "cancelled" ? "cancelled" : `dropped: ${o.why ?? "it had changed"}`}`
-                  : `waiting: ${r.reason}`
+                  ? [
+                      o.state === "landed" ? "landed" : "dropped",
+                      `waited ${(o.ms / 1000).toFixed(1)} s for ${o.on.toLowerCase()}`,
+                      o.state === "landed" ? "then it landed" : o.state === "expired" ? "gave up after 30 s" : o.state === "cancelled" ? "cancelled" : `dropped: ${o.why ?? "it had changed"}`,
+                    ]
+                  : ["waiting", "waiting", r.reason]
                 : r.kind === "build"
-                  ? r.reason
-                  : `didn't: ${r.reason}`;
+                  ? ["aside", "moved aside", r.reason]
+                  : ["never", "didn't", r.reason];
             return (
-              <li key={r.id} data-verdict={r.verdict}>
+              <li key={r.id} data-verdict={r.verdict} data-tone={tone} style={{ "--i": rows.indexOf(r) } as CSSProperties}>
                 <span className="row-held-asked">{r.verdict === "wait" || r.kind !== "build" ? asked : `${r.by.toLowerCase()}'s new card`}</span>
-                <span className="row-held-line">{line}</span>
+                <span className="row-held-line">
+                  <b>{stamp}</b>
+                  {rest}
+                </span>
               </li>
             );
           })}
