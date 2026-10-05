@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import type { Widget } from "../data/types";
 import type { AskTrace, StageName, VoiceFound, VoiceLanded, VoiceReceipt, VoiceShell } from "../live/useVoiceBuild";
+import { feedVoiceStage } from "../lib/voiceStage";
 import type { ResolveNote, RoomFacts } from "../lib/deck";
 
 /** The dev readout and drawer show on the dev lane, or anywhere with `?timing=1`
@@ -386,7 +388,7 @@ function ContextDrawer({
       <section>
         <h3>7 · stages, from the last word</h3>
         {mock ? (
-          <p>not timed: the stand-in waits on purpose</p>
+          <p>simulated from measurements (src/lib/voiceTimings.ts): no model ran, so nothing here was timed</p>
         ) : (
           <table>
             <tbody>
@@ -413,6 +415,7 @@ function ContextDrawer({
  * readout at the bottom, which opens the context drawer.
  */
 export function VoiceBuildLayer({
+  drafts,
   shell,
   landed,
   found,
@@ -422,6 +425,8 @@ export function VoiceBuildLayer({
   color,
   by,
 }: {
+  /** The local skeleton / card, for the voice stage (lib/voiceStage.ts). */
+  drafts: Widget[];
   shell: VoiceShell | null;
   landed: VoiceLanded | null;
   found?: VoiceFound | null;
@@ -433,6 +438,8 @@ export function VoiceBuildLayer({
   by: string;
 }) {
   const [dev] = useState(devMode);
+  // The voice stage shows this build on its right half; it reads it through this one call.
+  useEffect(() => feedVoiceStage({ drafts, shell, landed, found: found ?? null, receipt, traces, color, by }), [drafts, shell, landed, found, receipt, traces, color, by]);
   const [open, setOpen] = useState<number | null>(null);
   const tint = { "--maker": color } as CSSProperties;
   const latest = traces[0];
@@ -517,7 +524,7 @@ export function VoiceBuildLayer({
               <span>nothing written</span>
             </>
           ) : latest.model === null && latest.done ? (
-            <span>stand-in · no model ran · not timed</span>
+            <span>simulated from measurements · no model ran</span>
           ) : (
             <>
               <span data-testid="dev-readout-route">{routeLabel(latest) ?? latest.model ?? "…"}</span>

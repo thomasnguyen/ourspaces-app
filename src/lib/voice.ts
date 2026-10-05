@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { sentenceHangs } from "./deck/guess";
+import { VOICE_TIMINGS, voiceSlow } from "./voiceTimings";
 
 /** The dock orb's three moods: resting, hearing you, and chewing on it. */
 export type VoiceState = "idle" | "listening" | "working";
@@ -35,7 +36,7 @@ function follow(level: { current: number }, target: number) {
 /** One scripted word's spoken length: ~180 words a minute, longer words longer. */
 function wordMs(word: string) {
   const syllables = Math.max(1, word.toLowerCase().replace(/[^a-z]/g, "").match(/[aeiouy]+/g)?.length ?? 1);
-  return 200 + 70 * syllables;
+  return VOICE_TIMINGS.wordBase.ms + VOICE_TIMINGS.wordPerSyllable.ms * syllables;
 }
 
 /** A hesitation mid-ask, written into a script as "…" or "..." ("…500": 500 ms). */
@@ -54,10 +55,13 @@ function runScript(
   level: { current: number },
   onText: (text: string) => void,
   onDone: () => void,
+  talking = false,
 ) {
   const q = new URLSearchParams(window.location.search);
-  const talk = q.get("voicePace") === "talk";
-  const pause = Number(q.get("voicePause") ?? 900) || 900;
+  const talk = talking || q.get("voicePace") === "talk";
+  // `?slow=3` stretches the speech with everything else (lib/voiceTimings.ts)
+  const slow = voiceSlow();
+  const pause = (Number(q.get("voicePause")) || VOICE_TIMINGS.hesitation.ms) * slow;
   const tokens = script.replace(/(\S)(…|\.\.\.)/g, "$1 $2").split(/\s+/).filter(Boolean);
   // Each word: when it starts and ends being said, ms from the tap.
   const words: { word: string; from: number; to: number }[] = [];
@@ -65,12 +69,12 @@ function runScript(
   for (const token of tokens) {
     const hesitate = HESITATE.exec(token);
     if (hesitate) {
-      at += Number(hesitate[2] ?? pause);
+      at += hesitate[2] ? Number(hesitate[2]) * slow : pause;
       continue;
     }
-    const len = talk ? wordMs(token) : 300;
+    const len = (talk ? wordMs(token) : 300) * slow;
     words.push({ word: token, from: at, to: at + len });
-    at += len + (talk ? 30 : 0);
+    at += len + (talk ? VOICE_TIMINGS.wordGap.ms * slow : 0);
   }
   const end = words.length ? words[words.length - 1].to : 0;
   const started = performance.now();
@@ -84,7 +88,7 @@ function runScript(
     const syllable = Math.sin(inWord * Math.PI) * (0.55 + 0.35 * Math.sin(t / 97));
     follow(level, word ? Math.max(0, syllable) : 0);
     // Safety only: the listener ends the ask on the pause long before this.
-    if (t > end + 5000) {
+    if (t > end + 5000 * slow) {
       onDone();
       return;
     }
@@ -140,6 +144,14 @@ export function useVoice(hooks: VoiceHooks = {}) {
   const lastWordAt = useRef(0);
   const listenTimer = useRef(0);
   const listening = useRef(false);
+  // voice stage (components/VoiceStage.tsx): mute, starter chips, cancel
+  const [muted, setMuted] = useState(false);
+  const mutedRef = useRef(false);
+  const micRef = useRef<MediaStream | null>(null);
+  const heard = useRef("");
+  const muteCut = useRef<{ keep: string; skip: number } | null>(null);
+  /** The stage is waiting for more words: a pause does not end the ask. */
+  const held = useRef(false);
   const lateTimer = useRef(0);
   /** Words when the last ask ended on a pause: a late word reopens only if it adds one. */
   const endedWords = useRef(-1);
@@ -185,7 +197,14 @@ export function useVoice(hooks: VoiceHooks = {}) {
     });
   }, []);
 
-  const hear = useCallback((text: string) => {
+  const hear = useCallback((raw: string) => {
+    // The recogniser (and the script) hand over the whole ask so far each
+    // time. What it gathered while muted is cut out: keep what stood at
+    // mute, then only what came after unmute.
+    heard.current = raw;
+    if (mutedRef.current) return;
+    const cut = muteCut.current;
+    const text = cut && raw.length >= cut.skip ? `${cut.keep} ${raw.slice(cut.skip).trim()}`.trim() : raw;
     if (!listening.current) {
       // Just ended on a pause: only a new word reopens it, not a recogniser's tidy-up.
       if (endedWords.current < 0 || wordCount(text) <= endedWords.current) return;
@@ -214,13 +233,16 @@ export function useVoice(hooks: VoiceHooks = {}) {
         if (now - startedAt > NOTHING_MS) finish("pause");
         return;
       }
+      if (held.current) return;
       const quiet = now - lastWordAt.current;
-      const wait = sentenceHangs(said.current)
-        ? HANG_MS
-        : !/\d\W*$/.test(said.current) && hooksRef.current.ready?.(said.current)
-          ? READY_MS
-          : PAUSE_MS;
-      if ((quiet > wait && level.current < 0.2) || quiet > MAX_QUIET_MS) finish("pause");
+      const slow = voiceSlow();
+      const wait =
+        (sentenceHangs(said.current)
+          ? HANG_MS
+          : !/\d\W*$/.test(said.current) && hooksRef.current.ready?.(said.current)
+            ? READY_MS
+            : PAUSE_MS) * slow;
+      if ((quiet > wait && level.current < 0.2) || quiet > MAX_QUIET_MS * slow) finish("pause");
     }, 25);
   }, [finish]);
   const listenRef = useRef(listenForPause);
@@ -228,6 +250,8 @@ export function useVoice(hooks: VoiceHooks = {}) {
 
   const start = useCallback(async () => {
     window.clearTimeout(workTimer.current);
+    muteCut.current = null;
+    held.current = false;
     window.clearTimeout(lateTimer.current);
     endedWords.current = -1;
     stopRef.current();
@@ -243,7 +267,10 @@ export function useVoice(hooks: VoiceHooks = {}) {
 
     const script = new URLSearchParams(window.location.search).get("voice");
     if (script) {
-      stopRef.current = runScript(script, level, hear, () => finish("pause"));
+      // `&stageHold=1` keeps the scripted ask open for a still of the stage
+      const hold = new URLSearchParams(window.location.search).has("stageHold");
+      if (hold) window.clearInterval(listenTimer.current);
+      stopRef.current = runScript(script, level, hear, hold ? () => {} : () => finish("pause"));
       return;
     }
 
@@ -277,6 +304,7 @@ export function useVoice(hooks: VoiceHooks = {}) {
       stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true },
       });
+      micRef.current = stream;
       audio = new AudioContext();
       const analyser = audio.createAnalyser();
       analyser.fftSize = 512;
@@ -306,5 +334,59 @@ export function useVoice(hooks: VoiceHooks = {}) {
     [],
   );
 
-  return { state, transcript, level, start, finish };
+  // ---- voice stage additions: one block, nothing above depends on it ----
+  /** Mute stops the mic and drops what it hears; the ask stays open. */
+  const mute = useCallback((on: boolean) => {
+    if (!on && mutedRef.current) muteCut.current = { keep: said.current, skip: heard.current.length };
+    mutedRef.current = on;
+    setMuted(on);
+    micRef.current?.getAudioTracks().forEach((track) => (track.enabled = !on));
+  }, []);
+  /** A starter chip: stop listening and put these words in as the ask. */
+  const say = useCallback(
+    (text: string) => {
+      stopRef.current();
+      stopRef.current = () => {};
+      level.current = 0;
+      mutedRef.current = false;
+      muteCut.current = null;
+      hear(text);
+    },
+    [hear],
+  );
+  /** A starter chip: stop the mic and speak these words as a scripted ask,
+      at the talking pace, so the room hears them arrive one by one. */
+  const play = useCallback(
+    (script: string) => {
+      stopRef.current();
+      mutedRef.current = false;
+      muteCut.current = null;
+      hear("");
+      stopRef.current = runScript(script, level, hear, () => finish("pause"), true);
+    },
+    [finish, hear],
+  );
+  /** Close without asking anything (Escape). */
+  const cancel = useCallback(() => {
+    window.clearInterval(listenTimer.current);
+    window.clearTimeout(lateTimer.current);
+    listening.current = false;
+    endedWords.current = -1;
+    held.current = false;
+    say("");
+    window.clearTimeout(workTimer.current);
+    setState("idle");
+    // the room drops whatever it had started for this ask
+    hooksRef.current.start?.();
+  }, [say]);
+  /** Keep the ask open across a pause (the stage is asking for the rest), or let pauses end it again. */
+  const hold = useCallback((on: boolean) => {
+    if (held.current && !on) lastWordAt.current = performance.now();
+    held.current = on;
+  }, []);
+  useEffect(() => {
+    if (state !== "listening") mute(false);
+  }, [state, mute]);
+
+  return { state, transcript, level, start, finish, muted, mute, say, play, cancel, hold };
 }

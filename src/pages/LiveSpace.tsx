@@ -21,6 +21,8 @@ const PLAY_LAB_SOURCE = "crew";
 import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock, radioRoomOf } from "../components/ActionDock";
 import { VoiceBuildLayer } from "../components/VoiceBuildLayer";
+import { offersFor } from "../lib/deck/suggest";
+import { setVoiceStageOffers } from "../lib/voiceStage";
 import { RoomKnowsDoor, RoomKnowsPage } from "../components/RoomKnows";
 import { standing } from "../lib/roomKnows";
 import { useVoiceBuild } from "../live/useVoiceBuild";
@@ -1526,6 +1528,8 @@ export function LiveSpacePage({
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   };
   const voiceSelectedId = () => (focusedTarget?.kind === "widget" ? focusedTarget.id : selectedWidgetId) ?? null;
+  // What the room can offer for a card named with nothing in it (the voice stage asks; lib/deck/suggest.ts).
+  setVoiceStageOffers((card) => offersFor(roomBrief?.room ?? null, card));
   const voiceBuild = useVoiceBuild({
     scrollerRef: viewportRef,
     cardContext: () => ({ by: identity.name, people: voicePeople(), today: voiceToday() }),

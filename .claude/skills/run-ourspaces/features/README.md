@@ -6,7 +6,8 @@ id named here exists in `src/`.
 
 | feature | room | states |
 |---|---|---|
-| [voice-orb](voice-orb.md) | crew dock | idle · listening · working |
+| [voice-orb](voice-orb.md) | crew dock | idle · open · quiet · loud · working · dock-listening (+ `-knot`) |
+| [voice-stage](voice-stage.md) | crew | poll · countdown · checklist · split · where · nokey · open · words · type · mid · complete · closing · landed · ask · ask-offer · room · already-found · already-landed |
 | [wheel](wheel.md) | house | idle · spinning · landed |
 | [recap](recap.md) | crew dock | closed · open · landed |
 | [dock](dock.md) | crew dock | idle · sound · recap |
