@@ -16,10 +16,11 @@
  * (code's match alone, src/live/useVoiceBuild.ts).
  */
 import { beat } from "../voiceTimings";
+import { flowFor } from "./recipes";
 import type { CardId } from "./catalog";
 import { guessCard, titleFromWords } from "./guess";
 
-type StandIn = { card: CardId | "challenge"; settings: Record<string, string | number | string[]> };
+type StandIn = { card: CardId | "challenge" | "dinner" | "hangout" | "cabin" | "potluck"; settings: Record<string, string | number | string[]> };
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
@@ -125,6 +126,15 @@ export function standInFor(said: string, menu?: string): StandIn | null {
     const days = Number(/(\d+|a)\s*(day|week)/i.exec(said)?.[0].replace(/^a/, "1").replace(/\s*week/, "*7").replace(/\s*days?/, "").split("*").reduce((a, b) => String(Number(a) * Number(b)))) || undefined;
     return { card: "challenge", settings: { activity: activity.replace(/^push-?up$/, "push-ups"), ...(days ? { days } : {}), ...(all && !base.who ? { who: all } : base.who ? { who: base.who } : {}) } };
   }
+  // a flow (W2): its words pick it by code, as live; the stand-in fills its slots from the words and the room's tokens
+  const flow = scripted ? null : flowFor(said);
+  if (flow === "dinner") return { card: flow, settings: { meal: /\b(lunch|brunch|breakfast|drinks)\b/i.exec(said)?.[1]?.toLowerCase() ?? "dinner", ...(/\b(mon|tues|wednes|thurs|fri|satur|sun)day\b/i.exec(said) ? { day: /\b(mon|tues|wednes|thurs|fri|satur|sun)day\b/i.exec(said)![0].toLowerCase() } : {}), options: places ? [places, "somewhere new"] : ["tacos", "pho", "pizza"] } };
+  if (flow === "hangout") return { card: flow, settings: { days: ["fri", "sat", "sun"] } };
+  if (flow === "cabin") {
+    const total = Number(/\d[\d,]*/.exec(said)?.[0].replace(/,/g, "")) || undefined;
+    return { card: flow, settings: { title: title.replace(/^split\s+(the\s+|our\s+)?/, "").replace(/[, ]*\$?\d[\d,.]*.*$/, "").slice(0, 32) || "the house", ...(total ? { total } : {}) } };
+  }
+  if (flow === "potluck") return { card: flow, settings: { title: "potluck", items: ["mains", "salad", "dessert", "drinks", "ice"] } };
   switch (card) {
     case "poll": {
       const question = (base.question as string) ?? `${title.replace(/\?$/, "")}?`.slice(0, 80);

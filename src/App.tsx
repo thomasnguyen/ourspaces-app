@@ -41,6 +41,7 @@ import { DECISION_WIDGET, SPACES, SPACES_BY_ID, canvasSizeFor, getSpace, getWidg
 import { createLabPeerFeed, labPeersRequested } from "./live/labPeers";
 import { dealDemo, deckLabRequested } from "./lib/deck/lab";
 import { mockDeal } from "./lib/deck/mockDeal";
+import type { ThreadLink as FlowThread } from "./components/LinkThreads";
 import { mockFacts } from "./lib/deck/mockFacts";
 import type { MineAct } from "./lib/deck/verbs";
 import { offersFor } from "./lib/deck/suggest";
@@ -598,6 +599,9 @@ export default function App() {
       // a recipe's link, applied here as convex/links.ts does live (only "always" + "id" in mock)
       const dealt = cards.map((c, i) => ({ ...c.widget, id: `voice-standin-${stamp}-${i}`, ...(c.link?.value === "id" ? { data: { ...c.widget.data, [c.link.fill]: c.link.from } } : {}) }));
       setAddedWidgets((current) => ({ ...current, [spaceId]: [...(current[spaceId] ?? []), ...dealt] }));
+      // a flow's link (W2): in mock the pair waits and shows its thread; resolving is the live server's (convex/links.ts)
+      const flowLinks = cards.flatMap((c, i) => (c.link?.tag ? [{ id: `mock-link-${stamp}-${i}`, from: c.link.from, to: dealt[i].id, tag: c.link.tag, state: "waiting" as const, when: c.link.when }] : []));
+      if (flowLinks.length) setMockFlowLinks((all) => [...all, ...flowLinks]);
       return dealt.map((w) => w.id);
     },
   });
@@ -610,6 +614,12 @@ export default function App() {
     () => voiceBuild.withDrafts(addedWidgets[spaceId] ?? []),
     [voiceBuild.withDrafts, addedWidgets, spaceId],
   );
+  const [mockFlowLinks, setMockFlowLinks] = useState<FlowThread[]>([]);
+  const mockFlows = useMemo(
+    () => ({ threads: mockFlowLinks, callIt: () => {}, lock: () => {}, deal: () => {}, cut: (id: string) => setMockFlowLinks((all) => all.filter((l) => l.id !== id)) }),
+    [mockFlowLinks],
+  );
+  const mockWaiting = useMemo(() => Object.fromEntries(mockFlowLinks.map((l) => [l.to, l.from])), [mockFlowLinks]);
   const canvasStageRef = useRef<HTMLDivElement>(null);
   const canvasScaleLayerRef = useRef<HTMLDivElement>(null);
   const canvasScaleRef = useRef(1);
@@ -2558,6 +2568,8 @@ export default function App() {
               onPollVote={voteOnPoll}
               onWheelSpin={spinWheel}
               onWidgetData={storeWidgetData}
+              waiting={mockWaiting}
+              flows={mockFlows}
               onPlaylistTune={tunePlaylist}
               onRsvp={respondToRsvp}
               onDailyAnswer={answerDailyQ}

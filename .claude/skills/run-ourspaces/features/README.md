@@ -31,6 +31,8 @@ plus the wide beats table over the stage.
 | [check-in](check-in.md) | family board | open · logging · logged · mina · final |
 | [standings](standings.md) | family board | locked · open · unlocked · final |
 | [right-of-way](right-of-way.md) | crew | held · ghost · land · knows (mock, scripted holder) · liveknows (lane) + the two-browser take |
+| [asks](asks.md) | crew | poll · poll-second · poll-answered · delegated · countdown · countdown-offer · countdown-when · split · challenge · walkaway · unfinished · letgo |
+| [flows](flows.md) | crew | dinner · dinner-stage · hangout · cabin · potluck · cut (mock stand-ins; live via the two-browser harness) |
 
 ## Header format
 
