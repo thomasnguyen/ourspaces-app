@@ -44,6 +44,34 @@
   "X03",
   "X05"
  ],
+ "batches": [
+  {
+   "name": "r4",
+   "frozenAt": "2026-10-05T23:40:17.235Z",
+   "labelsHash": "ccbca50556d9e0d1",
+   "count": 18,
+   "ids": [
+    "R4-01",
+    "R4-02",
+    "R4-03",
+    "R4-04",
+    "R4-05",
+    "R4-06",
+    "R4-07",
+    "R4-08",
+    "R4-09",
+    "R4-10",
+    "R4-11",
+    "R4-12",
+    "R4-13",
+    "R4-14",
+    "R4-15",
+    "R4-16",
+    "R4-17",
+    "R4-18"
+   ]
+  }
+ ],
  "scenarios": [
   {
    "id": "G01",
@@ -14472,6 +14500,1679 @@
      "Sam"
     ],
     "why": "the yes is the other sam's"
+   }
+  },
+  {
+   "id": "R4-01",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "the cabin flow: a new yes after someone paid",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-maya",
+     "name": "Maya"
+    },
+    {
+     "id": "u-jules",
+     "name": "Jules"
+    },
+    {
+     "id": "u-jo",
+     "name": "Jo"
+    }
+   ],
+   "cards": [
+    {
+     "id": "rsvp",
+     "type": "rsvp",
+     "rect": {
+      "x": 100,
+      "y": 420,
+      "w": 300,
+      "h": 230
+     },
+     "data": {
+      "title": "cabin weekend · nov 1",
+      "responses": [
+       {
+        "name": "Maya",
+        "status": "yes",
+        "userId": "u-maya"
+       },
+       {
+        "name": "Jules",
+        "status": "yes",
+        "userId": "u-jules"
+       },
+       {
+        "name": "Jo",
+        "status": "yes",
+        "userId": "u-jo"
+       }
+      ]
+     }
+    },
+    {
+     "id": "cabin",
+     "type": "expenseSplit",
+     "rect": {
+      "x": 780,
+      "y": 100,
+      "w": 320,
+      "h": 260
+     },
+     "data": {
+      "title": "cabin split",
+      "total": 600,
+      "splits": [
+       {
+        "name": "Maya",
+        "userId": "u-maya",
+        "owes": 100,
+        "paid": 200
+       },
+       {
+        "name": "Jules",
+        "userId": "u-jules",
+        "owes": 300,
+        "paid": 0
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "history": [
+    "The rsvp has a live link: whoever says yes splits the cabin. Maya paid $200.",
+    "Jo just said yes."
+   ],
+   "write": {
+    "kind": "link",
+    "card": "cabin",
+    "from": "rsvp",
+    "fill": "splits",
+    "value": "yes",
+    "desc": "jo said yes: the link re-splits the cabin among the yeses"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "go",
+    "who": [],
+    "why": "the link adds jo and keeps maya's $200; nobody's payment changes"
+   }
+  },
+  {
+   "id": "R4-02",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "the cabin flow over an older name-only payment",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-maya",
+     "name": "Maya"
+    },
+    {
+     "id": "u-jules",
+     "name": "Jules"
+    },
+    {
+     "id": "u-jo",
+     "name": "Jo"
+    }
+   ],
+   "cards": [
+    {
+     "id": "rsvp",
+     "type": "rsvp",
+     "rect": {
+      "x": 100,
+      "y": 420,
+      "w": 300,
+      "h": 230
+     },
+     "data": {
+      "title": "cabin weekend · nov 1",
+      "responses": [
+       {
+        "name": "Maya",
+        "status": "yes",
+        "userId": "u-maya"
+       },
+       {
+        "name": "Jules",
+        "status": "yes",
+        "userId": "u-jules"
+       },
+       {
+        "name": "Jo",
+        "status": "yes",
+        "userId": "u-jo"
+       }
+      ]
+     }
+    },
+    {
+     "id": "cabin",
+     "type": "expenseSplit",
+     "rect": {
+      "x": 780,
+      "y": 100,
+      "w": 320,
+      "h": 260
+     },
+     "data": {
+      "title": "cabin split",
+      "total": 600,
+      "splits": [
+       {
+        "name": "Maya",
+        "owes": 100,
+        "paid": 200
+       },
+       {
+        "name": "Jules",
+        "owes": 300,
+        "paid": 0
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "history": [
+    "Maya's $200 was recorded before split rows carried ids.",
+    "Jo just said yes."
+   ],
+   "write": {
+    "kind": "link",
+    "card": "cabin",
+    "from": "rsvp",
+    "fill": "splits",
+    "value": "yes",
+    "desc": "jo said yes: the link re-splits the cabin among the yeses"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "go",
+    "who": [],
+    "why": "the link adds jo and keeps the $200 row as it is"
+   }
+  },
+  {
+   "id": "R4-03",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "the cabin flow after a payer said no",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-maya",
+     "name": "Maya"
+    },
+    {
+     "id": "u-jules",
+     "name": "Jules"
+    },
+    {
+     "id": "u-jo",
+     "name": "Jo"
+    }
+   ],
+   "cards": [
+    {
+     "id": "rsvp",
+     "type": "rsvp",
+     "rect": {
+      "x": 100,
+      "y": 420,
+      "w": 300,
+      "h": 230
+     },
+     "data": {
+      "title": "cabin weekend · nov 1",
+      "responses": [
+       {
+        "name": "Maya",
+        "status": "no",
+        "userId": "u-maya"
+       },
+       {
+        "name": "Jules",
+        "status": "yes",
+        "userId": "u-jules"
+       },
+       {
+        "name": "Jo",
+        "status": "yes",
+        "userId": "u-jo"
+       }
+      ]
+     }
+    },
+    {
+     "id": "cabin",
+     "type": "expenseSplit",
+     "rect": {
+      "x": 780,
+      "y": 100,
+      "w": 320,
+      "h": 260
+     },
+     "data": {
+      "title": "cabin split",
+      "total": 600,
+      "splits": [
+       {
+        "name": "Maya",
+        "userId": "u-maya",
+        "owes": 100,
+        "paid": 200
+       },
+       {
+        "name": "Jules",
+        "userId": "u-jules",
+        "owes": 300,
+        "paid": 0
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "history": [
+    "Maya paid $200, then changed her rsvp to no. Jo said yes."
+   ],
+   "write": {
+    "kind": "link",
+    "card": "cabin",
+    "from": "rsvp",
+    "fill": "splits",
+    "value": "yes",
+    "desc": "the link re-splits the cabin among the yeses"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "go",
+    "who": [],
+    "why": "maya's $200 stays on the split; taking her off is a person's call, and the link doesn't make it"
+   }
+  },
+  {
+   "id": "R4-04",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "a link sets a date nobody set by hand",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-holly",
+     "name": "Holly"
+    },
+    {
+     "id": "u-sam",
+     "name": "Sam"
+    },
+    {
+     "id": "u-jo",
+     "name": "Jo"
+    }
+   ],
+   "cards": [
+    {
+     "id": "finder",
+     "type": "availability",
+     "rect": {
+      "x": 1540,
+      "y": 100,
+      "w": 320,
+      "h": 260
+     },
+     "data": {
+      "title": "when's the bake sale?",
+      "days": [
+       "sat",
+       "sun"
+      ],
+      "members": [
+       {
+        "name": "Holly",
+        "slots": [
+         false,
+         true
+        ]
+       },
+       {
+        "name": "Sam",
+        "slots": [
+         false,
+         true
+        ]
+       },
+       {
+        "name": "Jo",
+        "slots": [
+         true,
+         true
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "id": "bake",
+     "type": "countdown",
+     "rect": {
+      "x": 1180,
+      "y": 100,
+      "w": 280,
+      "h": 240
+     },
+     "data": {
+      "event": "bake sale",
+      "targetDate": "2026-10-16",
+      "startDate": "2026-10-05"
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "history": [
+    "Everyone answered the day-finder: sunday is best."
+   ],
+   "write": {
+    "kind": "link",
+    "card": "bake",
+    "from": "finder",
+    "fill": "targetDate",
+    "patch": {
+     "targetDate": "2026-10-11",
+     "event": "bake sale · sun"
+    },
+    "desc": "the link writes sunday oct 11 into the countdown's date"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "go",
+    "who": [],
+    "why": "the date came with the card; no one picked it"
+   }
+  },
+  {
+   "id": "R4-05",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "a link writes the same date someone set by hand",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-holly",
+     "name": "Holly"
+    },
+    {
+     "id": "u-sam",
+     "name": "Sam"
+    },
+    {
+     "id": "u-jo",
+     "name": "Jo"
+    }
+   ],
+   "cards": [
+    {
+     "id": "finder",
+     "type": "availability",
+     "rect": {
+      "x": 1540,
+      "y": 100,
+      "w": 320,
+      "h": 260
+     },
+     "data": {
+      "title": "when's the bake sale?",
+      "days": [
+       "sat",
+       "sun"
+      ],
+      "members": [
+       {
+        "name": "Holly",
+        "slots": [
+         false,
+         true
+        ]
+       },
+       {
+        "name": "Sam",
+        "slots": [
+         false,
+         true
+        ]
+       },
+       {
+        "name": "Jo",
+        "slots": [
+         true,
+         true
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "id": "bake",
+     "type": "countdown",
+     "rect": {
+      "x": 1180,
+      "y": 100,
+      "w": 280,
+      "h": 240
+     },
+     "data": {
+      "event": "bake sale",
+      "targetDate": "2026-10-16",
+      "startDate": "2026-10-05",
+      "dateBy": {
+       "id": "u-holly",
+       "name": "Holly"
+      }
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "history": [
+    "Holly set oct 16 by hand. The day-finder's best day is that same date."
+   ],
+   "write": {
+    "kind": "link",
+    "card": "bake",
+    "from": "finder",
+    "fill": "targetDate",
+    "patch": {
+     "targetDate": "2026-10-16",
+     "event": "bake sale · fri"
+    },
+    "desc": "the link writes fri oct 16 into the countdown's date"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "go",
+    "who": [],
+    "why": "it agrees with holly's date; nothing of hers changes"
+   }
+  },
+  {
+   "id": "R4-06",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "a link over a hand-set date while the setter drags the card",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-holly",
+     "name": "Holly"
+    },
+    {
+     "id": "u-sam",
+     "name": "Sam"
+    },
+    {
+     "id": "u-jo",
+     "name": "Jo"
+    }
+   ],
+   "cards": [
+    {
+     "id": "finder",
+     "type": "availability",
+     "rect": {
+      "x": 1540,
+      "y": 100,
+      "w": 320,
+      "h": 260
+     },
+     "data": {
+      "title": "when's the bake sale?",
+      "days": [
+       "sat",
+       "sun"
+      ],
+      "members": [
+       {
+        "name": "Holly",
+        "slots": [
+         false,
+         true
+        ]
+       },
+       {
+        "name": "Sam",
+        "slots": [
+         false,
+         true
+        ]
+       },
+       {
+        "name": "Jo",
+        "slots": [
+         true,
+         true
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "id": "bake",
+     "type": "countdown",
+     "rect": {
+      "x": 1180,
+      "y": 100,
+      "w": 280,
+      "h": 240
+     },
+     "data": {
+      "event": "bake sale",
+      "targetDate": "2026-10-16",
+      "startDate": "2026-10-05",
+      "dateBy": {
+       "id": "u-holly",
+       "name": "Holly"
+      }
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [
+    {
+     "who": "holly",
+     "thing": "bake",
+     "kind": "drag",
+     "since": -3200
+    }
+   ],
+   "history": [
+    "Holly set oct 16 by hand and is dragging the countdown. Everyone just answered the day-finder: sunday is best."
+   ],
+   "write": {
+    "kind": "link",
+    "card": "bake",
+    "from": "finder",
+    "fill": "targetDate",
+    "patch": {
+     "targetDate": "2026-10-11",
+     "event": "bake sale · sun"
+    },
+    "desc": "the link writes sunday oct 11 into the countdown's date"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "ask",
+    "who": [
+     "Holly"
+    ],
+    "why": "choices first: holly picked oct 16"
+   }
+  },
+  {
+   "id": "R4-07",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "a name-only payment, asked by the only Maya in the room",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-maya",
+     "name": "Maya"
+    },
+    {
+     "id": "u-jules",
+     "name": "Jules"
+    },
+    {
+     "id": "u-ash",
+     "name": "Ash"
+    }
+   ],
+   "cards": [
+    {
+     "id": "cabin",
+     "type": "expenseSplit",
+     "rect": {
+      "x": 780,
+      "y": 100,
+      "w": 320,
+      "h": 260
+     },
+     "data": {
+      "title": "cabin split",
+      "total": 600,
+      "splits": [
+       {
+        "name": "Maya",
+        "owes": 0,
+        "paid": 200
+       },
+       {
+        "name": "Jules",
+        "owes": 200,
+        "paid": 0
+       },
+       {
+        "name": "Ash",
+        "owes": 200,
+        "paid": 0
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "history": [
+    "The payment row stores only the name Maya. One person in the room is called Maya, and she asks."
+   ],
+   "write": {
+    "kind": "edit",
+    "card": "cabin",
+    "op": {
+     "op": "removePerson",
+     "value": "maya"
+    },
+    "by": "maya",
+    "said": "take me off the cabin split"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "ask",
+    "who": [
+     "Maya"
+    ],
+    "why": "nothing on the row says which account paid, so the code can't call it hers; she confirms on the card"
+   }
+  },
+  {
+   "id": "R4-08",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "a payment with an id, asked by a guest with the payer's name",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-maya",
+     "name": "Maya"
+    },
+    {
+     "id": "u-maya2",
+     "name": "Maya"
+    },
+    {
+     "id": "u-jules",
+     "name": "Jules"
+    }
+   ],
+   "cards": [
+    {
+     "id": "cabin",
+     "type": "expenseSplit",
+     "rect": {
+      "x": 780,
+      "y": 100,
+      "w": 320,
+      "h": 260
+     },
+     "data": {
+      "title": "cabin split",
+      "total": 600,
+      "splits": [
+       {
+        "name": "Maya",
+        "userId": "u-maya",
+        "owes": 0,
+        "paid": 200
+       },
+       {
+        "name": "Jules",
+        "userId": "u-jules",
+        "owes": 200,
+        "paid": 0
+       },
+       {
+        "name": "Tara",
+        "userId": "u-tara",
+        "owes": 200,
+        "paid": 0
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "history": [
+    "Two people are called Maya: u-maya paid $200; u-maya2 is a guest."
+   ],
+   "write": {
+    "kind": "edit",
+    "card": "cabin",
+    "op": {
+     "op": "removePerson",
+     "value": "maya"
+    },
+    "by": "maya2",
+    "said": "take me off the cabin split"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "ask",
+    "who": [
+     "Maya"
+    ],
+    "why": "the row says u-maya paid, not the asker"
+   }
+  },
+  {
+   "id": "R4-09",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "a payment with an id, asked by the payer",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-maya",
+     "name": "Maya"
+    },
+    {
+     "id": "u-jules",
+     "name": "Jules"
+    }
+   ],
+   "cards": [
+    {
+     "id": "cabin",
+     "type": "expenseSplit",
+     "rect": {
+      "x": 780,
+      "y": 100,
+      "w": 320,
+      "h": 260
+     },
+     "data": {
+      "title": "cabin split",
+      "total": 600,
+      "splits": [
+       {
+        "name": "Maya",
+        "userId": "u-maya",
+        "owes": 0,
+        "paid": 200
+       },
+       {
+        "name": "Jules",
+        "userId": "u-jules",
+        "owes": 200,
+        "paid": 0
+       },
+       {
+        "name": "Tara",
+        "userId": "u-tara",
+        "owes": 200,
+        "paid": 0
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "write": {
+    "kind": "edit",
+    "card": "cabin",
+    "op": {
+     "op": "removePerson",
+     "value": "maya"
+    },
+    "by": "maya",
+    "said": "take me off the cabin split"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "go",
+    "who": [],
+    "why": "it's her own payment"
+   }
+  },
+  {
+   "id": "R4-10",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "check-ins with ids, a guest with a logger's name cuts the days",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-holly",
+     "name": "Holly"
+    },
+    {
+     "id": "u-holly2",
+     "name": "Holly"
+    },
+    {
+     "id": "u-sam",
+     "name": "Sam"
+    }
+   ],
+   "cards": [
+    {
+     "id": "plank",
+     "type": "checkIn",
+     "rect": {
+      "x": 780,
+      "y": 400,
+      "w": 360,
+      "h": 300
+     },
+     "data": {
+      "title": "plank challenge",
+      "kind": "number",
+      "unit": "seconds",
+      "start": "2026-10-01",
+      "days": 5,
+      "revealAt": "2026-10-06T09:00",
+      "people": [
+       {
+        "name": "Holly",
+        "userId": "u-holly"
+       },
+       {
+        "name": "Sam",
+        "userId": "u-sam"
+       }
+      ],
+      "logs": {
+       "Holly": [
+        30,
+        40,
+        50,
+        60,
+        70
+       ],
+       "Sam": [
+        20,
+        null,
+        null,
+        null,
+        null
+       ]
+      }
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "history": [
+    "Two people are called Holly: u-holly logged days 1-5; u-holly2 is a guest."
+   ],
+   "write": {
+    "kind": "edit",
+    "card": "plank",
+    "op": {
+     "op": "setDays",
+     "value": 3
+    },
+    "by": "holly2",
+    "said": "make the plank challenge 3 days"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "ask",
+    "who": [
+     "Holly"
+    ],
+    "why": "days 4-5 are u-holly's logs"
+   }
+  },
+  {
+   "id": "R4-11",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "name-only check-ins, the logger herself cuts the days",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-holly",
+     "name": "Holly"
+    },
+    {
+     "id": "u-sam",
+     "name": "Sam"
+    },
+    {
+     "id": "u-jo",
+     "name": "Jo"
+    }
+   ],
+   "cards": [
+    {
+     "id": "plank",
+     "type": "checkIn",
+     "rect": {
+      "x": 780,
+      "y": 400,
+      "w": 360,
+      "h": 300
+     },
+     "data": {
+      "title": "plank challenge",
+      "kind": "number",
+      "unit": "seconds",
+      "start": "2026-10-01",
+      "days": 5,
+      "revealAt": "2026-10-06T09:00",
+      "people": [
+       {
+        "name": "Holly"
+       },
+       {
+        "name": "Sam"
+       }
+      ],
+      "logs": {
+       "Holly": [
+        30,
+        40,
+        50,
+        60,
+        70
+       ],
+       "Sam": [
+        20,
+        null,
+        null,
+        null,
+        null
+       ]
+      }
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "write": {
+    "kind": "edit",
+    "card": "plank",
+    "op": {
+     "op": "setDays",
+     "value": 3
+    },
+    "by": "holly",
+    "said": "make the plank challenge 3 days"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "ask",
+    "who": [
+     "Holly"
+    ],
+    "why": "the logs carry only a name; the code can't tell they're hers, so she confirms"
+   }
+  },
+  {
+   "id": "R4-12",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "an rsvp yes with an id, asked by a guest with that name",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-sam",
+     "name": "Sam"
+    },
+    {
+     "id": "u-sam2",
+     "name": "Sam"
+    }
+   ],
+   "cards": [
+    {
+     "id": "rsvp",
+     "type": "rsvp",
+     "rect": {
+      "x": 100,
+      "y": 420,
+      "w": 300,
+      "h": 230
+     },
+     "data": {
+      "title": "game night · friday",
+      "responses": [
+       {
+        "name": "Sam",
+        "status": "yes",
+        "userId": "u-sam"
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "history": [
+    "Two people are called Sam: u-sam said yes; u-sam2 is a guest."
+   ],
+   "write": {
+    "kind": "edit",
+    "card": "rsvp",
+    "op": {
+     "op": "setWhen",
+     "value": "sunday"
+    },
+    "by": "sam2",
+    "said": "move game night to sunday"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "ask",
+    "who": [
+     "Sam"
+    ],
+    "why": "the yes is u-sam's"
+   }
+  },
+  {
+   "id": "R4-13",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "a passed rsvp vote, someone said yes after it was called",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-holly",
+     "name": "Holly"
+    },
+    {
+     "id": "u-sam",
+     "name": "Sam"
+    },
+    {
+     "id": "u-jo",
+     "name": "Jo"
+    }
+   ],
+   "cards": [
+    {
+     "id": "rsvp",
+     "type": "rsvp",
+     "rect": {
+      "x": 100,
+      "y": 420,
+      "w": 300,
+      "h": 230
+     },
+     "data": {
+      "title": "game night · friday",
+      "responses": [
+       {
+        "name": "Holly",
+        "status": "yes",
+        "userId": "u-holly"
+       },
+       {
+        "name": "Sam",
+        "status": "yes",
+        "userId": "u-sam"
+       },
+       {
+        "name": "Jo",
+        "status": "yes",
+        "userId": "u-jo"
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [],
+   "history": [
+    "A vote asked holly and sam about moving game night to sunday; both said change it.",
+    "Jo said yes to friday after the vote was called and was never asked."
+   ],
+   "write": {
+    "kind": "edit",
+    "card": "rsvp",
+    "op": {
+     "op": "setWhen",
+     "value": "sunday"
+    },
+    "by": "tara",
+    "said": "move game night to sunday",
+    "consented": "the vote passed: 2 of 2 said change it (holly, sam were asked)"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "ask",
+    "who": [
+     "Jo"
+    ],
+    "why": "jo's yes came after the vote was called"
+   }
+  },
+  {
+   "id": "R4-14",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "a passed vote, a voter moved their vote away since",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-holly",
+     "name": "Holly"
+    },
+    {
+     "id": "u-sam",
+     "name": "Sam"
+    },
+    {
+     "id": "u-jo",
+     "name": "Jo"
+    }
+   ],
+   "cards": [
+    {
+     "id": "dinner",
+     "type": "poll",
+     "rect": {
+      "x": 100,
+      "y": 100,
+      "w": 300,
+      "h": 260
+     },
+     "data": {
+      "question": "friday dinner?",
+      "options": [
+       {
+        "id": "a",
+        "label": "pizza",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       },
+       {
+        "id": "b",
+        "label": "tacos",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       },
+       {
+        "id": "c",
+        "label": "pho",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [
+    {
+     "card": "dinner",
+     "option": "a",
+     "who": "holly"
+    },
+    {
+     "card": "dinner",
+     "option": "b",
+     "who": "sam"
+    }
+   ],
+   "holds": [],
+   "history": [
+    "A vote asked holly and sam about taking pizza off; both said change it. Sam has since voted tacos."
+   ],
+   "write": {
+    "kind": "edit",
+    "card": "dinner",
+    "op": {
+     "op": "removeOption",
+     "value": "pizza"
+    },
+    "by": "tara",
+    "said": "take pizza off the dinner poll",
+    "consented": "the vote passed: 2 of 2 said change it (holly, sam were asked)"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "go",
+    "who": [],
+    "why": "the only vote left on pizza is holly's, and she was asked"
+   }
+  },
+  {
+   "id": "R4-15",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "a passed vote, the newer vote is the asker's own",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-holly",
+     "name": "Holly"
+    },
+    {
+     "id": "u-sam",
+     "name": "Sam"
+    },
+    {
+     "id": "u-jo",
+     "name": "Jo"
+    }
+   ],
+   "cards": [
+    {
+     "id": "dinner",
+     "type": "poll",
+     "rect": {
+      "x": 100,
+      "y": 100,
+      "w": 300,
+      "h": 260
+     },
+     "data": {
+      "question": "friday dinner?",
+      "options": [
+       {
+        "id": "a",
+        "label": "pizza",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       },
+       {
+        "id": "b",
+        "label": "tacos",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       },
+       {
+        "id": "c",
+        "label": "pho",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [
+    {
+     "card": "dinner",
+     "option": "a",
+     "who": "holly"
+    },
+    {
+     "card": "dinner",
+     "option": "a",
+     "who": "sam"
+    },
+    {
+     "card": "dinner",
+     "option": "a",
+     "who": "tara"
+    }
+   ],
+   "holds": [],
+   "history": [
+    "A vote asked holly and sam about taking pizza off; both said change it. Tara, who asked, voted pizza after."
+   ],
+   "write": {
+    "kind": "edit",
+    "card": "dinner",
+    "op": {
+     "op": "removeOption",
+     "value": "pizza"
+    },
+    "by": "tara",
+    "said": "take pizza off the dinner poll",
+    "consented": "the vote passed: 2 of 2 said change it (holly, sam were asked)"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "go",
+    "who": [],
+    "why": "the newer vote is the asker's own"
+   }
+  },
+  {
+   "id": "R4-16",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "the holder is the asker's laptop seat, folded into her account",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-taralap",
+     "name": "Tara",
+     "account": "u-tara"
+    },
+    {
+     "id": "u-holly",
+     "name": "Holly"
+    }
+   ],
+   "cards": [
+    {
+     "id": "dinner",
+     "type": "poll",
+     "rect": {
+      "x": 100,
+      "y": 100,
+      "w": 300,
+      "h": 260
+     },
+     "data": {
+      "question": "friday dinner?",
+      "options": [
+       {
+        "id": "a",
+        "label": "pizza",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       },
+       {
+        "id": "b",
+        "label": "tacos",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       },
+       {
+        "id": "c",
+        "label": "pho",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [
+    {
+     "who": "taralap",
+     "thing": "dinner",
+     "kind": "drag",
+     "since": -3200
+    }
+   ],
+   "history": [
+    "Tara entered as a guest on her laptop (u-taralap), then joined with her email there; the guest seat now resolves to her account u-tara. Its hold is still running."
+   ],
+   "write": {
+    "kind": "edit",
+    "card": "dinner",
+    "op": {
+     "op": "addOption",
+     "value": "ramen"
+    },
+    "by": "tara",
+    "said": "add ramen to the dinner poll"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "go",
+    "who": [],
+    "why": "both seats resolve to tara's account: her own hand"
+   }
+  },
+  {
+   "id": "R4-17",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "two different guests both named Tara",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-tara2",
+     "name": "Tara"
+    },
+    {
+     "id": "u-holly",
+     "name": "Holly"
+    }
+   ],
+   "cards": [
+    {
+     "id": "dinner",
+     "type": "poll",
+     "rect": {
+      "x": 100,
+      "y": 100,
+      "w": 300,
+      "h": 260
+     },
+     "data": {
+      "question": "friday dinner?",
+      "options": [
+       {
+        "id": "a",
+        "label": "pizza",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       },
+       {
+        "id": "b",
+        "label": "tacos",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       },
+       {
+        "id": "c",
+        "label": "pho",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [],
+   "holds": [
+    {
+     "who": "tara2",
+     "thing": "dinner",
+     "kind": "drag",
+     "since": -3200
+    }
+   ],
+   "history": [
+    "Two people joined as guests named Tara (u-tara, u-tara2). Nothing links their seats. u-tara2 is dragging the poll; u-tara asks."
+   ],
+   "write": {
+    "kind": "edit",
+    "card": "dinner",
+    "op": {
+     "op": "addOption",
+     "value": "ramen"
+    },
+    "by": "tara",
+    "said": "add ramen to the dinner poll"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "wait",
+    "who": [
+     "Tara"
+    ],
+    "why": "a shared name isn't a shared hand"
+   }
+  },
+  {
+   "id": "R4-18",
+   "group": "r4",
+   "src": "R4 regression",
+   "title": "a vote cast on the laptop guest seat, before she joined",
+   "now": 0,
+   "people": [
+    {
+     "id": "u-tara",
+     "name": "Tara"
+    },
+    {
+     "id": "u-taralap",
+     "name": "Tara",
+     "account": "u-tara"
+    },
+    {
+     "id": "u-holly",
+     "name": "Holly"
+    }
+   ],
+   "cards": [
+    {
+     "id": "dinner",
+     "type": "poll",
+     "rect": {
+      "x": 100,
+      "y": 100,
+      "w": 300,
+      "h": 260
+     },
+     "data": {
+      "question": "friday dinner?",
+      "options": [
+       {
+        "id": "a",
+        "label": "pizza",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       },
+       {
+        "id": "b",
+        "label": "tacos",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       },
+       {
+        "id": "c",
+        "label": "pho",
+        "votes": 0,
+        "total": 0,
+        "voters": []
+       }
+      ]
+     }
+    }
+   ],
+   "votes": [
+    {
+     "card": "dinner",
+     "option": "a",
+     "who": "taralap"
+    }
+   ],
+   "holds": [],
+   "history": [
+    "Tara voted pizza as a guest on her laptop (u-taralap), then joined with her email there; that seat resolves to u-tara."
+   ],
+   "write": {
+    "kind": "edit",
+    "card": "dinner",
+    "op": {
+     "op": "removeOption",
+     "value": "pizza"
+    },
+    "by": "tara",
+    "said": "take pizza off the dinner poll"
+   },
+   "batch": "r4",
+   "label": {
+    "verdict": "go",
+    "who": [],
+    "why": "the only vote on pizza is hers, from her other seat"
    }
   }
  ]

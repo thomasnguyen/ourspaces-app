@@ -47,7 +47,7 @@ const edit = (card, op, value, by = "tara", said, extra = {}) => ({ kind: "edit"
 const build = (type, title, rect, by = "tara", said) => ({ kind: "build", newCard: { type, title }, rect, by, said });
 
 const S = [];
-const add = (group, id, src, title, s) => S.push({ id, group, src, title, now: 0, people: s.people ?? ["tara", "holly", "sam", "jo"], cards: s.cards, votes: s.votes ?? [], holds: s.holds ?? [], ...(s.history ? { history: s.history } : {}), write: s.write, label: { verdict: s.want, who: s.who ?? [], why: s.why, ...(s.amb ? { ambiguous: true } : {}) } });
+const add = (group, id, src, title, s) => S.push({ id, group, src, title, now: 0, people: s.people ?? ["tara", "holly", "sam", "jo"], cards: s.cards, votes: s.votes ?? [], holds: s.holds ?? [], ...(s.history ? { history: s.history } : {}), write: s.write, ...(s.batch ? { batch: s.batch } : {}), label: { verdict: s.want, who: s.who ?? [], why: s.why, ...(s.amb ? { ambiguous: true } : {}) } });
 const V = (card, option, who) => ({ card, option, who });
 const all = (card, option, ...who) => who.map((w) => V(card, option, w));
 
@@ -249,6 +249,40 @@ X("X53", "an rsvp yes without an id, asked by someone else of that name", { peop
 // a second Tara / Maya / Juno / Holly / Sam: a guest seat with the same name
 for (const [k, n] of [["tara2", "Tara"], ["maya2", "Maya"], ["juno2", "Juno"], ["holly2", "Holly"], ["sam2", "Sam"]]) PEOPLE[k] = { id: `u-${k}`, name: n };
 
+/* ================= r4: appended after R3, one batch with its own freeze (the 162 above are untouched) =================
+   The misses R3 named (X23, X30, X34, X35, X36, X53), each as new situations, labelled by hand before the fix ran.
+   A link write may give no patch but `value`: the patch is then what the link code computes from the source card. */
+// Tara's laptop: a guest seat she later folded into her account by joining with the same email on it
+PEOPLE.taralap = { id: "u-taralap", name: "Tara", account: "u-tara" };
+const cabinIds = (rows, total = 600) => {
+  const share = Math.round(total / rows.length);
+  return { id: "cabin", type: "expenseSplit", rect: { x: 780, y: 100, w: 320, h: 260 }, data: { title: "cabin split", total, splits: rows.map(([who, paid]) => ({ name: PEOPLE[who].name, userId: PEOPLE[who].id, owes: Math.max(0, share - paid), paid })) } };
+};
+const plankIds = (logs) => {
+  const c = plank(Object.fromEntries(Object.entries(logs).map(([k, r]) => [PEOPLE[k].name, r])));
+  return { ...c, data: { ...c.data, people: Object.keys(logs).map((k) => ({ name: PEOPLE[k].name, userId: PEOPLE[k].id })) } };
+};
+const R = (id, title, s) => add("r4", id, "R4 regression", title, { ...s, batch: "r4" });
+const yesLink = (desc) => ({ kind: "link", card: "cabin", from: "rsvp", fill: "splits", value: "yes", desc });
+R("R4-01", "the cabin flow: a new yes after someone paid", { people: ["tara", "maya", "jules", "jo"], cards: [rsvp([["maya", "yes"], ["jules", "yes"], ["jo", "yes"]], "cabin weekend · nov 1"), cabinIds([["maya", 200], ["jules", 0]])], history: ["The rsvp has a live link: whoever says yes splits the cabin. Maya paid $200.", "Jo just said yes."], write: yesLink("jo said yes: the link re-splits the cabin among the yeses"), want: "go", why: "the link adds jo and keeps maya's $200; nobody's payment changes" });
+R("R4-02", "the cabin flow over an older name-only payment", { people: ["tara", "maya", "jules", "jo"], cards: [rsvp([["maya", "yes"], ["jules", "yes"], ["jo", "yes"]], "cabin weekend · nov 1"), cabin([["Maya", 200], ["Jules", 0]], 600)], history: ["Maya's $200 was recorded before split rows carried ids.", "Jo just said yes."], write: yesLink("jo said yes: the link re-splits the cabin among the yeses"), want: "go", why: "the link adds jo and keeps the $200 row as it is" });
+R("R4-03", "the cabin flow after a payer said no", { people: ["tara", "maya", "jules", "jo"], cards: [rsvp([["maya", "no"], ["jules", "yes"], ["jo", "yes"]], "cabin weekend · nov 1"), cabinIds([["maya", 200], ["jules", 0]])], history: ["Maya paid $200, then changed her rsvp to no. Jo said yes."], write: yesLink("the link re-splits the cabin among the yeses"), want: "go", why: "maya's $200 stays on the split; taking her off is a person's call, and the link doesn't make it" });
+R("R4-04", "a link sets a date nobody set by hand", { cards: [days(), bake()], history: ["Everyone answered the day-finder: sunday is best."], write: { kind: "link", card: "bake", from: "finder", fill: "targetDate", patch: { targetDate: "2026-10-11", event: "bake sale · sun" }, desc: "the link writes sunday oct 11 into the countdown's date" }, want: "go", why: "the date came with the card; no one picked it" });
+R("R4-05", "a link writes the same date someone set by hand", { cards: [days(), bake({ id: "u-holly", name: "Holly" })], history: ["Holly set oct 16 by hand. The day-finder's best day is that same date."], write: { kind: "link", card: "bake", from: "finder", fill: "targetDate", patch: { targetDate: "2026-10-16", event: "bake sale · fri" }, desc: "the link writes fri oct 16 into the countdown's date" }, want: "go", why: "it agrees with holly's date; nothing of hers changes" });
+R("R4-06", "a link over a hand-set date while the setter drags the card", { cards: [days(), bake({ id: "u-holly", name: "Holly" })], holds: [hold("holly", "bake")], history: ["Holly set oct 16 by hand and is dragging the countdown. Everyone just answered the day-finder: sunday is best."], write: { kind: "link", card: "bake", from: "finder", fill: "targetDate", patch: { targetDate: "2026-10-11", event: "bake sale · sun" }, desc: "the link writes sunday oct 11 into the countdown's date" }, want: "ask", who: ["Holly"], why: "choices first: holly picked oct 16" });
+R("R4-07", "a name-only payment, asked by the only Maya in the room", { people: ["tara", "maya", "jules", "ash"], cards: [cabin([["Maya", 200], ["Jules", 0], ["Ash", 0]])], history: ["The payment row stores only the name Maya. One person in the room is called Maya, and she asks."], write: edit("cabin", "removePerson", "maya", "maya", "take me off the cabin split"), want: "ask", who: ["Maya"], why: "nothing on the row says which account paid, so the code can't call it hers; she confirms on the card" });
+R("R4-08", "a payment with an id, asked by a guest with the payer's name", { people: ["tara", "maya", "maya2", "jules"], cards: [cabinIds([["maya", 200], ["jules", 0], ["tara", 0]])], history: ["Two people are called Maya: u-maya paid $200; u-maya2 is a guest."], write: edit("cabin", "removePerson", "maya", "maya2", "take me off the cabin split"), want: "ask", who: ["Maya"], why: "the row says u-maya paid, not the asker" });
+R("R4-09", "a payment with an id, asked by the payer", { people: ["tara", "maya", "jules"], cards: [cabinIds([["maya", 200], ["jules", 0], ["tara", 0]])], write: edit("cabin", "removePerson", "maya", "maya", "take me off the cabin split"), want: "go", why: "it's her own payment" });
+R("R4-10", "check-ins with ids, a guest with a logger's name cuts the days", { people: ["tara", "holly", "holly2", "sam"], cards: [plankIds({ holly: [30, 40, 50, 60, 70], sam: [20, null, null, null, null] })], history: ["Two people are called Holly: u-holly logged days 1-5; u-holly2 is a guest."], write: edit("plank", "setDays", 3, "holly2", "make the plank challenge 3 days"), want: "ask", who: ["Holly"], why: "days 4-5 are u-holly's logs" });
+R("R4-11", "name-only check-ins, the logger herself cuts the days", { cards: [plank({ Holly: [30, 40, 50, 60, 70], Sam: [20, null, null, null, null] })], write: edit("plank", "setDays", 3, "holly", "make the plank challenge 3 days"), want: "ask", who: ["Holly"], why: "the logs carry only a name; the code can't tell they're hers, so she confirms" });
+R("R4-12", "an rsvp yes with an id, asked by a guest with that name", { people: ["tara", "sam", "sam2"], cards: [rsvp([["sam", "yes"]])], history: ["Two people are called Sam: u-sam said yes; u-sam2 is a guest."], write: edit("rsvp", "setWhen", "sunday", "sam2", "move game night to sunday"), want: "ask", who: ["Sam"], why: "the yes is u-sam's" });
+R("R4-13", "a passed rsvp vote, someone said yes after it was called", { cards: [rsvp([["holly", "yes"], ["sam", "yes"], ["jo", "yes"]])], history: ["A vote asked holly and sam about moving game night to sunday; both said change it.", "Jo said yes to friday after the vote was called and was never asked."], write: edit("rsvp", "setWhen", "sunday", "tara", "move game night to sunday", { consented: "the vote passed: 2 of 2 said change it (holly, sam were asked)" }), want: "ask", who: ["Jo"], why: "jo's yes came after the vote was called" });
+R("R4-14", "a passed vote, a voter moved their vote away since", { cards: [poll()], votes: [V("dinner", "a", "holly"), V("dinner", "b", "sam")], history: ["A vote asked holly and sam about taking pizza off; both said change it. Sam has since voted tacos."], write: edit("dinner", "removeOption", "pizza", "tara", "take pizza off the dinner poll", { consented: "the vote passed: 2 of 2 said change it (holly, sam were asked)" }), want: "go", why: "the only vote left on pizza is holly's, and she was asked" });
+R("R4-15", "a passed vote, the newer vote is the asker's own", { cards: [poll()], votes: all("dinner", "a", "holly", "sam", "tara"), history: ["A vote asked holly and sam about taking pizza off; both said change it. Tara, who asked, voted pizza after."], write: edit("dinner", "removeOption", "pizza", "tara", "take pizza off the dinner poll", { consented: "the vote passed: 2 of 2 said change it (holly, sam were asked)" }), want: "go", why: "the newer vote is the asker's own" });
+R("R4-16", "the holder is the asker's laptop seat, folded into her account", { people: ["tara", "taralap", "holly"], cards: [poll()], holds: [hold("taralap", "dinner")], history: ["Tara entered as a guest on her laptop (u-taralap), then joined with her email there; the guest seat now resolves to her account u-tara. Its hold is still running."], write: edit("dinner", "addOption", "ramen", "tara", "add ramen to the dinner poll"), want: "go", why: "both seats resolve to tara's account: her own hand" });
+R("R4-17", "two different guests both named Tara", { people: ["tara", "tara2", "holly"], cards: [poll()], holds: [hold("tara2", "dinner")], history: ["Two people joined as guests named Tara (u-tara, u-tara2). Nothing links their seats. u-tara2 is dragging the poll; u-tara asks."], write: edit("dinner", "addOption", "ramen", "tara", "add ramen to the dinner poll"), want: "wait", who: ["Tara"], why: "a shared name isn't a shared hand" });
+R("R4-18", "a vote cast on the laptop guest seat, before she joined", { people: ["tara", "taralap", "holly"], cards: [poll()], votes: [V("dinner", "a", "taralap")], history: ["Tara voted pizza as a guest on her laptop (u-taralap), then joined with her email there; that seat resolves to u-tara."], write: edit("dinner", "removeOption", "pizza", "tara", "take pizza off the dinner poll"), want: "go", why: "the only vote on pizza is hers, from her other seat" });
+
 /* ---- the 40-scenario variance subset: picked before any run, every 4th by position, plus the first 3 ambiguous ---- */
 export function subset(list) {
   const pick = list.filter((_, i) => i % 4 === 0).slice(0, 37);
@@ -264,31 +298,44 @@ const labelsOf = (list) => list.map((s) => ({ id: s.id, ...s.label }));
 const hash = (x) => crypto.createHash("sha256").update(JSON.stringify(x)).digest("hex").slice(0, 16);
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const list = scenarios();
+  const all = scenarios();
   const ids = new Set();
-  for (const s of list) {
+  for (const s of all) {
     if (ids.has(s.id)) throw new Error(`dup ${s.id}`);
     ids.add(s.id);
   }
+  // the first freeze covers the scenarios with no batch; each appended batch is frozen on its own, later
+  const list = all.filter((s) => !s.batch);
   const file = HERE + "scenarios.json";
   const old = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
-  const labels = labelsOf(list);
-  if (old && old.labelsHash !== hash(labels)) {
+  const relabel = (before, now) => {
     if (!process.argv.includes("--relabel")) {
       console.error("labels differ from the frozen file; rerun with --relabel and give the reason in label-changes.md");
       process.exit(1);
     }
-    const before = new Map(labelsOf(old.scenarios).map((l) => [l.id, l]));
-    const lines = labels.filter((l) => JSON.stringify(before.get(l.id)) !== JSON.stringify(l)).map((l) => `- ${new Date().toISOString()} ${l.id}: ${JSON.stringify(before.get(l.id) ?? null)} → ${JSON.stringify(l)} — reason: (write it)`);
+    const was = new Map(labelsOf(before).map((l) => [l.id, l]));
+    const lines = labelsOf(now).filter((l) => JSON.stringify(was.get(l.id)) !== JSON.stringify(l)).map((l) => `- ${new Date().toISOString()} ${l.id}: ${JSON.stringify(was.get(l.id) ?? null)} → ${JSON.stringify(l)} — reason: (write it)`);
     fs.appendFileSync(HERE + "label-changes.md", lines.join("\n") + "\n");
-  }
+  };
+  const labels = labelsOf(list);
+  if (old && old.labelsHash !== hash(labels)) relabel(old.scenarios.filter((s) => !s.batch), list);
   const frozenAt = old && old.labelsHash === hash(labels) ? old.frozenAt : new Date().toISOString();
-  const out = { frozenAt, labelsHash: hash(labels), count: list.length, subset: subset(list), scenarios: list };
+  const batches = [...new Set(all.filter((s) => s.batch).map((s) => s.batch))].map((name) => {
+    const mine = all.filter((s) => s.batch === name);
+    const was = old?.batches?.find((b) => b.name === name);
+    if (was && was.labelsHash !== hash(labelsOf(mine))) relabel(old.scenarios.filter((s) => s.batch === name), mine);
+    return { name, frozenAt: was && was.labelsHash === hash(labelsOf(mine)) ? was.frozenAt : new Date().toISOString(), labelsHash: hash(labelsOf(mine)), count: mine.length, ids: mine.map((s) => s.id) };
+  });
+  const out = { frozenAt, labelsHash: hash(labels), count: list.length, subset: subset(list), batches, scenarios: all };
   fs.writeFileSync(file, JSON.stringify(out, null, 1));
-  const by = (f) => Object.entries(list.reduce((a, s) => ((a[f(s)] = (a[f(s)] ?? 0) + 1), a), {})).map(([k, n]) => `${k} ${n}`).join(" · ");
+  const by = (xs, f) => Object.entries(xs.reduce((a, s) => ((a[f(s)] = (a[f(s)] ?? 0) + 1), a), {})).map(([k, n]) => `${k} ${n}`).join(" · ");
   console.log(`${list.length} scenarios, frozen ${frozenAt}, labels ${hash(labels)}`);
-  console.log("groups:", by((s) => s.group));
-  console.log("labels:", by((s) => s.label.verdict));
-  console.log("writes:", by((s) => s.write.kind));
+  console.log("groups:", by(list, (s) => s.group));
+  console.log("labels:", by(list, (s) => s.label.verdict));
+  console.log("writes:", by(list, (s) => s.write.kind));
   console.log("ambiguous:", list.filter((s) => s.label.ambiguous).length);
+  for (const b of batches) {
+    const mine = all.filter((s) => s.batch === b.name);
+    console.log(`+ batch ${b.name}: ${b.count} scenarios, frozen ${b.frozenAt}, labels ${b.labelsHash} · labels: ${by(mine, (s) => s.label.verdict)} · writes: ${by(mine, (s) => s.write.kind)}`);
+  }
 }

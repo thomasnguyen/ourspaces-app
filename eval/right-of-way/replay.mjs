@@ -18,8 +18,12 @@ const flag = (k) => argv.includes(k);
 const opt = (k) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : undefined);
 const data = load();
 const list = data.scenarios;
-const clear = list.filter((s) => !s.label.ambiguous);
-const amb = list.filter((s) => s.label.ambiguous);
+// the first freeze (R3's 162) is scored as before; each appended batch (r4: the misses, as new situations) apart
+const orig = list.filter((s) => !s.batch);
+const clear = orig.filter((s) => !s.label.ambiguous);
+const amb = orig.filter((s) => s.label.ambiguous);
+const batches = data.batches ?? [];
+const inBatch = (b) => list.filter((s) => s.batch === b.name);
 const median = (a) => { const x = [...a].sort((p, q) => p - q); return x.length ? x[Math.floor(x.length / 2)] : null; };
 const pct = (a, p) => { const x = [...a].sort((p, q) => p - q); return x.length ? x[Math.min(x.length - 1, Math.floor(x.length * p))] : null; };
 
@@ -55,12 +59,19 @@ function summary(name, answers, extra = {}) {
   return { clear: t, ambiguous: ta, groups: byGroup(answers), kinds: byKind(answers), labels: byLabel(answers), ...extra };
 }
 
+function batchLine(b, answers) {
+  const t = tally(inBatch(b).filter((s) => !s.label.ambiguous), answers);
+  console.log(`+ batch ${b.name} (${b.count} scenarios appended, labels frozen ${b.frozenAt}): ${t.right}/${t.n} right · harmful allowed ${t.harmful}/${t.harmfulOf} · wrongly held ${t.held}/${t.goOf} (wait ${t.heldWait}, vote ${t.heldAsk}, refused ${t.heldNever}) · other wrong ${t.other} · wrong person ${t.person}`);
+  return t;
+}
+
 const g = await gateArm();
 if (!opt("--model") && !flag("--all")) {
   if (flag("--rows")) for (const s of list) console.log(line(s, g.answers[s.id]));
   else for (const s of list) if (judge(s.label, g.answers[s.id]) !== "right") console.log(line(s, g.answers[s.id]));
   const us = Object.values(g.us);
-  summary(`arm A, the gate (${list.length} scenarios, ${clear.length} clear + ${amb.length} ambiguous, labels frozen ${data.frozenAt})`, g.answers);
+  summary(`arm A, the gate (${orig.length} scenarios, ${clear.length} clear + ${amb.length} ambiguous, labels frozen ${data.frozenAt})`, g.answers);
+  for (const b of batches) batchLine(b, g.answers);
   console.log(`time per decision (the door path in-process, node ${process.version}): median ${median(us).toFixed(2)} µs · p90 ${pct(us, 0.9).toFixed(2)} µs · max ${Math.max(...us).toFixed(2)} µs`);
   process.exit(0);
 }
@@ -82,9 +93,9 @@ if (opt("--model") && !flag("--all")) {
 }
 
 /* --all: every arm, every trial, results.json */
-const out = { frozenAt: data.frozenAt, labelsHash: data.labelsHash, scenarios: list.length, clear: clear.length, ambiguous: amb.length, ran: new Date().toISOString(), arms: {} };
+const out = { frozenAt: data.frozenAt, labelsHash: data.labelsHash, scenarios: orig.length, batches, clear: clear.length, ambiguous: amb.length, ran: new Date().toISOString(), arms: {} };
 const us = Object.values(g.us);
-out.arms.gate = summary("arm A, the gate", g.answers, { usPerDecision: { median: median(us), p90: pct(us, 0.9), max: Math.max(...us) }, misses: list.filter((s) => judge(s.label, g.answers[s.id]) !== "right").map((s) => ({ id: s.id, ambiguous: Boolean(s.label.ambiguous), want: s.label, got: g.answers[s.id], result: judge(s.label, g.answers[s.id]) })) });
+out.arms.gate = summary("arm A, the gate", g.answers, { batches: Object.fromEntries(batches.map((b) => [b.name, batchLine(b, g.answers)])), usPerDecision: { median: median(us), p90: pct(us, 0.9), max: Math.max(...us) }, misses: list.filter((s) => judge(s.label, g.answers[s.id]) !== "right").map((s) => ({ id: s.id, ambiguous: Boolean(s.label.ambiguous), want: s.label, got: g.answers[s.id], result: judge(s.label, g.answers[s.id]) })) });
 for (const cfg of Object.keys(CONFIGS)) {
   for (const trial of [1, 2]) {
     const rows = cached(cfg, trial);
@@ -95,7 +106,7 @@ for (const cfg of Object.keys(CONFIGS)) {
     const tin = which.reduce((a, s) => a + (rows[s.id].usage?.in ?? 0), 0), tout = which.reduce((a, s) => a + (rows[s.id].usage?.out ?? 0), 0);
     const dollars = which.reduce((a, s) => a + (rows[s.id].usd ?? 0), 0);
     const key = `${cfg}#${trial}`;
-    const full = which.length === list.length;
+    const full = which.length >= orig.length;
     const name = `${CONFIGS[cfg].label}, trial ${trial} (${which.length} scenarios${full ? "" : ", the variance subset"})`;
     const sub = which.filter((s) => !s.label.ambiguous);
     const t = tally(sub, answers);
