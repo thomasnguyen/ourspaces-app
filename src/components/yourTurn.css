@@ -1,26 +1,82 @@
-/* "your turn" — a small pile of paper tickets in the room's header band.
-   Black sticker label, cream tickets, lime only on the count and the tick.
-   Tokens come from @theme in index.css. */
+/* "your turn" — a count on the dock's orb; pressed, a small pile of paper
+   tickets opens above the dock. Black sticker label, cream tickets, lime on
+   the tick. Tokens come from @theme in index.css. */
 
 .your-turn {
-  --yt-delay: 520ms;
-  position: absolute;
+  --yt-delay: 0ms;
+  position: fixed;
   z-index: 66;
-  /* wide screens: the empty band between the room's name and who's here,
-     so the open card sits over no board at all */
-  top: 22px;
-  right: 404px;
+  bottom: 96px;
+  left: calc(50% + 48px);
   display: flex;
   width: 364px;
+  max-width: calc(100vw - 24px);
   flex-direction: column;
   align-items: stretch;
   color: var(--color-ink);
   font-family: var(--font-sans);
+  translate: -50% 0;
   pointer-events: none;
 }
 
-.your-turn.is-settled {
-  --yt-delay: 0ms;
+/* ── the count: sits on the orb, the one thing the room shows unasked.
+   The room palette's orange-red, since the app has no red of its own ── */
+.yt-badge {
+  position: absolute;
+  z-index: 3;
+  top: -15px;
+  left: 40px;
+  display: grid;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 4px;
+  animation: yt-badge-in var(--dur-arrive) var(--ease-pop) 900ms both;
+}
+
+.yt-badge.is-settled {
+  animation: none;
+}
+
+.yt-badge b {
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-trip);
+  box-shadow: 0 0 0 2.5px var(--color-sticker);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0 6px;
+  animation: yt-badge-in var(--dur-base) var(--ease-pop) both;
+  transition: transform var(--dur-quick) var(--ease-glide);
+}
+
+.yt-badge:hover b {
+  transform: scale(1.12);
+}
+
+/* a guest owes nothing: same count, no colour */
+.yt-badge.is-guest b,
+.yt-badge.is-open b {
+  background: white;
+}
+
+@keyframes yt-badge-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+/* the dock's other keys step out for a voice ask; so does this */
+.action-dock:has(.dock-voice:not(.is-idle)) .yt-badge,
+.has-entry-gate .yt-badge {
+  display: none;
 }
 
 .your-turn > * {
@@ -29,6 +85,8 @@
 
 /* something else has the floor: the gate, chat, an editor, a frame or card
    in focus */
+main:has(.recap-panel) .your-turn,
+main:has(.dock-voice:not(.is-idle)) .your-turn,
 .has-entry-gate .your-turn,
 .has-chat-open .your-turn,
 .has-editor-open .your-turn,
@@ -52,6 +110,7 @@ main:has(.your-turn) .welcome-pill {
   align-items: center;
   gap: 8px;
   margin: 0 0 -10px 12px;
+  order: -1;
   border: 0;
   border-radius: var(--radius-pill);
   background: var(--color-sticker);
@@ -78,43 +137,24 @@ main:has(.your-turn) .welcome-pill {
   transform: rotate(-2deg) scale(0.96);
 }
 
-.yt-tab b {
+.yt-tab i {
   display: grid;
-  min-width: 22px;
-  height: 22px;
-  flex: none;
+  width: 20px;
+  height: 20px;
   place-items: center;
   border-radius: var(--radius-pill);
-  background: var(--color-lime);
-  color: var(--color-ink);
-  font-size: 13px;
-  padding: 0 6px;
-}
-
-.your-turn.is-guest .yt-tab b {
-  background: white;
-}
-
-/* the top card's name rides in the label only where the pile starts shut */
-.yt-tab i {
-  display: none;
-  overflow: hidden;
-  min-width: 0;
-  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.16);
   font-family: var(--font-sans);
-  font-size: 13.5px;
+  font-size: 14px;
   font-style: normal;
   font-weight: 500;
-  padding-right: 8px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ── the pile: the top card open, the rest peeking out from under it ── */
 .yt-pile {
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -123,11 +163,11 @@ main:has(.your-turn) .welcome-pill {
 .yt-item {
   position: relative;
   z-index: calc(10 - var(--i));
-  margin: -9px calc(4px + var(--i) * 8px) 0;
-  border-radius: 6px 6px 13px 13px;
+  margin: 0 calc(4px + var(--i) * 8px) -9px;
+  border-radius: 13px 13px 6px 6px;
   background: color-mix(in srgb, var(--color-card) 88%, var(--color-mat));
-  box-shadow: 0 4px 0 rgba(45, 22, 31, 0.18);
-  transform-origin: 50% 0;
+  box-shadow: 0 -1px 0 rgba(45, 22, 31, 0.1);
+  transform-origin: 50% 100%;
   animation: yt-rise var(--dur-arrive) var(--ease-pop) both;
   animation-delay: calc(var(--yt-delay) + 60ms + var(--i) * 70ms);
   transition:
@@ -146,7 +186,7 @@ main:has(.your-turn) .welcome-pill {
 @keyframes yt-rise {
   from {
     opacity: 0;
-    transform: translateY(-18px) scale(0.96);
+    transform: translateY(18px) scale(0.96);
   }
 }
 
@@ -160,7 +200,7 @@ main:has(.your-turn) .welcome-pill {
   background: none;
   color: inherit;
   cursor: pointer;
-  padding: 15px 12px 7px;
+  padding: 7px 12px 15px;
   text-align: left;
 }
 
@@ -390,8 +430,8 @@ main:has(.your-turn) .welcome-pill {
 .yt-item.is-done.is-top {
   position: absolute;
   z-index: 20;
-  top: 0;
   right: 0;
+  bottom: 0;
   left: 0;
 }
 
@@ -430,10 +470,10 @@ main:has(.your-turn) .welcome-pill {
 /* ── nothing left: one stamp, then it's gone ── */
 .yt-clear {
   display: inline-flex;
-  align-self: flex-start;
+  align-self: center;
   align-items: center;
   gap: 9px;
-  margin: 14px 0 0 12px;
+  margin: 0;
   border-radius: var(--radius-pill);
   background: var(--color-sticker);
   box-shadow: 0 5px 0 rgba(45, 22, 31, 0.22);
@@ -472,17 +512,6 @@ main:has(.your-turn) .welcome-pill {
     opacity: 0;
     transform: rotate(-2deg) translateY(14px);
   }
-}
-
-/* ── tucked: just the label ── */
-.your-turn.is-tucked .yt-pile,
-.your-turn.is-tucked .yt-more,
-.your-turn.is-tucked .yt-guest-note {
-  display: none;
-}
-
-.your-turn.is-tucked .yt-tab {
-  margin-bottom: 0;
 }
 
 /* ── the card the item points at: one lime ring, closing in ── */
@@ -532,33 +561,15 @@ main:has(.your-turn) .welcome-pill {
   padding: 0 5px;
 }
 
-/* ── narrower desktops: no free band, so it hangs under who's-here ── */
-@media (max-width: 1399px) {
-  .your-turn {
-    top: 80px;
-    right: 28px;
-    width: 340px;
-  }
-}
-
-/* ── phone: one line above the dock; a tap opens the top card ── */
+/* ── phone: the top ticket only, full width above the dock ── */
 @media (max-width: 800px) {
   .your-turn {
-    position: fixed;
-    top: auto;
     right: 12px;
-    bottom: 164px;
+    bottom: 166px;
     left: 12px;
     width: auto;
-  }
-
-  .your-turn.is-tucked .yt-tab {
-    align-self: center;
-    margin-left: 0;
-  }
-
-  .your-turn.is-tucked .yt-tab i {
-    display: block;
+    max-width: none;
+    translate: none;
   }
 
   .your-turn .yt-item:not(.is-top) {
@@ -604,20 +615,11 @@ main:has(.your-turn) .welcome-pill {
     display: none;
   }
 
-  .yt-clear {
-    align-self: center;
-    margin: 0;
-  }
-
-  @keyframes yt-rise {
-    from {
-      opacity: 0;
-      transform: translateY(18px) scale(0.96);
-    }
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .yt-badge,
+  .yt-badge b,
   .yt-tab,
   .yt-more,
   .yt-guest-note,

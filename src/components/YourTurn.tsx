@@ -1,11 +1,12 @@
 /**
- * "your turn" — the small pile by the room's header that says what's waiting
- * on you and lets you do it in one tap. A self-contained layer: it takes the
- * items `lib/yourTurn.ts` computed plus the room's own handlers, and owns
- * nothing but its open/tucked state and the half second a finished card
- * takes to leave.
+ * "your turn" — a small count on the dock's orb; press it and a pile of
+ * tickets opens above the dock saying what's waiting on you, one tap each.
+ * A self-contained layer: it takes the items `lib/yourTurn.ts` computed plus
+ * the room's own handlers, and owns nothing but whether the pile is open and
+ * the half second a finished card takes to leave.
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { panToWidget } from "../lib/recapBoard";
 import { TURN_SHOWN, type TurnItem, type TurnViewer } from "../lib/yourTurn";
 import "./yourTurn.css";
@@ -23,8 +24,8 @@ const CLEAR_MS = 2400;
 const PULSE_MS = 1700;
 const PHONE = "(max-width: 800px)";
 
-/** `?turn=open` holds it open, `?turn=tucked` starts it as the label — the
-    states a take needs without clicking its way there. */
+/** `?turn=open` starts with the pile open and holds it there — the state a
+    take needs without clicking its way to it. */
 function turnParam() {
   return new URLSearchParams(window.location.search).get("turn") ?? "";
 }
@@ -67,10 +68,10 @@ export function YourTurn({
   const items = useMemo(() => latest, [sig]);
 
   const param = useMemo(turnParam, []);
-  /* a phone starts as one line (the label names the top card); a desktop
-     starts open, in the header band where it covers nothing */
-  const startOpen = () => param === "open" || (param !== "tucked" && !window.matchMedia(PHONE).matches);
+  /* shut until asked for: the room shows a count on the orb and nothing else */
+  const startOpen = () => param === "open";
   const [open, setOpen] = useState(startOpen);
+  const [dock, setDock] = useState<Element | null>(null);
   const [all, setAll] = useState(false);
   const [topKey, setTopKey] = useState("");
   const [leaving, setLeaving] = useState<Array<{ item: TurnItem; wasTop: boolean }>>([]);
@@ -106,11 +107,8 @@ export function YourTurn({
     const gone = before.items
       .filter((item) => !items.some((next) => next.key === item.key))
       .map((item) => ({ item, wasTop: item.key === lastTop.current }));
-    if (items.some((item) => !before.items.some((old) => old.key === item.key))) {
-      // something new needs you: the pile comes back on its own
-      setOpen(true);
-      setCleared(false);
-    }
+    // something new needs you: the count goes up, the pile stays shut
+    if (items.some((item) => !before.items.some((old) => old.key === item.key))) setCleared(false);
     if (gone.length === 0) return;
     setLeaving((current) => [...current, ...gone]);
     setDraft("");
@@ -132,15 +130,19 @@ export function YourTurn({
     lastTop.current = top?.key ?? "";
   });
 
-  // the entrance waits for the room's own; later cards don't
+  // the count waits for the room's entrance; after that nothing does
   useEffect(() => {
     const timer = window.setTimeout(() => setSettled(true), 1400);
     return () => window.clearTimeout(timer);
   }, []);
 
-  /* Once you start using the board the pile gets out of the way; it comes
-     back on its own only when something new needs you. The header scrolls
-     off with the board, so a pan tucks it too (that covers "take me there"). */
+  // the count lives on the dock, by the orb; the dock is the room page's
+  useEffect(() => {
+    const el = document.querySelector(".action-dock");
+    if (el !== dock) setDock(el);
+  });
+
+  /* Once you go back to the board the pile shuts; it never opens itself. */
   useEffect(() => {
     if (!open || !settled || param === "open") return;
     const tuck = (event: Event) => {
@@ -171,6 +173,23 @@ export function YourTurn({
 
   if (rows.length === 0 && !cleared) return null;
 
+  const badge =
+    dock && items.length > 0
+      ? createPortal(
+          <button
+            type="button"
+            className={`yt-badge${viewer.standing === "guest" ? " is-guest" : ""}${open ? " is-open" : ""}${settled ? " is-settled" : ""}`}
+            data-testid="your-turn-tab"
+            title={viewer.standing === "guest" ? "what the room's on" : "your turn"}
+            onClick={() => setOpen((value) => !value)}
+          >
+            <b key={items.length}>{items.length}</b>
+          </button>,
+          dock,
+        )
+      : null;
+  if (!open && rows.length > 0 && !cleared) return badge;
+
   const guest = viewer.standing === "guest";
   // a phone shows one card at a time, so everything else is "more"
   const phone = window.matchMedia(PHONE).matches;
@@ -192,9 +211,11 @@ export function YourTurn({
   };
 
   return (
+    <>
+    {badge}
     <aside
       ref={rootRef}
-      className={`your-turn${open ? " is-open" : " is-tucked"}${guest ? " is-guest" : ""}${all ? " is-all" : ""}${settled ? " is-settled" : ""}`}
+      className={`your-turn${guest ? " is-guest" : ""}${all ? " is-all" : ""}`}
       data-testid="your-turn"
       data-count={items.length}
     >
@@ -210,13 +231,12 @@ export function YourTurn({
           <button
             type="button"
             className="yt-tab"
-            data-testid="your-turn-tab"
-            onClick={() => setOpen((value) => !value)}
-            title={open ? "tuck away" : label}
+            data-testid="your-turn-close"
+            onClick={() => setOpen(false)}
+            title="put it away"
           >
             <span>{label}</span>
-            {items.length > 0 && <b>{items.length}</b>}
-            {top && <i>{top.title}</i>}
+            <i aria-hidden="true">×</i>
           </button>
           <ol className="yt-pile">
             {rows.map(({ item, done, wasTop }, index) => {
@@ -323,5 +343,6 @@ export function YourTurn({
         </>
       )}
     </aside>
+    </>
   );
 }

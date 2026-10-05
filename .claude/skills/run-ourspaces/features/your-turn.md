@@ -1,35 +1,37 @@
 ---
 route: #/space/crew
-ready: your-turn
-testids: your-turn your-turn-tab your-turn-item your-turn-go your-turn-choice your-turn-answer your-turn-more your-turn-clear rail-turn
+ready: your-turn-tab
+testids: your-turn your-turn-tab your-turn-close your-turn-item your-turn-go your-turn-choice your-turn-answer your-turn-more your-turn-clear rail-turn
 states:
-  rio: ?as=Rio
-  ash: ?as=Ash
-  guest: ?turn=open
-  tucked: ?as=Rio&turn=tucked
+  badge: ?as=Rio
+  rio: ?as=Rio&turn=open | wait your-turn
+  ash: ?as=Ash&turn=open | wait your-turn
+  guest: ?turn=open | wait your-turn
+  pressed: ?as=Rio | click your-turn-tab | wait your-turn | sleep 500
   mid: ?as=Rio&turn=open | click css:[data-testid="your-turn-item"][data-kind="rsvp"] [data-choice="yes"] | sleep 240
   next: ?as=Rio&turn=open | click css:[data-testid="your-turn-item"][data-kind="rsvp"] [data-choice="yes"] | sleep 1100
   more: ?as=Rio&turn=open | click your-turn-more | sleep 400
-  house: ?as=theo&turn=open #/space/house
-  couple: ?turn=open #/space/couple
+  house: ?as=theo&turn=open #/space/house | wait your-turn
+  couple: ?turn=open #/space/couple | wait your-turn
   rail: ?as=Rio #/space/house | wait rail-turn
 take:
-  clear: ash real 60fps 480f | 70 click your-turn-go | 190 click css:.yt-item.is-top [data-choice="a"] | 320 click css:.yt-item.is-top [data-choice="b"]
+  clear: badge real 60fps 540f | 60 click your-turn-tab | 130 click your-turn-go | 250 click css:.yt-item.is-top [data-choice="yes"] | 370 click css:.yt-item.is-top [data-choice="1"]
 ---
 # Your turn
 
-**For a user:** on entering a room, a small pile of paper tickets by the
-room's name says what's waiting on *you*: "you in? maya's bday · in 5 days ·
+**For a user:** a small orange count sits on the dock's orb when something in
+the room is waiting on *you*; nothing else shows unasked. Press it and a pile
+of paper tickets opens above the dock: "you in? maya's bday · in 5 days ·
 4 in, just you left". The top ticket is open with its one tap (`in · maybe ·
 can't`, the poll's options, the days, the open slots, or an answer box); the
-next two peek out under it and `+N` holds the rest. Doing it, there or on the
-card itself, strikes the ticket, drops it, and the next one is already
-underneath. After the last: a black `✓ that's you done` stamp, then nothing.
-Nobody who has nothing waiting ever sees the layer (`?as=Maya`).
+next two peek out above it and `+N` holds the rest. Doing it, there or on the
+card itself, strikes the ticket, drops it, the count goes down and the next
+one is already underneath. After the last: a black `✓ that's you done` stamp,
+then the count is gone. Nobody with nothing waiting sees anything (`?as=Maya`).
 
-A guest (not joined; in mock, anyone not on the room's list) gets the same
-pile labelled `jump in` with a `nothing's on you yet` tag: at most three, one
-of each kind, no backlog count.
+A guest (not joined; in mock, anyone not on the room's list) gets a white
+count and the pile labelled `jump in` with a `nothing's on you yet` tag: at
+most three, one of each kind, no backlog.
 
 **Computed, never stored:** `yourTurn()` in `src/lib/yourTurn.ts` is a pure
 function over the widgets the room already loaded. Per widget type:
@@ -49,27 +51,27 @@ the card's frame) + how much of the room has already answered.
 
 **Get there:** any room; `?as=<name>` plays the mock room as a fixture person
 (`Rio` has four things, `Ash` has the cake vote, `Maya` none, `theo` in the house has the wheel).
-`?turn=open` holds the pile open, `?turn=tucked` starts it as the label.
+`?turn=open` starts with the pile open and holds it there.
 
-**Drive:** `your-turn-choice` (with `data-choice`) does the top ticket;
-`your-turn-go` on the top ticket pans the board to the card and rings it lime
-(`.is-your-turn`), on a ticket behind it brings that one to the front;
-`your-turn-tab` tucks / reopens; `your-turn-more` shows all (on a phone: deals
+**Drive:** `your-turn-tab` is the count on the orb (opens / shuts the pile);
+`your-turn-close` is the pile's own label. `your-turn-choice` (with
+`data-choice`) does the top ticket; `your-turn-go` on the top ticket pans the
+board to the card and rings it lime (`.is-your-turn`), on a ticket behind it
+brings that one to the front; `your-turn-more` shows all (on a phone: deals
 the next ticket); `your-turn-clear` is the stamp. `rail-turn` is the small
 count on another room's tile (mock, `?as=`).
 
-**Behaviour:** desktop ≥1400 it sits in the empty band between the room name
-and who's-here; narrower it hangs under who's-here; a phone shows one line
-above the dock (`your turn 4 · maya's bday`) that opens the top ticket. A
-press or pan on the board tucks it (its own fly-to doesn't); it reopens only when a new item appears.
-Hidden behind the gate, chat, editors and focus.
+**Behaviour:** the pile never opens itself; a new item only raises the count.
+A press or pan on the board shuts it (its own fly-to doesn't). Same layout at
+every width; a phone shows one ticket at a time. The count is portalled into
+`.action-dock` and steps out with the other keys during a voice ask.
 
 **Code:** `src/lib/yourTurn.ts` (logic, `mockViewer`, `playAsOverrides`,
 `mockWaitingByRoom`) · `src/components/YourTurn.tsx` + `yourTurn.css` ·
 mounts: `src/App.tsx` (mock, next to `ActionDock`; `claimSlot` / `addMyDays`
 write the mock overrides) and `src/pages/LiveSpace.tsx` (live).
 
-**Gotchas:** the header scrolls with the board, the pile does not, hence the
-tuck on pan. Availability's own "You" row is tab-local, so the ticket writes
-a real row. Two other placements were tried and dropped (a row of three
-tickets over the dock; a list slip under who's-here).
+**Gotchas:** Availability's own "You" row is tab-local, so the ticket writes
+a real row. Tried and dropped: a row of three tickets over the dock, a list slip under
+who's-here, and the pile open on entry in the header band (covered cards
+below 1400px, weak on phones).

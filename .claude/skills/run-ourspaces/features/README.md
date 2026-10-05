@@ -11,7 +11,7 @@ id named here exists in `src/`.
 | [recap](recap.md) | crew dock | closed · open · landed |
 | [dock](dock.md) | crew dock | idle · sound · recap |
 | [deck](deck.md) | crew board | one · four · eight · beside |
-| [your-turn](your-turn.md) | crew header | rio · ash · guest · tucked · mid · next · more · house · couple · rail |
+| [your-turn](your-turn.md) | crew dock | badge · rio · ash · guest · pressed · mid · next · more · house · couple · rail |
 | [voice-build](voice-build.md) | crew (lane) | room · ask · hesitate · drawer · mock · shell · mockdrawer · gate · say |
 
 ## Header format
