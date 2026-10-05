@@ -10,6 +10,7 @@ the door, never in front of it.
   Entry points: the gate's "keep this on your other devices" link and the
   keep step in `SpaceMaker.tsx`. No password, ever.
 - **Making a room (N1, Oct 5):** on the deployments in `OPEN_ROOM_DEPLOYMENTS` (`convex/spaces.ts`; the dev lane only) a guest makes a room at once and its anonymous account owns it (joining later keeps the same user id); elsewhere (prod) the email code comes first, as before. An invite link is still full access to that one room; `listSpaces` never lists a made room.
+- **Who can do what (S3, Oct 5):** every write that touches a room acts as the caller's own seat (`convex/seat.ts`: their `members` row, from the session; a name or id the browser sends is ignored). No session or no seat = the write is refused or ignored; a made room's board, chat and brief read for its seats only (the tour reads for anyone). A seat comes from walking through the gate (`joinDemoSpace`, signed-in sessions only). Voice, recap and Firecrawl calls are limited per person and room, with a daily model ceiling (`convex/rateLimits.ts`).
 - **The account persists.** Convex Auth keeps the token in localStorage; the
   `users` row carries `email`. A joined person is the same `userId` on every
   browser they sign in on.

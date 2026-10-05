@@ -116,6 +116,7 @@ write here, nothing to sweep.
 
 **Dev readout** (dev lane, or `?timing=1`; `?timing=0` hides it): a mono
 line under the live strip (`dev-readout`): route (`dev-readout-route`: "room facts · Ultra" or "plain · Lightning") · last word → final card ms ·
+A refused ask (S3, `convex/guard.ts`) ends on the miss receipt with the server's plain line instead of "couldn't place that": "that's a lot of asks; try again in a minute" (the person's burst or the room's day) or "the space's AI is resting until tomorrow; …" (the day's ceiling); an answer verb says the same line.
 tentative ms (negative = before the last word) · calls · late word · guess right/wrong; `voice-receipt` inside it carries `data-ms` =
 last word → card complete on this screen. Click it (or a slip, in dev) for
 the context drawer (`dev-context-drawer`, `dev-context-close`): words heard
