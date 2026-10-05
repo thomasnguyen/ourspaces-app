@@ -14,15 +14,16 @@ Backward-looking history lives in `hackathon.md`.
   stage on match b3 (plain 640 / 869 ms, room facts 1,083 / 1,288). Ten examples 9/0/1 as before. Rough: a
   member's expanded pile with ~17 tickets runs off the panel; dev crew has ~13 stray test cards.
 
-- **The family room + two new cards (Oct 5, branch `family-space`, mock only).**
-  A fourth example room, `#/space/family`: Dev, Alex, Casey, Mina; chores,
-  the weekend, and a push-up challenge mid-week. New card kinds `checkIn`
-  (daily grid, tap today, streaks, total) and `standings` (face down until
-  you've logged today, then the flip; lines with a `beat 40` move). Knows-page
-  fixtures and a phone column included. Not done: Convex validators + seed,
-  `LiveSpace` passing `onWidgetData`, the deck entries and the "challenge"
-  recipe, family photos. Feature files `family.md`, `check-in.md`,
-  `standings.md`.
+- **The family on main and live on dev, with the challenge recipe (Oct 5, F2).** `family-space`
+  merged. `checkIn` / `standings` are real (validators, `checkIns.log` = your row only, live
+  wiring, the standings flip fixed), the family is seeded on dev (`seed:seedFamily`, day 5 of 6
+  always). "set up a push-up challenge for the four of us" deals the **challenge recipe**: one model
+  line, code builds a framed group (who's in with the four, check-in, standings linked by a
+  `links` row, the deal, the reveal) and writes it card by card; first card ~1.1 s, whole group on a
+  second screen ~1.8 s. "i did 40" logs your own number (code). The brief reads challenges, chores
+  done and who's away till when. Your turn: log today + your named chore. Rough: brain asks ~+220 ms
+  (the deck prompt grew ~300 tokens); family examples 2/5/3; the phone column shows a voice group
+  where it sits on the board. Write-up `nebius/eval/f2-family.md`.
 
 - **What this space knows, redesigned (Oct 4, dev lane).** Same facts and actions,
   drawn as a wall: the group as face stickers, each noticed line as a paper
