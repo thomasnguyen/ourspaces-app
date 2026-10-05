@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -844,7 +845,8 @@ async function storedFor(ctx: MutationCtx, spaceId: Id<"spaces">): Promise<{ id:
 
 /**
  * A person corrects what the space knows. Anyone in the room may (it's a
- * shared page), and each change keeps who made it:
+ * shared page), and each change keeps who made it. The name comes from the
+ * caller's seat in the room, not from the client:
  * - `tell`: add a short fact in their own words; it goes to voice asks as a fact line.
  * - `untell`: take a told fact back.
  * - `forget`: cross out a noticed line; it stops going to voice asks.
@@ -864,10 +866,13 @@ export const correct = mutation({
   },
   returns: v.null(),
   handler: async (ctx, { spaceId, by, color, change }) => {
+    const authId = await getAuthUserId(ctx);
+    const seat = authId ? await ctx.db.query("members").withIndex("by_space_user", (q) => q.eq("spaceId", spaceId).eq("userId", authId)).first() : null;
+    if (!seat) return null;
     const row = await storedFor(ctx, spaceId);
     if (!row) return null;
     const at = Date.now();
-    const who = { by: by.trim().slice(0, 40) || "someone", color: color.slice(0, 40), at };
+    const who = { by: seat.name.trim().slice(0, 40) || by.trim().slice(0, 40) || "someone", color: seat.color || color.slice(0, 40), at };
     let told = row.s.told ?? [];
     let forgot = row.s.forgot ?? [];
     if (change.kind === "tell") {
