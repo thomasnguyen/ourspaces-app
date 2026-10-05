@@ -24,6 +24,8 @@ export type YourTurnHandlers = {
   onClaim?: (widgetId: string, itemName: string) => void;
   onDays?: (widgetId: string, dayIndex: number) => void;
   onAnswer?: (widgetId: string, text: string) => void;
+  /** a game invitation: join it (the room flies you to the card) */
+  onJoin?: (widgetId: string) => void;
 };
 
 const LEAVE_MS = 640;
@@ -56,6 +58,7 @@ export function YourTurn({
   onClaim,
   onDays,
   onAnswer,
+  onJoin,
 }: YourTurnHandlers & {
   /** the room; a new one starts the layer over */
   roomKey: string;
@@ -186,6 +189,7 @@ export function YourTurn({
       onRsvp?.(item.widgetId, choice as "yes" | "maybe" | "no");
     if (item.act === "claim") onClaim?.(item.widgetId, choice);
     if (item.act === "days") onDays?.(item.widgetId, Number(choice));
+    if (item.act === "join") onJoin?.(item.widgetId);
   };
 
   const answer = (event: FormEvent, item: TurnItem) => {

@@ -134,6 +134,7 @@ export function Rail({
   onSettingsClick,
   settingsOpen = false,
   waiting,
+  gameOn,
 }: {
   activeId?: string;
   activeSpaceOverride?: Partial<SpaceMeta>;
@@ -145,6 +146,8 @@ export function Rail({
   settingsOpen?: boolean;
   /** "your turn" in other rooms: how many things wait on you there. */
   waiting?: Record<string, number>;
+  /** rooms where a game is on that you're not in yet */
+  gameOn?: Record<string, boolean>;
 }) {
   const rememberCurrentSpace = () => {
     if (activeId) rememberSpaceSlug(activeId);
@@ -209,12 +212,16 @@ export function Rail({
                   {!active && Boolean(waiting?.[space.id]) && (
                     <b className="rail-turn" data-testid="rail-turn">{waiting?.[space.id]}</b>
                   )}
+                  {!active && gameOn?.[space.id] && (
+                    <b className="rail-game" data-testid="rail-game">▶</b>
+                  )}
                 </button>
                 <span className="space-tooltip">
                   {displaySpace.name}
                   {displaySpace.preview ? ` · ${displaySpace.preview}` : ""}
                   {hasSpace && <OnlineCount spaceId={space.id} />}
                   {!active && Boolean(waiting?.[space.id]) && ` · your turn on ${waiting?.[space.id]}`}
+                  {!active && gameOn?.[space.id] && " · a game is on"}
                 </span>
               </div>
             </Fragment>

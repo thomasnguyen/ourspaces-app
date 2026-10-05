@@ -1,0 +1,72 @@
+/* ANSWER TO SEE — face-down slips, one line, one turn-over. */
+
+.ats-cover {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.ats-line {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  opacity: 0.78;
+}
+
+.ats-slip {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9px;
+  transition:
+    background-color var(--dur-base) var(--ease-glide),
+    rotate var(--dur-base) var(--ease-glide);
+}
+
+.ats-slip i {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.ats-slip.is-out {
+  border: 2px dashed color-mix(in srgb, currentColor 34%, transparent);
+}
+
+/* turned in: the slip is paper side down, and sits a little crooked */
+.ats-slip.is-down {
+  background: var(--color-sticker);
+  color: var(--color-lime);
+  border: 2px solid color-mix(in srgb, var(--color-card) 22%, transparent);
+  rotate: calc((mod(var(--i) * 37, 7) - 3) * 1deg);
+  animation: ats-turn-in var(--dur-arrive) var(--ease-pop) both;
+}
+
+/* the turn-over: once, as the lock opens */
+.ats.is-open .ats-shown {
+  animation: ats-open var(--dur-stage) var(--ease-glide) both;
+  transform-origin: 50% 0;
+}
+
+@keyframes ats-turn-in {
+  from {
+    scale: 0.6;
+    opacity: 0;
+  }
+}
+
+@keyframes ats-open {
+  from {
+    opacity: 0;
+    transform: perspective(700px) rotateX(-38deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ats-slip.is-down,
+  .ats.is-open .ats-shown {
+    animation: none;
+  }
+}

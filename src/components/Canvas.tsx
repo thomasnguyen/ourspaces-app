@@ -1,3 +1,4 @@
+import { AwardDots } from "./games/GameInvite";
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { PeerCursor } from "./PeerCursor";
 import {
@@ -851,7 +852,10 @@ export function SpaceHeader({
                 {visibleOnline.length > 0 && (
                   <div className="header-seed-faces" aria-hidden="true">
                     {visibleOnline.map((member) => (
-                      <MemberFace key={member.name} name={member.name} size="md" />
+                      <span key={member.name} className="gm-face-wrap">
+                        <MemberFace name={member.name} size="md" />
+                        <AwardDots name={member.name} max={2} />
+                      </span>
                     ))}
                     {hiddenOnlineCount > 0 && (
                       <span className="header-face-overflow">+{hiddenOnlineCount}</span>

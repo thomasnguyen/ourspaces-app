@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { getAvatarSrc } from "../data/avatars";
 import type { Forgot, KnowLine, RoomKnows, Told } from "../lib/roomKnows";
 import type { KnowsChange } from "./RoomKnows";
+import { AwardRow } from "./games/GameInvite";
 
 /**
  * The things on the room's own page (RoomKnows.tsx). Each line the space has
@@ -399,6 +400,7 @@ export function Portrait({ people, lines, gone }: { people: Person[]; lines: Kno
             <Face name={p.name} color={p.color} />
             <b>{p.name}</b>
             {away && <em>{back ?? "away"}</em>}
+            <AwardRow name={p.name} />
           </span>
         );
       })}

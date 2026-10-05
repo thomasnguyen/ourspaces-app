@@ -32,7 +32,9 @@ export type WidgetType =
   | "hotLinks"
   | "shipPost"
   | "roundtable"
-  | "letter";
+  | "letter"
+  | "game"
+  | "scoreboard";
 
 export type Widget = {
   id: string;

@@ -113,7 +113,10 @@ import { ShipRoom } from "./components/ShipRoom";
 import type { RoomOrigin } from "./components/CanvasRoom";
 import type { BuildRoomLink } from "./data/buildroom";
 import { pendingLinkRows, scheduleMockResolve } from "./lib/mockArrival";
-import { YourTurn } from "./components/YourTurn";
+import { YourTurn, goToTurnWidget } from "./components/YourTurn";
+import { GameDoor, GameInvite, GameSheet, GameSheetTab } from "./components/games/GameInvite";
+import { GAME_WIDGET_ID, GamesProvider, SCOREBOARD_WIDGET_ID, useMockGames, type CastPerson } from "./lib/games/useMockGames";
+import { GAME_SPOTS, hasGames } from "./data/games";
 import { mockViewer, mockWaitingByRoom, playAsOverrides, yourTurn } from "./lib/yourTurn";
 
 const CursorLab = lazy(() =>
@@ -2028,6 +2031,50 @@ export default function App() {
   }
 
   const baseSpace = getSpace(spaceId);
+  /* Games, mock: the room's game with simulated players (lib/games). The
+     cast is the people on "what this space knows"; you play as `?as=`, as
+     the second half of a room of two, or as yourself. */
+  const gameCastOf = useCallback((room: string): CastPerson[] => {
+    const people = mockRoomKnows(room, "").people;
+    return people.length ? people : getSpace(room).members.map(({ name, color }) => ({ name, color }));
+  }, []);
+  const gameMeOf = useCallback(
+    (room: string) => {
+      const cast = gameCastOf(room);
+      const viewer = mockViewer(cast.map((person) => person.name));
+      const person = viewer.standing === "member" ? cast.find((p) => p.name === viewer.name) : cast.length === 2 ? cast[1] : undefined;
+      return person ? { name: person.name, color: person.color } : { name: "You", color: tabIdentity.color };
+    },
+    [gameCastOf, tabIdentity.color],
+  );
+  const games = useMockGames({ room: spaceId, meOf: gameMeOf, castOf: gameCastOf, flyTo: goToTurnWidget });
+  const gameWidgets: Widget[] = hasGames(spaceId)
+    ? [
+        { id: SCOREBOARD_WIDGET_ID, type: "scoreboard", ...GAME_SPOTS[spaceId].board, w: 300, h: 110 + 49 * Math.min(7, games.rows.length) + 96, z: 4, data: { title: "scoreboard" } },
+        ...(games.game
+          ? [
+              {
+                id: GAME_WIDGET_ID,
+                type: "game" as const,
+                ...GAME_SPOTS[spaceId].card,
+                w: 400,
+                h: 560,
+                z: 5,
+                data: {
+                  title: games.game.name,
+                  name: games.game.name,
+                  phase: games.game.phase,
+                  startedBy: games.game.startedBy.name,
+                  players: games.game.players.map((player) => player.name),
+                  youIn: games.game.players.some((player) => player.name === games.me.name),
+                  round: games.game.round + 1,
+                  rounds: games.game.rounds.length,
+                },
+              },
+            ]
+          : []),
+      ]
+    : [];
   const activeSpaceCustomization =
     spaceDraft ??
     spaceCustomizations[spaceId] ??
@@ -2037,6 +2084,7 @@ export default function App() {
     ...baseSpace.widgets,
     ...(addedWidgets[spaceId] ?? []),
     ...(promoted && spaceId === "crew" ? [DECISION_WIDGET] : []),
+    ...gameWidgets,
   ]
     .filter((widget) => !(deletedWidgetIds[spaceId] ?? []).includes(widget.id))
     .map((widget) => ({
@@ -2187,6 +2235,7 @@ export default function App() {
   );
 
   return (
+    <GamesProvider value={games}>
     <main
       className={`paper-bg relative h-dvh overflow-hidden ${
         chatOpen ? "has-chat-open" : ""
@@ -2213,6 +2262,7 @@ export default function App() {
         onSelectSpace={selectSpace}
         onCreateClick={openPicker}
         waiting={mockWaitingByRoom(SPACES_BY_ID, { widgetDataOverrides, pollSelections, rsvpSelections, dailyAnswers })}
+        gameOn={games.onIn}
         self={tabIdentity}
         settingsOpen={settingsOpen}
         onSettingsClick={() => setSettingsOpen((open) => !open)}
@@ -2229,7 +2279,12 @@ export default function App() {
         spaceId={spaceId}
         addOpen={pickerOpen}
         onAddClick={openPicker}
-        knowsDoor={<RoomKnowsDoor slug={spaceId} count={standing(mockKnows)} />}
+        knowsDoor={
+          <>
+            <RoomKnowsDoor slug={spaceId} count={standing(mockKnows)} />
+            <GameDoor onGo={goToTurnWidget} />
+          </>
+        }
         spaceMeta={activeSpaceCustomization}
         roomEditing={Boolean(spaceDraft)}
         onEditSpace={openSpaceEditor}
@@ -2401,7 +2456,7 @@ export default function App() {
               onDailyReact={reactToDailyAnswer}
               promoted={promoted}
               onPromote={promoteMessage}
-              addedWidgets={voiceAddedWidgets}
+              addedWidgets={[...voiceAddedWidgets, ...gameWidgets]}
               widgetPlacements={widgetPlacements[spaceId] ?? {}}
               widgetDataOverrides={{
                 ...playAsOverrides(baseSpace.widgets, turnViewer),
@@ -2630,7 +2685,11 @@ export default function App() {
         onAnswer={answerDailyQ}
         onClaim={claimSlot}
         onDays={addMyDays}
+        onJoin={games.join}
       />
+      <GameInvite />
+      <GameSheetTab />
+      <GameSheet />
       <ActionDock
         voice={voiceHooks}
         recapOpen={recapOpen}
@@ -2714,5 +2773,6 @@ export default function App() {
       )}
       <RoomKnowsPage slug={spaceId} roomName={activeSpaceCustomization.name} knows={mockKnows} self={tabIdentity} onChange={correctMockKnows} fixture />
     </main>
+    </GamesProvider>
   );
 }

@@ -1,0 +1,1568 @@
+/* GAMES — the game card, its invitation, the award stickers, the scoreboard.
+   A black card on the board that goes the winner's colour at the reveal. */
+
+/* ---------- pieces ---------- */
+
+.gm-face {
+  display: inline-grid;
+  flex: none;
+  width: var(--face, 40px);
+  height: var(--face, 40px);
+  place-items: center;
+  overflow: hidden;
+  border: max(2px, calc(var(--face, 40px) * 0.06)) solid var(--color-card);
+  border-radius: 50%;
+  background: var(--by, var(--color-crew));
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.gm-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gm-face b {
+  color: var(--on, white);
+  font-family: var(--font-display);
+  font-size: calc(var(--face, 40px) * 0.46);
+  font-weight: 800;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+.gm-face.is-empty {
+  border: 2px dashed color-mix(in srgb, currentColor 40%, transparent);
+  background: transparent;
+  box-shadow: none;
+}
+
+.gm-award {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  border: 3px solid var(--color-card);
+  border-radius: 13px;
+  background: var(--tone);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.4);
+  color: var(--tone-ink);
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 4px 9px 4px 5px;
+  rotate: calc((mod(var(--i, 0) * 5, 7) - 3) * 1.2deg);
+  white-space: nowrap;
+}
+
+.gm-award i {
+  font-size: 15px;
+  font-style: normal;
+  line-height: 1;
+}
+
+.gm-award-lg {
+  gap: 8px;
+  border-width: 4px;
+  border-radius: 18px;
+  font-size: 19px;
+  padding: 8px 15px 8px 10px;
+  rotate: -5deg;
+}
+
+.gm-award-lg i {
+  font-size: 26px;
+}
+
+.gm-award-dot {
+  width: 22px;
+  height: 22px;
+  justify-content: center;
+  border-width: 2px;
+  border-radius: 50%;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  padding: 0;
+}
+
+.gm-award-dot i {
+  font-size: 11px;
+}
+
+/* the one snap: the sticker lands on the winner */
+.gm-award.is-landing {
+  animation: gm-stamp var(--dur-stage) var(--ease-snap) both;
+  animation-delay: calc(var(--t0, 0ms) + 520ms);
+}
+
+.gm-go {
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 12px 18px;
+  transition:
+    translate var(--dur-quick) var(--ease-glide),
+    scale var(--dur-instant) var(--ease-glide);
+}
+
+.gm-go:hover:not(:disabled) {
+  translate: 0 -2px;
+}
+
+.gm-go:active:not(:disabled) {
+  scale: 0.96;
+}
+
+.gm-go:disabled {
+  background: color-mix(in srgb, var(--color-card) 16%, transparent);
+  color: color-mix(in srgb, var(--color-card) 70%, transparent);
+  cursor: default;
+}
+
+.gm-ghost {
+  border: 2px solid color-mix(in srgb, currentColor 40%, transparent);
+  border-radius: var(--radius-pill);
+  color: inherit;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  padding: 9px 13px;
+}
+
+/* ---------- the card ---------- */
+
+.gm {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--color-sticker);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.28);
+  color: white;
+  font-family: var(--font-sans);
+  padding: 14px 16px 16px;
+  --cols: 3;
+  --pick-face: 84px;
+}
+
+.gm[data-cast="4"],
+.gm[data-cast="3"] {
+  --cols: 2;
+  --pick-face: 104px;
+}
+
+.gm[data-cast="2"] {
+  --cols: 2;
+  --pick-face: 136px;
+}
+
+.gm-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gm-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.gm-name i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-lime);
+}
+
+.gm-dots {
+  display: inline-flex;
+  gap: 5px;
+  margin-left: auto;
+}
+
+.gm-dots i {
+  width: 9px;
+  height: 9px;
+  border: 2px solid color-mix(in srgb, var(--color-card) 38%, transparent);
+  border-radius: 50%;
+  transition: background-color var(--dur-base) var(--ease-glide);
+}
+
+.gm-dots i.is-on {
+  border-color: var(--color-card);
+  background: var(--color-card);
+}
+
+.gm-dots i.is-done {
+  border-color: var(--color-lime);
+  background: var(--color-lime);
+}
+
+.gm-close {
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-card) 14%, transparent);
+  color: white;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 11px;
+}
+
+.gm-kicker {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  opacity: 0.72;
+}
+
+.gm-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 68px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.92;
+}
+
+.gm-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.gm-count {
+  margin: 0 auto 0 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.gm-count b {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.gm-wait {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+/* ---------- invite ---------- */
+
+.gm-lobby {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* the lobby wears the starter's colour: it's their invitation */
+.gm.at-invite {
+  background: var(--by);
+  color: var(--on);
+}
+
+.gm.at-invite .gm-go {
+  background: var(--color-sticker);
+  color: var(--color-lime);
+}
+
+.gm.at-invite .gm-go:disabled {
+  color: color-mix(in srgb, var(--color-card) 70%, transparent);
+}
+
+.gm.at-invite .gm-dots i {
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.gm-seats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 6px;
+  margin: auto 0;
+  --face: 72px;
+}
+
+.gm-how {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  opacity: 0.85;
+}
+
+.gm-seat {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gm-seat.is-in {
+  animation: gm-pop var(--dur-arrive) var(--ease-pop) both;
+}
+
+.gm-seat.is-out {
+  opacity: 0.55;
+}
+
+/* ---------- round ---------- */
+
+.gm-round {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gm-prompt {
+  border-radius: 16px;
+  background: var(--color-card);
+  box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.5);
+  color: var(--color-ink);
+  padding: 11px 14px 12px;
+  rotate: -1deg;
+  animation: gm-deal var(--dur-arrive) var(--ease-pop) both;
+}
+
+.gm-prompt .gm-kicker {
+  color: var(--color-muted);
+  opacity: 1;
+}
+
+.gm-prompt h3 {
+  margin: 3px 0 5px;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.gm-prompt em {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.gm-prompt em::before {
+  content: "↳ ";
+}
+
+.gm-cast {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  flex: 1;
+  align-content: space-evenly;
+  gap: 8px 4px;
+  --face: var(--pick-face);
+}
+
+.gm-pick {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  border-radius: 14px;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 0;
+  transition: opacity var(--dur-base) var(--ease-glide);
+}
+
+button.gm-pick:not(:disabled) {
+  cursor: pointer;
+}
+
+.gm-pick .gm-face {
+  transition:
+    translate var(--dur-quick) var(--ease-glide),
+    box-shadow var(--dur-quick) var(--ease-glide),
+    scale var(--dur-instant) var(--ease-glide);
+}
+
+button.gm-pick:not(:disabled):hover .gm-face {
+  translate: 0 -4px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35);
+}
+
+button.gm-pick:not(:disabled):active .gm-face {
+  scale: 0.94;
+}
+
+.gm-round.has-mine button.gm-pick:not(.is-mine) {
+  opacity: 0.36;
+}
+
+.gm-pick.is-mine .gm-face {
+  border-color: var(--color-lime);
+  box-shadow: 0 0 0 3px var(--color-sticker), 0 0 0 6px var(--color-lime);
+}
+
+.gm-yours {
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 7px;
+  rotate: -4deg;
+  translate: -50% 0;
+  white-space: nowrap;
+  animation: gm-pop var(--dur-arrive) var(--ease-pop) both;
+}
+
+/* who's answered, without what: one face-down slip each */
+.gm-see.is-locked {
+  margin-top: auto;
+}
+
+.gm-see.is-open,
+.gm-see.is-open .ats-shown {
+  min-height: 0;
+  flex: 1;
+  animation: none;
+}
+
+.gm-see.is-open .ats-shown {
+  height: 100%;
+}
+
+.gm-see .ats-cover {
+  justify-items: stretch;
+}
+
+.gm-slips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  --face: 24px;
+}
+
+.gm-slips .ats-slip {
+  width: 34px;
+  height: 42px;
+  align-content: start;
+  padding-top: 3px;
+}
+
+.gm-slips .ats-slip i {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.gm-slips .ats-slip.is-out .gm-face {
+  opacity: 0.55;
+}
+
+.gm-timer {
+  height: 7px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-card) 16%, transparent);
+  margin-left: 4px;
+}
+
+.gm-timer i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-lime);
+  transform-origin: 0 50%;
+  transition: scale 220ms linear;
+}
+
+.gm-left {
+  min-width: 26px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-align: right;
+}
+
+/* ---------- reveal, shared ---------- */
+
+.gm-rv {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gm-rv-prompt {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  opacity: 0.85;
+}
+
+.gm-rv-prompt b {
+  font-weight: 800;
+}
+
+.gm-rv-foot {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.gm-called {
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 11px;
+}
+
+.gm-called.is-yes {
+  background: var(--color-sticker);
+  color: var(--color-lime);
+}
+
+.gm-rv-win {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 16px;
+  background: var(--by, var(--color-card));
+  color: var(--on, var(--color-ink));
+  padding: 10px 12px;
+  animation: gm-pop var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: var(--t0);
+}
+
+.gm-rv-win h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+
+.gm-rv-win span {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.gm-rv-win .gm-award-lg {
+  font-size: 14px;
+  padding: 6px 10px 6px 7px;
+}
+
+.gm-rv-win .gm-award-lg i {
+  font-size: 18px;
+}
+
+/* ---------- A · the flood ---------- */
+
+.gm-rv-a {
+  --t0: calc(var(--votes) * 140ms + 760ms);
+}
+
+.gm-rv-landing {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gm-rv-landing {
+  flex: 1;
+}
+
+.gm-rv-landing .gm-pick {
+  padding-top: 8px;
+}
+
+.gm-chips {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  display: flex;
+  min-width: calc(var(--pick-face) + 8px);
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+  translate: -50% 0;
+  --face: 36px;
+}
+
+.gm-chips > span {
+  display: grid;
+  margin-left: -11px;
+  animation: gm-vote var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(var(--i) * 140ms + 160ms);
+}
+
+.gm-flood {
+  position: absolute;
+  z-index: 1;
+  inset: -4px -16px -16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--by, var(--color-card));
+  color: var(--on, var(--color-ink));
+  padding: 6px 16px 16px;
+  text-align: center;
+  clip-path: circle(0% at 50% 34%);
+  animation: gm-flood var(--dur-stage) var(--ease-glide) both;
+  animation-delay: var(--t0);
+}
+
+.gm-rv-a.is-split .gm-flood {
+  background: var(--color-card);
+  color: var(--color-ink);
+}
+
+.gm-flood .gm-rv-prompt {
+  align-self: stretch;
+  text-align: left;
+}
+
+.gm-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-top: auto;
+  --face: 156px;
+  animation: gm-hero var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(var(--t0) + 60ms);
+}
+
+.gm-hero .gm-face + .gm-face {
+  margin-left: -26px;
+}
+
+.gm-hero .gm-face:nth-child(n + 2):nth-last-child(n + 2),
+.gm-hero .gm-face:first-child:nth-last-child(n + 3) {
+  --face: 96px;
+}
+
+.gm-num {
+  margin: 0 -8px -16px 4px;
+  font-family: var(--font-display);
+  font-size: 132px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+}
+
+.gm-flood h3 {
+  margin: 14px 0 0;
+  font-family: var(--font-display);
+  font-size: 50px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+
+.gm-said {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.gm-receipt {
+  display: grid;
+  align-self: stretch;
+  gap: 5px;
+  border-radius: 13px;
+  background: var(--color-card);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.35);
+  color: var(--color-ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  list-style: none;
+  margin: 16px 0 auto;
+  padding: 9px 11px;
+  rotate: 0.8deg;
+  text-align: left;
+  animation: gm-deal var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(var(--t0) + 760ms);
+  --face: 22px;
+}
+
+.gm-receipt li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.gm-receipt li + li {
+  border-top: 1.5px dashed color-mix(in srgb, var(--color-ink) 18%, transparent);
+  padding-top: 5px;
+}
+
+.gm-receipt b {
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.gm-receipt-faces {
+  display: flex;
+  flex: none;
+}
+
+.gm-receipt-faces .gm-face + .gm-face {
+  margin-left: -9px;
+}
+
+.gm-flood .gm-award-lg {
+  margin-top: 12px;
+  font-size: 22px;
+  padding: 9px 17px 9px 11px;
+}
+
+.gm-rest {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 10px;
+  margin: 14px 0 auto;
+  padding: 0;
+  list-style: none;
+  --face: 20px;
+}
+
+.gm-rest li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.gm-flood .gm-go {
+  background: var(--color-sticker);
+  color: var(--color-lime);
+}
+
+/* ---------- B · the slips ---------- */
+
+.gm-rv-b {
+  --t0: calc(var(--votes) * 150ms + 380ms);
+}
+
+.gm-rv-slips {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  --face: 26px;
+}
+
+.gm-rv-slips li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 11px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 7px;
+  transform-origin: 50% 0;
+  animation: gm-flip var(--dur-arrive) var(--ease-glide) both;
+  animation-delay: calc(var(--i) * 150ms + 120ms);
+}
+
+.gm-rv-slips li b {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.gm-rv-slips li.is-top {
+  background: var(--by);
+  color: var(--on);
+}
+
+/* ---------- C · the count ---------- */
+
+.gm-rv-c {
+  --t0: calc(var(--votes) * 130ms + 420ms);
+}
+
+.gm-rv-rows {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gm-rv-rows li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+  --face: 44px;
+}
+
+.gm-rv-bar {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 3px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-card) 12%, transparent);
+  padding: 4px;
+  --face: 30px;
+}
+
+.gm-rv-bar > span {
+  display: grid;
+  animation: gm-vote var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(var(--i) * 130ms + 160ms);
+}
+
+.gm-rv-rows li > b {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-align: right;
+}
+
+.gm-rv-rows li.is-top .gm-rv-bar {
+  animation: gm-win-row var(--dur-base) var(--ease-glide) both;
+  animation-delay: var(--t0);
+}
+
+/* ---------- done: the awards wall ---------- */
+
+.gm-wall {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gm-wall .gm-title {
+  font-size: 34px;
+}
+
+.gm-wall .gm-title span {
+  display: block;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  opacity: 0.75;
+}
+
+.gm-wall-list {
+  display: grid;
+  gap: 9px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  --face: 40px;
+}
+
+.gm-wall-list li {
+  display: grid;
+  grid-template-columns: auto 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 800;
+  animation: gm-pop var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(var(--i) * 60ms);
+}
+
+.gm-wall-stickers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 4px;
+}
+
+.gm-wall-stickers .gm-award {
+  font-size: 13.5px;
+  padding: 5px 10px 5px 6px;
+}
+
+.gm-close-call {
+  margin: 2px 0 0;
+  border-radius: 11px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  padding: 8px 10px;
+  rotate: 0.6deg;
+}
+
+.gm-close-call span {
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.gm-close-call span::after {
+  content: " ·";
+}
+
+/* ---------- the invitation ---------- */
+
+.gmi {
+  position: fixed;
+  z-index: 60;
+  top: 96px;
+  left: 50%;
+  display: flex;
+  max-width: calc(100vw - 24px);
+  align-items: center;
+  gap: 10px;
+  border: 3px solid var(--color-ink);
+  border-radius: 20px;
+  background: var(--by);
+  box-shadow: 4px 5px 0 rgba(0, 0, 0, 0.45);
+  color: var(--on);
+  padding: 7px 8px 7px 9px;
+  rotate: -1deg;
+  translate: -50% 0;
+  animation: gm-invite-in var(--dur-stage) var(--ease-pop) both;
+  --face: 42px;
+}
+
+.gmi p {
+  display: grid;
+  margin: 0 6px 0 0;
+  line-height: 1.15;
+}
+
+.gmi p b {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.gmi p span {
+  font-size: 11.5px;
+  font-weight: 700;
+  opacity: 0.86;
+}
+
+.gmi-join {
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: var(--color-lime);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 12px 16px;
+  transition: translate var(--dur-quick) var(--ease-glide);
+  white-space: nowrap;
+}
+
+.gmi-join:hover {
+  translate: 0 -2px;
+}
+
+.gmi-hide {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: inherit;
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+/* the header's way in: flies to the scoreboard, or says a game is on */
+.gm-door {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px 5px 10px;
+  transition: translate var(--dur-quick) var(--ease-glide);
+}
+
+.gm-door:hover {
+  translate: 0 -1px;
+}
+
+.gm-door i {
+  color: var(--color-lime);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.gm-door.is-on {
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+
+.gm-door.is-on i {
+  color: var(--color-ink);
+}
+
+/* a game is on in another room: the rail tile says so */
+.rail-game {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 2px solid var(--color-rail);
+  border-radius: 50%;
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-size: 9px;
+  line-height: 1;
+  animation: gm-pop var(--dur-arrive) var(--ease-pop) both;
+}
+
+/* stickers riding on an avatar */
+.gm-face-wrap {
+  position: relative;
+  display: grid;
+}
+
+.gm-face-wrap .gm-dots-on {
+  right: -3px;
+  bottom: -7px;
+  z-index: 1;
+}
+
+.gm-face-wrap .gm-award-dot {
+  width: 18px;
+  height: 18px;
+}
+
+.gm-face-wrap .gm-award-dot i {
+  font-size: 9px;
+}
+
+.gm-dots-on {
+  position: absolute;
+  right: -7px;
+  bottom: -6px;
+  display: flex;
+  pointer-events: none;
+}
+
+.gm-dots-on .gm-award + .gm-award {
+  margin-left: -9px;
+}
+
+/* on "what this space knows": slapped under the face, never widening it */
+.gm-award-row {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 2px);
+  left: 50%;
+  display: grid;
+  width: max-content;
+  justify-items: center;
+  gap: 3px;
+  translate: -50% 0;
+}
+
+.gm-award-row .gm-award {
+  font-size: 10.5px;
+  border-width: 2px;
+  padding: 3px 7px 3px 4px;
+}
+
+.gm-award-row .gm-award i {
+  font-size: 12px;
+}
+
+.knows-people:has(.gm-award-row) {
+  padding-bottom: 58px;
+}
+
+/* ---------- the scoreboard ---------- */
+
+.sb {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--color-card);
+  box-shadow: 0 4px 0 rgba(17, 17, 20, 0.2);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  padding: 14px 14px 12px;
+}
+
+.sb-kicker {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sb-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.sb-rows {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sb-row {
+  display: grid;
+  grid-template-columns: 22px auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 2px solid var(--color-ink);
+  border-radius: 13px;
+  background: var(--by);
+  color: var(--on);
+  padding: 4px 11px 4px 7px;
+  animation: gm-pop var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(var(--i) * 45ms);
+  --face: 32px;
+}
+
+.sb-row.is-me {
+  box-shadow: 0 0 0 3px var(--color-lime);
+}
+
+.sb-rank {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sb-row:first-child .sb-rank {
+  border: 2px solid var(--color-ink);
+  border-radius: 50%;
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+.sb-who {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+}
+
+.sb-who .gm-award {
+  margin-left: -9px;
+}
+
+.sb-name {
+  display: grid;
+  line-height: 1.12;
+}
+
+.sb-name b {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.sb-name em {
+  overflow: hidden;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 600;
+  opacity: 0.9;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sb-pts {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* face down: the ranks are there, the people aren't */
+.sb-see .ats-cover {
+  justify-items: stretch;
+}
+
+.sb-see .ats-line {
+  display: none;
+}
+
+.sb-rows.is-down .ats-slip {
+  display: flex;
+  height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  border-style: dashed;
+  border-radius: 13px;
+  color: var(--color-card);
+  padding: 0 14px 0 9px;
+}
+
+.sb-rows.is-down .ats-slip i {
+  color: color-mix(in srgb, var(--color-card) 45%, transparent);
+  font-size: 18px;
+}
+
+.sb-gate {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: max-content;
+  max-width: 92%;
+  gap: 2px;
+  border: 3px solid var(--color-card);
+  border-radius: 16px;
+  background: var(--color-lime);
+  box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.4);
+  color: var(--color-ink);
+  padding: 10px 16px 11px;
+  rotate: -3deg;
+  text-align: center;
+  translate: -50% -50%;
+}
+
+.sb-gate strong {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.sb-gate span {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sb-foot {
+  display: grid;
+  gap: 8px;
+}
+
+.sb-slot {
+  border: 2px dashed color-mix(in srgb, var(--color-ink) 24%, transparent);
+  border-radius: 11px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 7px 10px;
+}
+
+.sb .gm-go {
+  width: 100%;
+  background: var(--color-sticker);
+  color: var(--color-lime);
+}
+
+/* ---------- a phone plays on a sheet ---------- */
+
+.gm-sheet,
+.gm-sheet-tab {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .gmi {
+    top: auto;
+    right: 10px;
+    bottom: 138px;
+    left: 10px;
+    rotate: -0.6deg;
+    translate: none;
+    animation-name: gm-invite-up;
+  }
+
+  .gmi p {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .gmi p b {
+    font-size: 15px;
+    line-height: 1.05;
+    white-space: normal;
+  }
+
+  .gm-sheet {
+    position: fixed;
+    z-index: 400;
+    inset: 0;
+    display: block;
+    background: var(--page-bg, var(--color-paper));
+    padding: 10px;
+    animation: gm-sheet-up var(--dur-stage) var(--ease-glide) both;
+  }
+
+  .gm.is-sheet {
+    gap: 16px;
+    border-radius: 28px;
+    box-shadow: none;
+    padding: 18px 18px 20px;
+    --pick-face: 86px;
+  }
+
+  .gm.is-sheet[data-cast="4"],
+  .gm.is-sheet[data-cast="3"] {
+    --pick-face: 112px;
+  }
+
+  .gm.is-sheet[data-cast="2"] {
+    --pick-face: 136px;
+  }
+
+  .gm.is-sheet .gm-title {
+    font-size: 58px;
+  }
+
+  .gm.is-sheet .gm-wall .gm-title {
+    font-size: 42px;
+  }
+
+  .gm.is-sheet .gm-prompt h3 {
+    font-size: 34px;
+  }
+
+  .gm.is-sheet .gm-prompt {
+    padding: 14px 16px 16px;
+  }
+
+  .gm.is-sheet .gm-cast {
+    gap: 16px 6px;
+    margin-top: 8px;
+  }
+
+  .gm.is-sheet .gm-pick {
+    font-size: 14px;
+  }
+
+  .gm.is-sheet .gm-seats {
+    --face: 68px;
+    gap: 14px 12px;
+  }
+
+  .gm.is-sheet .gm-go {
+    font-size: 18px;
+    padding: 16px 24px;
+  }
+
+  .gm.is-sheet .gm-flood {
+    inset: -8px -18px -20px;
+    padding: 10px 18px 20px;
+  }
+
+  .gm.is-sheet .gm-hero {
+    margin-top: 28px;
+    --face: 176px;
+  }
+
+  .gm.is-sheet .gm-num {
+    font-size: 140px;
+  }
+
+  .gm.is-sheet .gm-flood h3 {
+    font-size: 54px;
+  }
+
+  .gm.is-sheet .gm-flood .gm-award-lg {
+    margin-top: 16px;
+    font-size: 22px;
+  }
+
+  .gm.is-sheet .gm-rv-landing {
+    gap: 28px;
+  }
+
+  .gm.is-sheet .gm-slips .ats-slip {
+    width: 40px;
+    height: 48px;
+  }
+
+  .gm.is-sheet .gm-wall-list {
+    gap: 14px;
+    --face: 48px;
+  }
+
+  .gm-sheet-tab {
+    position: fixed;
+    z-index: 60;
+    bottom: 138px;
+    left: 50%;
+    display: block;
+    border: 3px solid var(--color-ink);
+    border-radius: var(--radius-pill);
+    background: var(--by);
+    box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.4);
+    color: var(--on);
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 800;
+    padding: 10px 16px;
+    translate: -50% 0;
+    white-space: nowrap;
+  }
+}
+
+/* ---------- motion ---------- */
+
+@keyframes gm-pop {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+@keyframes gm-hero {
+  from {
+    scale: 0.55;
+  }
+}
+
+@keyframes gm-vote {
+  from {
+    opacity: 0;
+    scale: 0.2;
+    translate: 0 -22px;
+  }
+}
+
+@keyframes gm-deal {
+  from {
+    opacity: 0;
+    rotate: -5deg;
+    translate: 0 18px;
+  }
+}
+
+@keyframes gm-flood {
+  to {
+    clip-path: circle(150% at 50% 34%);
+  }
+}
+
+@keyframes gm-stamp {
+  from {
+    opacity: 0;
+    rotate: -24deg;
+    scale: 2.6;
+  }
+}
+
+@keyframes gm-flip {
+  from {
+    opacity: 0;
+    transform: perspective(500px) rotateX(-88deg);
+  }
+}
+
+@keyframes gm-win-row {
+  to {
+    background: var(--color-lime);
+  }
+}
+
+@keyframes gm-invite-in {
+  from {
+    rotate: -7deg;
+    translate: -50% -190%;
+  }
+}
+
+@keyframes gm-invite-up {
+  from {
+    opacity: 0;
+    translate: 0 120%;
+  }
+}
+
+@keyframes gm-sheet-up {
+  from {
+    translate: 0 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gm *,
+  .gmi,
+  .gm-sheet,
+  .sb-row,
+  .rail-game {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}
