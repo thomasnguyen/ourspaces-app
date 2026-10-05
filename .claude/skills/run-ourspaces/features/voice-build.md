@@ -4,32 +4,32 @@ ready: dock-voice-orb
 testids: voice-shell voice-landed voice-found voice-found-pulse voice-found-spin voice-receipt dev-readout dev-readout-route dev-context-drawer dev-context-close dev-context-route dev-context-found claim-enter dock-voice-orb
 states:
   room: ?enter=1
-  ask: ?enter=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1200 | click dock-voice-orb | wait voice-shell | wait voice-landed | sleep 900
-  hesitate: ?enter=1&voicePace=talk&voice=add a poll for … Saturday dinner | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
-  tentative: ?enter=1&timing=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1200 | click dock-voice-orb | sleep 1750
-  gapand: ?enter=1&voicePace=talk&voice=make a checklist: chips, salsa and … drinks | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
-  gapdate: ?enter=1&voicePace=talk&voice=countdown to Holly's birthday on … November 14 | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
-  late: ?enter=1&timing=1&voicePace=talk&voice=add a poll for Saturday …600 dinner | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 3500
-  drawer: ?enter=1&timing=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 1500 | click dev-readout | wait dev-context-drawer | sleep 300
+  ask: ?stage=0&enter=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1200 | click dock-voice-orb | wait voice-shell | wait voice-landed | sleep 900
+  hesitate: ?stage=0&enter=1&voicePace=talk&voice=add a poll for … Saturday dinner | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
+  tentative: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1200 | click dock-voice-orb | sleep 1750
+  gapand: ?stage=0&enter=1&voicePace=talk&voice=make a checklist: chips, salsa and … drinks | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
+  gapdate: ?stage=0&enter=1&voicePace=talk&voice=countdown to Holly's birthday on … November 14 | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
+  late: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add a poll for Saturday …600 dinner | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 3500
+  drawer: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 1500 | click dev-readout | wait dev-context-drawer | sleep 300
   mock: ?stage=0&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-landed | sleep 900
   shell: ?stage=0&voice=add a poll for Saturday dinner&voiceHold=1 | click dock-voice-orb | wait voice-shell | sleep 2600
   mockdrawer: ?stage=0&timing=1&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-landed | sleep 1200 | click dev-readout | wait dev-context-drawer | sleep 300
   gate: | click claim-enter | wait dock-voice-orb | sleep 1200
-  say: ?enter=1&timing=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1400
-  mocksay: ?voice=add a poll for Saturday dinner | sleep 600
+  say: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add a poll for Saturday dinner | sleep 1400
+  mocksay: ?stage=0&voice=add a poll for Saturday dinner | sleep 600
   dockstrip: ?stage=0&voicePace=talk&voice=add a poll for Saturday dinner | sleep 600
-  driving: ?enter=1&timing=1&voicePace=talk&voice=who's driving to Maya's | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
-  drivingdrawer: ?enter=1&timing=1&voicePace=talk&voice=who's driving to Maya's | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 1500 | click dev-readout | wait dev-context-drawer | sleep 300
-  drivingsay: ?enter=1&timing=1&voicePace=talk&voice=who's driving to Maya's | sleep 1400
-  cabin: ?enter=1&timing=1&voicePace=talk&voice=split the cabin, 640 | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
-  already: ?enter=1&timing=1&voicePace=talk&voice=add a poll for cake flavor | sleep 1200 | click dock-voice-orb | wait voice-found | sleep 1600
-  alreadysay: ?enter=1&timing=1&voicePace=talk&voice=add a poll for cake flavor | sleep 1400
-  alreadydrawer: ?enter=1&timing=1&voicePace=talk&voice=add a poll for cake flavor | sleep 1200 | click dock-voice-orb | wait voice-found | sleep 1600 | click dev-readout | wait dev-context-found | sleep 300
-  dishes: ?enter=1&timing=1&voicePace=talk&voice=who's on dishes tonight #/space/house | sleep 1200 | click dock-voice-orb | wait voice-found-spin | sleep 1600
-  dishessay: ?enter=1&timing=1&voicePace=talk&voice=who's on dishes tonight #/space/house | sleep 1400
-  dishesspin: ?enter=1&timing=1&voicePace=talk&voice=who's on dishes tonight #/space/house | sleep 1200 | click dock-voice-orb | wait voice-found-spin | sleep 900 | click voice-found-spin | sleep 2500
-  mockalready: ?voice=add a poll for cake flavor | click dock-voice-orb | wait voice-found | sleep 1600
-  mockalreadydrawer: ?timing=1&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-found | sleep 1200 | click dev-readout | wait dev-context-found | sleep 300
+  driving: ?stage=0&enter=1&timing=1&voicePace=talk&voice=who's driving to Maya's | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
+  drivingdrawer: ?stage=0&enter=1&timing=1&voicePace=talk&voice=who's driving to Maya's | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 1500 | click dev-readout | wait dev-context-drawer | sleep 300
+  drivingsay: ?stage=0&enter=1&timing=1&voicePace=talk&voice=who's driving to Maya's | sleep 1400
+  cabin: ?stage=0&enter=1&timing=1&voicePace=talk&voice=split the cabin, 640 | sleep 1200 | click dock-voice-orb | wait voice-landed | sleep 900
+  already: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add a poll for cake flavor | sleep 1200 | click dock-voice-orb | wait voice-found | sleep 1600
+  alreadysay: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add a poll for cake flavor | sleep 1400
+  alreadydrawer: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add a poll for cake flavor | sleep 1200 | click dock-voice-orb | wait voice-found | sleep 1600 | click dev-readout | wait dev-context-found | sleep 300
+  dishes: ?stage=0&enter=1&timing=1&voicePace=talk&voice=who's on dishes tonight #/space/house | sleep 1200 | click dock-voice-orb | wait voice-found-spin | sleep 1600
+  dishessay: ?stage=0&enter=1&timing=1&voicePace=talk&voice=who's on dishes tonight #/space/house | sleep 1400
+  dishesspin: ?stage=0&enter=1&timing=1&voicePace=talk&voice=who's on dishes tonight #/space/house | sleep 1200 | click dock-voice-orb | wait voice-found-spin | sleep 900 | click voice-found-spin | sleep 2500
+  mockalready: ?stage=0&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-found | sleep 1600
+  mockalreadydrawer: ?stage=0&timing=1&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-found | sleep 1200 | click dev-readout | wait dev-context-found | sleep 300
 take:
   ask: say real 30fps 165f | 3 click dock-voice-orb
   driving: drivingsay real 30fps 150f | 3 click dock-voice-orb
