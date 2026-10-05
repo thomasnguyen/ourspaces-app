@@ -1490,3 +1490,39 @@ body.voice-stage-up .voice-found-pulse {
     animation-name: voice-stage-fade;
   }
 }
+
+
+/* ================= the words keep up with the voice =================
+   The line of words used to replay the column's entrance (a wait, then a
+   fade) when the first word arrived, so the first words showed late, after
+   the card they had already named. Now the box they sit in arrives once,
+   early and fast, and a word is on screen the frame it is heard. */
+.voice-two-left > .voice-two-say {
+  align-self: stretch;
+  animation: voice-stage-fade calc(var(--dur-quick) * var(--slow)) var(--ease-glide) calc(120ms * var(--slow)) backwards;
+}
+
+.voice-two-word {
+  animation: voice-word-in calc(var(--dur-quick) * var(--slow)) var(--ease-glide) backwards;
+}
+
+/* readable from its first frame: it comes up a little, it does not fade in from nothing */
+@keyframes voice-word-in {
+  from {
+    opacity: 0.35;
+    filter: blur(3px);
+    translate: 0 0.22em;
+  }
+}
+
+.voice-two-word.is-cue {
+  animation: voice-cue-in calc(var(--dur-base) * var(--slow)) var(--ease-pop) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-two-left > .voice-two-say,
+  .voice-two-word,
+  .voice-two-word.is-cue {
+    animation: none;
+  }
+}

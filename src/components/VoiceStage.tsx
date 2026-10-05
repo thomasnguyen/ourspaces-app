@@ -994,13 +994,16 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
           <div className="voice-stage-wave-wrap">
             <StageWave level={voice.muted || !listening ? silent : level} />
           </div>
-          {voice.transcript ? (
-            <StageWords text={voice.transcript} live={listening} kind={build?.kind ?? null} asking={asking} />
-          ) : (
-            <p className="voice-two-words is-hint is-asking" data-testid="voice-stage-text">
-              Say what to add
-            </p>
-          )}
+          {/* one box that arrives once with the stage: the words inside it never wait on an entrance */}
+          <div className="voice-two-say">
+            {voice.transcript ? (
+              <StageWords text={voice.transcript} live={listening} kind={build?.kind ?? null} asking={asking} />
+            ) : (
+              <p className="voice-two-words is-hint is-asking" data-testid="voice-stage-text">
+                Say what to add
+              </p>
+            )}
+          </div>
         </section>
         <section className="voice-two-right" data-testid="voice-stage-right" data-state={state}>
           {build?.kind && build.widget ? (

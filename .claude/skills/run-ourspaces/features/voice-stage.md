@@ -145,7 +145,10 @@ beats) · `src/lib/voiceFillPlan.ts` · `src/lib/voiceTimings.ts` ·
 `src/lib/deck/mockDeal.ts` (simulated answer on the measured clock, scripted
 asks) · `src/lib/deck/mockFacts.ts` · `src/lib/deck/suggest.ts` · mock wiring in `src/App.tsx`.
 
-**Gotchas:** the orb flies to its full canvas box (1.6 × the slot), never the
+**Gotchas:** the words sit in `.voice-two-say`, which arrives once with the
+stage; never give the line of words itself an entrance (it is remounted when
+the first word lands, and a delayed entrance hides the first words for a
+second while the card they named is already up). The orb flies to its full canvas box (1.6 × the slot), never the
 slot itself: aim at the slot and it travels small and snaps at the end. Flights use `performance.now()`, never the rAF timestamp (the
 driver speeds the animation clock on load and the two drift apart). The
 stage card is the real `WidgetCard` under CSS `zoom`; it inherits ink from
