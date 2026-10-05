@@ -22,6 +22,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock, radioRoomOf } from "../components/ActionDock";
 import { VoiceBuildLayer } from "../components/VoiceBuildLayer";
 import { useVoiceBuild } from "../live/useVoiceBuild";
+import { boardItems } from "../lib/deck";
 import { Canvas, SpaceHeader } from "../components/Canvas";
 import { ClaimCard, type RoomContext } from "../components/ClaimCard";
 import { SettingsSheet } from "../components/SettingsSheet";
@@ -1500,14 +1501,28 @@ export function LiveSpacePage({
     selectedId: voiceSelectedId,
     warm: () => void warmDeal({}).catch(() => {}),
     facts: () => roomBrief?.room ?? null,
-    decide: (said) =>
+    decide: (said, { onBoard }) =>
       decideCard({
         said,
         room: space?.name ?? "",
         today: voiceToday(),
         people: voicePeople(),
         board: (roomBrief?.room?.board ?? []).map((b) => b.title),
+        ...(onBoard ? { onBoard: true, match: onBoard } : {}),
       }),
+    /* The board as drawn, for the "already here" check; who made each card
+       when the row says (a seeded cast member, or you). */
+    board: () => {
+      const makers = new Map((boardRows?.widgets ?? []).map((row) => [String(row._id), row.createdBy]));
+      const cast = roomBrief?.room?.people ?? [];
+      return boardItems(adaptedWidgets, (id) => {
+        const by = makers.get(id);
+        if (!by) return null;
+        if (by === identity.userId) return "you";
+        const seeded = /^seed:[^:]+:(.+)$/.exec(by)?.[1];
+        return seeded ? (cast.find((n) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-") === seeded) ?? null) : null;
+      });
+    },
     deal: async (call, onPartial) => {
       if (!space) throw new Error("no space");
       const selId = voiceSelectedId();

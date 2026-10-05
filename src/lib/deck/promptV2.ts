@@ -13,7 +13,7 @@
 import { catalogJson, parseDeal } from "./prompt";
 import { checkCard } from "./apply";
 import { CATALOG, type DealtCard } from "./catalog";
-import { callTimes, resolveCard, type Resolved, type RoomFacts } from "./resolve";
+import { callTimes, choresOf, resolveCard, type Resolved, type RoomFacts } from "./resolve";
 
 const EXTRA: Record<string, Record<string, string>> = {
   checklist: { for: "people token?" },
@@ -23,6 +23,8 @@ const EXTRA: Record<string, Record<string, string>> = {
 const TOKEN_RULES = `ROOM FACTS
 The user turn lists this room's facts as @token = value. To use a fact, write the token itself in a setting, never its value: code fills it in, so it is always current.
 - A people token (@home, @coming, @everyone-but(Name), @on-trip(title)) can be a wheel's or poll's options item, a checklist's "for", a split's "among".
+- Picking one person (who's driving, who cooks, whose turn) is a wheel of those people. A poll is for choosing between options.
+- A checklist's "for" hands out every item; leave it out for a sign-up where people claim their own (who's bringing what, packing).
 - A token can sit inside text: "matcha cake" can be "@leader(cake flavor?) cake".
 - Only the tokens listed in the user turn exist; never write another one (there is no @everyone).
 - Use a fact only when the words need it: who takes part, the group's own options, who pays, when. Words that already say everything (a note, a code, a station, a place they named) get no tokens and nothing from the room.
@@ -34,6 +36,7 @@ The user turn lists this room's facts as @token = value. To use a fact, write th
    none of the eval rooms. The note is the control: room facts don't touch it. */
 const EXAMPLE_ROOM = `Room: the group chat · today Sun 2026-10-04 · people: Thomas, Holly, Priya, Dev
 @home = Thomas, Holly, Priya (away: Dev)
+@chores = dishes, bins
 @coming(game night) = Thomas, Holly, Priya
 @leader(dessert?) = tiramisu (2 of 3 votes)
 @on-trip(lake weekend) = Thomas, Holly, Dev · @payer = Holly
@@ -45,8 +48,10 @@ titles: lowercase`;
 const EXAMPLES = `EXAMPLES (room above)
 Said: "prep list for the bbq, give everyone a job"
 {"card":"checklist","settings":{"title":"bbq prep","items":["grill","salads","drinks","ice"],"for":"@home"}}
-Said: "spin for who hosts game night"
-{"card":"wheel","settings":{"title":"who hosts game night","options":["@coming(game night)"]}}
+Said: "who's driving to game night"
+{"card":"wheel","settings":{"title":"who drives to game night","options":["@coming(game night)"]}}
+Said: "chores for the week"
+{"card":"checklist","settings":{"title":"chores this week","items":["@chores","vacuum"],"for":"@home"}}
 Said: "poll on what we do friday"
 {"card":"poll","settings":{"question":"friday plans?","options":["movie night","bowling","stay in"]}}
 Said: "poll for brunch spots"
@@ -139,6 +144,9 @@ export function tokenMenu(f: RoomFacts, said?: string): string {
     lines.push(`wheel "${w.title}": ${w.options.join(", ")}${w.last ? ` · @last(${w.title}) = ${w.last}` : ""}`);
   }
   if (f.clocks.length >= 2 && want("clock")) lines.push(`@zones = ${f.clocks.slice(0, 2).map((c) => `${c.label} ${c.tz}`).join(" · ")} · @call-times = ${callTimes(f).join(", ") || "none"}`);
+  // The chores this room already tracks (its dishes wheel, its grocery run), named by code.
+  const chores = choresOf(f);
+  if (chores.length && (!said || /\b(chores?|jobs?|tasks?|clean\w*|rota|roster)\b/i.test(said))) lines.push(`@chores = ${chores.join(", ")}`);
   // The group's standing lists and wheels, titles only: a list's items read as one item to copy.
   if (want("list")) {
     const own = [...f.lists.slice(0, 3).map((l) => `list "${l.title}"`), ...f.wheels.slice(0, 2).map((w) => `wheel "${w.title}"`)];
@@ -235,10 +243,18 @@ export const DECIDE_LETTERS = DECIDE_CHOICES.map((_, i) => String.fromCharCode(6
 const DECIDE_SYSTEM =
   "You read one request said aloud in a shared space for a group of friends and answer one multiple-choice question about it. Reply with the single letter of the best option and nothing else.";
 
-/** The decide prompt as measured (nebius/eval/decide/prompts.mjs), board titles in. */
-export function decideMessages(r: { context: string; board: string[]; said: string }) {
+/** The fan-out's second question, as measured (Ultra 16 of 18, nebius/eval/decide/head.md). Same prefix as the card question. */
+const BOARD_Q = "Is a card already on the board that does what the request asks?\nA yes\nB no";
+export const BOARD_LETTERS = ["A", "B"];
+
+/** The decide prompt as measured (nebius/eval/decide/prompts.mjs), board titles in. `q: "board"` asks the yes/no instead, about `match` when code found one. */
+export function decideMessages(r: { context: string; board: string[]; said: string; q?: "card" | "board"; match?: string }) {
   const q =
-    "Which card should be placed?\n" +
+    r.q === "board"
+      ? r.match
+        ? `This card is already on the board: ${r.match}. Does it already do what the request asks, so no new card is needed?\nA yes\nB no`
+        : BOARD_Q
+      : "Which card should be placed?\n" +
     DECIDE_CHOICES.map((id, i) => {
       const what =
         id === "none"

@@ -17,7 +17,8 @@ const CUES: Array<[CardId, RegExp]> = [
   ["checklist", /\b(who'?s bringing|bringing what|packing|pack list|checklist|check ?list|to-?do|chores|shopping list|grocery list|groceries)\b/],
   ["countdown", /\b(count ?down|days (until|till|to)|how long (until|till))\b/],
   ["rsvp", /\b(rsvp|who'?s (in|coming)|who is coming|in or out)\b/],
-  ["wheel", /\b(wheel|spin|pick (someone|who|a random)|randomly pick)\b/],
+  // Picking one person is a wheel's job: "who's driving", "whose turn".
+  ["wheel", /\b(wheel|spin|pick (someone|who|a random)|randomly pick|who'?s (driving|cooking|hosting|picking (it )?up|on (dishes|trash|bins|duty))|whose turn)\b/],
   ["note", /\b(note|remind|reminder|remember|sticky)\b/],
   ["question", /\b(question of the day|ask everyone|daily question)\b/],
   ["availability", /\b(availability|which days? works?|when (is|are) (everyone|we all) free|schedule)\b/],

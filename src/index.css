@@ -27364,6 +27364,55 @@ body:has(.demo-banner) .settings-sheet {
   animation: voice-slip-in var(--dur-arrive) var(--ease-glide) both;
 }
 
+/* Already here: the ask was a card the board has. A ring in the asker's
+   colour pulses once around it after the camera arrives (plain on purpose;
+   the look-pass styles it), and the slip says so. */
+.voice-found-pulse {
+  position: absolute;
+  z-index: 99989;
+  box-sizing: content-box;
+  margin: -8px;
+  padding: 6px;
+  border: 3px solid var(--maker);
+  border-radius: 24px;
+  pointer-events: none;
+  opacity: 0;
+  animation: voice-found-pulse var(--dur-hero) var(--ease-glide) 420ms both;
+}
+
+@keyframes voice-found-pulse {
+  0% {
+    opacity: 0;
+    scale: 1.06;
+  }
+  30% {
+    opacity: 1;
+    scale: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.015;
+  }
+}
+
+.voice-slip.is-found {
+  animation-delay: 520ms;
+}
+
+.voice-found-next {
+  padding: 5px 12px 5px 9px;
+  border: 0;
+  border-left: 2px solid var(--color-card);
+  background: var(--color-ink);
+  color: white;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 @keyframes voice-slip-in {
   from {
     opacity: 0;
@@ -27383,6 +27432,7 @@ body:has(.demo-banner) .settings-sheet {
   .voice-shell,
   .voice-shell[data-phase="landing"],
   .widget-group[data-voice-land],
+  .voice-found-pulse,
   .voice-slip,
   .voice-slip.is-leaving,
   .voice-receipt.is-miss,

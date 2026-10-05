@@ -40,7 +40,7 @@ type Facts = RoomFacts & { subject?: string | null };
 
 export type TokenName =
   | "home" | "coming" | "everyone-but" | "on-trip" | "payer" | "leader"
-  | "places" | "date" | "last" | "zones" | "call-times" | "headcount";
+  | "places" | "date" | "last" | "zones" | "call-times" | "headcount" | "chores";
 
 export const TOKENS: Record<TokenName, string> = {
   home: "people not marked away",
@@ -55,7 +55,26 @@ export const TOKENS: Record<TokenName, string> = {
   zones: "both people with their clock cities",
   "call-times": "this week's days with a good call time in both zones",
   headcount: "how many said yes",
+  chores: "the chores this room already tracks (its wheels and lists)",
 };
+
+const CHORE = /\b(dish\w*|grocer\w*|trash|bins?|recycl\w*|laundry|vacuum\w*|clean\w*|sweep\w*|mop\w*|bathroom|kitchen|plants?|litter|dog walk\w*|cook\w*|shopping|errands?)\b/i;
+
+/** The chores a room already tracks, by name: its chore wheels ("who does dishes" → dishes), lists ("grocery run · saturday" → grocery run), and the items of a chore list. */
+export function choresOf(f: RoomFacts): string[] {
+  const out: string[] = [];
+  const add = (t: string) => {
+    const name = t.split(/\s+[·:–-]\s+/)[0].replace(/^(who'?s|who|whose turn)\s+(does|is|on|to do|for)?\s*(the\s+)?/i, "").trim();
+    if (name && !out.some((x) => x.toLowerCase() === name.toLowerCase())) out.push(name);
+  };
+  for (const w of f.wheels) if (CHORE.test(w.title)) add(w.title);
+  for (const l of f.lists) {
+    if (/\bchores?\b/i.test(l.title)) l.items.forEach(add);
+    else if (CHORE.test(l.title)) add(l.title);
+  }
+  for (const b of f.board) if ((b.card === "note" || b.card === "checklist") && CHORE.test(b.title)) add(b.title);
+  return out.slice(0, 8);
+}
 
 export type ResolveNote = {
   token: string;
@@ -232,6 +251,8 @@ function expandRaw(name: string, rawArgs: string | undefined, f: Facts, notes: R
       return f.clocks.length >= 2 ? f.clocks.slice(0, 2).map((c) => `${c.label} ${city(c.tz)}`).join(" · ") : "";
     case "call-times":
       return callTimes(f);
+    case "chores":
+      return choresOf(f);
     case "headcount": {
       const r = match(f.rsvps, flat[0], (x) => [x.title]);
       return r?.yes.length ? String(r.yes.length) : "";
@@ -340,6 +361,10 @@ function duplicateOf(card: string, settings: Record<string, unknown>, f: RoomFac
 /** Words that give a date by themselves: a month, a number, a day, or a day everyone knows. */
 const WORDS_DATE = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\b|\d|\b(today|tonight|tomorrow|weekend|week|month|year|mon|tues?|wed|thur?s?|fri|sat|sun)[a-z]*\b|\b(new year|nye|christmas|xmas|halloween|thanksgiving|valentine|easter|hanukkah|diwali|eid|juneteenth|independence day|labor day|memorial day)/i;
 
+/** A list people claim from themselves, and words that ask for the jobs to be handed out. */
+const SIGN_UP = /\b(bring\w*|sign[- ]?ups?|potluck|pack\w*|volunteer\w*|claim\w*|grab)\b/i;
+const HAND_OUT = /\b(assign\w*|give (everyone|each|every ?body|people)|hand (out|them)|split (it|them|up)|divide|chores?|jobs?|tasks?|rota|roster|who does what)\b/i;
+
 /** Who a surprise or gift is for: a member named next to the occasion. */
 export function giftSubject(said: string, f: RoomFacts): string | null {
   if (!/\b(surprise|gift|present|birthday|bday|b-day)\b/i.test(said)) return null;
@@ -384,6 +409,12 @@ export function resolveCard(raw: RawCard, room: RoomFacts, said: string): Resolv
       notes.push({ token: "paidBy", kind: "rule", detail: `${subject} is who it's for, taken off` });
       delete settings.paidBy;
     }
+  }
+
+  // Rule: a sign-up sheet arrives with open slots, unless the words ask to hand the jobs out.
+  if (pool?.length && raw.card === "checklist" && SIGN_UP.test(said) && !HAND_OUT.test(said)) {
+    notes.push({ token: "for", kind: "rule", detail: "a sign-up: slots left open to claim" });
+    pool = undefined;
   }
 
   if (pool?.length && Array.isArray(settings.items)) {

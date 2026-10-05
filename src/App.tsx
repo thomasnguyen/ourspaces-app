@@ -40,6 +40,7 @@ import { DECISION_WIDGET, canvasSizeFor, getSpace, getWidgets } from "./data/spa
 import { createLabPeerFeed, labPeersRequested } from "./live/labPeers";
 import { dealDemo, deckLabRequested } from "./lib/deck/lab";
 import { STAND_IN_ANSWER } from "./lib/deck/standIn";
+import { boardItems } from "./lib/deck/existing";
 import { useVoiceBuild } from "./live/useVoiceBuild";
 import { VoiceBuildLayer } from "./components/VoiceBuildLayer";
 import {
@@ -500,6 +501,9 @@ export default function App() {
       if (new URLSearchParams(window.location.search).has("voiceHold")) await new Promise(() => {});
       return { dealId: null, model: null, context: null, answer: STAND_IN_ANSWER, error: null };
     },
+    /* "Already here" in mock: no model to ask, so code's match alone stands
+       in (the drawer says so). */
+    board: () => boardItems([...getSpace(spaceId).widgets, ...(addedWidgets[spaceId] ?? [])]),
     commit: async ({ cards }) => {
       const dealt = cards.map((c, i) => ({ ...c.widget, id: `voice-standin-${Date.now().toString(36)}-${i}` }));
       setAddedWidgets((current) => ({ ...current, [spaceId]: [...(current[spaceId] ?? []), ...dealt] }));

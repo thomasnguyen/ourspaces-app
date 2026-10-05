@@ -15,6 +15,7 @@ import {
   deckPromptV2,
   dealTurn,
   dealTurnV2,
+  BOARD_LETTERS,
   decideMessages,
   DECIDE_CHOICES,
   DECIDE_LETTERS,
@@ -388,6 +389,12 @@ export const amend = mutation({
  * these words want, with its probability. Fired while the asker talks; their
  * code shows that card's skeleton when the words named none (or a different
  * one) and the pick is sure (≥ 0.8), and passes it to the fill.
+ *
+ * With `onBoard` (the asker's code found a widget whose kind and title match
+ * the words), the same prefix also goes out, in parallel, with a yes/no
+ * about that widget: "this card is already on the board: poll "cake
+ * flavor?". Does it already do what the request asks?". A yes is only a
+ * signal: the asker's code already holds the widget it means.
  */
 export const decide = action({
   args: {
@@ -397,8 +404,22 @@ export const decide = action({
     people: v.array(v.string()),
     /** The room's card titles (the board), from the room brief. */
     board: v.array(v.string()),
+    /** Also ask whether the board already has it (code found a matching widget). */
+    onBoard: v.optional(v.boolean()),
+    /** That widget, `poll "cake flavor?"`: the yes/no asks about it by name (the plain question drowned it in a long board, nebius/eval/b3-existing.md). */
+    match: v.optional(v.string()),
   },
   returns: v.object({
+    onBoard: v.union(
+      v.null(),
+      v.object({
+        yes: v.boolean(),
+        conf: v.union(v.number(), v.null()),
+        ms: v.number(),
+        usage: v.union(v.null(), v.object({ prompt: v.number(), completion: v.number() })),
+        error: v.union(v.string(), v.null()),
+      }),
+    ),
     card: v.union(v.string(), v.null()),
     conf: v.union(v.number(), v.null()),
     top: v.array(v.object({ card: v.string(), p: v.number() })),
@@ -408,13 +429,29 @@ export const decide = action({
   }),
   handler: async (_ctx, args) => {
     const context = roomContext({ room: args.room, today: args.today, people: args.people.slice(0, 12) });
-    const r = await chooseLetter({
-      model: "ultra",
-      messages: decideMessages({ context, board: args.board.slice(0, 24).map((t) => t.slice(0, 40)), said: args.said.trim().slice(0, 240) }),
-      letters: DECIDE_LETTERS,
-    });
+    const prefix = { context, board: args.board.slice(0, 24).map((t) => t.slice(0, 40)), said: args.said.trim().slice(0, 240) };
+    const [r, b] = await Promise.all([
+      chooseLetter({ model: "ultra", messages: decideMessages(prefix), letters: DECIDE_LETTERS }),
+      args.onBoard && prefix.board.length
+        ? chooseLetter({
+            model: "ultra",
+            messages: decideMessages({ ...prefix, ...(args.match ? { match: args.match.slice(0, 60) } : {}), q: "board" }),
+            letters: BOARD_LETTERS,
+          })
+        : null,
+    ]);
     const cardOf = (l: string) => DECIDE_CHOICES[DECIDE_LETTERS.indexOf(l)] ?? l;
+    const usageOf = (u: typeof r.usage) => (u ? { prompt: u.prompt_tokens ?? 0, completion: u.completion_tokens ?? 0 } : null);
     return {
+      onBoard: b
+        ? {
+            yes: b.letter === "A",
+            conf: b.conf,
+            ms: b.ms,
+            usage: usageOf(b.usage),
+            error: b.error ? `${b.status || "fetch"}: ${b.error.slice(0, 160)}` : null,
+          }
+        : null,
       card: r.letter ? cardOf(r.letter) : null,
       conf: r.conf,
       top: r.top.map((t) => ({ card: cardOf(t.letter), p: t.p })),
