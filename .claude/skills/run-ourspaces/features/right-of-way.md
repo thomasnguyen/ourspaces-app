@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
 ready: dock-voice-orb
-testids: row-halo row-halo-tag row-ghost row-ghost-on row-ghost-cancel row-vote row-vote-ask row-vote-stake row-vote-option row-vote-you row-vote-tally row-vote-withdraw row-vote-note dev-context-edit-affected dev-context-edit-vote knows-held-back widget-edit-button widget-editor-title widget-editor-save dev-context-edit-lease dev-context-edit-outcome voice-edit-slip
+testids: row-halo row-halo-tag row-ghost row-ghost-on row-ghost-cancel row-vote row-vote-ask row-vote-stake row-vote-option row-vote-you row-vote-tally row-vote-withdraw row-vote-note dev-context-edit-affected dev-context-edit-vote knows-held-back knows-held-sum knows-held-row widget-edit-button widget-editor-title widget-editor-save dev-context-edit-lease dev-context-edit-outcome voice-edit-slip
 states:
   held: ?mock=1&row=held | wait row-halo-tag | sleep 400
   ghost: ?mock=1&row=ghost | wait row-ghost | sleep 600
@@ -37,7 +37,13 @@ and lets its lime go, with the slip "added ramen · waited 4.8 s for jules"
 changed meanwhile it is dropped: "that changed while you waited; nothing done".
 After 30 s it gives up the same way. Asking about a card you hold yourself
 just goes. A closed laptop frees its cards within 3 s. "what this space
-knows" lists it under "what it held back" (`knows-held-back`).
+knows" lists it under "what it held back" (`knows-held-back`): up to 12 slips from the
+week's ledger (waits: who, how long, what happened; votes: who was asked and the outcome; refusals),
+each a tap back to its card (`knows-held-row`), under one computed line (`knows-held-sum`): "held back
+14 times this week · never changed something someone was holding · 37 writes checked". The second half
+checks every committed write against who the leases said held it (`aiWrites.others`, a landed wait's
+`heldBy`), not the verdict; it turns orange and says so if that is ever false. Proof of the rule
+against a model judge: `eval/right-of-way/` (README).
 
 **Choices become a vote (R2).** If a spoken change would override what
 other people chose (a vote for an option, a claimed item, a yes to an rsvp's

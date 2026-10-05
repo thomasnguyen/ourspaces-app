@@ -12,6 +12,8 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { applyEdit, type EditOp } from "../lib/deck/edits";
+import { playSound } from "../lib/sounds";
+import { visitSources } from "./RoomKnows";
 import "./right-of-way.css";
 
 export type RowLease = { thing: string; kind: string; userId: string; name: string; color: string; since: number; letGoAt?: number; scripted?: boolean };
@@ -224,13 +226,36 @@ export function settledLine(s: { by: string; byUserId?: string; text: string; ou
   return o.why ?? "that changed while you waited; nothing done";
 }
 
-export type HeldBackRow = { id: string; at: number; kind: string; by: string; verdict: string; reason: string; text: string; outcome?: string };
+export type HeldBackRow = { id: string; at: number; kind: string; by: string; verdict: string; reason: string; text: string; outcome?: string; widgetId?: string; who?: string[] };
+/** The room's week from the ledger (convex/rightOfWay.ts `heldBack`): every number computed from the write log. */
+export type HeldBackWeek = { writes: number; held: number; waits: number; asks: number; nevers: number; overHold: number; checked: number; capped: boolean };
 
-/** "What it held back": the ledger's waits and nevers, said plainly. */
-export function HeldBack({ rows }: { rows: HeldBackRow[] }) {
+const times = (n: number) => `${n} ${n === 1 ? "time" : "times"}`;
+/** "held back 4 times this week · never changed something someone was holding": the second half is the log's own check. */
+export function weekLine(w: HeldBackWeek): string {
+  const hold = w.overHold ? `changed something someone was holding ${times(w.overHold)}` : "never changed something someone was holding";
+  const of = w.checked === w.writes ? `${w.writes} ${w.writes === 1 ? "write" : "writes"} checked` : `${w.checked} of ${w.writes} writes checked`;
+  return `held back ${times(w.held)} this week · ${hold} · ${of}${w.capped ? " (the last 1,000)" : ""}`;
+}
+
+/** Back to the board and onto the card a slip is about. */
+function visitCard(widgetId?: string) {
+  if (!widgetId) return;
+  playSound("tap");
+  window.location.hash = window.location.hash.replace(/\/knows.*$/, "");
+  window.setTimeout(() => visitSources([widgetId], "var(--color-lime)"), 140);
+}
+
+/** "What it held back": the ledger's waits, votes and refusals, said plainly, each one a way back to its card. */
+export function HeldBack({ rows, week }: { rows: HeldBackRow[]; week?: HeldBackWeek }) {
   return (
     <section className="knows-sec row-held-back" data-testid="knows-held-back">
       <h2>what it held back</h2>
+      {week && (week.writes > 0 || week.held > 0) && (
+        <p className="row-held-sum" data-testid="knows-held-sum" data-bad={week.overHold > 0 || undefined}>
+          {weekLine(week)}
+        </p>
+      )}
       {rows.length === 0 ? (
         <p className="row-held-empty">nothing yet. when someone is holding a card, the space waits for them; when a change would undo what people chose, it asks them.</p>
       ) : (
@@ -238,12 +263,13 @@ export function HeldBack({ rows }: { rows: HeldBackRow[] }) {
           {rows.map((r) => {
             const o = r.outcome ? parse<{ state: string; ms: number; on: string; why?: string }>(r.outcome) : null;
             const asked = r.by === "the space" ? `the space's hand: ${r.text || r.kind}` : `${r.by.toLowerCase()} asked: ${r.text || r.kind}`;
+            const them = r.who?.length ? (r.who.length > 3 ? `${r.who.length} people` : r.who.join(", ")) : "them";
             // a stamp (what it did about it) and the rest of the line
             const [tone, stamp, rest] =
               r.verdict === "ask"
                 ? o
-                  ? [o.state === "changed" || o.state === "moot" ? "landed" : "dropped", o.state === "changed" ? "asked them · changed" : o.state === "moot" ? "asked them · moot" : o.state === "withdrawn" ? "asked them · withdrawn" : "asked them · kept", `${r.reason.replace(/^that's /, "")} · ${o.why ?? ""}`]
-                  : ["waiting", "asked them", `${r.reason.replace(/^that's /, "")} · waiting on their answers`]
+                  ? [o.state === "changed" || o.state === "moot" ? "landed" : "dropped", `asked ${them} · ${o.state === "changed" ? "changed" : o.state === "moot" ? "moot" : o.state === "withdrawn" ? "withdrawn" : "kept"}`, `${r.reason.replace(/^that's /, "")} · ${o.why ?? ""}`]
+                  : ["waiting", `asked ${them}`, `${r.reason.replace(/^that's /, "")} · waiting on their answers`]
                 : r.verdict === "wait"
                 ? o
                   ? [
@@ -251,12 +277,12 @@ export function HeldBack({ rows }: { rows: HeldBackRow[] }) {
                       `waited ${(o.ms / 1000).toFixed(1)} s for ${o.on.toLowerCase()}`,
                       o.state === "landed" ? "then it landed" : o.state === "expired" ? "gave up after 30 s" : o.state === "cancelled" ? "cancelled" : `dropped: ${o.why ?? "it had changed"}`,
                     ]
-                  : ["waiting", "waiting", r.reason]
+                  : ["waiting", `waiting on ${them}`, r.reason]
                 : r.kind === "build"
                   ? ["aside", "moved aside", r.reason]
                   : ["never", "didn't", r.reason];
             return (
-              <li key={r.id} data-verdict={r.verdict} data-tone={tone} style={{ "--i": rows.indexOf(r) } as CSSProperties}>
+              <li key={r.id} data-testid="knows-held-row" data-verdict={r.verdict} data-tone={tone} data-card={r.widgetId ? "" : undefined} style={{ "--i": rows.indexOf(r) } as CSSProperties} onClick={() => visitCard(r.widgetId)}>
                 <span className="row-held-asked">{r.verdict === "wait" || r.verdict === "ask" || r.kind !== "build" ? asked : `${r.by.toLowerCase()}'s new card`}</span>
                 <span className="row-held-line">
                   <b>{stamp}</b>
@@ -273,6 +299,8 @@ export function HeldBack({ rows }: { rows: HeldBackRow[] }) {
 
 /** The live section: mounted only while the knows page is open, so the ledger isn't read on every write. */
 export function LiveHeldBack({ spaceId }: { spaceId: Id<"spaces"> }) {
-  const rows = useQuery(api.rightOfWay.heldBack, { spaceId });
-  return <HeldBack rows={(rows ?? []).map((r) => ({ ...r, id: String(r.id) }))} />;
+  // the week's start, fixed for the page's life and rounded to the hour (the query reads no clock)
+  const [since] = useState(() => Math.floor((Date.now() - 7 * 24 * 3600_000) / 3600_000) * 3600_000);
+  const data = useQuery(api.rightOfWay.heldBack, { spaceId, since });
+  return <HeldBack rows={(data?.rows ?? []).map((r) => ({ ...r, id: String(r.id), widgetId: r.widgetId ? String(r.widgetId) : undefined }))} week={data?.week} />;
 }

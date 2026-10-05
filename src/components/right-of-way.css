@@ -289,6 +289,26 @@
   opacity: 0.6;
   font: 400 14px/1.35 var(--font-sans);
 }
+/* the week in one line, every number from the write log; if the check ever fails it says so in orange */
+.row-held-sum {
+  margin-top: 8px;
+  font: 600 14px/1.35 var(--font-sans);
+  color: var(--color-ink);
+  opacity: 0.8;
+}
+.row-held-sum[data-bad] {
+  opacity: 1;
+  color: var(--color-trip);
+}
+/* a slip goes back to its card */
+.row-held-back li[data-card] {
+  cursor: pointer;
+  transition: translate var(--dur-quick) var(--ease-glide), box-shadow var(--dur-quick) var(--ease-glide);
+}
+.row-held-back li[data-card]:hover {
+  translate: -2px -2px;
+  box-shadow: 6px 6px 0 var(--color-ink);
+}
 
 /* a drag pauses every animation in its card (index.css); the halo and ghost still arrive */
 .widget-group.is-dragging .row-ghost,

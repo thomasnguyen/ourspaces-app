@@ -107,7 +107,9 @@ export async function rightOfWay(ctx: MutationCtx, write: AiWrite): Promise<Door
           : v.kind === "wait"
             ? own + `${on!.name} is ${DOING[on!.kind] ?? "holding"} it`
             : on && thing === undefined ? `${v.why}; placed it below` : v.why);
-  const writeId = await log(ctx, write, v.kind, reason);
+  // who else had a hand on it, read straight from the leases (not from the verdict): the ledger checks every go against it
+  const others = [...new Set(rows.filter((l) => l.userId !== write.by.userId && (thing !== undefined || spot?.includes(l.thing))).map((l) => l.name))];
+  const writeId = await log(ctx, write, v.kind, reason, others);
   let pendingId: Id<"pending"> | undefined;
   if (v.kind === "wait" && write.replay && thing !== undefined) {
     // a late word re-sends the same edit ("rename it to taco" → "… taco tuesday"): the newer one replaces the waiting one
@@ -148,7 +150,7 @@ export async function commitEdit(ctx: MutationCtx, widget: Doc<"widgets">, r: Ex
 }
 
 /** One ledger row. */
-export async function log(ctx: MutationCtx, write: AiWrite, verdict: string, reason?: string) {
+export async function log(ctx: MutationCtx, write: AiWrite, verdict: string, reason?: string, others?: string[]) {
   return await ctx.db.insert("aiWrites", {
     spaceId: write.spaceId,
     ...(write.widgetId ? { widgetId: write.widgetId } : {}),
@@ -160,6 +162,7 @@ export async function log(ctx: MutationCtx, write: AiWrite, verdict: string, rea
     ...(reason ? { reason } : {}),
     ...(write.text ? { text: write.text } : {}),
     ...(write.undo ? { undo: JSON.stringify(write.undo) } : {}),
+    ...(others ? { others } : {}),
     at: Date.now(),
   });
 }
@@ -234,6 +237,8 @@ export async function landWaiting(ctx: MutationCtx, spaceId: Id<"spaces">, thing
         on: ended.name,
         ...(ended.letGoAt !== null ? { afterLetGo: now - ended.letGoAt } : {}),
         ...(ended.expired ? { expired: true } : {}),
+        // who else still held it when it landed (the ledger's check; the gate says this is nobody)
+        ...(out.ok ? { heldBy: [...new Set(rows.filter((l) => l.userId !== row.byUserId).map((l) => l.name))] } : {}),
         ...(out.ok ? {} : { why: out.why }),
         at: now,
       }),
@@ -302,16 +307,72 @@ export const room = query({
   },
 });
 
-/** "What it held back" (the knows page): recent waits and nevers, from the ledger. */
+const heldRowV = v.object({
+  id: v.id("aiWrites"), at: v.number(), kind: v.string(), by: v.string(), verdict: v.string(), reason: v.string(), text: v.string(),
+  outcome: v.optional(v.string()), widgetId: v.optional(v.id("widgets")),
+  /** wait: who it yielded to; ask: who was asked */
+  who: v.array(v.string()),
+});
+const weekV = v.object({
+  /** writes it committed this week (a go, or a wait that landed), held back (wait | ask | never), and each kind */
+  writes: v.number(), held: v.number(), waits: v.number(), asks: v.number(), nevers: v.number(),
+  /** committed writes the leases say someone else was holding at that moment; checked = writes with that reading */
+  overHold: v.number(), checked: v.number(), capped: v.boolean(),
+});
+const parseO = (s?: string) => { try { return s ? (JSON.parse(s) as { state?: string; on?: string; heldBy?: string[] }) : null; } catch { return null; } };
+
+/**
+ * "What it held back" (the knows page), from the ledger: the recent waits (who it yielded to, how long, what
+ * happened), votes it called (who was asked, the outcome) and refusals, each with its card; and the week in counts.
+ * "Never changed something someone was holding" is computed, not asserted: every committed write is checked against
+ * who the leases said held it when it went (`others` at the door, `heldBy` when a wait landed), apart from the gate.
+ */
 export const heldBack = query({
-  args: { spaceId: v.id("spaces") },
-  returns: v.array(v.object({ id: v.id("aiWrites"), at: v.number(), kind: v.string(), by: v.string(), verdict: v.string(), reason: v.string(), text: v.string(), outcome: v.optional(v.string()) })),
-  handler: async (ctx, { spaceId }) => {
-    if (!(await canRead(ctx, spaceId))) return [];
-    const rows = await ctx.db.query("aiWrites").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(200);
-    return rows
-      .filter((r) => (r.verdict === "wait" || r.verdict === "never" || r.verdict === "refused" || r.verdict === "ask") && !r.outcome?.includes('"replaced"'))
-      .slice(0, 8)
-      .map((r) => ({ id: r._id, at: r.at, kind: r.kind, by: r.by, verdict: r.verdict, reason: r.reason ?? "", text: r.text ?? "", ...(r.outcome ? { outcome: r.outcome } : {}) }));
+  /** since = the week's start, from the client (rounded to the hour so the query caches) */
+  args: { spaceId: v.id("spaces"), since: v.number() },
+  returns: v.object({ rows: v.array(heldRowV), week: weekV }),
+  handler: async (ctx, { spaceId, since }) => {
+    const empty = { rows: [], week: { writes: 0, held: 0, waits: 0, asks: 0, nevers: 0, overHold: 0, checked: 0, capped: false } };
+    if (!(await canRead(ctx, spaceId))) return empty;
+    const log = await ctx.db.query("aiWrites").withIndex("by_space", (q) => q.eq("spaceId", spaceId).gte("_creationTime", since)).order("desc").take(1000);
+    const held = log.filter((r) => (r.verdict === "wait" || r.verdict === "never" || r.verdict === "ask") && !r.outcome?.includes('"replaced"'));
+    const week = { ...empty.week, capped: log.length === 1000, held: held.length };
+    for (const r of log) {
+      const o = parseO(r.outcome);
+      if (r.verdict === "wait" && !r.outcome?.includes('"replaced"')) week.waits++;
+      if (r.verdict === "ask") week.asks++;
+      if (r.verdict === "never") week.nevers++;
+      // a committed write, and who the leases said held it then
+      const reading = r.verdict === "go" ? r.others : r.verdict === "wait" && o?.state === "landed" ? o.heldBy : null;
+      if (r.verdict !== "go" && !(r.verdict === "wait" && o?.state === "landed")) continue;
+      week.writes++;
+      if (reading === undefined || reading === null) continue;
+      week.checked++;
+      if (reading.length) week.overHold++;
+    }
+    // who was asked: the vote each ask opened (its option carries the ask's ledger row)
+    const votes = await ctx.db.query("choiceVotes").withIndex("by_space", (q) => q.eq("spaceId", spaceId).gte("at", since)).take(200);
+    const asked = new Map<string, string[]>();
+    for (const cv of votes) for (const op of cv.options) if (op.writeId) asked.set(op.writeId, cv.voters.map((p) => p.name.toLowerCase()));
+    const waiting = await ctx.db.query("pending").withIndex("by_thing", (q) => q.eq("spaceId", spaceId)).take(20);
+    const on = new Map(waiting.map((p) => [p.writeId as string, (parseO(p.on) as { name?: string } | null)?.name ?? ""]));
+    const rows = held.slice(0, 12).map((r) => {
+      const o = parseO(r.outcome);
+      const who = r.verdict === "ask" ? asked.get(r._id) ?? [] : r.verdict === "wait" ? [(o?.on ?? on.get(r._id) ?? "").toLowerCase()].filter(Boolean) : [];
+      return { id: r._id, at: r.at, kind: r.kind, by: r.by, verdict: r.verdict, reason: r.reason ?? "", text: r.text ?? "", ...(r.outcome ? { outcome: r.outcome } : {}), ...(r.widgetId ? { widgetId: r.widgetId } : {}), who };
+    });
+    return { rows, week };
+  },
+});
+
+/** R3's live cost: the door's reads and the gate, n times in one mutation (eval/right-of-way: the door's own time). */
+export const probe = internalMutation({
+  args: { spaceId: v.id("spaces"), thing: v.string(), n: v.number() },
+  returns: v.object({ n: v.number(), ms: v.number(), verdict: v.string() }),
+  handler: async (ctx, { spaceId, thing, n }) => {
+    const t0 = Date.now();
+    let verdict = "";
+    for (let i = 0; i < n; i++) verdict = gate({ thing, by: { kind: "space" } }, (await leasesOn(ctx, spaceId, thing)).map(asLease)).kind;
+    return { n, ms: Date.now() - t0, verdict };
   },
 });

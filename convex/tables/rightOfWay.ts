@@ -4,11 +4,12 @@ import { v } from "convex/values";
 /** Right of Way: the ledger of AI writes, who holds what, writes waiting on a hand (schema.ts lists them). */
 
 // Every AI write through the one door (rightOfWay.ts): fields = JSON [{field,old,new}], verdict go|wait|never,
-// undo = inverse op JSON, outcome = what a wait came to (JSON {state,ms,on}).
+// undo = inverse op JSON, outcome = what a wait came to (JSON {state,ms,on,heldBy}). others = anyone but the asker
+// holding the thing (or a new card's spot) at the door, read from the leases apart from the gate: the ledger's check.
 export const aiWrites = defineTable({
   spaceId: v.id("spaces"), widgetId: v.optional(v.id("widgets")), kind: v.string(), by: v.string(), byUserId: v.optional(v.string()),
   fields: v.string(), verdict: v.string(), reason: v.optional(v.string()), text: v.optional(v.string()), undo: v.optional(v.string()),
-  undone: v.optional(v.boolean()), at: v.number(), outcome: v.optional(v.string()),
+  undone: v.optional(v.boolean()), at: v.number(), outcome: v.optional(v.string()), others: v.optional(v.array(v.string())),
 }).index("by_space", ["spaceId"]);
 
 // Right of Way (leases.ts): who holds what (thing = card id | piece:<game>:<i>) until `until`.
