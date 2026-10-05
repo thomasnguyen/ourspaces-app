@@ -5,6 +5,15 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **What this space knows, redesigned (Oct 4, dev lane).** Same facts and actions,
+  drawn as a wall: the group as face stickers, each noticed line as a paper
+  object (tear-off day count, week strip with the usual day ringed, receipt
+  stub, address slips, tick list, word magnets, one ledger sheet for polls).
+  The chip flips the room over (view transition), a cross-out is three marker
+  strokes plus the person stamped on it, a told fact is a taped note in their
+  colour, a tapped line flies to its card. Objects only redraw what the line
+  already says (`RoomKnowsObjects.tsx`). Not done: live presence on the page,
+  real thumbnails of source cards.
 - **What this space knows (Oct 4, dev lane).** Every room has a second side at
   `#/space/<slug>/knows`, opened from the black chip by the room's name: who
   we are, coming up, how we usually do things (each habit with its evidence),

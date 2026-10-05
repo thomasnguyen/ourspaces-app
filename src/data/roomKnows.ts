@@ -1,4 +1,4 @@
-import type { KnowLine, RoomKnows } from "../lib/roomKnows";
+import type { Forgot, KnowLine, RoomKnows, Told } from "../lib/roomKnows";
 
 /**
  * MOCK FIXTURES for "what this space knows" (`?mock=1`, no backend): what
@@ -75,8 +75,17 @@ const FIXTURES: Record<string, Omit<RoomKnows, "told" | "forgot" | "at">> = {
   },
 };
 
+/* What the demo crew has already had to say about its own page: one thing
+   told, one thing crossed out, so the first look shows people are in charge. */
+const SAID: Record<string, { told: Told[]; forgot: Forgot[] }> = {
+  crew: {
+    told: [{ id: "seed-mondays", text: "we never do mondays", by: "Kenji", color: "#13b8a6", at: 1 }],
+    forgot: [{ key: "words", text: "words we use a lot: cake, matcha, balloons, bday, party, place", by: "Rio", color: "#ff7a3d", at: 1 }],
+  },
+};
+
 /** The fixture page for a mock room; a room without one gets the empty state. */
 export function mockRoomKnows(slug: string, roomName: string): RoomKnows {
   const f = FIXTURES[slug];
-  return { room: f?.room ?? roomName, at: 0, people: f?.people ?? [], lines: f?.lines ?? [], told: [], forgot: [] };
+  return { room: f?.room ?? roomName, at: 0, people: f?.people ?? [], lines: f?.lines ?? [], told: SAID[slug]?.told ?? [], forgot: SAID[slug]?.forgot ?? [] };
 }

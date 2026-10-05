@@ -361,7 +361,7 @@ export default function App() {
   const [mockKnowsEdits, setMockKnowsEdits] = useState<Record<string, Pick<RoomKnows, "told" | "forgot">>>({});
   const correctMockKnows = (change: KnowsChange) =>
     setMockKnowsEdits((all) => {
-      const { told, forgot } = all[spaceId] ?? { told: [], forgot: [] };
+      const { told, forgot } = all[spaceId] ?? mockRoomKnows(spaceId, "");
       const who = { by: tabIdentity.name, color: tabIdentity.color, at: Date.now() };
       const next =
         change.kind === "tell"

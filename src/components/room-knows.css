@@ -1,7 +1,9 @@
 /* WHAT THIS SPACE KNOWS — the room's own page, behind the board
-   (RoomKnows.tsx). The room's wall and ink carry over (background: inherit
-   from the room's <main>), so each space's page is that space. Cream sheets
-   with a hard ink shadow; one strip of tape on the habits sheet. */
+   (RoomKnows.tsx, RoomKnowsObjects.tsx). The room's wall and ink carry over
+   (background: inherit from the room's <main>), so each space's page is that
+   space. On the wall: the group as stickers, and each thing the space has
+   noticed as a paper object with a hard ink shadow (a tear-off day count, a
+   week strip, a receipt stub, address slips, word magnets). */
 
 .room-knows {
   position: absolute;
@@ -9,43 +11,66 @@
   z-index: 100500;
   background: inherit;
   background-color: var(--knows-wall, inherit);
+  /* flat and full-strength: on this side the paper and ink carry the detail */
+  background-image: none;
   color: var(--space-heading-color, var(--color-ink));
-  transform-origin: 0 50%;
-  animation: knows-turn-in var(--dur-stage) var(--ease-glide) both;
 }
 
+/* A line being followed to its card: the page lifts away around it. */
 .room-knows.is-leaving {
   pointer-events: none;
-  animation: knows-turn-out var(--dur-arrive) var(--ease-glide) both;
+  animation: knows-lift-out var(--dur-arrive) var(--ease-glide) both;
 }
 
-/* The board turns over: the page swings in on the room's left edge. */
-@keyframes knows-turn-in {
-  from {
-    opacity: 0.2;
-    transform: perspective(1800px) rotateY(72deg);
+@keyframes knows-lift-out {
+  to {
+    opacity: 0;
+    scale: 1.04;
   }
 }
 
-@keyframes knows-turn-out {
+/* The turn-over: the room is a card with two sides (turnRoom). */
+html.is-knows-flip::view-transition-old(root),
+html.is-knows-flip::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(knows-room) {
+  animation: none;
+}
+
+::view-transition-image-pair(knows-room) {
+  isolation: auto;
+}
+
+::view-transition-old(knows-room),
+::view-transition-new(knows-room) {
+  mix-blend-mode: normal;
+  backface-visibility: hidden;
+  animation: knows-flip-away var(--dur-hero) var(--ease-glide) both;
+}
+
+::view-transition-new(knows-room) {
+  animation-name: knows-flip-here;
+}
+
+@keyframes knows-flip-away {
   to {
-    opacity: 0;
-    transform: perspective(1800px) rotateY(72deg);
+    transform: perspective(2400px) rotateY(-180deg);
+  }
+}
+
+@keyframes knows-flip-here {
+  from {
+    transform: perspective(2400px) rotateY(180deg);
   }
 }
 
 .knows-scroll {
   height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding: 26px clamp(20px, 4vw, 64px) 40px;
-}
-
-.knows-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px 40px;
-  margin-top: 18px;
+  padding: 22px clamp(20px, 4.4vw, 64px) 44px;
 }
 
 .knows-back {
@@ -67,6 +92,20 @@
   translate: -2px 0;
 }
 
+/* Head: the title on the left, the group's portrait on the right. */
+.knows-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 20px 48px;
+  /* the portrait starts level with the back button */
+  margin-top: -34px;
+}
+
+.knows-title {
+  padding-top: 44px;
+}
+
 .knows-kicker {
   font-size: 13px;
   font-weight: 700;
@@ -76,32 +115,54 @@
 .room-knows h1 {
   margin-top: 2px;
   font-family: var(--font-display);
-  font-size: clamp(40px, 5vw, 72px);
-  white-space: nowrap;
+  font-size: clamp(40px, 4vw, 60px);
   font-weight: 800;
-  line-height: 0.9;
-  letter-spacing: -0.03em;
+  line-height: 0.88;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
 }
 
 .knows-sub {
-  max-width: 560px;
+  max-width: 600px;
   margin-top: 14px;
   font-size: 15px;
   font-weight: 500;
-  line-height: 1.4;
-  opacity: 0.92;
+  line-height: 1.45;
+  opacity: 0.94;
+}
+
+.knows-total {
+  display: inline-block;
+  min-width: 30px;
+  margin-right: 2px;
+  padding: 0 9px;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  animation: knows-tick var(--dur-arrive) var(--ease-pop) both;
+}
+
+@keyframes knows-tick {
+  from {
+    scale: 0.5;
+    rotate: -12deg;
+  }
 }
 
 .knows-tell {
   display: flex;
-  width: min(480px, 100%);
-  flex: none;
+  width: min(500px, 100%);
   gap: 6px;
-  margin-bottom: 4px;
+  margin-top: 16px;
   padding: 5px;
   border-radius: var(--radius-pill);
   background: var(--color-sticker);
-  box-shadow: 0 6px 0 rgba(17, 17, 20, 0.28);
+  box-shadow: 4px 5px 0 color-mix(in srgb, var(--color-ink) 28%, transparent);
 }
 
 .knows-tell input {
@@ -117,7 +178,7 @@
 }
 
 .knows-tell input::placeholder {
-  color: rgba(255, 255, 255, 0.56);
+  color: color-mix(in srgb, white 56%, transparent);
 }
 
 .knows-tell button {
@@ -133,250 +194,426 @@
 
 .knows-tell button:disabled {
   background: color-mix(in srgb, white 16%, transparent);
-  color: rgba(255, 255, 255, 0.6);
+  color: color-mix(in srgb, white 60%, transparent);
 }
 
 .knows-tell button:active {
   scale: 0.96;
 }
 
-/* The sheets */
-.knows-sheets {
-  display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr) minmax(0, 1fr);
-  align-items: start;
-  gap: 26px;
-  margin-top: 30px;
-}
-
-.knows-sheet {
-  position: relative;
-  padding: 6px 22px 16px;
-  border: 2px solid var(--color-ink);
-  border-radius: 18px;
-  background: var(--color-card);
-  box-shadow: 6px 6px 0 var(--color-ink);
-  color: var(--color-ink);
-  animation: knows-sheet-in var(--dur-arrive) var(--ease-pop) both;
-  animation-delay: 140ms;
-}
-
-.knows-sheet.is-a { rotate: -0.5deg; }
-.knows-sheet.is-b { rotate: 0.3deg; animation-delay: 200ms; }
-.knows-sheet.is-c { rotate: -0.2deg; animation-delay: 260ms; }
-
-@keyframes knows-sheet-in {
-  from {
-    opacity: 0;
-    translate: 0 18px;
-  }
-}
-
-.knows-tape {
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  width: 104px;
-  height: 28px;
-  background: color-mix(in srgb, var(--color-mat) 78%, transparent);
-  rotate: -2.5deg;
-  translate: -50% 0;
-}
-
-.knows-sec {
-  margin-top: 16px;
-}
-
+/* Section names are written on the wall itself. */
 .knows-sec h2,
 .knows-empty h2 {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
-  letter-spacing: -0.015em;
-  line-height: 1.05;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
-.knows-sheet.is-b .knows-sec h2 {
-  font-size: 28px;
-}
-
-.knows-count {
-  margin-top: 3px;
-  color: var(--color-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.knows-people {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 10px 0 4px;
-}
-
-.knows-people span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 11px 3px 5px;
-  border: 1.5px solid var(--color-ink);
-  border-radius: var(--radius-pill);
-  background: white;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.knows-people i,
-.knows-tag.is-person i {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--by, var(--color-muted));
-}
-
-.knows-people .is-away {
-  border-style: dashed;
-  color: var(--color-muted);
-}
-
-.knows-people .is-away::after {
-  content: "away";
-  font-size: 11px;
-  font-weight: 700;
-}
-
-/* A line: the fact, where it came from under it, who vouches for it beside it. */
 .knows-sec ul {
-  margin: 6px 0 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  margin: 12px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.knows-line {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 12px;
-  padding: 10px 0;
-  border-top: 1.5px dashed color-mix(in srgb, var(--color-ink) 18%, transparent);
-  animation: knows-line-in var(--dur-arrive) var(--ease-glide) both;
-  animation-delay: calc(240ms + var(--i, 0) * 28ms);
+.knows-sec + .knows-sec {
+  margin-top: 26px;
 }
 
-@keyframes knows-line-in {
+.knows-count {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+/* A person: a die-cut sticker. */
+.knows-face {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--by, var(--color-muted));
+  box-shadow: 0 0 0 2px white, 0 0 0 3.5px var(--color-ink);
+  color: var(--on, white);
+  font-family: var(--font-display);
+  font-size: 12px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.knows-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The portrait: everyone, big, each a little crooked. */
+.knows-group {
+  justify-self: end;
+}
+
+.knows-group .knows-sec ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.knows-group .knows-line {
+  padding: 9px 12px 9px;
+  gap: 0 14px;
+}
+
+.knows-group .knows-fact {
+  grid-column: 1;
+  gap: 3px;
+}
+
+.knows-group .knows-why {
+  padding-right: 0;
+}
+
+.knows-people {
+  display: flex;
+  gap: 18px;
+  margin-top: 16px;
+  padding: 0 6px 12px;
+}
+
+.knows-person {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  rotate: -3deg;
+  animation: knows-sticker-in var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(120ms + var(--i, 0) * 50ms);
+  transition: rotate var(--dur-base) var(--ease-pop), translate var(--dur-base) var(--ease-pop);
+}
+
+.knows-person:nth-child(2n) {
+  rotate: 4deg;
+  translate: 0 8px;
+}
+
+.knows-person:nth-child(3n) {
+  rotate: -1deg;
+  translate: 0 -4px;
+}
+
+@keyframes knows-sticker-in {
   from {
     opacity: 0;
-    translate: 0 6px;
+    scale: 0.3;
+    rotate: -24deg;
+  }
+}
+
+.knows-person .knows-face {
+  width: 84px;
+  height: 84px;
+  box-shadow: 0 0 0 4px white, 0 0 0 6px var(--color-ink), 5px 9px 0 3px var(--color-ink);
+  font-size: 40px;
+  transition: filter var(--dur-base) var(--ease-glide);
+}
+
+.knows-person > b {
+  z-index: 1;
+  margin-top: -9px;
+  padding: 2px 11px 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Away: tilted off, greyed, a strip of tape across saying when they're back. */
+.knows-person.is-away {
+  rotate: 11deg;
+  translate: 0 12px;
+}
+
+.knows-person.is-away .knows-face {
+  filter: grayscale(1) contrast(0.8) brightness(1.1);
+}
+
+.knows-person > em {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  z-index: 2;
+  padding: 3px 12px;
+  background: var(--color-mat);
+  color: var(--color-ink);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+  rotate: -19deg;
+  translate: -50% 0;
+  box-shadow: 1px 2px 0 color-mix(in srgb, var(--color-ink) 30%, transparent);
+  animation: knows-tape-in var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(360ms + var(--i, 0) * 50ms);
+}
+
+@keyframes knows-tape-in {
+  from {
+    opacity: 0;
+    scale: 1.5;
+  }
+}
+
+/* The wall */
+.knows-sheets {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.52fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 36px;
+  margin-top: 28px;
+}
+
+.knows-sheet.is-b .knows-sec ul {
+  align-items: start;
+  grid-auto-flow: dense;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.knows-sheet.is-b .knows-line.is-wide {
+  grid-column: 1 / -1;
+}
+
+/* A room with nothing coming up, or nothing standing, gives that column to the habits. */
+@media (min-width: 1101px) {
+  .knows-sheet.is-a {
+    grid-column: 1;
+  }
+
+  .knows-sheet.is-b {
+    grid-column: 2;
+  }
+
+  .knows-sheet.is-c {
+    grid-column: 3;
+  }
+
+  .knows-sheets:not(:has(.knows-sheet.is-a)) .knows-sheet.is-b {
+    grid-column: 1 / 3;
+  }
+
+  .knows-sheets:not(:has(.knows-sheet.is-c)) .knows-sheet.is-b {
+    grid-column: 2 / 4;
+  }
+
+  .knows-sheets:not(:has(.knows-sheet.is-a)) .knows-sheet.is-b .knows-sec ul:not(.knows-notes),
+  .knows-sheets:not(:has(.knows-sheet.is-c)) .knows-sheet.is-b .knows-sec ul:not(.knows-notes) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* An object: paper, ink edge, hard shadow, hung a little off true. */
+.knows-line {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  padding: 14px 16px 12px;
+  border: 2px solid var(--color-ink);
+  border-radius: 14px;
+  background: var(--color-card);
+  box-shadow: 5px 5px 0 var(--color-ink);
+  color: var(--color-ink);
+  rotate: -0.5deg;
+  animation: knows-obj-in var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(200ms + var(--i, 0) * 36ms);
+}
+
+.knows-line:nth-child(2n) {
+  rotate: 0.6deg;
+}
+
+.knows-line:nth-child(3n) {
+  rotate: -0.9deg;
+}
+
+@keyframes knows-obj-in {
+  from {
+    opacity: 0;
+    translate: 0 22px;
+    scale: 0.94;
   }
 }
 
 .knows-fact {
   display: grid;
+  grid-column: 1 / -1;
+  grid-row: 1;
   grid-template-columns: minmax(0, 1fr);
-  column-gap: 10px;
+  align-self: start;
+  gap: 9px;
+  width: 100%;
   margin: 0;
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
   text-align: left;
-}
-
-.knows-line.has-n .knows-fact {
-  grid-template-columns: auto minmax(0, 1fr);
-}
-
-.knows-line.has-n .knows-fact > * {
-  grid-column: 2;
-}
-
-.knows-line.has-n .knows-fact > .knows-n {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  align-self: center;
-  color: var(--space-accent, var(--color-crew));
-  font-family: var(--font-display);
-  font-size: 44px;
-  font-weight: 800;
-  line-height: 0.9;
-  letter-spacing: -0.03em;
-}
-
-.knows-text {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.28;
-  text-wrap: pretty;
-}
-
-.knows-sheet.is-b .knows-text {
-  font-size: 17px;
-}
-
-.knows-why {
-  margin-top: 2px;
-  color: var(--color-muted);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.35;
-}
-
-.knows-why i {
-  font-style: normal;
-  opacity: 0;
-  transition: opacity var(--dur-quick) var(--ease-glide);
+  transition: translate var(--dur-quick) var(--ease-glide);
 }
 
 button.knows-fact:not(:disabled) {
   cursor: pointer;
 }
 
-button.knows-fact:not(:disabled):hover .knows-text {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
+button.knows-fact:not(:disabled):hover {
+  translate: 0 -2px;
 }
 
-button.knows-fact:not(:disabled):hover .knows-why i {
+.knows-text {
+  position: relative;
+  display: block;
+  justify-self: start;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.knows-words-of {
+  transition: color var(--dur-base) var(--ease-glide);
+}
+
+.knows-text em {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-muted);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.knows-text > .knows-words-of > .knows-face {
+  width: 30px;
+  height: 30px;
+  margin: -4px 9px 0 3px;
+}
+
+.knows-why {
+  padding-right: 78px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.knows-go {
+  font-style: normal;
+  opacity: 0;
+  transition: opacity var(--dur-quick) var(--ease-glide);
+}
+
+button.knows-fact:not(:disabled):hover .knows-go {
   opacity: 1;
 }
 
-.knows-side {
+/* Where it came from, as the stubs of the cards themselves. */
+.knows-why.is-places {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-  padding-top: 2px;
-  white-space: nowrap;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
 }
 
-.knows-tag {
+.knows-said b {
+  margin: 0 2px;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.knows-src {
   display: inline-flex;
+  max-width: 100%;
   align-items: center;
-  gap: 5px;
-  color: var(--color-muted);
+  gap: 6px;
+  overflow: hidden;
+  padding: 2px 8px 2px 2px;
+  border: 1.5px solid var(--color-ink);
+  border-radius: 7px;
+  background: white;
+  color: var(--color-ink);
   font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.knows-src em {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--color-sticker);
+  color: white;
+  font-size: 10px;
+  font-style: normal;
   font-weight: 700;
 }
 
-.knows-tag.is-person {
-  color: var(--color-ink);
+.knows-src.is-more {
+  padding-left: 8px;
+  border-style: dashed;
+  color: var(--color-muted);
 }
 
-.knows-tag.is-person i {
-  width: 9px;
-  height: 9px;
+/* Cross out / put back sit in the object's corner, quiet until wanted. */
+.knows-side {
+  z-index: 1;
+  display: flex;
+  grid-column: 2;
+  grid-row: 1;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
-.knows-tag.is-kept,
-.knows-tag.is-edited,
-.knows-tag.is-removed {
-  padding: 2px 8px;
+.knows-act {
+  margin: 0;
+  padding: 2px 9px 3px;
+  border: 1.5px solid currentColor;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  transition: background var(--dur-quick) var(--ease-glide), color var(--dur-quick) var(--ease-glide), border-color var(--dur-quick) var(--ease-glide);
+}
+
+.knows-act:hover {
+  border-color: var(--color-sticker);
+  background: var(--color-sticker);
+  color: white;
+}
+
+.knows-tag {
+  padding: 2px 9px 3px;
   border-radius: var(--radius-pill);
   background: var(--color-sticker);
   color: white;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .knows-tag.is-removed {
@@ -385,74 +622,827 @@ button.knows-fact:not(:disabled):hover .knows-why i {
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-ink) 30%, transparent);
 }
 
-.knows-act {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--color-muted);
-  font-size: 11px;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: color var(--dur-quick) var(--ease-glide);
+/* THE CROSS-OUT: a marker dragged across the words in your colour, the object
+   drains, and your sticker stamps down on it. Put back undoes each part. */
+.knows-strike {
+  position: absolute;
+  top: -5px;
+  left: -8px;
+  width: calc(100% + 16px);
+  height: calc(100% + 10px);
+  overflow: visible;
+  pointer-events: none;
 }
 
-.knows-act:hover {
-  color: var(--color-ink);
+/* three passes of the marker, one after the other */
+.knows-strike line {
+  stroke: var(--by, var(--color-couple));
+  stroke-width: 5px;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset var(--dur-base) var(--ease-glide);
 }
 
-/* Told by a person: their colour runs down the line's edge. */
+.knows-strike line:nth-child(2) {
+  transition-delay: var(--dur-instant);
+}
+
+.knows-strike line:nth-child(3) {
+  transition-delay: var(--dur-base);
+}
+
+.knows-line.is-gone .knows-strike line {
+  stroke-dashoffset: 0;
+}
+
+.knows-week svg path {
+  fill: none;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.knows-fact > :not(.knows-text) {
+  transition: filter var(--dur-base) var(--ease-glide), opacity var(--dur-base) var(--ease-glide);
+}
+
+.knows-line.is-gone .knows-fact > :not(.knows-text) {
+  filter: grayscale(1);
+  opacity: 0.42;
+}
+
+.knows-line.is-gone .knows-words-of {
+  color: color-mix(in srgb, var(--color-ink) 46%, transparent);
+}
+
+.knows-line.is-gone .knows-fact {
+  animation: knows-thud var(--dur-arrive) var(--ease-glide) 90ms both;
+}
+
+@keyframes knows-thud {
+  0% {
+    scale: 1;
+  }
+  35% {
+    scale: 1.03 0.95;
+  }
+}
+
+.knows-line.is-gone .knows-why {
+  padding-right: 0;
+}
+
+.knows-line.is-gone .knows-side {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.knows-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px 4px 5px;
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  background: var(--by, var(--color-sticker));
+  box-shadow: 2px 3px 0 var(--color-ink);
+  color: var(--on, white);
+  font-size: 12px;
+  font-weight: 700;
+  rotate: -3deg;
+  animation: knows-stamp var(--dur-arrive) var(--ease-pop) 120ms both;
+}
+
+.knows-stamp .knows-face {
+  width: 20px;
+  height: 20px;
+  box-shadow: 0 0 0 1.5px white;
+}
+
+@keyframes knows-stamp {
+  from {
+    opacity: 0;
+    scale: 2.1;
+    rotate: -18deg;
+  }
+}
+
+.knows-line.is-gone .knows-act {
+  border-color: var(--color-sticker);
+  background: var(--color-sticker);
+  color: white;
+  animation: knows-fade-in var(--dur-base) var(--ease-glide) 260ms both;
+}
+
+@keyframes knows-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* TOLD BY A PERSON: a note in their colour, dropped on top of the pile. The
+   slot opens (grid rows, not height) so the objects below slide down for it. */
+.knows-sec ul.knows-notes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 0 18px;
+  margin-top: 6px;
+}
+
+.knows-slot {
+  display: grid;
+  max-width: 100%;
+  animation: knows-make-room var(--dur-arrive) var(--ease-glide) both;
+}
+
+@keyframes knows-make-room {
+  from {
+    grid-template-rows: 0fr;
+  }
+  to {
+    grid-template-rows: 1fr;
+  }
+}
+
 .knows-line.is-told {
-  margin: 0 -10px;
-  padding: 10px;
-  border-top-color: transparent;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--by, var(--color-lime)) 14%, transparent);
-  box-shadow: inset 4px 0 0 var(--by, var(--color-lime));
+  min-height: 0;
+  margin: 14px 0 4px;
+  min-width: 250px;
+  border-radius: 4px 4px 14px 4px;
+  background: var(--by, var(--color-lime));
+  color: var(--on, var(--color-ink));
+  rotate: -1.6deg;
+  animation: knows-drop var(--dur-stage) var(--ease-glide) both;
+  animation-delay: calc(60ms + var(--i, 0) * 36ms);
 }
 
-.knows-line.is-told + .knows-line {
-  border-top-color: transparent;
+.knows-line.is-told::before {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  width: 84px;
+  height: 24px;
+  background: color-mix(in srgb, var(--color-mat) 82%, transparent);
+  content: "";
+  rotate: 3deg;
+  translate: -50% 0;
 }
 
-/* Crossed out: still readable, struck in the colour of whoever did it. */
-.knows-line.is-gone .knows-text {
+@keyframes knows-drop {
+  0% {
+    opacity: 0;
+    translate: 0 -64px;
+    rotate: -10deg;
+    scale: 1.1;
+  }
+  45% {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1.07 0.9;
+    animation-timing-function: var(--ease-pop);
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+.knows-line.is-told .knows-text {
+  font-size: 26px;
+}
+
+.knows-line.is-told .knows-why {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* THE OBJECTS */
+
+/* Days left: a tear-off page, taped up. */
+.knows-line.is-cal {
+  padding-top: 22px;
+  rotate: -1.8deg;
+}
+
+.knows-line.is-cal:nth-child(2n) {
+  rotate: 1.4deg;
+}
+
+.knows-line.is-cal::before {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  width: 92px;
+  height: 26px;
+  background: color-mix(in srgb, var(--color-mat) 82%, transparent);
+  content: "";
+  rotate: -3deg;
+  translate: -50% 0;
+}
+
+.knows-cal {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+
+.knows-cal-faces {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  rotate: 7deg;
+}
+
+.knows-cal-faces .knows-face {
+  width: 58px;
+  height: 58px;
+  box-shadow: 0 0 0 3px white, 0 0 0 5px var(--color-ink), 3px 5px 0 3px var(--color-ink);
+  animation: knows-sticker-in var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(420ms + var(--i, 0) * 36ms);
+}
+
+.knows-cal em {
+  padding: 2px 10px 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: white;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.knows-n {
+  color: var(--space-accent, var(--color-crew));
+  font-family: var(--font-display);
+  font-size: 64px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.82;
+}
+
+.knows-cal .knows-n {
+  font-size: clamp(96px, 9.4vw, 148px);
+  letter-spacing: -0.06em;
+}
+
+/* The usual day: the week, with the day ringed in marker. */
+.knows-line.is-week .knows-text {
+  font-size: 32px;
+  letter-spacing: -0.025em;
+  line-height: 0.98;
+}
+
+.knows-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+  margin: 4px 2px 8px;
+}
+
+.knows-week i {
+  position: relative;
+  padding: 11px 0 12px;
+  border-bottom: 2px solid color-mix(in srgb, var(--color-ink) 16%, transparent);
+  color: color-mix(in srgb, var(--color-ink) 42%, transparent);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  text-align: center;
+}
+
+.knows-week i.is-on {
+  border-color: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 0.85;
+}
+
+.knows-week svg {
+  position: absolute;
+  inset: -7px -5px -5px;
+  width: calc(100% + 10px);
+  height: calc(100% + 12px);
+  overflow: visible;
+}
+
+.knows-week svg path {
+  stroke: var(--space-accent, var(--color-crew));
+  stroke-width: 4.5px;
+  stroke-dasharray: 420;
+  animation: knows-draw var(--dur-hero) var(--ease-glide) both;
+  animation-delay: calc(520ms + var(--i, 0) * 36ms);
+}
+
+@keyframes knows-draw {
+  from {
+    stroke-dashoffset: 420;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Who paid: the stub of the receipt. */
+.knows-receipt {
+  display: grid;
+  gap: 5px;
+  margin: 0 2px 4px;
+  padding: 10px 12px 18px;
+  background: white;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-ink) 22%, transparent);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), 96.43% 100%, 92.86% calc(100% - 7px), 89.29% 100%, 85.71% calc(100% - 7px), 82.14% 100%, 78.57% calc(100% - 7px), 75.00% 100%, 71.43% calc(100% - 7px), 67.86% 100%, 64.29% calc(100% - 7px), 60.71% 100%, 57.14% calc(100% - 7px), 53.57% 100%, 50.00% calc(100% - 7px), 46.43% 100%, 42.86% calc(100% - 7px), 39.29% 100%, 35.71% calc(100% - 7px), 32.14% 100%, 28.57% calc(100% - 7px), 25.00% 100%, 21.43% calc(100% - 7px), 17.86% 100%, 14.29% calc(100% - 7px), 10.71% 100%, 7.14% calc(100% - 7px), 3.57% 100%, 0.00% calc(100% - 7px));
+  font-size: 12px;
+  font-weight: 600;
+  rotate: 1.2deg;
+}
+
+.knows-receipt em {
+  padding-bottom: 6px;
+  border-bottom: 1.5px dashed color-mix(in srgb, var(--color-ink) 40%, transparent);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.knows-receipt > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   color: var(--color-muted);
-  text-decoration: line-through;
-  text-decoration-color: var(--by, var(--color-couple));
-  text-decoration-thickness: 2px;
 }
 
-.knows-line.is-gone .knows-n {
-  opacity: 0.35;
+.knows-receipt b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
 }
 
+.knows-receipt .knows-face {
+  width: 34px;
+  height: 34px;
+  margin: -4px 0;
+  box-shadow: 0 0 0 2px white, 0 0 0 3.5px var(--color-ink);
+  rotate: -6deg;
+}
+
+.knows-receipt span:last-child b {
+  padding: 2px 11px 3px 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: white;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.knows-line.is-receipt .knows-text {
+  font-size: 26px;
+}
+
+.knows-line.is-specimen .knows-text {
+  font-size: 19px;
+}
+
+.knows-specimen .knows-n {
+  font-size: 46px;
+}
+
+/* Places: address slips on a nail. */
+.knows-slips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 12px;
+  padding: 2px 0 2px 2px;
+}
+
+.knows-slips i {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px 8px 26px;
+  border: 2px solid var(--color-ink);
+  border-radius: 4px 10px 10px 4px;
+  background: white;
+  box-shadow: 2px 3px 0 var(--color-ink);
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 700;
+  rotate: -2deg;
+}
+
+.knows-slips i:nth-child(2n) {
+  rotate: 1.6deg;
+}
+
+.knows-slips i::before {
+  position: absolute;
+  top: 50%;
+  left: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  content: "";
+  translate: 0 -50%;
+}
+
+.knows-slips b {
+  padding: 1px 7px 2px;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Takes things on: their ticks, in their colour. */
+.knows-ticks {
+  display: grid;
+  gap: 6px;
+  order: 2;
+}
+
+.knows-ticks i {
+  position: relative;
+  padding-left: 27px;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.knows-ticks i::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 2px solid var(--color-ink);
+  border-radius: 5px;
+  background: var(--by, var(--color-lime));
+  content: "✓";
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.knows-line.is-ticks .knows-why {
+  order: 3;
+}
+
+/* Lowercase: the count, and a specimen in their own titles. */
+.knows-specimen {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.knows-specimen .knows-n {
+  display: grid;
+  flex: none;
+}
+
+.knows-n small {
+  margin-top: 5px;
+  color: var(--color-muted);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.knows-specimen > span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding-left: 12px;
+  border-left: 3px solid var(--color-ink);
+}
+
+.knows-specimen i {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Words: fridge magnets. */
+.knows-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 6px;
+  order: 2;
+}
+
+.knows-words i {
+  padding: 3px 11px 5px;
+  border: 2px solid var(--color-ink);
+  border-radius: 6px;
+  background: var(--color-sticker);
+  color: white;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.1;
+  rotate: -2.5deg;
+}
+
+.knows-words i:nth-child(2n) {
+  background: white;
+  color: var(--color-ink);
+  rotate: 1.8deg;
+}
+
+.knows-words i:nth-child(3n) {
+  background: var(--space-accent, var(--color-crew));
+  color: var(--space-accent-ink, white);
+  rotate: -0.6deg;
+}
+
+.knows-line.is-words .knows-why {
+  order: 3;
+}
+
+/* Where the words are the object, the marker goes across the object. */
+.knows-line.is-words .knows-fact,
+.knows-line.is-slips .knows-fact {
+  position: relative;
+}
+
+.knows-line.is-words .knows-text,
+.knows-line.is-slips .knows-text {
+  position: static;
+}
+
+.knows-line.is-words .knows-strike,
+.knows-line.is-slips .knows-strike {
+  top: 14px;
+  height: calc(100% - 40px);
+}
+
+.knows-line.is-words .knows-text,
+.knows-line.is-slips .knows-text {
+  order: -1;
+  color: var(--color-muted);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* A poll: one dot a vote, the leader's filled in. */
+.knows-tally {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  order: 2;
+}
+
+.knows-tally > span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.knows-tally i {
+  width: 15px;
+  height: 15px;
+  border: 2px solid var(--color-ink);
+  border-radius: 50%;
+  background: white;
+}
+
+.knows-tally i.is-in {
+  background: var(--space-accent, var(--color-crew));
+}
+
+.knows-tally b {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.knows-line.is-poll .knows-why,
+.knows-line.is-names .knows-why,
+.knows-line.is-made .knows-why {
+  order: 3;
+}
+
+.knows-line.is-poll .knows-text {
+  font-size: 20px;
+}
+
+/* Lines that name people carry their faces. */
+.knows-part {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+
+.knows-part + .knows-part {
+  margin-top: 7px;
+}
+
+.knows-faces {
+  display: inline-flex;
+  flex: none;
+  padding-left: 4px;
+}
+
+.knows-faces .knows-face {
+  margin-left: -5px;
+  box-shadow: 0 0 0 1.5px white, 0 0 0 3px var(--color-ink);
+}
+
+.knows-line.is-away .knows-part {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.knows-line.is-made {
+  padding: 11px 13px 10px;
+  background: color-mix(in srgb, var(--color-card) 82%, var(--color-mat));
+  box-shadow: 3px 3px 0 var(--color-ink);
+}
+
+.knows-line.is-made .knows-text {
+  font-size: 17px;
+}
+
+/* Where things stand: one ledger sheet, a ruled row a card. */
+.knows-sheet.is-c .knows-sec ul {
+  position: relative;
+  gap: 0;
+  padding: 6px 18px 4px;
+  border: 2px solid var(--color-ink);
+  border-radius: 16px;
+  background: var(--color-card);
+  box-shadow: 6px 6px 0 var(--color-ink);
+  rotate: 0.5deg;
+  animation: knows-obj-in var(--dur-arrive) var(--ease-pop) 240ms both;
+}
+
+.knows-sheet.is-c .knows-sec ul::before {
+  position: absolute;
+  top: -14px;
+  right: 34px;
+  width: 96px;
+  height: 26px;
+  background: color-mix(in srgb, var(--color-mat) 82%, transparent);
+  content: "";
+  rotate: 4deg;
+}
+
+.knows-sheet.is-c .knows-line {
+  animation-name: knows-fade-in;
+  animation-delay: 330ms;
+  padding: 13px 0 12px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  rotate: none;
+}
+
+.knows-sheet.is-c .knows-line + .knows-line {
+  border-top: 2px dashed color-mix(in srgb, var(--color-ink) 18%, transparent);
+}
+
+.knows-sheet.is-c .knows-fact {
+  gap: 7px;
+}
+
+.knows-line.is-made .knows-fact {
+  grid-column: 1;
+}
+
+.knows-line.is-made .knows-side {
+  align-self: start;
+  margin-left: 10px;
+}
+
+.knows-line.is-made .knows-why {
+  padding-right: 0;
+}
+
+/* Empty: the page before the room has given it anything. */
 .knows-empty {
   grid-column: 1 / -1;
-  max-width: 520px;
-  padding: 22px 24px;
+  max-width: 620px;
+  padding: 26px 28px 24px;
+  border: 2px solid var(--color-ink);
+  border-radius: 18px;
+  background: var(--color-card);
+  box-shadow: 7px 7px 0 var(--color-ink);
+  color: var(--color-ink);
+  rotate: -0.8deg;
+  animation: knows-obj-in var(--dur-arrive) var(--ease-pop) 160ms both;
+}
+
+.knows-empty h2 {
+  font-size: 40px;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
 }
 
 .knows-empty p {
-  margin-top: 8px;
+  max-width: 480px;
+  margin-top: 12px;
   color: var(--color-muted);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.45;
+}
+
+.knows-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.knows-hints i {
+  padding: 6px 13px 7px;
+  border: 2px dashed color-mix(in srgb, var(--color-ink) 40%, transparent);
+  border-radius: 10px;
+  color: var(--color-muted);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 700;
+  rotate: -1.5deg;
+  animation: knows-obj-in var(--dur-arrive) var(--ease-pop) both;
+  animation-delay: calc(320ms + var(--i, 0) * 50ms);
+}
+
+.knows-hints i:nth-child(2n) {
+  rotate: 1.5deg;
 }
 
 p.knows-empty {
   margin-top: 34px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: inherit;
   font-weight: 600;
 }
 
 .knows-foot {
   max-width: 560px;
-  margin-top: 34px;
+  margin-top: 40px;
   font-size: 13px;
   font-weight: 500;
   line-height: 1.45;
   opacity: 0.86;
+}
+
+/* The words of a followed line, on their way to its card (flyToSource). */
+.knows-fly {
+  position: fixed;
+  z-index: 100600;
+  max-width: 340px;
+  padding: 8px 14px 9px;
+  border: 2px solid var(--color-ink);
+  border-radius: 12px;
+  background: var(--by, var(--color-lime));
+  box-shadow: 4px 5px 0 var(--color-ink);
+  color: var(--on, var(--color-ink));
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.06;
+  pointer-events: none;
+  will-change: transform;
 }
 
 /* The door, in the room name's chip family. */
@@ -476,6 +1466,7 @@ p.knows-empty {
 }
 
 .space-knows-chip b {
+  animation: knows-tick var(--dur-arrive) var(--ease-pop) both;
   min-width: 20px;
   padding: 1px 6px;
   border-radius: var(--radius-pill);
@@ -513,17 +1504,29 @@ p.knows-empty {
   }
 }
 
-/* Phone: one column, the heart of it first, the tell field pinned to the thumb. */
+/* Phone: its own composition. The title, the group as a strip you can thumb
+   through, then one column with the habits first; the tell field rides the
+   thumb. */
 @media (max-width: 760px) {
   .knows-scroll {
-    padding: 14px 14px 96px;
+    padding: 14px 16px 104px;
   }
 
   .knows-head {
     display: block;
+    margin-top: 0;
+  }
+
+  .knows-title {
+    padding-top: 12px;
+  }
+
+  .knows-line.is-told {
+    min-width: 0;
   }
 
   .room-knows h1 {
+    font-size: 46px;
     white-space: normal;
   }
 
@@ -531,29 +1534,50 @@ p.knows-empty {
     font-size: 14px;
   }
 
-  .knows-sheets {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
-    margin-top: 22px;
+  .knows-group {
+    margin-top: 26px;
   }
 
-  .knows-sheet {
-    padding: 4px 16px 12px;
-    box-shadow: 4px 4px 0 var(--color-ink);
-    rotate: none;
+  .knows-people {
+    flex-wrap: wrap;
+    gap: 16px 14px;
+    padding-bottom: 6px;
+  }
+
+  .knows-person .knows-face {
+    width: 62px;
+    height: 62px;
+    box-shadow: 0 0 0 3px white, 0 0 0 5px var(--color-ink), 3px 6px 0 3px var(--color-ink);
+  }
+
+  .knows-person > em {
+    top: 20px;
+  }
+
+  .knows-sheets {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+    margin-top: 30px;
   }
 
   .knows-sheet.is-b {
     order: -1;
-    margin-top: 8px;
   }
 
-  .knows-sheet.is-b .knows-sec h2 {
-    font-size: 24px;
+  .knows-sheet.is-b .knows-sec ul {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .knows-sheet.is-b .knows-text {
-    font-size: 16px;
+  .knows-week {
+    gap: 6px;
+  }
+
+  .knows-cal .knows-n {
+    font-size: 120px;
+  }
+
+  .knows-empty h2 {
+    font-size: 32px;
   }
 
   .knows-tell {
@@ -561,28 +1585,60 @@ p.knows-empty {
     right: 12px;
     bottom: 14px;
     left: 12px;
-    z-index: 2;
+    z-index: 3;
     width: auto;
     margin: 0;
   }
+
 }
 
 @media (min-width: 761px) and (max-width: 1100px) {
+  .knows-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .knows-group {
+    justify-self: start;
+  }
+
   .knows-sheets {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .knows-sheet.is-b {
+    grid-column: 1 / -1;
+    order: -1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .room-knows,
-  .room-knows.is-leaving,
-  .knows-sheet,
+  .knows-person,
+  .knows-person > em,
   .knows-line,
+  .knows-line.is-told,
+  .knows-line.is-gone .knows-fact,
+  .knows-stamp,
+  .knows-empty,
+  .knows-hints i,
+  .knows-total,
+  .space-knows-chip b,
+  .knows-sheet.is-c .knows-sec ul,
+  .knows-cal-faces .knows-face,
   .widget-group.is-knows-source .widget-group-body {
+    animation: knows-fade-in var(--dur-base) ease-out both;
+  }
+
+  .knows-week svg path {
     animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .knows-strike line {
+    transition: none;
   }
 
   .widget-group.is-knows-source .widget-group-body {
+    animation: none;
     outline-color: var(--knows-color, var(--color-lime));
   }
 }

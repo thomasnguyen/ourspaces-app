@@ -1,8 +1,10 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { knowsHash, normalSpaceHash, spacePageFromHash } from "../lib/routes";
 import { panToWidget } from "../lib/recapBoard";
 import { playSound } from "../lib/sounds";
-import { TOLD_CHARS, type Forgot, type KnowLine, type KnowSection, type RoomKnows, type Told } from "../lib/roomKnows";
+import { TOLD_CHARS, standing, type KnowLine, type KnowSection, type RoomKnows } from "../lib/roomKnows";
+import { KnowObject, Portrait, ToldNote, inkOn, type KnowsCtx } from "./RoomKnowsObjects";
 import "./room-knows.css";
 
 /**
@@ -47,7 +49,6 @@ export function visitSources(ids: string[], color: string) {
     window.setTimeout(() => el.classList.remove("is-knows-source"), 2600);
   }
 }
-
 const TITLES: Record<KnowSection, string> = {
   who: "who we are",
   soon: "coming up",
@@ -56,50 +57,74 @@ const TITLES: Record<KnowSection, string> = {
   made: "what it has made",
 };
 
-function Line({ line, gone, onVisit, onChange, i }: { line: KnowLine; gone?: Forgot; onVisit: (l: KnowLine) => void; onChange: (c: KnowsChange) => void; i: number }) {
-  const made = line.section === "made";
-  return (
-    <li className={`knows-line ${gone ? "is-gone" : ""} ${line.n != null ? "has-n" : ""}`} data-testid="room-knows-line" data-key={line.key} style={{ "--i": i, ...(gone ? { "--by": gone.color } : {}) } as CSSProperties}>
-      <button type="button" className="knows-fact" disabled={!line.src.length} onClick={() => onVisit(line)} title={line.src.length ? "see the card it came from" : undefined}>
-        {line.n != null && <b className="knows-n">{line.n}</b>}
-        <span className="knows-text">{line.text}</span>
-        <span className="knows-why">
-          {line.why}
-          {line.src.length > 0 && <i aria-hidden="true"> ↗</i>}
-        </span>
-      </button>
-      <span className="knows-side">
-        {gone ? (
-          <>
-            <span className="knows-tag is-person"><i />{gone.by} crossed this out</span>
-            <button type="button" className="knows-act" data-testid="room-knows-restore" onClick={() => onChange({ kind: "restore", key: line.key })}>put back</button>
-          </>
-        ) : made ? (
-          <span className={`knows-tag is-${line.status}`}>{line.status}</span>
-        ) : (
-          <>
-            <span className="knows-tag">noticed</span>
-            <button type="button" className="knows-act" data-testid="room-knows-forget" onClick={() => onChange({ kind: "forget", key: line.key, text: line.text })}>cross out</button>
-          </>
-        )}
-      </span>
-    </li>
-  );
+const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* The turn-over: board and page are two sides of one room, so going between
+   them flips the room (a view transition on the room's <main>, both sides
+   live). While a flip is running the page doesn't play its own way out. */
+let flipping = false;
+type FlipDoc = Document & { startViewTransition?: (update: () => void) => { finished: Promise<void> } };
+
+function turnRoom(room: HTMLElement | null, hash: string) {
+  const doc = document as FlipDoc;
+  if (!room || !doc.startViewTransition || reduced()) {
+    window.location.hash = hash;
+    return;
+  }
+  flipping = true;
+  document.documentElement.classList.add("is-knows-flip");
+  room.style.setProperty("view-transition-name", "knows-room");
+  const done = () => {
+    flipping = false;
+    document.documentElement.classList.remove("is-knows-flip");
+    room.style.removeProperty("view-transition-name");
+  };
+  try {
+    doc
+      .startViewTransition(() => {
+        window.location.hash = hash;
+        // The hashchange event itself comes a task later: tell the room now, so the new side is drawn before the flip.
+        flushSync(() => window.dispatchEvent(new HashChangeEvent("hashchange")));
+      })
+      .finished.then(done, done);
+  } catch {
+    done();
+    window.location.hash = hash;
+  }
 }
 
-function ToldLine({ told, onChange, i }: { told: Told; onChange: (c: KnowsChange) => void; i: number }) {
-  return (
-    <li className="knows-line is-told" data-testid="room-knows-told" style={{ "--i": i, "--by": told.color } as CSSProperties}>
-      <span className="knows-fact">
-        <span className="knows-text">{told.text}</span>
-        <span className="knows-why">{told.by} told the space</span>
-      </span>
-      <span className="knows-side">
-        <span className="knows-tag is-person"><i />{told.by} said so</span>
-        <button type="button" className="knows-act" data-testid="room-knows-untell" onClick={() => onChange({ kind: "untell", id: told.id })}>take back</button>
-      </span>
-    </li>
-  );
+/** Tap a line: its words lift off the page and ride to the card they came from. */
+function flyToSource(from: HTMLElement, ids: string[], color: string) {
+  const words = from.querySelector<HTMLElement>(".knows-words-of") ?? from;
+  const target = () => ids.map((id) => document.querySelector<HTMLElement>(`[data-widget-id="${id}"]`)).find(Boolean)?.getBoundingClientRect();
+  if (reduced() || !target()) return;
+  const a = words.getBoundingClientRect();
+  const fly = document.createElement("div");
+  fly.className = "knows-fly";
+  fly.textContent = words.textContent;
+  fly.style.setProperty("--by", color);
+  fly.style.setProperty("--on", inkOn(color));
+  fly.style.left = `${a.left - 14}px`;
+  fly.style.top = `${a.top - 8}px`;
+  document.body.appendChild(fly);
+  const w = fly.offsetWidth, h = fly.offsetHeight;
+  const DUR = 720;
+  const glide = (t: number) => 1 - Math.pow(1 - t, 4);
+  let t0 = 0;
+  const step = (now: number) => {
+    t0 ||= now;
+    const t = Math.min(1, (now - t0) / DUR);
+    const b = target();
+    if (!b || t >= 1) return fly.remove();
+    const e = glide(t);
+    // Chase the card while the camera is still moving: the landing spot is wherever it is now.
+    const x = (b.left + b.width / 2 - w / 2 - (a.left - 14)) * e;
+    const y = (b.top - h / 2 - (a.top - 8)) * e;
+    fly.style.transform = `translate(${x}px, ${y}px) rotate(${-3 * Math.sin(Math.PI * e)}deg) scale(${1 + 0.12 * Math.sin(Math.PI * Math.min(1, t * 1.6))})`;
+    fly.style.opacity = String(t < 0.78 ? 1 : 1 - (t - 0.78) / 0.22);
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 export function RoomKnowsPage({
@@ -120,29 +145,34 @@ export function RoomKnowsPage({
   fixture?: boolean;
 }) {
   const page = useSpacePage();
-  /* The page turns in and turns back out: it stays mounted for the way out. */
-  const [phase, setPhase] = useState<"closed" | "open" | "leaving">(page === "knows" ? "open" : "closed");
+  /* The page stays mounted for its own way out (a line being followed to its
+     card, the browser's back); a flip swaps the two sides in one commit. */
+  const [prev, setPrev] = useState(page);
+  const [leaving, setLeaving] = useState(false);
+  if (prev !== page) {
+    setPrev(page);
+    setLeaving(page === "board" && !flipping);
+  }
   useEffect(() => {
-    if (page === "knows") {
-      setPhase("open");
-      return;
-    }
-    setPhase((p) => (p === "open" ? "leaving" : p));
-    const t = window.setTimeout(() => setPhase("closed"), 420);
+    if (!leaving) return;
+    const t = window.setTimeout(() => setLeaving(false), 420);
     return () => window.clearTimeout(t);
-  }, [page]);
+  }, [leaving]);
   const [draft, setDraft] = useState("");
+  const root = useRef<HTMLDivElement>(null);
   const narrow = typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
-  if (phase === "closed") return null;
+  if (page !== "knows" && !leaving) return null;
 
   const back = () => {
     playSound("tap");
-    window.location.hash = normalSpaceHash(slug);
+    turnRoom(root.current?.parentElement ?? null, normalSpaceHash(slug));
   };
-  const visit = (line: KnowLine) => {
-    back();
-    // The board is still mounted behind this page: move while the page turns away.
+  const visit = (line: KnowLine, from: HTMLElement) => {
+    playSound("tap");
+    window.location.hash = normalSpaceHash(slug);
+    // The board is still mounted behind this page: move while the page lifts away.
     window.setTimeout(() => visitSources(line.src, self.color), 140);
+    flyToSource(from, line.src, self.color);
   };
   const tell = () => {
     const text = draft.replace(/\s+/g, " ").trim();
@@ -150,6 +180,16 @@ export function RoomKnowsPage({
     playSound("place");
     onChange({ kind: "tell", text });
     setDraft("");
+    // On a phone the notes sit under the fold: bring the new one up to be seen landing.
+    window.setTimeout(() => {
+      const note = root.current?.querySelector<HTMLElement>(".knows-notes li:last-child");
+      const r = note?.getBoundingClientRect();
+      if (note && r && (r.top < 0 || r.bottom > window.innerHeight - 80)) note.scrollIntoView({ block: "center", behavior: reduced() ? "auto" : "smooth" });
+    }, 60);
+  };
+  const change = (c: KnowsChange) => {
+    playSound(c.kind === "forget" ? "place" : "tap");
+    onChange(c);
   };
 
   const lines = knows?.lines ?? [];
@@ -159,118 +199,110 @@ export function RoomKnowsPage({
   const people = knows?.people ?? [];
   const quiet = !!knows && !people.length && !told.length && !lines.some((l) => l.section !== "made");
   const empty = knows === null || quiet;
+  const ctx: KnowsCtx = { people, lines, gone, onVisit: visit, onChange: change };
+  const count = knows ? standing(knows) : 0;
+  const awayCount = people.filter((p) => p.away && !gone.has(`away:${p.name}`)).length;
   let i = 0;
-  const section = (s: KnowSection, extra?: ReactNode) => {
-    const ls = of(s);
+  const objects = (ls: KnowLine[]) => ls.map((l) => <KnowObject key={l.key} line={l} ctx={ctx} i={i++} />);
+  const section = (s: KnowSection, ls: KnowLine[], extra?: ReactNode) => {
     if (!ls.length && !extra) return null;
     return (
       <section className={`knows-sec is-${s}`} data-testid={`room-knows-${s}`}>
         <h2>{TITLES[s]}</h2>
         {extra}
-        {ls.length > 0 && (
-          <ul>
-            {ls.map((l) => (
-              <Line key={l.key} line={l} gone={gone.get(l.key)} onVisit={visit} onChange={onChange} i={i++} />
-            ))}
-          </ul>
-        )}
+        {ls.length > 0 && <ul>{objects(ls)}</ul>}
       </section>
     );
   };
-  const awayCount = people.filter((p) => p.away).length;
-
+  const habits = (ls: KnowLine[]) =>
+    (told.length > 0 || ls.length > 0) && (
+      <section className="knows-sec is-habits" data-testid="room-knows-habits">
+        <h2>{TITLES.habits}</h2>
+        {told.length > 0 && (
+          <ul className="knows-notes">
+            {told.map((t) => (
+              <ToldNote key={t.id} told={t} onChange={change} i={i++} />
+            ))}
+          </ul>
+        )}
+        {ls.length > 0 && <ul>{objects(ls)}</ul>}
+      </section>
+    );
+  const peopleCount = people.length > 0 && (
+    <p className="knows-count">
+      {people.length} {people.length === 1 ? "person" : "people"}
+      {awayCount ? ` · ${awayCount} away` : ""}
+    </p>
+  );
   return (
-    <div className={`room-knows ${phase === "leaving" ? "is-leaving" : "is-open"}`} data-testid="room-knows" data-fixture={fixture || undefined}>
+    <div ref={root} className={`room-knows ${leaving ? "is-leaving" : "is-open"}`} data-testid="room-knows" data-fixture={fixture || undefined}>
       <div className="knows-scroll">
         <button type="button" className="knows-back" data-testid="room-knows-close" onClick={back}>
           <span aria-hidden="true">←</span> back to the board
         </button>
         <header className="knows-head">
-          <div>
+          <div className="knows-title">
             <p className="knows-kicker">{roomName} · the other side of the board</p>
             <h1>what this space knows</h1>
             <p className="knows-sub">
-              Everything it has noticed about {roomName}, and where it got it. Tap a line to see the card it came from. Cross out anything it has wrong.
+              {count > 0 && (
+                <b key={count} className="knows-total">
+                  {count}
+                </b>
+              )}
+              {count > 0 ? ` things it has noticed about ${roomName}.` : `What it notices about ${roomName} shows up here.`} Tap one to see its card. Cross out anything it has wrong.
             </p>
+            <form
+              className="knows-tell"
+              onSubmit={(e) => {
+                e.preventDefault();
+                tell();
+              }}
+            >
+              <input
+                data-testid="room-knows-tell"
+                value={draft}
+                maxLength={TOLD_CHARS}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder={narrow ? "tell it something" : "tell it something, like “we never do mondays”"}
+                aria-label="tell this space something"
+              />
+              <button type="submit" data-testid="room-knows-tell-send" disabled={!draft.trim()}>tell it</button>
+            </form>
           </div>
-          <form
-            className="knows-tell"
-            onSubmit={(e) => {
-              e.preventDefault();
-              tell();
-            }}
-          >
-            <input
-              data-testid="room-knows-tell"
-              value={draft}
-              maxLength={TOLD_CHARS}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder={narrow ? "tell it something" : "tell it something, like “we never do mondays”"}
-              aria-label="tell this space something"
-            />
-            <button type="submit" data-testid="room-knows-tell-send" disabled={!draft.trim()}>tell it</button>
-          </form>
+          {knows && (people.length > 0 || of("who").length > 0) && (
+            <div className="knows-group">{section("who", of("who"), people.length > 0 && <>{peopleCount}<Portrait people={people} lines={lines} gone={gone} /></>)}</div>
+          )}
         </header>
 
         {knows === undefined ? (
           <p className="knows-empty">opening…</p>
         ) : (
-          <div className="knows-sheets">
-            {empty && (
-              <div className="knows-sheet knows-empty" data-testid="room-knows-empty">
-                <h2>it hasn’t noticed much yet</h2>
-                <p>
-                  It learns from what’s on the board: a countdown, a poll with votes, an rsvp, a split, a saved place. Add one and it shows up here, or tell it something yourself.
-                </p>
-              </div>
-            )}
-            {(people.length > 0 || of("who").length > 0 || of("soon").length > 0) && (
-              <div className="knows-sheet is-a">
-                {section(
-                  "who",
-                  people.length > 0 && (
-                    <>
-                      <p className="knows-count">
-                        {people.length} {people.length === 1 ? "person" : "people"}
-                        {awayCount ? ` · ${awayCount} away` : ""}
-                      </p>
-                      <div className="knows-people">
-                        {people.map((p) => (
-                          <span key={p.name} className={p.away && !gone.has(`away:${p.name}`) ? "is-away" : ""} style={{ "--by": p.color } as CSSProperties}>
-                            <i />
-                            {p.name}
-                          </span>
-                        ))}
-                      </div>
-                    </>
-                  ),
-                )}
-                {section("soon")}
-              </div>
-            )}
-            {(told.length > 0 || of("habits").length > 0) && (
-              <div className="knows-sheet is-b">
-                <i className="knows-tape" aria-hidden="true" />
-                <section className="knows-sec is-habits" data-testid="room-knows-habits">
-                  <h2>{TITLES.habits}</h2>
-                  <ul>
-                    {told.map((t) => (
-                      <ToldLine key={t.id} told={t} onChange={onChange} i={i++} />
+          <>
+            <div className="knows-sheets">
+              {empty && (
+                <div className="knows-sheet knows-empty" data-testid="room-knows-empty">
+                  <h2>it hasn’t noticed much yet</h2>
+                  <p>
+                    It learns from what’s on the board: a countdown, a poll with votes, an rsvp, a split, a saved place. Add one and it shows up here, or tell it something yourself.
+                  </p>
+                  <span className="knows-hints" aria-hidden="true">
+                    {["a countdown", "a poll", "an rsvp", "a split", "a saved place"].map((h, k) => (
+                      <i key={h} style={{ "--i": k } as CSSProperties}>{h}</i>
                     ))}
-                    {of("habits").map((l) => (
-                      <Line key={l.key} line={l} gone={gone.get(l.key)} onVisit={visit} onChange={onChange} i={i++} />
-                    ))}
-                  </ul>
-                </section>
-              </div>
-            )}
-            {(of("decided").length > 0 || of("made").length > 0) && (
-              <div className="knows-sheet is-c">
-                {section("decided")}
-                {section("made")}
-              </div>
-            )}
-          </div>
+                  </span>
+                </div>
+              )}
+              {(of("soon").length > 0 || of("made").length > 0) && (
+                <div className="knows-sheet is-a">
+                  {section("soon", of("soon"))}
+                  {section("made", of("made"))}
+                </div>
+              )}
+              {(told.length > 0 || of("habits").length > 0) && <div className="knows-sheet is-b">{habits(of("habits"))}</div>}
+              {of("decided").length > 0 && <div className="knows-sheet is-c">{section("decided", of("decided"))}</div>}
+            </div>
+          </>
         )}
         <p className="knows-foot" data-testid="room-knows-honest">
           It reads names and what’s on the board, nothing else. Everyone in {roomName} sees this same page. It keeps nothing private about any one person.
@@ -283,9 +315,20 @@ export function RoomKnowsPage({
 /** The door: a chip by the room's name that turns the board over. */
 export function RoomKnowsDoor({ slug, count }: { slug: string; count?: number }) {
   return (
-    <a className="space-knows-chip" data-testid="room-knows-open" href={knowsHash(slug)} title="what this space knows about the group, and why">
+    <a
+      className="space-knows-chip"
+      data-testid="room-knows-open"
+      href={knowsHash(slug)}
+      title="what this space knows about the group, and why"
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+        e.preventDefault();
+        playSound("tap");
+        turnRoom(e.currentTarget.closest("main"), knowsHash(slug));
+      }}
+    >
       <span>this space knows</span>
-      {count != null && count > 0 && <b>{count}</b>}
+      {count != null && count > 0 && <b key={count}>{count}</b>}
     </a>
   );
 }
