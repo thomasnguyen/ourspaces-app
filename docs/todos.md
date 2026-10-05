@@ -5,6 +5,16 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **The family room + two new cards (Oct 5, branch `family-space`, mock only).**
+  A fourth example room, `#/space/family`: Dev, Alex, Casey, Mina; chores,
+  the weekend, and a push-up challenge mid-week. New card kinds `checkIn`
+  (daily grid, tap today, streaks, total) and `standings` (face down until
+  you've logged today, then the flip; lines with a `beat 40` move). Knows-page
+  fixtures and a phone column included. Not done: Convex validators + seed,
+  `LiveSpace` passing `onWidgetData`, the deck entries and the "challenge"
+  recipe, family photos. Feature files `family.md`, `check-in.md`,
+  `standings.md`.
+
 - **What this space knows, redesigned (Oct 4, dev lane).** Same facts and actions,
   drawn as a wall: the group as face stickers, each noticed line as a paper
   object (tear-off day count, week strip with the usual day ringed, receipt

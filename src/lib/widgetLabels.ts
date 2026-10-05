@@ -65,6 +65,10 @@ export function widgetLabel(widget: Widget): string {
       return String(widget.data.title ?? "ship post");
     case "roundtable":
       return String(widget.data.title ?? "roundtable");
+    case "checkIn":
+      return String(widget.data.title ?? "check-in");
+    case "standings":
+      return String(widget.data.title ?? "standings");
     case "letter":
       return String(widget.data.subject ?? "letter");
     default:

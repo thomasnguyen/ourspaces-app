@@ -67,6 +67,17 @@ export const HOUSE_GLOBAL: ChatThread = {
   ],
 };
 
+export const FAMILY_GLOBAL: ChatThread = {
+  widgetId: "global",
+  label: "everyone",
+  messages: [
+    { id: "f1", from: "Casey", text: "dad you logged 40 at 6am. who are you", time: "now" },
+    { id: "f2", from: "Dev", text: "a man with a streak", time: "2m" },
+    { id: "f3", from: "Mina", text: "i have a streak too and i'm not weird about it", time: "5m" },
+    { id: "f4", from: "Alex", text: "bathroom, casey. i can smell it from denver", time: "1h", promotable: true },
+  ],
+};
+
 export const CREW_WIDGET_THREADS: Record<string, ChatThread> = {
   "poll-cake": {
     widgetId: "poll-cake",
@@ -273,7 +284,7 @@ export const BUILD_ROOM_WIDGET_THREADS: Record<string, ChatThread> = {
 export function getThreadsForSpace(spaceId: string) {
   if (spaceId === "buildroom") return BUILD_ROOM_WIDGET_THREADS;
   if (spaceId === "league") return LEAGUE_WIDGET_THREADS;
-  if (spaceId === "couple" || spaceId === "house") return {};
+  if (spaceId === "couple" || spaceId === "house" || spaceId === "family") return {};
   return CREW_WIDGET_THREADS;
 }
 
@@ -282,6 +293,7 @@ export function getGlobalThread(spaceId: string) {
   if (spaceId === "league") return LEAGUE_GLOBAL;
   if (spaceId === "couple") return COUPLE_GLOBAL;
   if (spaceId === "house") return HOUSE_GLOBAL;
+  if (spaceId === "family") return FAMILY_GLOBAL;
   return GLOBAL_THREAD;
 }
 

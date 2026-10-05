@@ -31,6 +31,8 @@ export const WIDGET_CATALOG: WidgetTemplate[] = [
   { type: "hotLinks", label: "hot now", emoji: "🔥" },
   { type: "shipPost", label: "ship post", emoji: "🚀" },
   { type: "roundtable", label: "roundtable", emoji: "🗣" },
+  { type: "checkIn", label: "check-in", emoji: "✅", pickerHidden: true },
+  { type: "standings", label: "standings", emoji: "🏅", pickerHidden: true },
 ];
 
 export const SPACE_TEMPLATES: SpaceTemplate[] = [

@@ -66,6 +66,13 @@ availability · photoWall · linkCard · linkShelf · playlist · jokeRegistry �
 expenseSplit · itinerary · messageWall · quote · weather · sports ·
 backendLive · letter (kraft envelope — an email that landed; click unfolds it).
 
+**Challenge** (`challenge.tsx`, maths in `src/lib/challenge.ts`): checkIn · standings.
+A check-in holds the challenge (people, days, what each person logged); a
+standings card only points at a check-in (`source`) and ranks it, face down
+until you've logged today. Mock-only so far: neither is in
+`convex/widgetData.ts` or the voice deck yet. Feature files `check-in.md`,
+`standings.md`.
+
 **Rooms** (`CozyColorWidget.tsx`): cozyColor — the shared paint-by-number
 postcard, fills and palette synced through the `paintMarks` table.
 
@@ -257,6 +264,27 @@ Needs, in priority order:
 
 Skin note: same widgets, softer register — fewer, larger objects, more
 whitespace than the group chat's clutter. Two people, not six.
+
+## 3. the family — slug `family` (cobalt wall `#3f70ff`, yellow tape)
+
+**Status: mock only (2026-10-05).** Four members: Dev (dad), Alex (mom, away
+till Thursday), Casey (16), Mina (11). 1330×1620, fourth in the rail. Fixtures
+and the family's week are in `src/data/family.ts`; every date is an offset
+from today, so the push-up challenge is always on day 5 of 6. Not seeded in
+Convex: there is no live `family` room yet.
+
+| Layer | Widgets on canvas |
+|---|---|
+| Identity | high-five, road-trip car and the dog stickers · quote ("it's not a competition") |
+| Now | **"push-ups till <day>" frame** → rsvp (who's in) · **checkIn** · **standings** · the deal (note) · countdown to the reveal |
+| Chores | **"jobs this week" frame** → chores potluck (Casey's bathroom open since Sunday) · dishwasher wheel · "home for dinner" availability · house rule note · allowance note |
+| Plans | **"this weekend" frame** → "saturday?" poll, 2–2 kids against parents · places link shelf · Mina's birthday countdown · one photo |
+| Talk | fridge notes (message wall) · "alex is out till thursday" frame |
+
+The stake ties the three corners together: most push-ups by the reveal picks
+Saturday, last place takes the winner's chores. Demo role: the stage for the
+hero ask ("set up a push-up challenge for the four of us") and the give-to-get
+beat (log yours → the standings flip). Feature file `features/family.md`.
 
 ## Background spaces (Home-grid set dressing only)
 

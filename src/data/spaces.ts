@@ -1,5 +1,6 @@
 import type { Space, SpaceMeta, Widget } from "./types";
 import { BUILD_ROOM_CANVAS, withBuildRoomLayout } from "../lib/buildRoomPresentation";
+import { FAMILY_MEMBERS, FAMILY_WIDGETS } from "./family";
 
 export type { Widget, Space, SpaceMeta, WidgetType } from "./types";
 
@@ -1294,6 +1295,18 @@ export const SPACES: SpaceMeta[] = [
     inboxAddress: "buildroom@agentmail.to",
   },
   {
+    id: "family",
+    name: "the family",
+    color: "#3f70ff",
+    icon: "☺",
+    canvasSize: { width: 1330, height: 1620 },
+    activity: true,
+    kind: "ongoing",
+    tagline: "four people, one fridge",
+    preview: "push-ups · day 5",
+    showcase: "family HQ · chores, weekends, a push-up race",
+  },
+  {
     id: "house",
     name: "the house",
     color: "#ffb02e",
@@ -1339,6 +1352,11 @@ export const SPACES_BY_ID: Record<string, Space> = {
     members: COUPLE_MEMBERS,
     widgets: COUPLE_WIDGETS,
   },
+  family: {
+    ...meta("family"),
+    members: FAMILY_MEMBERS,
+    widgets: FAMILY_WIDGETS,
+  },
   house: {
     ...meta("house"),
     members: HOUSE_MEMBERS,
@@ -1373,6 +1391,10 @@ export const SPACE_CURSORS: Record<
   couple: [
     { name: "ren", color: "#e9369d", x: 446, y: 300 },
     { name: "sky", color: "#7c5cff", x: 780, y: 410 },
+  ],
+  family: [
+    { name: "Mina", color: "#ffb02e", x: 1010, y: 300 },
+    { name: "Dev", color: "#ff7c42", x: 560, y: 610 },
   ],
   house: [
     { name: "gigi", color: "#e9369d", x: 210, y: 250 },

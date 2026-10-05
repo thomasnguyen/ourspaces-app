@@ -24,6 +24,7 @@ import { MemberFace } from "./MemberFace";
 import { WIDGET_CATALOG } from "../data/templates";
 import { widgetLabel } from "../lib/widgetLabels";
 import { widgetSupportsThread } from "../lib/widgetThreads";
+import { CheckInWidget, StandingsWidget } from "../widgets/challenge";
 import {
   HotLinksWidget,
   LinkPileWidget,
@@ -787,6 +788,12 @@ function WidgetCardComponent({
       break;
     case "dualClock":
       content = <DualClockWidget widget={widget} style={inner} />;
+      break;
+    case "checkIn":
+      content = <CheckInWidget widget={widget} style={inner} />;
+      break;
+    case "standings":
+      content = <StandingsWidget widget={widget} style={inner} />;
       break;
     case "cozyColor":
       content = (

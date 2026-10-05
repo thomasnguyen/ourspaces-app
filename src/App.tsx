@@ -1550,6 +1550,14 @@ export default function App() {
     }));
   };
 
+  /* a card that keeps its own state (check-in logs) */
+  const storeWidgetData = useCallback((widgetId: string, data: Widget["data"]) => {
+    setWidgetDataOverrides((current) => ({
+      ...current,
+      [spaceId]: { ...(current[spaceId] ?? {}), [widgetId]: data },
+    }));
+  }, [spaceId]);
+
   const tunePlaylist = (widgetId: string, tune: { stationId: string; playing: boolean }) => {
     setWidgetDataOverrides((current) => ({
       ...current,
@@ -2318,6 +2326,7 @@ export default function App() {
               roundtableRepliesByWidget={roundtableReplies}
               onPollVote={voteOnPoll}
               onWheelSpin={spinWheel}
+              onWidgetData={storeWidgetData}
               onPlaylistTune={tunePlaylist}
               onRsvp={respondToRsvp}
               onDailyAnswer={answerDailyQ}
