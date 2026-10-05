@@ -493,6 +493,8 @@ export default function App() {
       const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
       // A fixed pause so mock shots can see the shell. Not a latency: the receipt shows no ms here.
       await new Promise((r) => setTimeout(r, 600));
+      // `?voiceHold=1` keeps the shell up for a still (drive voice-build:shell).
+      if (new URLSearchParams(window.location.search).has("voiceHold")) await new Promise(() => {});
       const dealt = standInDeal({ by: voiceMaker.name, people: [...new Set(people)], today: iso }, req);
       setAddedWidgets((current) => ({ ...current, [spaceId]: [...(current[spaceId] ?? []), ...dealt] }));
       return { ok: dealt.length > 0, model: null, cards: dealt.map((w) => ({ card: w.type, widgetId: w.id })) };

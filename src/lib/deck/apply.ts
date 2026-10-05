@@ -2,6 +2,8 @@ import type { Widget } from "../../data/types";
 import { cardSize, getCard, CARD_IDS, type CardContext, type DealtCard } from "./catalog";
 import { checkSettings, type Schema } from "./schema";
 
+const POLL_ROW = 42; // one poll option row, in canvas px
+
 export type CardCheck =
   | { ok: true; card: DealtCard; notes: string[] }
   | { ok: false; reason: string };
@@ -41,6 +43,9 @@ export function applyCard(
   const size = cardSize(def);
   // `build` is typed per card; the union lookup loses the pairing, the check above restores it.
   const build = def.build as (s: unknown, c: CardContext) => Widget["data"];
+  const data = build(checked.card.settings, ctx);
+  // A poll's box fits three options; each one past that needs its own row.
+  const options = def.type === "poll" ? (data as { options?: unknown[] }).options?.length ?? 0 : 0;
   return {
     ok: true,
     notes: checked.notes,
@@ -50,10 +55,10 @@ export function applyCard(
       x: 0,
       y: 0,
       w: size.w,
-      h: size.h,
+      h: size.h + Math.max(0, options - 3) * POLL_ROW,
       z: opts.z ?? 30,
       ...("rotate" in def ? { rotate: def.rotate } : {}),
-      data: build(checked.card.settings, ctx),
+      data,
     },
   };
 }

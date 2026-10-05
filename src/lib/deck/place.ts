@@ -16,7 +16,9 @@
 export type Rect = { x: number; y: number; w: number; h: number };
 
 export type PlaceRoom = {
-  /** Everything already on the board, in canvas coordinates. */
+  /** Everything already on the board, in canvas coordinates: widgets and
+      frames, each as the box it really paints (a frame's label and garland
+      hang outside its own). */
   widgets: ReadonlyArray<Rect & { id: string }>;
   /** The speaker's visible part of the canvas, in canvas coordinates. */
   view: Rect;

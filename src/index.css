@@ -26973,20 +26973,22 @@ body:has(.demo-banner) .settings-sheet {
 }
 
 /* Voice build (VoiceBuildLayer.tsx): the shell where a dealt card will land,
-   the tag on the card that landed, the receipt above the dock. --maker is the
-   asker's colour. */
+   the card's landing, and the slip on it (who said it + the receipt).
+   --maker is the asker's colour. */
 .voice-shell {
   position: absolute;
   z-index: 900;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
   gap: 10px;
-  padding: 20px 22px;
+  padding: 18px 20px 20px;
   border: 2px dashed var(--maker);
   border-radius: 18px;
   background: color-mix(in oklab, var(--maker) 9%, var(--color-card));
   color: var(--color-ink);
+  container-type: size;
+  overflow: hidden;
   pointer-events: none;
   animation:
     voice-shell-in var(--dur-arrive) var(--ease-pop) both,
@@ -26994,14 +26996,39 @@ body:has(.demo-banner) .settings-sheet {
 }
 
 .voice-shell-kicker {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   color: var(--maker);
   font: 600 12px/1 var(--font-sans);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.voice-shell-clock {
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .voice-shell-said {
-  font: 800 22px/1.15 var(--font-display);
+  font: 800 clamp(15px, 9cqw, 26px) / 1.12 var(--font-display);
+  text-wrap: balance;
+}
+
+/* The handoff: the card is in, so the shell wears its box, goes solid and lets go. */
+.voice-shell[data-phase="landing"] {
+  border-style: solid;
+  border-width: 4px;
+  background: none;
+  animation: voice-shell-release var(--dur-stage) var(--ease-glide) both;
+}
+
+.voice-shell[data-phase="landing"] > * {
+  visibility: hidden;
 }
 
 @keyframes voice-shell-in {
@@ -27017,67 +27044,133 @@ body:has(.demo-banner) .settings-sheet {
   }
 }
 
-.voice-landed {
+@keyframes voice-shell-release {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.09);
+  }
+}
+
+/* The card a voice ask dealt (useVoiceBuild marks it before its first paint):
+   it drops in, takes the hit, settles. */
+.widget-group[data-voice-land] {
+  animation: voice-card-land var(--dur-stage) var(--ease-pop) both;
+}
+
+@keyframes voice-card-land {
+  0% {
+    opacity: 0;
+    scale: 1.07;
+    translate: 0 -22px;
+    animation-timing-function: var(--ease-glide);
+  }
+  42% {
+    opacity: 1;
+    scale: 1.035 0.95;
+    translate: 0 3px;
+    animation-timing-function: var(--ease-pop);
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+/* The slip: taped over the landed card's top-left corner. */
+.voice-slip {
   position: absolute;
-  z-index: 1200;
-  padding: 4px 10px;
+  z-index: 99990;
+  display: flex;
+  overflow: hidden;
+  border: 2px solid var(--color-card);
   border-radius: var(--radius-pill);
-  background: var(--maker);
   color: white;
   font: 600 12px/1.2 var(--font-sans);
   white-space: nowrap;
   pointer-events: none;
-  transform: translateY(calc(-100% - 8px));
-  animation: voice-landed-in var(--dur-arrive) var(--ease-pop) both;
+  rotate: -1.5deg;
+  transform: translate(12px, -62%);
+  transform-origin: 20% 100%;
+  animation: voice-slip-in var(--dur-arrive) var(--ease-pop) 260ms both;
 }
 
-@keyframes voice-landed-in {
-  from {
-    opacity: 0;
-    transform: translateY(calc(-100% + 4px));
-  }
+.voice-slip.is-leaving,
+.voice-receipt.is-miss.is-leaving {
+  animation: voice-slip-out var(--dur-base) var(--ease-glide) both;
+}
+
+.voice-landed {
+  padding: 5px 9px 5px 12px;
+  background: var(--maker);
 }
 
 .voice-receipt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 12px 5px 9px;
+  background: var(--color-sticker);
+  color: white;
+  font: 500 12px/1.2 var(--font-sans);
+  white-space: nowrap;
+}
+
+.voice-receipt > * + *::before {
+  content: "· ";
+  color: white;
+  font-weight: 500;
+  opacity: 0.5;
+}
+
+.voice-receipt b {
+  color: var(--color-lime);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A miss has no card to sit on: its line shows above the dock. */
+.voice-receipt.is-miss {
   position: fixed;
   z-index: 71;
   bottom: 100px;
   left: calc(50% + 48px);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
   padding: 8px 14px;
   border-radius: var(--radius-pill);
-  background: var(--color-sticker);
-  color: white;
-  font: 500 14px/1.2 var(--font-sans);
-  white-space: nowrap;
-  transform: translateX(-50%);
-  animation: voice-receipt-in var(--dur-arrive) var(--ease-glide) both;
-}
-
-.voice-receipt b {
-  color: var(--maker);
-  font-weight: 700;
-}
-
-.voice-receipt span::before {
-  content: "· ";
-  opacity: 0.5;
-}
-
-.voice-receipt span:last-child {
-  font-variant-numeric: tabular-nums;
-}
-
-.voice-receipt.is-miss {
   color: color-mix(in oklab, white 75%, transparent);
+  font-size: 14px;
+  transform: translateX(-50%);
+  animation: voice-slip-in var(--dur-arrive) var(--ease-glide) both;
 }
 
-@keyframes voice-receipt-in {
+@keyframes voice-slip-in {
   from {
     opacity: 0;
-    transform: translate(-50%, 8px);
+    scale: 0.86;
+    translate: 0 8px;
+  }
+}
+
+@keyframes voice-slip-out {
+  to {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-shell,
+  .voice-shell[data-phase="landing"],
+  .widget-group[data-voice-land],
+  .voice-slip,
+  .voice-slip.is-leaving,
+  .voice-receipt.is-miss,
+  .voice-receipt.is-miss.is-leaving {
+    animation: none;
   }
 }
