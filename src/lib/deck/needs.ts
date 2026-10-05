@@ -257,5 +257,7 @@ export function needOffers(f: RoomFacts | null, card: string, n: Need | undefine
     if (r) out.push({ label: r.yes.map((x) => x.toLowerCase()).join(", "), from: `who said yes to “${spoken(r.title)}”`, fills: { options: r.yes } });
     if (f.people.length >= 2) out.push({ label: "everyone here", from: "who's in the room", fills: { options: f.people } });
   }
+  // asked only "when is it?": an offer gives the day, never another event's name
+  if (n.field === "date") return out.slice(0, 3).map((o) => ({ label: `${shortDate(String(o.fills.date))} (${o.fills.event})`, from: o.from, fills: { date: o.fills.date } }));
   return out.slice(0, 3);
 }

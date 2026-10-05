@@ -445,6 +445,7 @@ function StageCard({
   onOffer,
   found,
   question,
+  answered,
 }: {
   build: StageBuild;
   reveal: ReturnType<typeof useReveal>;
@@ -453,6 +454,8 @@ function StageCard({
   asking: boolean;
   /** The question (lib/deck/needs.ts) and the field it fills: that part of the skeleton is the empty one. */
   question?: { ask: string; field: string } | null;
+  /** While it asks: what the answers filled (shown as said) and every field still missing (shown empty, whatever a guess put there). */
+  answered?: { pins: Record<string, unknown>; empty: string[] } | null;
   /** What the room offers to fill it with. */
   offers: StageOffer[];
   onOffer: (offer: StageOffer) => void;
@@ -485,7 +488,10 @@ function StageCard({
     el.style.setProperty("--deal-y", `${o.top + o.height / 2 - (frame.top + el.offsetTop + el.offsetHeight / 2)}px`);
   }, [fly]);
   // while it asks, the field it asks about is the empty one (whatever a guess put there)
-  const widget = reveal.widget && asking && question ? { ...reveal.widget, data: askedEmpty(reveal.widget.type, reveal.widget.data as Record<string, unknown>, question.field) as Widget["data"] } : reveal.widget;
+  const widget =
+    reveal.widget && asking && question
+      ? { ...reveal.widget, data: withAnswers(reveal.widget.type, (answered?.empty ?? [question.field]).reduce((d, f) => askedEmpty(reveal.widget!.type, d, f), reveal.widget.data as Record<string, unknown>), answered?.pins ?? {}) as Widget["data"] }
+      : reveal.widget;
   // the size is fixed by the card type, so the card doesn't breathe as rows land
   const scale = useMemo(() => (widget ? stageScale(widget.w, widget.h) : 1), [widget?.type, widget?.w]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!widget) return null;
@@ -575,6 +581,20 @@ function askedEmpty(type: string, d: Record<string, unknown>, field: string) {
   if (type === "countdown" && (field === "date" || field === "event")) return { ...blankSlot(type, d, "date"), ...(field === "event" ? { event: B } : {}) };
   if (field === "question" || field === "title" || field === "text") return { ...d, [field]: B };
   return d;
+}
+
+/** What the answers filled, as the card will have it (a poll's question, a list's rows, a countdown's date). */
+function withAnswers(type: string, d: Record<string, unknown>, pins: Record<string, unknown>) {
+  const out = { ...d };
+  for (const [k, v] of Object.entries(pins)) {
+    if (k === "options" && Array.isArray(v)) {
+      if (type === "poll") out.options = v.map((label, i) => ({ id: "abcdefgh"[i], label, votes: 0, total: 0, voters: [] }));
+      if (type === "wheel") out.slices = v.map((label, i) => ({ id: "abcdefgh"[i], label }));
+    } else if (k === "items" && Array.isArray(v)) out.items = v.map((name) => ({ name, by: null, claimed: false }));
+    else if (k === "date") out.targetDate = v;
+    else out[k] = v;
+  }
+  return out;
 }
 
 /** Which skeleton part a field fills (the fill plan's part ids: question, option-0, event, date, total, title, item-0…). */
@@ -1248,7 +1268,18 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
           {reply && voice.state !== "listening" ? (
             <StageReplySlip reply={reply} />
           ) : build?.kind && build.widget ? (
-            <StageCard key={build.key} build={build} reveal={reveal} fly={card} asking={asking} offers={offers} onOffer={takeOffer} found={Boolean(found)} question={question ? { ask: question.ask, field: question.field } : null} />
+            <StageCard
+              key={build.key}
+              build={build}
+              reveal={reveal}
+              fly={card}
+              asking={asking}
+              offers={offers}
+              onOffer={takeOffer}
+              found={Boolean(found)}
+              question={question ? { ask: question.ask, field: question.field } : null}
+              answered={askRun.current ? { pins: pinsFor(askRun.current.card, askRun.current.answers), empty: missingNeeds(askRun.current.card, said, facts, today, askRun.current.answers).map((n) => n.field) } : null}
+            />
           ) : (
             !voice.transcript &&
             listening && (

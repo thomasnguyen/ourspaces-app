@@ -30,8 +30,8 @@ import {
 } from "../lib/deck";
 import type { Schema } from "../lib/deck/schema";
 import { expandRecipe, flowFor, getRecipe, isFlow, isRecipe, recipeLead, type RecipePart } from "../lib/deck/recipes";
-import { stageAsking, takeAskOutcome, type AskOutcome } from "../lib/voiceStage";
-import { dateIn } from "../lib/deck/needs";
+import { takeAskOutcome, type AskOutcome } from "../lib/voiceStage";
+import { dateIn, missingNeeds } from "../lib/deck/needs";
 import { guessCards } from "../lib/deck/guess";
 import { shortlistDeck } from "../lib/deck/shortlist";
 import { answerFor, cardAnswer, goFor, mineFor, routeVerb, type Answer, type MineAct, type Verb, type VerbPick } from "../lib/deck/verbs";
@@ -992,10 +992,17 @@ export function useVoiceBuild({
     [stream],
   );
 
+  /** The words name a card but a field it can't do without has nothing to stand on: the stage asks, a fill would only invent it. */
+  const needsMore = (text: string) => {
+    const f = room.current.facts?.() ?? null;
+    const card = flowFor(text, f) ?? (/\bchallenge\b/i.test(text) ? "challenge" : guessCard(text));
+    return !!card && missingNeeds(card, text, f, ctxNow().today).length > 0;
+  };
+
   maybeFire.current = (s: Session) => {
     const text = s.text;
-    // the stage is asking for a missing field: the words so far can't make the card, so no speculative fill goes out
-    if (session.current !== s || s.ended || !text || sentenceHangs(text) || stageAsking()) return;
+    // a field the card can't do without has nothing to stand on yet (lib/deck/needs.ts): the stage will ask, so no speculative fill goes out
+    if (session.current !== s || s.ended || !text || sentenceHangs(text) || needsMore(text)) return;
     const n = text.split(/\s+/).length;
     if (!(guessCard(text) || sure(s.decided) ? n >= 2 : n >= SPEC_MIN_WORDS)) return;
     const hint = hintFor(s, room.current.facts?.() ?? null, text);
@@ -1077,7 +1084,7 @@ export function useVoiceBuild({
   maybeDecide.current = (s: Session) => {
     const ask = room.current.decide;
     const text = s.text;
-    if (!ask || session.current !== s || s.ended || !text || sentenceHangs(text) || stageAsking()) return;
+    if (!ask || session.current !== s || s.ended || !text || sentenceHangs(text) || needsMore(text)) return;
     if (text.split(/\s+/).length < 2) return;
     const n = norm(text);
     if (s.decides.some((d) => d.norm === n) || s.decides.length >= DECIDE_MAX) return;
