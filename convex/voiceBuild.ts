@@ -1,6 +1,7 @@
 // The deck pulls in src/lib/radio.ts, which reads import.meta.env inside a function never called here.
 /// <reference types="vite/client" />
 import { v } from "convex/values";
+import { seatOf } from "./seat";
 import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -295,7 +296,11 @@ export const commit = mutation({
     ),
   },
   returns: v.array(v.id("widgets")),
-  handler: async (ctx, args) => {
+  handler: async (ctx, a) => {
+    // the asker is the caller's own seat, never a name the client sends
+    const me = await seatOf(ctx, a.spaceId);
+    if (!me) return [];
+    const args = { ...a, by: me.name, createdBy: me.userId };
     const people = args.people.slice(0, 12);
     const cardCtx = { by: args.by, people: people.length ? people : [args.by], today: args.today, colors: await colorsFor(ctx, args.spaceId, args.cards) };
     const ids: Id<"widgets">[] = [];
@@ -415,7 +420,10 @@ export const amend = mutation({
     assignees: v.optional(v.array(v.string())),
   },
   returns: v.boolean(),
-  handler: async (ctx, args) => {
+  handler: async (ctx, a) => {
+    const me = await seatOf(ctx, a.spaceId);
+    if (!me) return false;
+    const args = { ...a, by: me.name, createdBy: me.userId };
     const widget = await ctx.db.get(args.widgetId);
     // Only a card this asker wrote moments ago; anything else stays as it is.
     if (!widget || widget.spaceId !== args.spaceId || widget.createdBy !== args.createdBy) return false;

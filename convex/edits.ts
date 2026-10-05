@@ -1,4 +1,5 @@
 import { mutation, query, type MutationCtx } from "./_generated/server";
+import { seatOf } from "./seat";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { applyEdit, type EditOp } from "../src/lib/deck/edits";
@@ -72,7 +73,11 @@ export const apply = mutation({
   // life: a test's short life for the vote this may open (ms; default a day)
   args: { spaceId: v.id("spaces"), widgetId: v.id("widgets"), op: opV, by: v.string(), byUserId: v.string(), today: v.string(), life: v.optional(v.number()) },
   returns: resultV,
-  handler: async (ctx, a) => await run(ctx, { ...a, kind: "edit" }),
+  handler: async (ctx, a): Promise<Result> => {
+    const me = await seatOf(ctx, a.spaceId);
+    if (!me) return { status: "refused", text: "enter the space first", fields: [] };
+    return await run(ctx, { ...a, by: me.name, byUserId: me.userId, kind: "edit" });
+  },
 });
 
 /** The slip's undo: the asker only, within half a minute, the inverse op through the same door. */
@@ -80,6 +85,9 @@ export const undo = mutation({
   args: { spaceId: v.id("spaces"), writeId: v.id("aiWrites"), byUserId: v.string(), today: v.string() },
   returns: resultV,
   handler: async (ctx, a): Promise<Result> => {
+    const me = await seatOf(ctx, a.spaceId);
+    if (!me) return { status: "refused", text: "enter the space first", fields: [] };
+    a = { ...a, byUserId: me.userId };
     const row = await ctx.db.get(a.writeId);
     if (!row || row.spaceId !== a.spaceId || row.kind !== "edit" || row.verdict !== "go" || !row.widgetId || !row.undo) return { status: "failed", text: "nothing to undo", fields: [] };
     if (row.byUserId !== a.byUserId) return { status: "refused", text: "only the person who asked can undo it", fields: [] };

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
+import { seatOf } from "./seat";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { applyEdit, fieldsOf, type Choice, type EditOp } from "../src/lib/deck/edits";
@@ -164,7 +165,8 @@ export const answer = mutation({
     const vote = await ctx.db.get(a.voteId);
     if (!vote) return "gone";
     if (vote.state !== "open") return vote.state;
-    const me = voterOf(vote.voters, a.userId, a.name);
+    const seat = await seatOf(ctx, vote.spaceId);
+    const me = seat && voterOf(vote.voters, seat.userId, seat.name);
     if (!me) return "not yours to answer";
     if (!vote.options.some((o) => o.id === a.option)) return "no such option";
     await ctx.db.patch(vote._id, { answers: [...vote.answers.filter((x) => x.voter !== me), { voter: me, option: a.option, at: Date.now() }] });
@@ -177,9 +179,11 @@ export const answer = mutation({
 export const withdraw = mutation({
   args: { voteId: v.id("choiceVotes"), userId: v.string() },
   returns: v.boolean(),
-  handler: async (ctx, { voteId, userId }) => {
+  handler: async (ctx, { voteId }) => {
     const vote = await ctx.db.get(voteId);
-    const o = vote?.options.find((x) => x.op && x.byUserId === userId);
+    const seat = vote && (await seatOf(ctx, vote.spaceId));
+    const userId = seat?.userId;
+    const o = userId && vote?.options.find((x) => x.op && x.byUserId === userId);
     if (!vote || vote.state !== "open" || !o) return false;
     const left = vote.options.filter((x) => x !== o);
     if (left.every((x) => !x.op)) {

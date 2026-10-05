@@ -33,7 +33,9 @@ export const log = mutation({
     const seat = (userId: string) =>
       ctx.db.query("members").withIndex("by_space_user", (q) => q.eq("spaceId", spaceId).eq("userId", userId)).unique();
     const authId = await getAuthUserId(ctx);
-    const me = (authId ? await seat(authId) : null) ?? (tabId.startsWith("seed:") ? null : await seat(tabId));
+    // the signed-in seat only: a tab id the client sends could name anyone (convex/seat.ts)
+    void tabId;
+    const me = authId ? await seat(authId) : null;
     if (!me) return null;
     const data = widget.data as CheckInWidgetData;
     const person = data.people.find((p) => p.name.trim().toLowerCase() === me.name.trim().toLowerCase());

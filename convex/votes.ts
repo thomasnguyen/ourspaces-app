@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { applyLinks } from "./links";
+import { seatOf } from "./seat";
 import { recheck } from "./choiceVotes";
 import { v } from "convex/values";
 import { touchSpace } from "./activity";
@@ -78,7 +79,10 @@ export const vote = mutation({
   // anyone vote in another space's poll — and an unchecked optionId wrote a
   // junk key straight into the pollTallies aggregate, where it persists.
   returns: v.union(v.id("votes"), v.null()),
-  handler: async (ctx, { widgetId, spaceId, userId, optionId }) => {
+  handler: async (ctx, { widgetId, spaceId, optionId }) => {
+    const me = await seatOf(ctx, spaceId);
+    if (!me) return null;
+    const userId = me.userId;
     const widget = await ctx.db.get(widgetId);
     if (!widget || widget.spaceId !== spaceId || widget.type !== "poll") {
       return null;

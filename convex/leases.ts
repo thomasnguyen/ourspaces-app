@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { seatOf } from "./seat";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { landWaiting } from "./rightOfWay";
@@ -88,7 +89,10 @@ export const hold = mutation({
     const id = ctx.db.normalizeId("widgets", a.thing);
     const w = id && (await ctx.db.get(id));
     if (!w || w.spaceId !== a.spaceId) return null;
-    await holdThing(ctx, a);
+    // a hold is always the caller's own: a hand "by Holly" can't be faked to stall the space
+    const me = await seatOf(ctx, a.spaceId);
+    if (!me) return null;
+    await holdThing(ctx, { ...a, userId: me.userId, name: me.name, color: me.color || a.color });
     return null;
   },
 });
@@ -96,8 +100,8 @@ export const hold = mutation({
 export const letGo = mutation({
   args: who,
   returns: v.null(),
-  handler: async (ctx, { spaceId, thing, userId }) => {
-    await letGoThing(ctx, spaceId, thing, userId);
+  handler: async (ctx, { spaceId, thing }) => {    const me = await seatOf(ctx, spaceId);
+    if (me) await letGoThing(ctx, spaceId, thing, me.userId);
     return null;
   },
 });

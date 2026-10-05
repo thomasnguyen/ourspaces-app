@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
+import { seatOf } from "./seat";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { rightOfWay as gate, type Choice, type Lease, type Verdict } from "../src/lib/rightOfWay";
@@ -263,10 +264,11 @@ export const expire = internalMutation({
 export const cancel = mutation({
   args: { pendingId: v.id("pending"), userId: v.string() },
   returns: v.boolean(),
-  handler: async (ctx, { pendingId, userId }) => {
+  handler: async (ctx, { pendingId }) => {
     const p = await ctx.db.get(pendingId);
+    const me = p && (await seatOf(ctx, p.spaceId));
     const row = p && (await ctx.db.get(p.writeId));
-    if (!p || !row || row.byUserId !== userId) return false;
+    if (!p || !row || !me || row.byUserId !== me.userId) return false;
     await close(ctx, p, "cancelled");
     return true;
   },
