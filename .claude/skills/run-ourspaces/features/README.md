@@ -33,6 +33,7 @@ plus the wide beats table over the stage.
 | [right-of-way](right-of-way.md) | crew | held · ghost · land · knows (mock, scripted holder) · liveknows (lane) + the two-browser take |
 | [asks](asks.md) | crew | poll · poll-second · poll-answered · delegated · countdown · countdown-offer · countdown-when · split · challenge · walkaway · unfinished · letgo |
 | [flows](flows.md) | crew | dinner · dinner-stage · hangout · cabin · potluck · cut (mock stand-ins; live via the two-browser harness) |
+| [new-space](new-space.md) | crew → a made room (lane) | banner · maker · named · empty · nudge · gate · knows (+ the two-device walk) |
 
 ## Header format
 

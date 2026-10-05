@@ -9,6 +9,7 @@ the door, never in front of it.
 - **Join = email + six-digit code** (`convex/otp.ts`, AgentMail sends it).
   Entry points: the gate's "keep this on your other devices" link and the
   keep step in `SpaceMaker.tsx`. No password, ever.
+- **Making a room (N1, Oct 5):** on the deployments in `OPEN_ROOM_DEPLOYMENTS` (`convex/spaces.ts`; the dev lane only) a guest makes a room at once and its anonymous account owns it (joining later keeps the same user id); elsewhere (prod) the email code comes first, as before. An invite link is still full access to that one room; `listSpaces` never lists a made room.
 - **The account persists.** Convex Auth keeps the token in localStorage; the
   `users` row carries `email`. A joined person is the same `userId` on every
   browser they sign in on.
