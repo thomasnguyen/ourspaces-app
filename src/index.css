@@ -27108,6 +27108,20 @@ body:has(.demo-banner) .settings-sheet {
   filter: drop-shadow(0 18px 28px color-mix(in oklab, var(--color-ink) 34%, transparent));
 }
 
+/* Filled from an answer to words still being said: dimmed until the ask
+   ends and the answer is final (plain on purpose; the look-pass styles it). */
+.widget-group[data-widget-id^="voice-draft-"] > .widget-group-body {
+  transition: filter var(--dur-base) var(--ease-glide);
+}
+/* A wash, not transparency: a floating draft must not show the card under it. */
+.widget-group[data-voice-tentative] > .widget-group-body {
+  filter: saturate(0.4) contrast(0.8) brightness(1.06);
+}
+.widget-group[data-voice-draft="lifted"][data-voice-tentative] > .widget-group-body {
+  filter: saturate(0.4) contrast(0.8) brightness(1.06)
+    drop-shadow(0 18px 28px color-mix(in oklab, var(--color-ink) 34%, transparent));
+}
+
 /* Filled by the answer: it takes the hit and settles. */
 .widget-group[data-voice-draft="card"] > .widget-group-body {
   animation: voice-draft-settle var(--dur-stage) var(--ease-pop) both;

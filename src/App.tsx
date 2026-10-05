@@ -39,7 +39,11 @@ import { RECAP_LINES, type RecapTurn } from "./data/recap";
 import { DECISION_WIDGET, canvasSizeFor, getSpace, getWidgets } from "./data/spaces";
 import { createLabPeerFeed, labPeersRequested } from "./live/labPeers";
 import { dealDemo, deckLabRequested } from "./lib/deck/lab";
-import { mockDeal } from "./lib/deck/mockDeal";
+import { mockDeal, mockDecide } from "./lib/deck/mockDeal";
+import { mockFacts } from "./lib/deck/mockFacts";
+import { offersFor } from "./lib/deck/suggest";
+import { setVoiceStageOffers } from "./lib/voiceStage";
+import { resolveCard } from "./lib/deck/resolve";
 import { beat } from "./lib/voiceTimings";
 import { useVoiceBuild } from "./live/useVoiceBuild";
 import { VoiceBuildLayer } from "./components/VoiceBuildLayer";
@@ -486,23 +490,36 @@ export default function App() {
   /* A voice ask in mock mode: no backend, so a stand-in (lib/deck/mockDeal.ts)
      answers from the words on the measured clock and the room runs the real guess/skeleton/apply/place path on it. */
   const voiceMaker = getIdentity();
+  const voiceCtx = () => {
+    const today = new Date();
+    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const people = [voiceMaker.name, ...getSpace(spaceId).members.map((m) => m.name)];
+    return { by: voiceMaker.name, people: [...new Set(people)], today: iso };
+  };
+  // The room's facts, read off the mock board: the real route/resolve path runs on them.
+  const voiceFacts = () => {
+    const ctx = voiceCtx();
+    return mockFacts({ room: getSpace(spaceId).name, widgets: visibleWidgetsRef.current, people: ctx.people, today: ctx.today });
+  };
+  // What the room can offer for a card named with nothing in it (the voice stage asks).
+  setVoiceStageOffers((card) => offersFor(voiceFacts(), card));
   const voiceBuild = useVoiceBuild({
     scrollerRef: canvasViewportRef,
-    cardContext: () => {
-      const today = new Date();
-      const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-      const people = [voiceMaker.name, ...getSpace(spaceId).members.map((m) => m.name)];
-      return { by: voiceMaker.name, people: [...new Set(people)], today: iso };
-    },
-    deal: async ({ said }, onPartial) => {
+    cardContext: voiceCtx,
+    facts: voiceFacts,
+    decide: mockDecide,
+    deal: async (call, onPartial) => {
       // `?voiceHold=1` keeps the skeleton up for a still (drive voice-build:shell).
       if (new URLSearchParams(window.location.search).has("voiceHold")) await new Promise(() => {});
       // Simulated on the measured clock (lib/deck/mockDeal.ts): no model runs.
-      const answer = await mockDeal(said, onPartial);
+      const answer = await mockDeal(call, onPartial);
       return { dealId: null, model: null, context: null, answer, error: null };
     },
     commit: async ({ cards }) => {
       await new Promise((r) => setTimeout(r, beat("commit")));
+      // A card the board already has is not written twice: the voice stage takes you to it instead.
+      const facts = voiceFacts();
+      if (cards.length === 1 && resolveCard({ card: cards[0].card.card, settings: cards[0].card.settings as Record<string, unknown> }, facts, "").duplicateOf) return [];
       const dealt = cards.map((c, i) => ({ ...c.widget, id: `voice-standin-${Date.now().toString(36)}-${i}` }));
       setAddedWidgets((current) => ({ ...current, [spaceId]: [...(current[spaceId] ?? []), ...dealt] }));
       return dealt.map((w) => w.id);

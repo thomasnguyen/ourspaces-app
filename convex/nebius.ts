@@ -244,3 +244,63 @@ export const fileDryRun = internalAction({
     return { ms: Date.now() - t0, decision: decision ? JSON.stringify(decision) : null };
   },
 });
+
+export type LetterResult = {
+  status: number;
+  /** The most likely valid letter, its probability (summed over token variants), and the runners-up. */
+  letter: string | null;
+  conf: number | null;
+  top: { letter: string; p: number }[];
+  usage: ChatUsage | null;
+  ms: number;
+  error?: string;
+};
+
+/** One-token multiple choice with logprobs (the decide pass, nebius/eval/decide).
+ * Never throws. Duplicate token strings are counted once (Lightning lists the
+ * sampled token twice), and " E" and "E" add up. */
+export async function chooseLetter(opts: { model: NemotronModel; messages: ChatMessage[]; letters: string[] }): Promise<LetterResult> {
+  const t0 = Date.now();
+  const out: LetterResult = { status: 0, letter: null, conf: null, top: [], usage: null, ms: 0 };
+  const key = nebiusKey();
+  if (!key) return { ...out, error: "NEBIUS_API_KEY is not set" };
+  try {
+    const res = await fetch(`${NEBIUS_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: NEMOTRON[opts.model],
+        messages: opts.messages,
+        max_tokens: 1,
+        temperature: 0,
+        logprobs: true,
+        top_logprobs: 20,
+        chat_template_kwargs: { enable_thinking: false },
+      }),
+    });
+    out.status = res.status;
+    const text = await res.text();
+    if (!res.ok) return { ...out, ms: Date.now() - t0, error: text.slice(0, 400) };
+    const j = JSON.parse(text) as {
+      usage?: ChatUsage;
+      choices?: { message?: { content?: string }; logprobs?: { content?: { top_logprobs?: { token: string; logprob: number }[] }[] } }[];
+    };
+    out.usage = j.usage ?? null;
+    const probs = new Map<string, number>();
+    const seen = new Set<string>();
+    for (const t of j.choices?.[0]?.logprobs?.content?.[0]?.top_logprobs ?? []) {
+      if (seen.has(t.token)) continue;
+      seen.add(t.token);
+      const k = t.token.trim();
+      if (opts.letters.includes(k)) probs.set(k, (probs.get(k) ?? 0) + Math.exp(t.logprob));
+    }
+    out.top = [...probs].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([letter, p]) => ({ letter, p: Math.round(p * 1000) / 1000 }));
+    const said = (j.choices?.[0]?.message?.content ?? "").trim().toUpperCase().slice(0, 1);
+    out.letter = out.top[0]?.letter ?? (opts.letters.includes(said) ? said : null);
+    out.conf = out.top[0]?.p ?? null;
+  } catch (e) {
+    out.error = String(e).slice(0, 400);
+  }
+  out.ms = Date.now() - t0;
+  return out;
+}

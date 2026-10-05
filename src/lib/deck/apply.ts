@@ -35,7 +35,7 @@ export type Applied =
 export function applyCard(
   card: unknown,
   ctx: CardContext,
-  opts: { id?: string; z?: number } = {},
+  opts: { id?: string; z?: number; assignees?: string[] } = {},
 ): Applied {
   const checked = checkCard(card);
   if (!checked.ok) return checked;
@@ -43,7 +43,13 @@ export function applyCard(
   const size = cardSize(def);
   // `build` is typed per card; the union lookup loses the pairing, the check above restores it.
   const build = def.build as (s: unknown, c: CardContext) => Widget["data"];
-  const data = build(checked.card.settings, ctx);
+  let data = build(checked.card.settings, ctx);
+  // One person per checklist item (room tokens: `for`), shown as already theirs.
+  if (def.type === "potluck" && opts.assignees?.length) {
+    const d = data as { items: { name: string; by: string | null; claimed: boolean }[]; openCount: number };
+    const items = d.items.map((it, i) => (opts.assignees![i] ? { ...it, by: opts.assignees![i], claimed: true } : it));
+    data = { ...d, items, openCount: items.filter((it) => !it.claimed).length } as Widget["data"];
+  }
   // A poll's box fits three options; each one past that needs its own row.
   const options = def.type === "poll" ? (data as { options?: unknown[] }).options?.length ?? 0 : 0;
   return {

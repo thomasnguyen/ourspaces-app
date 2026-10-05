@@ -966,3 +966,235 @@ body.voice-stage-up .voice-slip {
 .voice-two-card-body .widget-management {
   display: none;
 }
+
+/* ---- a card named with nothing in it: the stage asks for the rest ---- */
+.voice-two-kind {
+  flex-wrap: wrap;
+}
+
+/* the question sits on the card's shoulder, pointing at its empty title */
+.voice-two-ask {
+  flex-basis: 100%;
+  color: white;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.5vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  animation: voice-ask-in calc(var(--dur-arrive) * var(--slow)) var(--ease-pop) backwards;
+}
+
+.voice-two-ask.is-found {
+  color: var(--color-lime);
+}
+
+@keyframes voice-ask-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    translate: -14px 0;
+  }
+}
+
+/* asked: the ring stops breathing and holds, waiting on you */
+.voice-two-card[data-state="asking"] .voice-two-fly::before {
+  border-color: white;
+  animation: voice-ring-wait calc(1200ms * var(--slow)) var(--ease-glide) infinite;
+}
+
+.voice-two-card[data-state="found"] .voice-two-fly::before {
+  border-color: var(--color-lime);
+  border-style: solid;
+  animation: none;
+}
+
+@keyframes voice-ring-wait {
+  50% {
+    scale: 1.018;
+  }
+}
+
+/* your words end on a caret: go on */
+.voice-two-words.is-asking::after {
+  display: inline-block;
+  width: 0.09em;
+  height: 0.82em;
+  border-radius: 0.05em;
+  margin-left: 0.04em;
+  background: var(--color-lime);
+  content: "";
+  vertical-align: -0.06em;
+  animation: voice-caret calc(1000ms * var(--slow)) steps(1) infinite;
+}
+
+@keyframes voice-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* what the room offers: say it, or take one */
+.voice-two-offers {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.voice-two-offers > span {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  animation: voice-stage-in calc(var(--dur-arrive) * var(--slow)) var(--ease-glide) calc(120ms * var(--slow)) backwards;
+}
+
+.voice-two-offers > button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  border: 0;
+  border-radius: 999px;
+  background: white;
+  color: var(--color-ink);
+  padding: 10px 18px 11px;
+  cursor: pointer;
+  transition:
+    translate var(--dur-quick) var(--ease-glide),
+    scale var(--dur-instant) var(--ease-glide);
+  animation: voice-offer-in calc(var(--dur-arrive) * var(--slow)) var(--ease-pop) calc((180ms + var(--i) * 40ms) * var(--slow)) backwards;
+}
+
+.voice-two-offers > button:hover {
+  translate: 4px 0;
+}
+
+.voice-two-offers > button:active {
+  scale: 0.97;
+}
+
+.voice-two-offers b {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.voice-two-offers i {
+  color: color-mix(in oklab, var(--color-ink) 58%, transparent);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+@keyframes voice-offer-in {
+  from {
+    opacity: 0;
+    scale: 0.92;
+    translate: 0 12px;
+  }
+}
+
+/* ---- from the room: the parts a room fact filled ---- */
+.voice-two-parts i[data-shown][data-room],
+.voice-two-parts i[data-shown][data-room][data-status="final"] {
+  background: var(--color-trip);
+}
+
+.voice-two-sources {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  color: white;
+  font-size: 17px;
+  font-weight: 600;
+  animation: voice-stage-in calc(var(--dur-arrive) * var(--slow)) var(--ease-glide) backwards;
+}
+
+.voice-two-sources i {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--color-trip);
+}
+
+.voice-stage.is-two[data-phase="closing"] .voice-two-sources,
+.voice-stage.is-two[data-phase="closing"] .voice-two-offers {
+  animation: voice-stage-out calc(var(--dur-quick) * var(--slow)) var(--ease-glide) forwards;
+}
+
+/* ---- already on the board: the card that was there takes the ring and the slip ---- */
+.widget-group[data-voice-found] > .widget-group-body {
+  border-radius: 18px;
+  outline: 4px solid var(--color-lime);
+  outline-offset: 7px;
+}
+
+.voice-slip.voice-found-slip {
+  --maker: var(--color-sticker);
+  animation-play-state: running;
+}
+
+.voice-slip.voice-found-slip .voice-landed {
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+
+/* the stage already said it: no "couldn't place that" for a card that exists */
+body.voice-stage-found .voice-receipt.is-miss {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .voice-two-ask {
+    font-size: 23px;
+    text-align: center;
+  }
+
+  .voice-two-kind {
+    justify-content: center;
+  }
+
+  .voice-two-offers {
+    justify-items: center;
+    gap: 6px;
+  }
+
+  /* label over where it came from: two short lines, never a wrapped pill */
+  .voice-two-offers > button {
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    border-radius: 18px;
+    padding: 7px 16px 8px;
+  }
+
+  .voice-two-offers b {
+    font-size: 16px;
+  }
+
+  .voice-two-offers i {
+    font-size: 11px;
+  }
+
+  .voice-two-sources {
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-two-ask,
+  .voice-two-offers > button,
+  .voice-two-offers > span,
+  .voice-two-sources {
+    animation-name: voice-stage-fade;
+    animation-delay: 0ms;
+  }
+
+  .voice-two-card[data-state="asking"] .voice-two-fly::before,
+  .voice-two-words.is-asking::after {
+    animation: none;
+  }
+}

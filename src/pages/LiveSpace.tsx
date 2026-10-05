@@ -1479,8 +1479,14 @@ export function LiveSpacePage({
   const convex = useConvex();
   const dealCards = useAction(api.voiceBuild.deal);
   const commitCards = useMutation(api.voiceBuild.commit);
+  const amendCard = useMutation(api.voiceBuild.amend);
   const warmDeal = useAction(api.voiceBuild.warm);
   const noteDealLanded = useMutation(api.voiceBuild.noteLanded);
+  const decideCard = useAction(api.voiceBuild.decide);
+  /* The room brief's facts (convex/roomBrief.ts): each call is routed by
+     them and its tokens resolve against them, on this screen. */
+  const [briefNow] = useState(() => Date.now());
+  const roomBrief = useQuery(api.roomBrief.inspect, mode === "live" && space ? { spaceId: space._id, now: briefNow } : "skip");
   const voicePeople = () =>
     [...new Set([identity.name, ...presence.peers.map((peer) => peer.name), ...members.map((m) => m.name)])].slice(0, 8);
   const voiceToday = () => {
@@ -1493,6 +1499,15 @@ export function LiveSpacePage({
     cardContext: () => ({ by: identity.name, people: voicePeople(), today: voiceToday() }),
     selectedId: voiceSelectedId,
     warm: () => void warmDeal({}).catch(() => {}),
+    facts: () => roomBrief?.room ?? null,
+    decide: (said) =>
+      decideCard({
+        said,
+        room: space?.name ?? "",
+        today: voiceToday(),
+        people: voicePeople(),
+        board: (roomBrief?.room?.board ?? []).map((b) => b.title),
+      }),
     deal: async (call, onPartial) => {
       if (!space) throw new Error("no space");
       const selId = voiceSelectedId();
@@ -1503,7 +1518,7 @@ export function LiveSpacePage({
       const watch = convex.watchQuery(api.voiceBuild.live, { spaceId: space._id, nonce: call.nonce });
       const stop = watch.onUpdate(() => {
         const live = watch.localQueryResult();
-        if (live?.answer) onPartial(live.answer);
+        if (live?.answer) onPartial(live.answer, live.done);
       });
       try {
         const r = await dealCards({
@@ -1511,6 +1526,9 @@ export function LiveSpacePage({
           said: call.said,
           nonce: call.nonce,
           spec: call.spec,
+          ...(call.route ? { route: call.route } : {}),
+          ...(call.menu ? { menu: call.menu } : {}),
+          ...(call.card ? { card: call.card } : {}),
           room: space.name,
           today: voiceToday(),
           people: voicePeople(),
@@ -1523,26 +1541,61 @@ export function LiveSpacePage({
           answer: r.answer,
           error: r.error,
           modelMs: { firstLine: r.firstLineMs, total: r.totalMs },
+          route: r.route,
+          usage: r.usage,
         };
       } finally {
         stop();
       }
     },
-    commit: async ({ dealId, cards }) => {
+    commit: async ({ dealId, nonce, cards }) => {
       if (!space) return [];
       const ids = await commitCards({
         spaceId: space._id,
         ...(dealId ? { dealId: dealId as Id<"deals"> } : {}),
+        nonce,
         by: identity.name,
         people: voicePeople(),
         today: voiceToday(),
         createdBy: identity.userId,
-        cards: cards.map((c) => ({ card: JSON.stringify(c.card), x: c.widget.x, y: c.widget.y, z: c.widget.z })),
+        cards: cards.map((c) => ({
+          card: JSON.stringify(c.card),
+          x: c.widget.x,
+          y: c.widget.y,
+          z: c.widget.z,
+          ...(c.people ? { people: c.people } : {}),
+          ...(c.assignees ? { assignees: c.assignees } : {}),
+        })),
       });
       return ids.map(String);
     },
+    amend: async ({ widgetId, nonce, card }) => {
+      if (!space) return false;
+      return await amendCard({
+        spaceId: space._id,
+        widgetId: widgetId as Id<"widgets">,
+        nonce,
+        by: identity.name,
+        people: voicePeople(),
+        today: voiceToday(),
+        createdBy: identity.userId,
+        card: JSON.stringify(card.card),
+        ...(card.people ? { cardPeople: card.people } : {}),
+        ...(card.assignees ? { assignees: card.assignees } : {}),
+      });
+    },
     onLanded: (dealId, ms, trace) =>
-      void noteDealLanded({ dealId: dealId as Id<"deals">, landedMs: ms, trace: JSON.stringify({ stages: trace.stages, calls: trace.calls.length, guess: trace.guesses.at(-1)?.card ?? null, guessAgreed: trace.guessAgreed }) }).catch(() => {}),
+      void noteDealLanded({ dealId: dealId as Id<"deals">, landedMs: ms, trace: JSON.stringify({
+          stages: trace.stages,
+          calls: trace.calls.length,
+          guess: trace.guesses.at(-1)?.card ?? null,
+          guessAgreed: trace.guessAgreed,
+          route: trace.route ? { route: trace.route.route, why: trace.route.why } : null,
+          decides: trace.decides.map((d) => ({ ms: d.ms, back: d.back, card: d.card, conf: d.conf })),
+          skeletons: trace.skeletons,
+          overrode: trace.overrode,
+          notes: trace.notes,
+        }) }).catch(() => {}),
   });
   const canvasWidgets = useMemo(() => voiceBuild.withDrafts(adaptedWidgets), [voiceBuild.withDrafts, adaptedWidgets]);
   /* The header always needs a number to print, so an unloaded count reads as

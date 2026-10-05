@@ -8,3 +8,9 @@ export type { PlaceRoom, Placement, Rect } from "./place";
 export { catalogJson, dealTurn, deckPrompt, parseDeal, roomContext } from "./prompt";
 export type { Deal, DealItem } from "./prompt";
 export { guessCard, parsePartialCard, sentenceHangs, skeletonWidget, titleFromWords } from "./guess";
+export {
+  cardLine, dealTurnV2, deckPromptV2, decideMessages, DECIDE_CHOICES, DECIDE_LETTERS, parseDealResolved, routeAsk, scrubTokens, tokenMenu,
+} from "./promptV2";
+export type { AskRoute, ResolvedItem } from "./promptV2";
+export { resolveCard } from "./resolve";
+export type { Resolved, ResolveNote, RoomFacts } from "./resolve";

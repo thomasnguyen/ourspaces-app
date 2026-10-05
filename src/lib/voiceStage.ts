@@ -45,6 +45,8 @@ export type StagePart = {
   status: "pending" | "tentative" | "final";
   value: PartValue | null;
   tick: boolean;
+  /** The value came from a room fact, not the words or the model: which one ("saved places"). */
+  room: string | null;
 };
 
 export type StageBuild = {
@@ -62,6 +64,10 @@ export type StageBuild = {
   placed: { widgetId: string; host: HTMLElement } | null;
   /** Nothing could be placed. */
   failed: boolean;
+  /** The room facts this card used, in a person's words ("saved places"). */
+  sources: string[];
+  /** The board already has this card: the one it repeats. */
+  duplicate: { card: string; title: string } | null;
   maker: { name: string; color: string };
 };
 
@@ -72,10 +78,35 @@ export type StageFeed = {
   shell: { said: string; draftId: string | null } | null;
   landed: { widgetId: string; host: HTMLElement; traceKey: number } | null;
   receipt: { ok: boolean; key: number } | null;
-  traces: Array<{ key: number; said: string; how: string | null }>;
+  traces: Array<{ key: number; said: string; how: string | null; notes?: Array<{ token: string; kind: string; detail: string }> }>;
   color: string;
   by: string;
 };
+
+/** A room token in a person's words: "@date(maya's bday)" → "the maya's bday countdown". */
+function sourceName(token: string) {
+  const m = /^@([a-z-]+)(?:\((.*)\))?$/i.exec(token);
+  const of = m?.[2] ? `“${m[2].split(",")[0]}” ` : "";
+  switch (m?.[1]) {
+    case "places":
+      return "your saved places";
+    case "coming":
+      return `who said yes to ${of || "it"}`.trim();
+    case "home":
+      return "who's around";
+    case "date":
+      return `the ${of}countdown`;
+    case "leader":
+      return `the ${of}poll`;
+    case "on-trip":
+    case "payer":
+      return `the ${of}split`;
+    case "last":
+      return `the ${of}wheel`;
+    default:
+      return "the room";
+  }
+}
 
 let current: StageBuild | null = null;
 const watchers = new Set<() => void>();
@@ -94,12 +125,21 @@ export function feedVoiceStage(feed: StageFeed) {
     const placed = feed.landed?.traceKey === key ? { widgetId: feed.landed.widgetId, host: feed.landed.host } : null;
     const complete = placed !== null;
     const ended = complete || Boolean(trace?.how);
+    // where values came from: the resolver's notes on this ask (lib/deck/resolve.ts)
+    const fromRoom = new Map<string, string>();
+    let duplicate: StageBuild["duplicate"] = null;
+    for (const note of trace?.notes ?? []) {
+      if (note.kind === "expanded") for (const value of note.detail.split(", ")) fromRoom.set(value.toLowerCase(), sourceName(note.token));
+      const repeat = note.kind === "rule" && /^already on the board: (\S+) "(.*)"$/.exec(note.detail);
+      if (repeat) duplicate = { card: repeat[1], title: repeat[2] };
+    }
     const parts: StagePart[] = [];
     if (widget) {
       for (const step of fillPlan(kind).steps) {
         step.read(widget.data as Record<string, unknown>, complete).forEach((value, i) => {
           const status = value === null ? "pending" : complete || (ended && step.from !== "words") ? "final" : "tentative";
-          parts.push({ id: partId(step, i), label: step.label, wave: step.wave, status, value, tick: Boolean(step.tick) });
+          const room = value === null ? null : (fromRoom.get(String(value).toLowerCase()) ?? null);
+          parts.push({ id: partId(step, i), label: step.label, wave: step.wave, status, value, tick: Boolean(step.tick), room });
         });
       }
     }
@@ -112,6 +152,8 @@ export function feedVoiceStage(feed: StageFeed) {
       complete,
       placed,
       failed: feed.receipt?.key === key && !feed.receipt.ok,
+      sources: [...new Set(parts.flatMap((p) => (p.room ? [p.room] : [])))],
+      duplicate: duplicate ?? same?.duplicate ?? null,
       maker: { name: feed.by, color: feed.color },
     };
   }
@@ -149,3 +191,14 @@ export const watchStageBeats = (w: () => void) => {
   };
 };
 export const stageBeats = () => beats;
+
+/* ---- what the room offers when a card was named with nothing in it ----
+   The room registers one function (mock: App.tsx over lib/deck/suggest.ts and
+   the mock facts; live: the same over the room brief's facts). */
+
+export type StageOffer = { label: string; say: string; from: string };
+let offers: (card: string) => StageOffer[] = () => [];
+export function setVoiceStageOffers(fn: (card: string) => StageOffer[]) {
+  offers = fn;
+}
+export const voiceStageOffers = (card: string) => offers(card);

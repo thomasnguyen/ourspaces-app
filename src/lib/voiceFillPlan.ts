@@ -39,7 +39,12 @@ export type FillStep = {
   write: (d: Data, shown: Array<PartValue | null>, before: Data | null) => Data;
 };
 
-export type FillPlan = { card: CardId | "*"; steps: FillStep[] };
+export type FillPlan = {
+  card: CardId | "*";
+  /** What the stage asks when the card was named with nothing to put in it. */
+  ask: string;
+  steps: FillStep[];
+};
 
 const BLANK = " ";
 /** Empty rows stay distinct: widgets key their rows by label. */
@@ -74,11 +79,13 @@ export const FILL_PLANS: FillPlan[] = [
   {
     // the question lands from your words; then each option on its own beat
     card: "poll",
+    ask: "what's it about?",
     steps: [field("question", "question", "question", 0, "words"), list("option", "option", "options", "label", 1, "answer")],
   },
   {
     // title, then the things one at a time, then who's on it (open spots)
     card: "checklist",
+    ask: "what's the list for?",
     steps: [
       field("title", "title", "title", 0, "words"),
       list("item", "item", "items", "name", 1, "answer"),
@@ -95,6 +102,7 @@ export const FILL_PLANS: FillPlan[] = [
   {
     // the event from your words; then the date and the day count together, the count ticking up
     card: "countdown",
+    ask: "counting down to what?",
     steps: [
       field("event", "event", "event", 0, "words"),
       {
@@ -120,6 +128,7 @@ export const FILL_PLANS: FillPlan[] = [
   {
     // title, then the total counting up, then each person's share
     card: "split",
+    ask: "what are we splitting?",
     steps: [
       field("title", "title", "title", 0, "words"),
       {
@@ -140,6 +149,7 @@ export const FILL_PLANS: FillPlan[] = [
   {
     // anything else: its title, then everything under it at once
     card: "*",
+    ask: "what's it about?",
     steps: [
       {
         id: "title",

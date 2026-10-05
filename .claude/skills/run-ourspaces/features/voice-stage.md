@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
 ready: dock-voice-orb
-testids: dock-voice-orb voice-stage voice-stage-left voice-stage-right voice-stage-text voice-stage-status voice-stage-wave voice-stage-card voice-stage-parts voice-stage-part-question voice-stage-part-option-0 voice-stage-part-option-1 voice-stage-part-option-2 voice-stage-part-title voice-stage-part-item-0 voice-stage-part-who voice-stage-part-event voice-stage-part-date voice-stage-part-days voice-stage-part-total voice-stage-part-person-0 voice-stage-chip-0 voice-stage-chip-3 voice-stage-mute voice-stage-finish voice-stage-beats voice-landed
+testids: dock-voice-orb voice-stage voice-stage-left voice-stage-right voice-stage-text voice-stage-status voice-stage-wave voice-stage-card voice-stage-parts voice-stage-part-question voice-stage-part-option-0 voice-stage-part-option-1 voice-stage-part-option-2 voice-stage-part-title voice-stage-part-item-0 voice-stage-part-who voice-stage-part-event voice-stage-part-date voice-stage-part-days voice-stage-part-total voice-stage-part-person-0 voice-stage-chip-0 voice-stage-chip-3 voice-stage-mute voice-stage-finish voice-stage-beats voice-stage-ask voice-stage-offers voice-stage-offer-0 voice-stage-sources voice-stage-found voice-stage-found-slip voice-landed
 states:
   poll: ?voicePace=talk&voice=add a poll for Saturday dinner
   countdown: ?voicePace=talk&voice=countdown to Holly's birthday on November 14
@@ -21,6 +21,13 @@ states:
   countdown-mid: ?stageFreeze=complete&voicePace=talk&voice=countdown to Holly's birthday on November 14 | click dock-voice-orb | wait voice-stage-card | sleep 4600
   checklist-mid: ?stageFreeze=complete&voicePace=talk&voice=who's bringing what for the potluck | click dock-voice-orb | wait voice-stage-card | sleep 4400
   split-mid: ?stageFreeze=complete&voicePace=talk&voice=split the cabin, 640 | click dock-voice-orb | wait voice-stage-card | sleep 4000
+  ask: ?voicePace=talk&voice=add a poll | click dock-voice-orb | wait voice-stage-ask | sleep 900
+  ask-answered: ?voicePace=talk&voice=add a poll … … … for Saturday dinner
+  ask-offer: ?voicePace=talk&voice=add a poll | click dock-voice-orb | wait voice-stage-offer-0 | sleep 500 | click voice-stage-offer-0 | wait voice-stage-sources | sleep 500
+  room: ?stageFreeze=complete&voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-stage-sources | sleep 600
+  already: ?voicePace=talk&voice=add a poll for cake flavor
+  already-found: ?voicePace=talk&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-stage-found | sleep 300
+  already-landed: ?voicePace=talk&voice=add a poll for cake flavor | click dock-voice-orb | wait voice-stage-found-slip | sleep 1200
   center: ?stage=center&voice=Make a space for our Tahoe weekend | click dock-voice-orb | wait voice-stage | sleep 1500
 take:
   poll: poll real 60fps 300f warmup 1200 | 20 click dock-voice-orb
@@ -30,6 +37,8 @@ take:
   where: where real 60fps 300f warmup 1200 | 20 click dock-voice-orb
   nokey: nokey real 60fps 330f warmup 1200 | 20 click dock-voice-orb
   poll-slow: poll-slow real 30fps 400f warmup 1200 | 10 click dock-voice-orb
+  ask-answered: ask-answered real 60fps 480f warmup 1200 | 20 click dock-voice-orb
+  already: already real 60fps 360f warmup 1200 | 20 click dock-voice-orb
 ---
 # Voice stage (two parts: you speak, it builds)
 
@@ -45,6 +54,25 @@ the board, where the "said it" slip appears. Phone: orb on top, words under
 it, the card rising from below. Nothing said yet: four asks on the right you
 can tap to hear said.
 
+**It asks for the rest.** Name a card with nothing to put in it ("add a
+poll") and the pause does not end the ask: the ring goes white and waits,
+"what's it about?" lands on the card's shoulder (`voice-stage-ask`), your
+words end on a lime caret, and under the card the room offers what it
+already knows could fill it (`voice-stage-offer-0..`: "where we eat · from
+your saved places"). Say the rest or tap one. Four quiet seconds: a guess
+that is already showing is kept, an empty card is let go, nothing is built.
+
+**From the room.** A part a room fact filled (the group's saved places as
+poll options, the trip's people on a split, a date the board already
+counts down to) gets an orange pip and the card a line under it
+(`voice-stage-sources`: "from the room: your saved places").
+
+**Already here.** The words name a card the board already has ("add a poll
+for cake flavor"): the stage says "already on the board"
+(`voice-stage-found`), then the camera goes to that card and the stage's
+card melts into it; it wears a lime ring and an "already here" slip
+(`voice-stage-found-slip`) for six seconds. Nothing is written.
+
 **Fill plans** (`src/lib/voiceFillPlan.ts`, data): poll = question, then
 options one per beat · checklist = title, items one per beat, who · countdown
 = event, then date and the day count ticking up together · split = title,
@@ -58,7 +86,10 @@ per number: measured / derived / code / assumed / design, with its source).
 `voice-stage-beats`: the table's number beside this run's, from the last
 word, headed "simulated from measurements · no model ran" in mock.
 
-**Drive:** states `poll countdown checklist split where nokey` are the six
+**Drive:** `ask` (asked, offers up) · `ask-answered` (a take: asked, then
+the rest is said) · `ask-offer` (an offer tapped) · `room` (sources line)
+· `already` / `already-found` / `already-landed`. States `poll countdown
+checklist split where nokey` are the six
 scripted asks (tap the orb to start; `nokey` has no card word, so the type
 arrives after the words). Stills: `open` (nothing said), `words`, `type`
 (`&stageFreeze=type`: card just known), `mid`, `complete`, `closing`
@@ -69,6 +100,12 @@ arrives after the words). Stills: `open` (nothing said), `words`, `type`
 `voice-stage-card` carries `data-kind` and `data-state`.
 `?stage=center` = the earlier centred stage · `?stage=0` = dock strip only ·
 `?stage=1` opens on load · `?orb=glass|knot` = the other orbs.
+
+**Mock runs the real brain path.** `src/lib/deck/mockFacts.ts` reads a
+`RoomFacts` off the mock board, so `routeAsk`, the token resolver and the
+duplicate rule all run as live; the simulated answer writes tokens
+(`@places`, `@on-trip(…)`, `@date(…)`), never their values, and
+`mockDecide` stands in for the one-letter pick.
 
 **The seam (what live code must feed):** the stage never reads the build. It
 reads `StageBuild` from `src/lib/voiceStage.ts`: `kind` (type known),
@@ -82,13 +119,22 @@ the stage keeps working: the draft's id is `voice-draft-<session key>-0`;
 `traces[].how` is set when the ask ends; an unfilled field is blank
 (` `), an unknown date equals `startDate`. Tentative fills mid-sentence
 need nothing more: a non-blank field before `how` is set shows as tentative.
+Three more, all already true on main except the last: (1) `traces[].notes`
+(the resolver's notes): `expanded` notes become "from the room", the
+"already on the board" rule note becomes `duplicate`. (2) Offers: the room
+calls `setVoiceStageOffers((card) => offersFor(facts, card))`
+(`src/lib/deck/suggest.ts`, pure; mock does this in `App.tsx`, **live does
+not yet**). (3) Already here needs the room to **not write a duplicate**:
+mock's `commit` resolves `[]` for one; live still writes it, and then the
+stage treats the card as new. The stage holds the ask open with
+`voice.hold()` (`src/lib/voice.ts`), which the pause detector respects.
 
 **Code:** `src/components/VoiceStage.tsx` (`useVoiceStage`: orb travel,
 reveal engine `useReveal`, arrivals, `flyCard`, beats readout) +
 `voice-stage.css` (`.voice-two-*`) · `src/lib/voiceStage.ts` (adapter,
 beats) · `src/lib/voiceFillPlan.ts` · `src/lib/voiceTimings.ts` ·
 `src/lib/deck/mockDeal.ts` (simulated answer on the measured clock, scripted
-asks) · mock wiring in `src/App.tsx`.
+asks) · `src/lib/deck/mockFacts.ts` · `src/lib/deck/suggest.ts` · mock wiring in `src/App.tsx`.
 
 **Gotchas:** flights use `performance.now()`, never the rAF timestamp (the
 driver speeds the animation clock on load and the two drift apart). The

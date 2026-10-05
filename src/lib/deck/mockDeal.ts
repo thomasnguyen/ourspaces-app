@@ -5,13 +5,18 @@
  * (src/lib/voiceTimings.ts, one row per number, each with its source).
  * Nothing is sent anywhere and no model runs; the dev readout says
  * "simulated from measurements". The room still runs its real path on the
- * answer (guess, skeleton, parseDeal → applyCard → placeCards).
+ * answer (guess, skeleton, route, parse → resolve → applyCard → placeCards).
+ *
+ * Like the live model on the brain route, the stand-in never writes a room
+ * fact's value: when the call's fact menu offers a token the words need
+ * (`@places`, `@date(…)`, `@coming(…)`, `@on-trip(…)`), it writes the token and
+ * the real resolver fills it in on screen and notes where it came from.
  */
-import { beat, voiceSlow, VOICE_TIMINGS } from "../voiceTimings";
+import { beat } from "../voiceTimings";
 import type { CardId } from "./catalog";
-import { guessCard, titleFromWords } from "./guess";
+import { guessCard, sentenceHangs, titleFromWords } from "./guess";
 
-type StandIn = { card: CardId; settings: Record<string, string | number | string[]>; room?: boolean };
+type StandIn = { card: CardId; settings: Record<string, string | number | string[]> };
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
@@ -54,13 +59,13 @@ export const SCRIPTED_ASKS: Array<{ id: string; say: string; label: string; answ
     id: "checklist",
     say: "who's bringing what for the potluck",
     label: "Who's bringing what",
-    answer: { card: "checklist", settings: { title: "potluck", items: ["chips and salsa", "drinks", "dessert", "plates and cups"] }, room: true },
+    answer: { card: "checklist", settings: { title: "potluck", items: ["chips and salsa", "drinks", "dessert", "plates and cups"] } },
   },
   {
     id: "split",
     say: "split the cabin, 640",
     label: "Split the cabin",
-    answer: { card: "split", settings: { title: "cabin", total: 640 }, room: true },
+    answer: { card: "split", settings: { title: "cabin", total: 640 } },
   },
   {
     // "where should we" is a card word in deck/guess.ts: the poll is known by the third word
@@ -80,26 +85,50 @@ export const SCRIPTED_ASKS: Array<{ id: string; say: string; label: string; answ
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
 
-/** A stand-in card for any words: the scripted ones above, else written from the words. */
-export function standInFor(said: string): StandIn {
+const FOOD = /\b(eat|dinner|lunch|brunch|breakfast|food|restaurant)\b/i;
+/** The first token of this name the call's fact menu offers: "@date(maya's bday)". */
+const offered = (menu: string | undefined, name: string) => new RegExp(`@${name}(\\([^()=]*?\\))?(?= =|, also| ·)`).exec(menu ?? "")?.[0].replace(/, also.*$/, ")") ?? null;
+
+/** Words that name a card and nothing to put in it ("add a poll"): no card comes back. */
+export const isBare = (said: string) => {
+  const card = guessCard(said);
+  return card !== null && !titleFromWords(said, card) && !listFromWords(said).length;
+};
+
+/** A stand-in card for any words: the scripted ones above, else written from
+    the words, with the room's tokens where the fact menu offers one. */
+export function standInFor(said: string, menu?: string): StandIn | null {
   const scripted = SCRIPTED_ASKS.find((a) => norm(a.say) === norm(said));
-  if (scripted) return scripted.answer;
   const named = listFromWords(said);
-  const card = guessCard(said) ?? (named.length ? "poll" : "note");
+  const card = scripted?.answer.card ?? guessCard(said) ?? (named.length ? "poll" : "note");
+  if (isBare(said)) return null;
   const title = lower(titleFromWords(said, card)) || lower(said);
+  const places = offered(menu, "places");
+  const date = offered(menu, "date");
+  const coming = offered(menu, "coming");
+  const trip = offered(menu, "on-trip");
+  const base = scripted?.answer.settings ?? {};
   switch (card) {
-    case "poll":
-      return { card, settings: { question: `${title.replace(/\?$/, "")}?`.slice(0, 80), options: named.length ? named : ["tacos", "pho", "pizza"] } };
+    case "poll": {
+      const question = (base.question as string) ?? `${title.replace(/\?$/, "")}?`.slice(0, 80);
+      // the group's own places when the words are about where to eat; else what the words named
+      if (places && FOOD.test(said) && !named.length) return { card, settings: { question, options: [places, "somewhere else"] } };
+      return { card, settings: { question, options: (base.options as string[]) ?? (named.length ? named : FOOD.test(said) ? ["tacos", "pho", "pizza"] : ["yes", "no", "maybe"]) } };
+    }
     case "checklist":
-      return { card, settings: { title: title.slice(0, 40), items: named.length ? named : ["snacks", "drinks", "playlist"] }, room: true };
+      return { card, settings: { title: (base.title as string) ?? title.slice(0, 40), items: (base.items as string[]) ?? (named.length ? named : ["snacks", "drinks", "playlist"]) } };
     case "countdown":
-      return { card, settings: { event: title.replace(/\s+on\s+\w+\.? \d+.*$/i, "").slice(0, 32), date: dateFromWords(said) } };
-    case "split":
-      return { card, settings: { title: title.replace(/[, ]*\$?\d[\d,.]*.*$/, "").slice(0, 32) || "the bill", total: Number(/\d[\d,]*/.exec(said)?.[0].replace(/,/g, "")) || 100 }, room: true };
+      // a date the room already knows comes from the room, never retyped
+      return { card, settings: { event: (base.event as string) ?? title.replace(/\s+on\s+\w+\.? \d+.*$/i, "").slice(0, 32), date: date && !/\d/.test(said) ? date : ((base.date as string) ?? dateFromWords(said)) } };
+    case "split": {
+      const settings: StandIn["settings"] = { title: (base.title as string) ?? (title.replace(/[, ]*\$?\d[\d,.]*.*$/, "").slice(0, 32) || "the bill"), total: (base.total as number) ?? (Number(/\d[\d,]*/.exec(said)?.[0].replace(/,/g, "")) || 100) };
+      if (trip) settings.among = trip;
+      return { card, settings };
+    }
     case "rsvp":
       return { card, settings: { title: title.slice(0, 40) } };
     case "wheel":
-      return { card, settings: { title: title.slice(0, 32), options: named.length ? named : ["jules", "sam", "maya"] } };
+      return { card, settings: { title: title.slice(0, 32), options: named.length ? named : coming ? [coming] : ["jules", "sam", "maya"] } };
     case "question":
       return { card, settings: { question: title.slice(0, 90) } };
     default:
@@ -130,31 +159,22 @@ const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, Math.
 
 /**
  * One simulated call. `said` are the words it went out with; `onPartial`
- * gets the answer so far, on the measured clock:
- *
- * - a card word in the words: first field at `callToFirstField`, the whole
- *   card by `callToComplete` (`roomFillFirstCard` when the answer leans on
- *   the room);
- * - no card word: the card id alone at `typeByDecide`, the card by
- *   `decideThenFill`.
- *
- * The room sends a call `steady` ms after the words stop moving; that wait
- * is the room's own (not slowed by `?slow=`), so it is made up here.
+ * gets the answer so far, on the measured clock, counted from when the call
+ * leaves: the first card closes at `fastFirstCard`, or at `brainFinal` when
+ * the room routed the call to the brain (the words point at a room fact: the
+ * last word's call leaves at the last word, so that is the measured final); its fields stream over the `streamWindow` before that.
  */
-export async function mockDeal(said: string, onPartial: (answer: string) => void): Promise<string> {
-  const answer = standInFor(said);
-  const parts = pieces(answer);
-  const keyword = guessCard(said) !== null;
-  const slowDebt = VOICE_TIMINGS.steady.ms * (voiceSlow() - 1);
-  const complete = keyword ? beat(answer.room ? "roomFillFirstCard" : "callToComplete") : beat("decideThenFill");
-  const first = keyword && !answer.room ? beat("callToFirstField") : complete - beat("streamWindow");
+export async function mockDeal(call: { said: string; route?: "fast" | "brain"; menu?: string }, onPartial: (answer: string) => void): Promise<string> {
+  const answer = standInFor(call.said, call.route === "brain" ? call.menu : undefined);
   const started = performance.now();
-  const until = (ms: number) => wait(slowDebt + ms - (performance.now() - started));
-
-  if (!keyword) {
-    await until(beat("typeByDecide"));
-    onPartial(parts[0]);
+  const until = (ms: number) => wait(ms - (performance.now() - started));
+  const complete = beat(call.route === "brain" ? "brainFinal" : "fastFirstCard");
+  if (!answer) {
+    await until(complete);
+    return `{"card":"none"}`;
   }
+  const parts = pieces(answer);
+  const first = complete - beat("streamWindow");
   // every piece between the first field and the closed object, evenly through the stream window
   const fields = parts.slice(1, -1);
   for (let i = 0; i < fields.length; i++) {
@@ -163,4 +183,12 @@ export async function mockDeal(said: string, onPartial: (answer: string) => void
   }
   await until(complete);
   return parts[parts.length - 1];
+}
+
+/** The simulated one-letter pick (the room's `decide`): the card the stand-in
+    would deal for these words, sure of it, after `decide` ms. */
+export async function mockDecide(said: string) {
+  await wait(beat("decide"));
+  const card = sentenceHangs(said) ? null : (standInFor(said)?.card ?? null);
+  return { card, conf: card ? 0.9 : null, top: card ? [{ card, p: 0.9 }] : [], ms: beat("decide"), usage: null, error: null };
 }

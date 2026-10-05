@@ -15,7 +15,9 @@
      around it.
    - "design":   how long our own animation takes. Not a latency.
 
-   Docs live in the local eval folder (`nebius/eval/`, not in the repo).
+   The call numbers are the newest runs on the code that sends a call per
+   word (2026-10-04 night, eval/b2-wired.md); round one's are kept only where
+   nothing newer exists. Docs live in the local eval folder (`nebius/eval/`, not in the repo).
    `?slow=3` plays every one of these at a third of the speed. The dev
    readout (`?timing=1`) prints the same rows next to what this run did. */
 
@@ -33,31 +35,35 @@ export const VOICE_TIMINGS = {
 
   // ---- which card ----
   typeAtKeyword: t(0, "measured", "eval/s1-speed.md · After (guess.ts, 0 ms)", "a card word in the sentence: code names the card the frame the word lands"),
-  typeByDecide: t(573, "measured", "eval/decide/head.md · Verdict", "no card word: one-token pick on Ultra, p50 from the laptop, after the call leaves"),
-  decideThenFill: t(980, "measured", "eval/decide/head.md · Verdict", "no card word: the pick and the small fill back to back, call → card"),
+  decide: t(621, "measured", "eval/b2-wired.md · (c) The decide pass", "no card word: the one-letter pick through Convex, median of 122, after its call leaves"),
+  onBoard: t(683, "derived", "621 × 1.1 (eval/decide/head.md: the on-board question costs about 10% more)", "the pick that says the card is already on the board"),
 
-  // ---- the call ----
-  steady: t(200, "code", "src/live/useVoiceBuild.ts STEADY_MS", "words unchanged this long go out as a call"),
-  lastWordToFirstField: t(731, "measured", "eval/s1-speed.md · after2 medians", "last word → first field filled"),
-  lastWordToComplete: t(778, "measured", "eval/s1-speed.md · after2 medians", "last word → card complete on the asker"),
-  callToFirstField: t(531, "derived", "731 − 200", "first field, counted from when the call leaves (last word + steady)"),
-  callToComplete: t(578, "derived", "778 − 200", "card complete, counted from when the call leaves"),
-  streamWindow: t(47, "derived", "778 − 731", "the whole card streams in this window once its first field is in"),
-  roomFillFirstCard: t(775, "measured", "eval/brief/v2.md · Latency (BCD3-ultra)", "an ask that leans on the room (who, among whom) on the bigger model: call → first card"),
+  // ---- the call (the room sends one per new word; these count from when it leaves) ----
+  fastFirstCard: t(460, "measured", "eval/b2-wired.md · (b) Brain route note", "fast route: the small model's first line through Convex, about 460 ms"),
+  streamWindow: t(47, "derived", "778 − 731 (eval/s1-speed.md, round one)", "a card's fields stream in this window before its first line closes"),
+  steady: t(200, "code", "src/live/useVoiceBuild.ts STEADY_MS", "no card named yet: words unchanged this long go out as a call"),
 
-  // ---- the end of the ask ----
+  // ---- the end of the ask, from the last word ----
   pauseQuiet: t(650, "code", "src/lib/voice.ts PAUSE_MS", "quiet after the last word that ends the ask"),
   pauseHang: t(1600, "code", "src/lib/voice.ts HANG_MS", 'the same when the words hang on "for…"'),
-  pauseDetected: t(665, "measured", "eval/s1-speed.md · after2 medians", "last word → pause detected"),
-  lastWordToCommitted: t(1034, "measured", "eval/s1-speed.md · after2 medians", "last word → committed"),
-  lastWordToOthers: t(1065, "measured", "eval/s1-speed.md · after2 medians", "last word → visible in a second browser"),
-  commit: t(256, "derived", "1,034 − 778", "card complete → committed"),
-  othersAfterCommit: t(31, "derived", "1,065 − 1,034", "committed → on the other screens"),
+  fastTentative: t(-682, "measured", "eval/b2-wired.md · (b) fast route", "last word → first tentative field: before the last word"),
+  brainTentative: t(230, "measured", "eval/b2-wired.md · (b) brain route", "last word → first tentative field, brain route"),
+  pauseDetected: t(655, "measured", "eval/b2-wired.md · (b) fast route", "last word → the pause ends the ask"),
+  fastFinal: t(671, "measured", "eval/b2-wired.md · (b) fast route", "last word → final card on the asker (a tentative fill never counts)"),
+  fastCommitted: t(877, "measured", "eval/b2-wired.md · (b) fast route", "last word → committed"),
+  fastOthers: t(897, "measured", "eval/b2-wired.md · (b) fast route", "last word → visible in a second browser"),
+  brainFinal: t(1047, "measured", "eval/b2-wired.md · (b) brain route", "last word → final card, when the answer leans on the room"),
+  brainCommitted: t(1239, "measured", "eval/b2-wired.md · (b) brain route", "last word → committed, brain route"),
+  brainOthers: t(1250, "measured", "eval/b2-wired.md · (b) brain route", "last word → second browser, brain route"),
+  commit: t(206, "derived", "877 − 671", "final card → committed"),
+  othersAfterCommit: t(20, "derived", "897 − 877", "committed → on the other screens"),
 
   // ---- what nobody measured ----
   partBeat: t(40, "assumed", "no measurement", "parts landing one by one: the stream hands a whole card over inside 47 ms, so the beat between two parts on screen is ours. 40 ms is the house stagger; the card is complete on screen later than measured, never sooner"),
   numberTick: t(360, "assumed", "no measurement", "a number counting up to its value (days, dollars): one arrival long"),
   closeHold: t(320, "assumed", "no measurement", "the finished card held on the stage before it lets go: long enough to read as whole"),
+  followUpWait: t(4000, "assumed", "no measurement", "a card named but nothing to put in it: how long the stage waits for more words before it lets the ask go"),
+  foundHold: t(700, "assumed", "no measurement", "the card is already on the board: how long the stage says so before it takes you there"),
 
   // ---- our own motion ----
   stageOpen: t(760, "design", "VoiceStage.tsx", "the orb's flight from the dock to its place on the stage"),
