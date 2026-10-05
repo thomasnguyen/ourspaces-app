@@ -98,7 +98,7 @@ import { guessLinkKind } from "../lib/mockArrival";
 import type { PhotoComment } from "../components/PhotoWallGallery";
 import { getPresenceId, useIdentity } from "../live/identity";
 import { useLiveHandlers } from "../live/useLiveHandlers";
-import { useLivePoll } from "../live/useLivePoll";
+import { mergePollRows, type PollRow } from "../live/useLivePoll";
 import { useLiveSpace } from "../live/useLiveSpace";
 import { usePresence } from "../live/usePresence";
 import { useSpaceWork } from "../live/useSpaceWork";
@@ -197,17 +197,6 @@ function convexSafeKeys<T>(value: T): T {
     ]),
   ) as T;
 }
-
-const emptyWidget = {
-  id: "",
-  type: "poll" as const,
-  x: 0,
-  y: 0,
-  w: 1,
-  h: 1,
-  z: 0,
-  data: { options: [] },
-};
 
 type CanvasCamera = {
   scale: number;
@@ -684,14 +673,20 @@ export function LiveSpacePage({
     ensuredPaintSpaces.current.add(spaceId);
     void ensureCozyColorWidget({ spaceId: space._id, createdBy: identity.userId });
   }, [ensureCozyColorWidget, identity.userId, slug, space, widgets]);
-  const poll = widgets.find((widget) => widget.type === "poll") ?? emptyWidget;
-  const livePoll = useLivePoll(poll, identity.userId, members, space?._id);
-  const pollSelections = useMemo(
-    () => livePoll.id
-      ? { [livePoll.id]: String(livePoll.data.selectedOptionId ?? "") }
-      : {},
-    [livePoll.data.selectedOptionId, livePoll.id],
-  );
+  /* Every poll's votes, one subscription for the room (votes.inSpace). The
+     board used to subscribe to the first poll's results only, so a vote on a
+     second poll never repainted on anyone else's screen. */
+  const roomVotes = useQuery(api.votes.inSpace, mode === "live" && space ? { spaceId: space._id } : "skip");
+  const votesByPoll = useMemo(() => {
+    const byPoll = new Map<string, PollRow[]>();
+    for (const row of roomVotes ?? []) byPoll.set(row.widgetId, [...(byPoll.get(row.widgetId) ?? []), row]);
+    return byPoll;
+  }, [roomVotes]);
+  const pollSelections = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const row of roomVotes ?? []) if (row.userId === identity.userId) out[row.widgetId] = row.optionId;
+    return out;
+  }, [identity.userId, roomVotes]);
 
   useEffect(() => {
     if (!roomEntered || !space) return;
@@ -734,12 +729,14 @@ export function LiveSpacePage({
     () => widgets.map((widget) => {
       const next = handlers.overrides[widget.id];
       const withOverride = next ? { ...widget, ...next } : widget;
-      return withOverride.id === livePoll.id ? livePoll : withOverride;
+      return withOverride.type === "poll" && roomVotes
+        ? mergePollRows(withOverride, votesByPoll.get(withOverride.id) ?? [], identity.userId, members)
+        : withOverride;
     }),
-    [handlers.overrides, livePoll, widgets],
+    [handlers.overrides, identity.userId, members, roomVotes, votesByPoll, widgets],
   );
   /* Lift *your* row out of every rsvp / daily-question card, the same split
-     useLivePoll makes between `mine` and `others`. Both cards render you as
+     mergePollRows makes between `mine` and `others`. Both cards render you as
      "You" on top of the rest, so handing them the whole stored list would
      count you twice; instead your row comes back through the props they
      already have (`rsvpSelection` / `localAnswer` / `localReactions`). */
@@ -819,7 +816,6 @@ export function LiveSpacePage({
      poll's votes (the board itself only subscribes to the first poll's). A
      joined member gets everything waiting on them; a silent guest (not
      email-joined) has nothing on them, so they get three places to jump in. */
-  const roomVotes = useQuery(api.votes.inSpace, mode === "live" && space ? { spaceId: space._id } : "skip");
   const turnPolls = useMemo(() => {
     const voted: Record<string, string> = {};
     const byPoll = new Map<string, Map<string, string[]>>();

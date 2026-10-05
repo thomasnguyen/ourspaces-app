@@ -440,6 +440,8 @@ function PollWidgetComponent({
                 <button
                   type="button"
                   className="poll-row"
+                  data-testid="poll-option"
+                  data-option-label={option.label}
                   style={{ "--poll-pct": `${totalVotes > 0 ? percent : 0}%` } as Style}
                   onClick={() => onVote?.(option.id)}
                   aria-label={`Vote for ${option.label}`}

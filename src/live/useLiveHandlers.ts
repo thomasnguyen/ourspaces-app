@@ -158,6 +158,14 @@ export function useLiveHandlers(
   const vote = useMemo(
     () => voteMutation.withOptimisticUpdate(
       (store, { widgetId, spaceId, userId, optionId }) => {
+        // the board reads every poll from votes.inSpace; patch that first
+        const room = store.getQuery(api.votes.inSpace, { spaceId });
+        if (room) {
+          const had = room.some((row) => row.widgetId === widgetId && row.userId === userId);
+          store.setQuery(api.votes.inSpace, { spaceId }, had
+            ? room.map((row) => (row.widgetId === widgetId && row.userId === userId ? { ...row, optionId } : row))
+            : [...room, { widgetId, userId, optionId, voterName: "You" }]);
+        }
         const args = { widgetId, spaceId };
         const rows = store.getQuery(api.votes.getResults, args);
         if (!rows) return;
@@ -170,7 +178,7 @@ export function useLiveHandlers(
             : [
                 ...rows,
                 {
-                  // stand-in until the server answers; useLivePoll reads only
+                  // stand-in until the server answers; mergePollRows reads only
                   // `optionId` off your own row, never its id or name
                   _id: crypto.randomUUID() as Id<"votes">,
                   _creationTime: Date.now(),
