@@ -68,3 +68,8 @@ readout, drawer) · styles `.voice-shell`, `voice-draft-`, `.dev-readout`,
 not clickable); WidgetCard renders it. A crowded view means it floats over
 the board (`data-voice-draft="lifted"`) until placed. Speculative calls
 cost tokens even when ignored.
+
+**Voice stage:** the orb tap now opens a full-screen stage first
+([voice-orb](voice-orb.md)); it lets go when the ask ends. To start a build
+while the person is still talking, call `releaseVoiceStage()`
+(`src/lib/voiceStage.ts`) where the build starts.

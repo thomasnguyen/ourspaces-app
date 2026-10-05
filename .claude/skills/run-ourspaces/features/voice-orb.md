@@ -9,37 +9,56 @@ states:
   loud: ?voice=Make a space for our Tahoe weekend&stage=1&stageHold=1&level=0.9 | wait voice-stage | sleep 3300
   working: ?voice=Make a space for our Tahoe weekend | click dock-voice-orb | wait voice-stage | sleep 1500 | click voice-stage-finish | sleep 900
   dock-listening: ?voice=Make a space for our Tahoe weekend&stage=0 | click dock-voice-orb | wait dock-voice-text | sleep 2200
-  idle-glass: ?orb=glass&voice=Make a space for our Tahoe weekend
-  open-glass: ?orb=glass&stage=1 | wait voice-stage | sleep 1300
-  quiet-glass: ?orb=glass&voice=Make a space for our Tahoe weekend&stage=1&stageHold=1&level=0.12 | wait voice-stage | sleep 3300
-  loud-glass: ?orb=glass&voice=Make a space for our Tahoe weekend&stage=1&stageHold=1&level=0.9 | wait voice-stage | sleep 3300
-  working-glass: ?orb=glass&voice=Make a space for our Tahoe weekend | click dock-voice-orb | wait voice-stage | sleep 1500 | click voice-stage-finish | sleep 900
+  idle-knot: ?orb=knot&voice=Make a space for our Tahoe weekend
+  open-knot: ?orb=knot&stage=1 | wait voice-stage | sleep 1300
+  quiet-knot: ?orb=knot&voice=Make a space for our Tahoe weekend&stage=1&stageHold=1&level=0.12 | wait voice-stage | sleep 3300
+  loud-knot: ?orb=knot&voice=Make a space for our Tahoe weekend&stage=1&stageHold=1&level=0.9 | wait voice-stage | sleep 3300
+  working-knot: ?orb=knot&voice=Make a space for our Tahoe weekend | click dock-voice-orb | wait voice-stage | sleep 1500 | click voice-stage-finish | sleep 900
 take:
   ask: idle real 60fps 330f warmup 1500 | 20 click dock-voice-orb
-  ask-glass: idle-glass real 60fps 330f warmup 1500 | 20 click dock-voice-orb
+  ask-knot: idle-knot real 60fps 330f warmup 1500 | 20 click dock-voice-orb
 ---
-# Voice orb (dock)
+# Voice orb + voice stage
 
-**For a user:** talk to the space. The glass orb leads the bottom dock, bigger
-than the bar, with "say what to add" beside it. Tap either: the orb lifts and
-listens, the other dock keys step out and your words take the bar; a pause
-ends the ask (tap again or `done` to end it sooner). The room deals a card from it ([voice-build](voice-build.md)).
+**For a user:** talk to the space. A glass orb leads the bottom dock. Tap it
+(or "say what to add"): the orb itself lifts out of the dock and grows into
+the middle of a dark stage, the room dimmed and blurred behind it. The stage
+asks "What are we doing together?", shows a lime "Listening" pill and a
+waveform that follows your voice, sets your words as a headline, and offers
+three starter asks. Finish (or a tap outside) sends it; Escape throws it
+away; Mute stops the mic. The stage then lets go: the orb flies back to the
+dock and the board is in view for the card ([voice-build](voice-build.md)).
 
-**Get there:** any room; it leads the action dock. `idle` = page loaded.
+**Looks:** `?orb=glass` (default: a clear ball, folded sheets of light
+inside) or `?orb=knot` (glossy ribbons folded into a ball). Both are live
+shaders driven by the voice level.
 
-**Drive:** `?voice=<sentence>` swaps the mic for a scripted ask (one word per
-300 ms, fake loudness). It still needs the orb click to start. `listening` =
-click orb, words appear in `dock-voice-text`, `done` shows. `working` = click
-`done`; it lasts until the room's ask settles (1.4 s with none, 15 s cap).
-The script never ends the ask itself: the pause after its last word does
-(~650 ms of quiet; longer if the words hang on "for…"), so `done` must come
-before ~words×300+300 ms.
+**Drive:** `?voice=<sentence>` scripts the ask (one word per 300 ms, fake
+loudness). `?stage=1` opens the stage on load; `&stageHold=1` stops the
+script finishing; `&level=0.9` pins the loudness (stills). `?stage=0` =
+the old dock-only strip (`dock-listening`). `voice-stage` carries
+`data-phase` (`open` → `closing`). Chips: `voice-stage-chip-0..2` fill
+the ask and send it after 650 ms. States ending `-knot` are the other look.
+Sheet: `drive sheet voice-orb:idle voice-orb:open voice-orb:quiet
+voice-orb:loud voice-orb:working --w 1440,390`. Take: `drive take
+voice-orb:ask --real` (tap → stage → words → release → card).
 
-**Code:** `src/components/ActionDock.tsx` `DockVoice` · orb `VoiceOrb.tsx` over
-`src/lib/orbShader.ts` (WebGL: clear glass, liquid light inside) ·
-`src/lib/voice.ts` `useVoice` / `runScript`. code-map: line 70.
+**The release seam:** `releaseVoiceStage()` in `src/lib/voiceStage.ts`.
+Call it the moment a build starts (mid-sentence is fine): the stage closes,
+the orb flies home and keeps listening in the dock strip (`dock-voice-text`,
+`dock-voice-done`). It also releases by itself when the voice leaves
+"listening". No-op when no stage is up.
+
+**Code:** `src/components/VoiceStage.tsx` (`useVoiceStage`: owns the orb's
+host span, moves it dock ⇄ stage and flies it per frame; stage markup,
+waveform, chips) + `voice-stage.css` · `ActionDock.tsx` `DockVoice` (seat
++ dock strip) · `VoiceOrb.tsx` over `src/lib/orbShader.ts` (both looks) ·
+`src/lib/voice.ts` `useVoice` (`mute`, `say`, `cancel` added in one
+block at the end).
 
 **Gotchas:** headless WebGL runs on Metal; blank orb → `DRIVE_GL=swiftshader`.
-While listening or working the rest of the dock is `display: none`, so
-`dock-recap` / `dock-chat` / `dock-sound` can't be clicked until it's idle.
-No URL lands directly in listening/working.
+The orb is ONE canvas: never render a second `VoiceOrb`. While the stage is
+up the dock shows its idle layout under the blur. Mute drops what the
+recogniser hears but a browser may replay muted words after unmute. On the
+phone the ball is capped at 76vw: wider and the 160% canvas box grows the
+mobile layout viewport.

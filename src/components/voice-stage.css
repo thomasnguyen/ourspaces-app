@@ -314,7 +314,7 @@
    controls as a thumb bar along the bottom. ---- */
 @media (max-width: 640px) {
   .voice-stage {
-    --stage-ball: min(33vh, 76vw);
+    --stage-ball: min(36vh, 76vw);
     place-items: stretch;
   }
 

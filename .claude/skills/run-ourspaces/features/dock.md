@@ -26,5 +26,5 @@ Voice states live in [voice-orb](voice-orb.md), the panel in [recap](recap.md).
 **Code:** `src/components/ActionDock.tsx` (`DockVoice`, `DockSound`,
 `ActionDock`) · styles in `src/index.css` from `.action-dock`.
 
-**Gotchas:** while the orb listens or works, every other dock key is hidden.
+**Gotchas:** tapping the orb opens the voice stage over the whole room; the dock keys are hidden once the orb is back and listening or working.
 The menu closes on a press outside it.

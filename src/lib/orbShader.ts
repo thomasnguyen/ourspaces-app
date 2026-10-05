@@ -15,9 +15,9 @@
 
 export type OrbLook = "knot" | "glass";
 
-/** `?orb=glass|knot` picks the look; the knot is the default. */
+/** `?orb=glass|knot` picks the look; glass is the default (Thomas's pick). */
 export function orbLook(): OrbLook {
-  return new URLSearchParams(window.location.search).get("orb") === "glass" ? "glass" : "knot";
+  return new URLSearchParams(window.location.search).get("orb") === "knot" ? "knot" : "glass";
 }
 
 const VERT = `
@@ -177,35 +177,21 @@ void main() {
 `;
 
 const GLASS = `${HEAD}
-// Silk: the plane folded over itself by a few slow sine warps. Smooth
-// everywhere, so there is nothing to alias.
-vec2 silk(vec2 p, float t, float stir) {
-  for (int i = 1; i < 5; i++) {
-    float f = float(i);
-    p += stir * (0.62 / f) * sin(f * 1.18 * p.yx + t * (0.5 + 0.21 * f) + vec2(1.7, 4.1) * f);
-  }
-  return p;
+// What is inside the glass: the same folded field as the knot, but as thin
+// sheets of light instead of a solid. Stripes through the ball, twisted so
+// they bend into S-curves, a slow sine give so they never look machined.
+float fold(vec3 p) {
+  vec3 w = p;
+  w += (0.2 + 0.07 * uLevel) * sin(w.yzx * 1.7 + vec3(uFlow * 0.9, 1.7 - uFlow * 0.6, 3.1 + uFlow * 0.7));
+  w.xy *= rot(w.z * (1.7 + 1.5 * uWork) + uFlow * 0.5 + uSpin * 0.5);
+  return w.y * 1.25 + 0.5 + 0.2 * sin(w.x * 1.6 + uFlow * 0.4);
 }
 
 // blue → violet → pink → orange
 vec3 ramp(float h) {
   vec3 c = mix(uD, uA, smoothstep(0.0, 0.3, h));
-  c = mix(c, uB, smoothstep(0.3, 0.62, h));
-  return mix(c, uC, smoothstep(0.62, 0.96, h));
-}
-
-// One sheet of lit silk. 'crease' is where the cloth doubles back on
-// itself: those lines are where the light piles up.
-vec3 sheet(vec2 s, float t, float stir, out float crease, out float body) {
-  const float e = 0.03;
-  vec2 p = silk(s, t, stir);
-  vec2 px = silk(s + vec2(e, 0.0), t, stir) - p;
-  vec2 py = silk(s + vec2(0.0, e), t, stir) - p;
-  float J = abs(px.x * py.y - px.y * py.x) / (e * e);
-  crease = exp(-J * J * 9.0);
-  float h = 0.5 + 0.5 * sin(p.x * 0.85 + p.y * 0.55 + 0.6);
-  body = smoothstep(0.3, 0.7, 0.5 + 0.5 * sin(p.y * 1.25 - p.x * 0.6 + 2.2));
-  return ramp(h);
+  c = mix(c, uB, smoothstep(0.3, 0.6, h));
+  return mix(c, uC, smoothstep(0.6, 0.95, h));
 }
 
 void main() {
@@ -219,46 +205,73 @@ void main() {
   if (mask <= 0.0) { gl_FragColor = vec4(light, 0.0); return; }
 
   vec2 q = uv / R;
-  float z = sqrt(max(0.0, 1.0 - dot(q, q)));
-  vec3 n = vec3(q, z);
-  float edge = 1.0 - z;
+  float zs = sqrt(max(0.0, 1.0 - dot(q, q)));
+  vec3 n = vec3(q, zs);
+  float edge = 1.0 - zs;
 
-  // Ball lens: the middle magnifies, the rim squeezes what's behind it.
-  vec2 s = q / (0.5 + 0.5 * z);
-  // working: a whirlpool, wound tighter toward the middle
-  s = rot(uFlow * 0.25 + uSpin * (1.0 + 0.9 * (1.0 - length(q)))) * s;
-  float stir = 0.82 + 0.3 * uLevel;
+  // Look through the ball. The glass bends the view, so the inside is seen
+  // a little magnified; then walk front to back adding up the light of
+  // every sheet the eye passes through. Where the eye runs ALONG a sheet it
+  // passes through a lot of it: that is why the folds have bright edges.
+  vec2 s = q * (0.7 + 0.24 * zs);
+  mat2 turn = rot(uFlow * 0.3 + uSpin);
+  mat2 tip = rot(0.5 + 0.2 * sin(uFlow * 0.27));
+  const int STEPS = 40;
+  float span = 2.0 * zs * 0.94;
+  float dz = span / float(STEPS);
+  // a hair of jitter hides the steps
+  float jit = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+  vec3 L = normalize(vec3(-0.5, 0.7, 0.5));
+  vec3 col = vec3(0.0);
+  float T = 1.0;
+  for (int i = 0; i < STEPS; i++) {
+    float z = zs * 0.94 - (float(i) + jit) * dz;
+    vec3 p = vec3(s, z);
+    p.yz *= tip;
+    p.xz *= turn;
+    float f = fold(p);
+    float x = abs(fract(f) - 0.5) * 2.0;
+    // the sheet: thin where stripes meet, soft falloff either side
+    float sheet = smoothstep(0.7, 1.0, x);
+    sheet *= sheet;
+    // lit from up-left: one face of each fold is bright, the other falls away
+    float lit = clamp((fold(p + L * 0.1) - f) * (fract(f) > 0.5 ? -1.0 : 1.0) * 3.2 + 0.55, 0.0, 1.0);
+    // sheets take turns: one cool (blue to violet), the next warm (pink to orange)
+    float warm = mod(floor(f + 0.5), 2.0);
+    float h = mix(0.0, 0.52, warm) + 0.48 * (0.5 + 0.5 * sin(p.z * 1.6 + dot(p.xy, vec2(1.1, -0.8)) * 1.3 + uFlow * 0.25));
+    vec3 c = ramp(h);
+    float depth = 0.55 + 0.45 * smoothstep(-0.9, 0.9, z);
+    float a = sheet * dz * 3.4;
+    col += T * a * pow(c, vec3(1.45)) * (0.1 + 2.5 * lit * lit) * depth * (1.0 + 0.6 * uLevel + 0.25 * uWork);
+    // the hot core of a fold: nearly white where the sheet is densest
+    col += T * a * sheet * sheet * sheet * lit * lit * (c * 0.7 + vec3(0.75, 0.6, 0.62)) * (0.9 + 1.0 * uLevel);
+    T *= 1.0 - min(0.9, a * 1.5);
+    // the clear between the sheets carries a little colour, so pockets are deep violet, not black
+    col += T * dz * (uA * 0.06 + uD * 0.06) * (1.0 - sheet);
+  }
 
-  // Two sheets, the far one bigger, slower and dimmer, seen through the
-  // gaps in the near one. The gaps are what make it read as clear.
-  float cN; float bN; float cF; float bF;
-  vec3 near = sheet(s * 1.5, uFlow, stir, cN, bN);
-  vec3 far = sheet(s * 0.85 + 3.1, uFlow * 0.6 + 4.0, stir * 0.9, cF, bF);
-  vec3 col = uA * 0.05 + uD * 0.035;
-  col += far * (0.2 + 0.5 * bF) * 0.55;
-  col = mix(col, near * (0.62 + 0.5 * bN), bN * 0.92);
-  // the folds glow, and glow harder when you talk
-  col += (near * 0.8 + vec3(0.55, 0.4, 0.5)) * cN * (0.25 + 0.75 * bN) * (0.6 + 0.55 * uLevel + 0.3 * uWork);
-  col += far * cF * 0.22;
-
-  // The heart: a warm light a little off centre, behind the silk.
-  vec2 hc = 0.16 * vec2(sin(uTime * 0.31), cos(uTime * 0.23)) + vec2(0.06, -0.04);
-  float heart = exp(-dot(q - hc, q - hc) * 2.2);
-  col *= 0.7 + 0.45 * heart;
-  col += mix(uB, vec3(1.0, 0.86, 0.8), 0.5) * heart * (0.04 + 0.22 * uLevel + 0.1 * uWork);
+  // The heart: a warm light behind it all that your voice turns up.
+  vec2 hc = 0.14 * vec2(sin(uTime * 0.31), cos(uTime * 0.23)) + vec2(0.05, -0.05);
+  float heart = exp(-dot(q - hc, q - hc) * 2.6);
+  col += T * mix(uB, uC, 0.5) * heart * (0.05 + 0.3 * uLevel + 0.12 * uWork);
+  // bright without washing out: roll the top off per channel, then push the colour back in
+  col = 1.0 - exp(-col * 1.5);
+  float grey = dot(col, vec3(0.3, 0.5, 0.2));
+  col = max(vec3(0.0), mix(vec3(grey), col, 1.35));
 
   // Glass. Light comes from up-left, runs through the ball and pools on the
   // far rim as a bright crescent; the near rim darkens; a thin pale line
   // runs all the way round; a soft window up-left with one hard glint in it.
   vec2 Ld = normalize(vec2(-0.55, 0.7));
   vec2 qn = normalize(q + 1e-4);
-  float through = pow(edge, 1.5) * smoothstep(-0.2, 0.9, dot(qn, -Ld));
-  col += (col * 1.1 + ramp(0.5 + 0.5 * sin(uFlow * 0.8 + qn.x * 2.0)) * 0.5 + vec3(0.2, 0.12, 0.18)) * through * 1.3;
-  col *= 1.0 - 0.5 * pow(edge, 1.7) * smoothstep(-0.2, 1.0, dot(qn, Ld));
-  col += (ramp(0.5 + 0.5 * sin(atan(q.y, q.x) + uFlow * 0.6)) * 0.55 + vec3(0.5, 0.46, 0.56)) * pow(edge, 5.0) * 0.95;
+  vec3 rimTint = ramp(0.5 + 0.5 * sin(atan(q.y, q.x) * 1.0 + uFlow * 0.5 + 1.2));
+  float through = pow(edge, 1.6) * smoothstep(-0.3, 0.9, dot(qn, -Ld));
+  col += (col * 0.9 + rimTint * 0.75 + vec3(0.14, 0.08, 0.14)) * through * 1.25;
+  col *= 1.0 - 0.35 * pow(edge, 1.8) * smoothstep(-0.2, 1.0, dot(qn, Ld));
+  col += (rimTint * 0.9 + vec3(0.5, 0.42, 0.55)) * pow(edge, 3.6) * 1.0;
   vec3 H = normalize(vec3(Ld * 0.62, 0.78));
   float hl = clamp(dot(n, H), 0.0, 1.0);
-  col += vec3(1.0, 0.97, 1.0) * (pow(hl, 12.0) * 0.22 + pow(hl, 240.0) * 0.9);
+  col += vec3(1.0, 0.97, 1.0) * (pow(hl, 10.0) * 0.12 + pow(hl, 260.0) * 0.8);
 
   col = min(col, vec3(1.0));
   gl_FragColor = vec4(col * mask + light * (1.0 - mask), mask);

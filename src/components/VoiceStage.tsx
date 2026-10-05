@@ -45,7 +45,7 @@ function bezier(x1: number, y1: number, x2: number, y2: number) {
 }
 const glide = bezier(0.16, 1, 0.3, 1);
 const pop = bezier(0.2, 0.9, 0.3, 1.18);
-const sway = bezier(0.45, 0, 0.3, 1);
+const sway = bezier(0.3, 0.6, 0.3, 1);
 
 type Box = { x: number; y: number; w: number };
 const boxOf = (el: Element): Box => {
