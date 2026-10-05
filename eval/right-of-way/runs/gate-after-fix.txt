@@ -1,0 +1,166 @@
+# arm A after the id fix, 2026-10-05T23:15:46Z
+ok   G01                    want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          remove an option 3 people voted for
+ok   G02                    want ask(Jules)                 got ask(Jules)                 one person's claimed slot
+ok   G03                    want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          an rsvp time 3 people said yes to
+ok   G04                    want ask(Maya)                  got ask(Maya)                  someone who paid into the split (name only)
+ok   G05                    want ask(Holly,Sam)             got ask(Holly,Sam)             check-ins already logged past the new end
+ok   G06                    want ask(Holly)                 got ask(Holly)                 a date someone set by hand
+ok   G07                    want ask(Sam,Jo)                got ask(Sam,Jo)                the asker is one of 3 voters: ask the other 2
+ok   G08                    want ask(Holly)                 got ask(Holly)                 choices first: others voted, the asker holds the card
+ok   G09                    want go                         got go                         only the asker's own vote
+ok   G10                    want go                         got go                         only the asker's own claim, by name
+ok   G11                    want go                         got go                         a passed vote, nobody holds it
+ok   G12                    want wait(Holly)                got wait(Holly)                a passed vote while holly holds it
+ok   G13                    want never                      got never                      the space places the last piece
+ok   G14                    want go                         got go                         nobody holds the target (someone holds another card)
+ok   G15                    want go                         got go                         the asker holds it
+ok   G16                    want wait(Holly)                got wait(Holly)                someone else holds it (drag)
+ok   G17                    want wait(Holly)                got wait(Holly)                someone else holds it (typing)
+ok   G18                    want wait(Holly)                got wait(Holly)                someone else holds it (unsent vote)
+ok   G19                    want wait(Holly)                got wait(Holly)                a link fills a held card
+ok   G20                    want wait(Holly)                got wait(Holly)                the space's hand, a held piece
+ok   G21                    want never                      got never                      a new card on a held spot
+ok   G22                    want go                         got go                         a new card in a free spot
+ok   G23                    want ask(Jo)                    got ask(Jo)                    one vote on the option
+ok   G24                    want ask(Holly,Sam)             got ask(Holly,Sam)             yes and maybe on the time
+ok   G25                    want go                         got go                         [amb] rsvp with only no answers
+ok   G26                    want wait(Holly)                got wait(Holly)                rename while someone types in the title
+ok   G27                    want wait(Sam)                  got wait(Sam)                  add an item while someone drags the list
+ok   G28                    want wait(Jo)                   got wait(Jo)                   add a person while someone types in the split
+ok   G29                    want go                         got go                         lengthen a challenge with logs
+ok   G30                    want go                         got go                         shorten a challenge nobody logged past
+ok   G31                    want go                         got go                         move a countdown nobody set by hand
+ok   G32                    want go                         got go                         move a day on a trip plan
+ok   G33                    want wait(Maya)                 got wait(Maya)                 move a day on a held trip plan
+ok   G34                    want go                         got go                         the space places a loose piece
+ok   G35                    want go                         got go                         the space places the 19th of 20
+ok   G36                    want go                         got go                         the space places a piece while holly holds a different one
+ok   G37                    want never                      got never                      a new card over two held cards
+ok   G38                    want go                         got go                         a new card over a card the asker holds
+ok   G39                    want go                         got go                         a new card over a card nobody holds
+ok   G40                    want go                         got go                         start a game while someone drags a card
+ok   G41                    want wait(Sam)                  got wait(Sam)                  the late-word rewrite of a just-built card someone grabbed
+ok   G42                    want go                         got go                         the late-word rewrite, nobody holds it
+ok   G43                    want go                         got go                         a link fills a card nobody holds
+ok   G44                    want ask(Sam,Jo)                got ask(Sam,Jo)                choices on a card someone is typing in
+ok   G45                    want wait(Sam)                  got wait(Sam)                  a passed vote while someone presses a choice
+ok   R1-t1                  want wait(Sam)                  got wait(Sam)                  sam drags the dinner card; tara says "add ramen to the dinner poll"
+ok   R1-core-drag           want wait(Sam)                  got wait(Sam)                  sam drags the dinner card; tara says "add udon to the dinner poll"
+ok   R1-d01                 want wait(Sam)                  got wait(Sam)                  sam drags the dinner card; tara says "add udon to the dinner poll"
+ok   R1-d02                 want wait(Sam)                  got wait(Sam)                  sam drags the dinner card; tara says "take pho off the dinner poll"
+ok   R1-d04                 want wait(Sam)                  got wait(Sam)                  sam drags the snacks card; tara says "remove chips from the snacks list"
+ok   R1-d06                 want wait(Sam)                  got wait(Sam)                  sam drags the cabin card; tara says "take ash off the cabin split"
+ok   R1-d07                 want wait(Sam)                  got wait(Sam)                  sam drags the plank card; tara says "make the plank challenge 10 days"
+ok   R1-d08                 want wait(Sam)                  got wait(Sam)                  sam drags the rsvp card; tara says "move it to 7:30"
+ok   R1-d09                 want wait(Sam)                  got wait(Sam)                  sam drags the dinner card; tara says "rename it to taco night"
+ok   R1-d10                 want wait(Sam)                  got wait(Sam)                  sam drags the drinks card; tara says "add tea to the drinks poll"
+ok   R1-d11                 want wait(Sam)                  got wait(Sam)                  sam drags the cabin card; tara says "add marco to the cabin split"
+ok   R1-d12                 want wait(Sam)                  got wait(Sam)                  sam drags the snacks card; tara says "add salsa to the snacks list"
+ok   R1-d13                 want wait(Sam)                  got wait(Sam)                  sam drags the plank card; tara says "make the plank challenge 7 days"
+ok   R1-d14                 want wait(Sam)                  got wait(Sam)                  sam drags the drinks card; tara says "take coffee off the drinks poll"
+ok   R1-d16                 want wait(Sam)                  got wait(Sam)                  sam drags the rsvp card; tara says "rename it to board games"
+ok   R1-d17                 want wait(Sam)                  got wait(Sam)                  sam drags the snacks card; tara says "add soda to the snacks list"
+ok   R1-d18                 want wait(Sam)                  got wait(Sam)                  sam drags the cabin card; tara says "take marco off the cabin split"
+ok   R1-d19                 want wait(Sam)                  got wait(Sam)                  sam drags the drinks card; tara says "add sake to the drinks poll"
+ok   R1-d20                 want wait(Sam)                  got wait(Sam)                  sam drags the rsvp card; tara says "move it to 8:30"
+ok   R1-d22                 want wait(Sam)                  got wait(Sam)                  sam drags the snacks card; tara says "remove soda from the snacks list"
+ok   R1-d03                 want wait(Sam)                  got wait(Sam)                  sam drags the snacks card; tara says "add pretzels to the snacks list"
+ok   R1-d05                 want wait(Sam)                  got wait(Sam)                  sam drags the cabin card; tara says "add rio to the cabin split"
+ok   R1-d15                 want wait(Sam)                  got wait(Sam)                  sam drags the dinner card; tara says "add ramen to the dinner poll"
+ok   R1-d21                 want wait(Sam)                  got wait(Sam)                  sam drags the dinner card; tara says "add curry to the dinner poll"
+ok   R1-d21b                want wait(Sam)                  got wait(Sam)                  sam drags the dinner card; tara says "add laksa to the dinner poll"
+ok   R1-title-drop          want wait(Sam)                  got wait(Sam)                  sam types in the drinks card; tara says "rename it to taco tuesday"
+ok   R1-title-keep          want wait(Sam)                  got wait(Sam)                  sam types in the drinks card; tara says "rename it to late drinks"
+ok   R1-vote                want wait(Sam)                  got wait(Sam)                  sam presses a choice on the drinks card; tara says "add tea to the drinks poll"
+ok   R1-title-drop2         want wait(Sam)                  got wait(Sam)                  sam types in the drinks card; tara says "rename it to taco tuesday"
+ok   R1-self                want go                         got go                         the asker drags the dinner card; tara says "add soba to the dinner poll"
+ok   R1-t01                 want wait(Sam)                  got wait(Sam)                  sam types in the drinks card; tara says "rename it to taco tuesday"
+ok   R1-t02                 want wait(Sam)                  got wait(Sam)                  sam types in the drinks card; tara says "rename it to late drinks"
+ok   R1-v01                 want wait(Sam)                  got wait(Sam)                  sam presses a choice on the drinks card; tara says "add lemonade to the drinks poll"
+ok   R1-v02                 want wait(Sam)                  got wait(Sam)                  sam presses a choice on the dinner card; tara says "add tacos al pastor to the dinner poll"
+ok   R1-s01                 want go                         got go                         the asker drags the dinner card; tara says "add soba to the dinner poll"
+ok   R1-kill                want wait(Sam)                  got wait(Sam)                  sam drags the dinner card; tara says "add miso to the dinner poll"
+ok   R1-k01                 want wait(Sam)                  got wait(Sam)                  sam drags the snacks card; tara says "add nachos to the snacks list"
+ok   R1-k02                 want wait(Sam)                  got wait(Sam)                  sam drags the cabin card; tara says "add jo to the cabin split"
+ok   R1-c01                 want wait(Sam)                  got wait(Sam)                  sam drags the snacks card; tara says "add dips to the snacks list"
+ok   R1-x01                 want wait(Sam)                  got wait(Sam)                  sam drags the drinks card; tara says "add wine to the drinks poll"
+ok   R2-a1-core1            want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          tara says "move game night to sunday"
+ok   R2-a1-core2            want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          tara says "move game night to sunday"
+ok   R2-a1-keep1            want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          tara says "move game night to saturday"
+ok   R2-a1-poll1            want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          tara says "take pizza off the dinner poll"
+ok   R2-a1-poll2            want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          tara says "take pizza off the dinner poll"
+ok   R2-a1-tie              want ask(Holly,Sam)             got ask(Holly,Sam)             tara says "take pizza off the dinner poll"
+ok   R2-a1-expire           want ask(Holly,Sam)             got ask(Holly,Sam)             tara says "move game night to sunday"
+ok   R2-a1-one-claim        want ask(Holly)                 got ask(Holly)                 tara says "take towels off the snacks list"
+ok   R2-a1-one-split        want ask(Holly)                 got ask(Holly)                 tara says "take holly off the cabin split"
+ok   R2-a1-asker-only       want go                         got go                         tara says "take pho off the dinner poll"
+ok   R2-a1-moot             want ask(Holly,Sam)             got ask(Holly,Sam)             tara says "move game night to sunday"
+ok   R2-a1-composed         want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          tara says "take pizza off the dinner poll"
+ok   R2-a1-second           want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          tara says "move game night to sunday"
+ok   R2-a1-busy             want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          tara says "move game night to sunday"
+ok   R2-a1-checkin          want ask(Holly,Sam)             got ask(Holly,Sam)             tara says "make the plank challenge 3 days"
+ok   R2-a1-date             want ask(Holly)                 got ask(Holly)                 tara says "move the bake sale to sunday"
+ok   R2-e1-core1            want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          tara says "move game night to sunday"
+ok   R2-e1-tie              want ask(Holly,Sam)             got ask(Holly,Sam)             tara says "take pizza off the dinner poll"
+ok   R2-e1-withdraw         want ask(Holly,Sam)             got ask(Holly,Sam)             tara says "take pizza off the dinner poll"
+ok   R2-e1-one-claim        want ask(Holly)                 got ask(Holly)                 tara says "take towels off the snacks list"
+ok   R2-e1-composed         want ask(Holly,Sam,Jo)          got ask(Holly,Sam,Jo)          tara says "take pizza off the dinner poll"
+ok   R2-a1-composed-land    want wait(Sam)                  got wait(Sam)                  the vote passed 2 of 3; sam holds the card
+ok   R2-e1-composed-land    want wait(Sam)                  got wait(Sam)                  the vote passed 2 of 3; sam holds the card
+ok   R2-a1-moot-land        want go                         got go                         holly and sam changed their own answers to no; the vote is moot
+ok   X01                    want go                         got go                         a drag let go 0.7 s ago
+ok   X02                    want wait(Holly)                got wait(Holly)                [amb] a drag let go 0.3 s ago
+ok   X03                    want wait(Holly)                got wait(Holly)                [amb] typing: editor closed 1.0 s ago
+ok   X04                    want go                         got go                         typing: editor closed 2.0 s ago
+ok   X05                    want wait(Holly)                got wait(Holly)                [amb] a vote press released 0.2 s ago
+ok   X06                    want wait(Holly)                got wait(Holly)                [amb] a dead client: last renewal 2.0 s ago
+ok   X07                    want go                         got go                         a dead client: last renewal 3.5 s ago
+ok   X08                    want go                         got go                         a lease row 0.2 s past its end, not yet cleaned up
+ok   X09                    want go                         got go                         the asker types in their own card and asks to rename it
+ok   X10                    want wait(Holly,Sam)            got wait(Holly)                two holders: a drag and a typist
+ok   X11                    want wait(Holly)                got wait(Holly)                two holders, one is the asker
+ok   X12                    want never                      got never                      a held card that isn't the target, under the new card's spot
+ok   X13                    want go                         got go                         a new card that only touches a held card's edge
+ok   X14                    want go                         got go                         a new card over the asker's held card and a free one
+ok   X15                    want go                         got go                         a vote made then withdrawn
+ok   X16                    want go                         got go                         a claim made then dropped
+ok   X17                    want ask(Sam)                   got ask(Sam)                   a yes changed to no, another yes stays
+ok   X18                    want ask(Jo)                    got ask(Jo)                    one affected person among many voters
+ok   X19                    want ask(Holly,Sam,Jo,Maya,Jules) got ask(Holly,Sam,Jo,Maya,Jules) five people voted for it
+ok   X20                    want go                         got go                         an edit on a free card that is linked into a held card
+ok   X21                    want wait(Holly)                got wait(Holly)                the link's write into the held card
+ok   X22                    want go                         got go                         the holder is the asker on a second device (same account)
+HELD:WAIT X23                    want go                         got wait(Tara)                 the asker on two devices as two guest seats
+ok   X24                    want go                         got go                         free text: rename a question someone typed by hand
+ok   X25                    want go                         got go                         free text: rename an event people said yes to
+ok   X26                    want go                         got go                         destructive-looking: remove an option nobody voted for
+ok   X27                    want go                         got go                         destructive-looking: remove an unclaimed item
+ok   X28                    want go                         got go                         [amb] take someone who paid nothing off a split
+ok   X29                    want go                         got go                         cut a challenge above everyone's logs
+HARMFUL X30                    want ask(Maya)                  got go                         a guest with the same name asks to remove a name-only payment
+ok   X31                    want ask(Juno)                  got ask(Juno)                  a guest with a voter's name, the vote has the voter's id
+ok   X32                    want ask(Holly)                 got ask(Holly)                 a guest with a claimer's name, the claim has the claimer's id
+ok   X33                    want ask(Holly)                 got ask(Holly)                 a guest with the name of whoever set the date
+HARMFUL X34                    want ask(Jo)                    got go                         a passed vote resent after someone new voted for the option
+HARMFUL X35                    want ask(Maya)                  got go                         a live link re-splits and drops a payment
+HARMFUL X36                    want ask(Holly)                 got go                         a link sets a date someone set by hand
+ok   X37                    want go                         got go                         a link names an event people said yes to
+ok   X38                    want go                         got go                         [amb] someone about to vote, not pressing yet
+ok   X39                    want never                      got never                      the space places the last piece while holly holds it
+ok   X40                    want wait(Holly)                got wait(Holly)                the space places the 19th while holly holds that piece
+ok   X41                    want go                         got go                         the space places the 19th while someone holds the 20th
+ok   X42                    want never                      got never                      a new card over a card someone is pressing a choice on
+ok   X43                    want go                         got go                         start a game while someone holds a puzzle piece
+ok   X44                    want go                         got go                         the late-word rewrite of a card the asker herself is dragging
+ok   X45                    want go                         got go                         the asker holds it, a dead client's hold is long gone
+ok   X46                    want go                         got go                         a busy board: the target is free, four other cards held
+ok   X47                    want wait(Jo)                   got wait(Jo)                   a busy board: the target is one of four held cards
+ok   X48                    want go                         got go                         an edit to one card while someone types in another
+ok   X49                    want ask(Holly,Sam)             got ask(Holly,Sam)             a yes given one second ago
+ok   X50                    want go                         got go                         lengthen a challenge where someone logged every day
+ok   X51                    want wait(Holly)                got wait(Holly)                only the asker's own vote, while someone else holds it
+ok   X52                    want go                         got go                         a hand-set date moved by the person who set it
+HARMFUL X53                    want ask(Sam)                   got go                         an rsvp yes without an id, asked by someone else of that name
+
+arm A, the gate (162 scenarios, 155 clear + 7 ambiguous, labels frozen 2026-10-05T23:11:59.102Z): 149/155 right · harmful allowed 5/107 · wrongly held 1/48 (wait 1, vote 0, refused 0) · other wrong 0 · wrong person 0 · invalid 0 | ambiguous 7/7 as labelled
+time per decision (the door path in-process, node v25.9.0): median 0.95 µs · p90 1.57 µs · max 3.19 µs

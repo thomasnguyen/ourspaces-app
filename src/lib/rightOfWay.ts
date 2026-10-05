@@ -65,8 +65,10 @@ const own = (l: Lease, by: Hand) =>
 /** The choice is the writer's own: the person themself, or the asker (by id, or by name where the card only knows names). */
 const chose = (p: { id?: string; name: string }, by: Hand) => {
   const name = p.name.trim().toLowerCase();
-  if (by.kind === "person") return p.id === by.id || name === by.name.trim().toLowerCase();
-  return (p.id !== undefined && p.id === by.asker) || (by.askerName !== undefined && name === by.askerName.trim().toLowerCase());
+  // an id the card knows decides it: a second seat with the same name is someone else (eval/right-of-way X31-X33)
+  if (p.id !== undefined) return p.id === (by.kind === "person" ? by.id : by.asker);
+  if (by.kind === "person") return name === by.name.trim().toLowerCase();
+  return by.askerName !== undefined && name === by.askerName.trim().toLowerCase();
 };
 
 export function rightOfWay(write: Write, leases: readonly Lease[]): Verdict {
