@@ -5,7 +5,9 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
-- **The deck (2026-10-04):** `src/lib/deck/` — 17 existing widgets as typed cards a model can deal, `applyCard` (model JSON → widget row, rejects with a reason), `placeCards` (pure placement), `deckPrompt` + streaming `parseDeal` in the spike's one-card-per-line format. Prompt ≈ 2.8k chars / ~714 tokens. Not wired to the voice orb or Nemotron yet; next: the live call path, plus check-in / standings / pills cards. Lab: `?mock=1&deck=8#/space/crew`.
+- **Say it → it builds, first slice (2026-10-04, night):** the orb's finished ask now calls Nemotron Lightning on the dev lane (`convex/voiceBuild.ts` `deal`): one card per line, `applyCard` checks it, `placeCards` places it, `widgets.createWidget` commits it, so every screen in the room gets it. A dashed shell in the asker's colour marks the spot at end of speech, the camera pans to it, the card lands with a "<name> said it" tag, and a receipt reads `poll · Lightning · 718 ms` (end of speech → card on screen, measured in the browser; numbers also in the new `deals` table). `{"card":"none"}` or invalid → "couldn't place that". Mock runs a marked stand-in (`src/lib/deck/standIn.ts`). 17 real calls: median 718 ms screen, worst 1,850 (first after deploy). Feature file `features/voice-build.md`. Rough: chains ("plan our Tahoe weekend") come back as one card, sometimes invalid; the shell is poll-sized; the placement view ignores decorations drawn outside a widget's box; shell/receipt need a design pass.
+
+- **The deck (2026-10-04):** `src/lib/deck/` — 17 existing widgets as typed cards a model can deal, `applyCard` (model JSON → widget row, rejects with a reason), `placeCards` (pure placement), `deckPrompt` + streaming `parseDeal` in the spike's one-card-per-line format. Prompt ≈ 2.8k chars / ~714 tokens. Wired to the orb + Lightning (see "Say it → it builds" above); next: recipes for chains, plus check-in / standings / pills cards. Lab: `?mock=1&deck=8#/space/crew`.
 
 - **Voice orb in the dock (2026-10-04):** the orb from the voice concepts
   (`nebius/refs/voice/01`) now leads the bottom dock in every space. Code,

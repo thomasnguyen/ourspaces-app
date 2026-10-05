@@ -26971,3 +26971,113 @@ body:has(.demo-banner) .settings-sheet {
   .demo-waitlist[open], .demo-waitlist[open] .demo-poster-photo, .demo-waitlist[open] .demo-poster-sticker { animation: none; }
   .demo-banner-cta, .demo-banner-label, .demo-waitlist-submit, .demo-waitlist-close, .demo-waitlist-submit > span { transition: none; }
 }
+
+/* Voice build (VoiceBuildLayer.tsx): the shell where a dealt card will land,
+   the tag on the card that landed, the receipt above the dock. --maker is the
+   asker's colour. */
+.voice-shell {
+  position: absolute;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 22px;
+  border: 2px dashed var(--maker);
+  border-radius: 18px;
+  background: color-mix(in oklab, var(--maker) 9%, var(--color-card));
+  color: var(--color-ink);
+  pointer-events: none;
+  animation:
+    voice-shell-in var(--dur-arrive) var(--ease-pop) both,
+    voice-shell-breathe 900ms ease-in-out var(--dur-arrive) infinite alternate;
+}
+
+.voice-shell-kicker {
+  color: var(--maker);
+  font: 600 12px/1 var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.voice-shell-said {
+  font: 800 22px/1.15 var(--font-display);
+}
+
+@keyframes voice-shell-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+@keyframes voice-shell-breathe {
+  to {
+    border-color: color-mix(in oklab, var(--maker) 35%, transparent);
+  }
+}
+
+.voice-landed {
+  position: absolute;
+  z-index: 1200;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--maker);
+  color: white;
+  font: 600 12px/1.2 var(--font-sans);
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(calc(-100% - 8px));
+  animation: voice-landed-in var(--dur-arrive) var(--ease-pop) both;
+}
+
+@keyframes voice-landed-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-100% + 4px));
+  }
+}
+
+.voice-receipt {
+  position: fixed;
+  z-index: 71;
+  bottom: 100px;
+  left: calc(50% + 48px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-sticker);
+  color: white;
+  font: 500 14px/1.2 var(--font-sans);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  animation: voice-receipt-in var(--dur-arrive) var(--ease-glide) both;
+}
+
+.voice-receipt b {
+  color: var(--maker);
+  font-weight: 700;
+}
+
+.voice-receipt span::before {
+  content: "· ";
+  opacity: 0.5;
+}
+
+.voice-receipt span:last-child {
+  font-variant-numeric: tabular-nums;
+}
+
+.voice-receipt.is-miss {
+  color: color-mix(in oklab, white 75%, transparent);
+}
+
+@keyframes voice-receipt-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}

@@ -43,6 +43,7 @@ import type * as spaces from "../spaces.js";
 import type * as staticHosting from "../staticHosting.js";
 import type * as stats from "../stats.js";
 import type * as streaming from "../streaming.js";
+import type * as voiceBuild from "../voiceBuild.js";
 import type * as votes from "../votes.js";
 import type * as waitlist from "../waitlist.js";
 import type * as widgetData from "../widgetData.js";
@@ -91,6 +92,7 @@ declare const fullApi: ApiFromModules<{
   staticHosting: typeof staticHosting;
   stats: typeof stats;
   streaming: typeof streaming;
+  voiceBuild: typeof voiceBuild;
   votes: typeof votes;
   waitlist: typeof waitlist;
   widgetData: typeof widgetData;

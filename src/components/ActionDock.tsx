@@ -21,7 +21,7 @@ import {
   subscribeRadio,
 } from "../lib/radio";
 import { playSound } from "../lib/sounds";
-import { useVoice } from "../lib/voice";
+import { useVoice, type VoiceAsk } from "../lib/voice";
 import { VoiceOrb } from "./VoiceOrb";
 
 /** First-tap questions — shown until the thread has a turn. */
@@ -206,10 +206,11 @@ function DockSound({
 
 /** Talk to the space: the dock's lead action. Tap the orb or the prompt
     beside it: the orb lifts and listens, the rest of the dock steps back and
-    your words take the bar; tap again (or done) to send. Nothing acts on the ask yet; the
-    Nemotron call lands next. */
-function DockVoice() {
-  const voice = useVoice();
+    your words take the bar; tap again (or done) to send. `onAsk` gets the
+    words (the room deals a card from them, src/live/useVoiceBuild.ts); the
+    orb stays working until it settles. */
+function DockVoice({ onAsk }: { onAsk?: VoiceAsk }) {
+  const voice = useVoice(onAsk);
   const listening = voice.state === "listening";
   const text = voice.transcript.length > 46 ? `…${voice.transcript.slice(-45)}` : voice.transcript;
   const toggle = () => {
@@ -284,6 +285,7 @@ export function ActionDock({
   onRecapJumpWidget,
   radioRoom,
   onRadioTune,
+  onVoiceAsk,
 }: {
   recapOpen: boolean;
   recapRunId: number;
@@ -312,6 +314,8 @@ export function ActionDock({
   onRecapJumpWidget?: (widgetId: string) => void;
   radioRoom?: DockRadioRoom;
   onRadioTune?: (widgetId: string, tune: { stationId: string; playing: boolean }) => void;
+  /** A finished voice ask; the orb works until the promise settles. */
+  onVoiceAsk?: VoiceAsk;
 }) {
   const [revealed, setRevealed] = useState(0);
   const [draft, setDraft] = useState("");
@@ -688,7 +692,7 @@ export function ActionDock({
         </div>
       )}
 
-      <DockVoice />
+      <DockVoice onAsk={onVoiceAsk} />
       <span className="action-dock-divider" aria-hidden="true" />
       <button
         type="button"

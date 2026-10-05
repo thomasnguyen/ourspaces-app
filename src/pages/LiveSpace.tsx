@@ -20,6 +20,8 @@ const PlayLab = lazy(() =>
 const PLAY_LAB_SOURCE = "crew";
 import type { Id } from "../../convex/_generated/dataModel";
 import { ActionDock, radioRoomOf } from "../components/ActionDock";
+import { VoiceBuildLayer } from "../components/VoiceBuildLayer";
+import { useVoiceBuild } from "../live/useVoiceBuild";
 import { Canvas, SpaceHeader } from "../components/Canvas";
 import { ClaimCard, type RoomContext } from "../components/ClaimCard";
 import { SettingsSheet } from "../components/SettingsSheet";
@@ -389,8 +391,12 @@ export function LiveSpacePage({
   const [claimLeaving, setClaimLeaving] = useState(false);
   const [claimPoint, setClaimPoint] = useState<GatePoint | null>(null);
   const claimTimer = useRef<number | null>(null);
+  /* `?enter=1` walks straight past the gate (takes and drive states). */
   const [entered, setEntered] = useState(
-    () => !isInviteEntry && window.sessionStorage.getItem(CLAIM_DISMISSED_KEY) === "done",
+    () =>
+      !isInviteEntry &&
+      (window.sessionStorage.getItem(CLAIM_DISMISSED_KEY) === "done" ||
+        new URLSearchParams(window.location.search).get("enter") === "1"),
   );
   const [arrivalPeer, setArrivalPeer] = useState<LivePeer | null>(null);
   const arrivalTimer = useRef<number | null>(null);
@@ -1465,6 +1471,41 @@ export function LiveSpacePage({
      gesture on the strip because it is the only place that work is visible
      at all; see the note in SpaceLiveStrip. */
   const spaceWork = useSpaceWork(mode === "live" && space ? String(space._id) : undefined);
+  /* Say it → it builds: the orb's finished ask goes to Nemotron through
+     convex/voiceBuild.ts, which commits each dealt card with createWidget,
+     so sync lands it on every screen (src/live/useVoiceBuild.ts). */
+  const dealCards = useAction(api.voiceBuild.deal);
+  const noteDealLanded = useMutation(api.voiceBuild.noteLanded);
+  const voiceBuild = useVoiceBuild({
+    scrollerRef: viewportRef,
+    deal: async (req) => {
+      if (!space) return { ok: false, cards: [], model: null };
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const people = [...new Set([identity.name, ...presence.peers.map((peer) => peer.name), ...members.map((m) => m.name)])].slice(0, 8);
+      const selId = focusedTarget?.kind === "widget" ? focusedTarget.id : selectedWidgetId;
+      const sel = selId ? adaptedWidgets.find((w) => w.id === selId) : undefined;
+      const selData = (sel?.data ?? {}) as { title?: unknown; question?: unknown; event?: unknown };
+      const selName = [selData.title, selData.question, selData.event].find((t) => typeof t === "string") as string | undefined;
+      const result = await dealCards({
+        spaceId: space._id,
+        said: req.said,
+        room: space.name,
+        today,
+        by: identity.name,
+        people,
+        createdBy: identity.userId,
+        ...(sel ? { selected: selName ? `${sel.type} "${selName.slice(0, 60)}"` : sel.type, selectedId: sel.id } : {}),
+        board: req.board,
+        view: req.view,
+        bounds: req.bounds,
+        anchor: req.anchor,
+        z: 1000,
+      });
+      return { ok: result.ok, model: result.model, dealId: result.dealId, cards: result.cards.map((c) => ({ card: c.card, widgetId: String(c.widgetId) })) };
+    },
+    onLanded: (dealId, ms) => void noteDealLanded({ dealId: dealId as never, landedMs: ms }).catch(() => {}),
+  });
   /* The header always needs a number to print, so an unloaded count reads as
      quiet rather than falling through to the seeded roster. The strip can
      stay silent until the real one lands, so it gets the raw value. */
@@ -2844,7 +2885,9 @@ export function LiveSpacePage({
         promoted={Boolean(promotable && promotedMessageIds.has(promotable.id))}
         highlightMessageId={highlightMessageId}
       />
+      <VoiceBuildLayer {...voiceBuild} color={identity.color} by={identity.name} model="Lightning" />
       <ActionDock
+        onVoiceAsk={voiceBuild.ask}
         recapOpen={recapOpen}
         recapRunId={recapRunId}
         recapLines={recapLines}

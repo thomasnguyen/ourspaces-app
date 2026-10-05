@@ -312,7 +312,7 @@ export function ClaimCard({
       )}
       <PhotoInput ref={photoRef} upload={uploadPhoto} />
 
-      <button type="submit" className="claim-done">
+      <button type="submit" className="claim-done" data-testid={`claim-${isGate ? "enter" : "done"}`}>
         {isGate ? (
           "enter the room →"
         ) : (

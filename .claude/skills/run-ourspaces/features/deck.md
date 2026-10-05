@@ -13,8 +13,8 @@ take:
 
 **For a user:** you ask out loud ("plan our Tahoe weekend") and cards land
 in front of you as one tidy cluster, never on top of anything. With
-something selected they land beside it. No model is wired yet: the lab
-deals a canned eight-card answer through the real code path.
+something selected they land beside it. This lab deals a canned eight-card
+answer through the real code path; the live model path is [voice-build](voice-build.md).
 
 **Get there:** `?mock=1&deck=<1-8>` on any mock space. `&deckSel=<widget id>`
 selects an object first (cards land beside it); `&deckHeld=<id,id>` marks

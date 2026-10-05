@@ -6,7 +6,8 @@
  * 1. All cards from one ask land as one tidy cluster, in reading order
  *    (rows left to right, tops aligned).
  * 2. Next to the selected object if there is one (right, then below, left, above);
- *    else the clear spot nearest the middle of the speaker's view.
+ *    else the clear spot nearest the anchor (a shell already on screen, or the
+ *    card dealt just before), else nearest the middle of the speaker's view.
  * 3. Inside the view if the cluster fits there, else inside the canvas, else
  *    past the content (always succeeds).
  * 4. Never on top of a widget; objects someone holds get a wider berth.
@@ -25,6 +26,8 @@ export type PlaceRoom = {
   held?: ReadonlySet<string>;
   /** The canvas itself; cards stay at or right/below its origin. */
   bounds?: Rect;
+  /** Land as close to this top-left as fits (ignored when something is selected). */
+  anchor?: Placement;
 };
 
 export type Placement = { x: number; y: number };
@@ -117,6 +120,10 @@ export function placeCards(
     // Exact spot hugging the view's top-left too, so a near-empty view uses its corner.
     xs.add(view.x);
     ys.add(view.y).add(bottom + HELD_GAP);
+    if (room.anchor) {
+      xs.add(room.anchor.x);
+      ys.add(room.anchor.y);
+    }
     for (const x of xs) {
       if (x < minX) continue;
       for (const y of ys) {
@@ -124,7 +131,11 @@ export function placeCards(
         const c = { x, y, w: l.w, h: l.h };
         if (obstacles.some((o) => hits(c, o.r, o.gap))) continue;
         const tier = inside(c, view) ? 0 : inside(c, bounds) ? 1 : 2;
-        const near = selected ? besideScore(c, selected) : nearScore(c, view);
+        const near = selected
+          ? besideScore(c, selected)
+          : room.anchor
+            ? Math.hypot(c.x - room.anchor.x, c.y - room.anchor.y)
+            : nearScore(c, view);
         const score = tier * 1e6 + near + li * 20;
         if (!best || score < best.score) best = { score, x, y, l };
       }

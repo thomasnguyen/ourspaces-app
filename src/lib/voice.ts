@@ -60,9 +60,16 @@ function runScript(
   return () => cancelAnimationFrame(raf);
 }
 
-export function useVoice() {
+/** What the room does with a finished ask. The orb stays "working" until the
+    returned promise settles; without one it rests after 1.4 s as before. */
+export type VoiceAsk = (said: string) => Promise<unknown> | void;
+
+export function useVoice(onAsk?: VoiceAsk) {
   const [state, setState] = useState<VoiceState>("idle");
   const [transcript, setTranscript] = useState("");
+  const said = useRef("");
+  const askRef = useRef(onAsk);
+  askRef.current = onAsk;
   /** Read by the orb every frame; never goes through React. */
   const level = useRef(0);
   const stopRef = useRef<() => void>(() => {});
@@ -74,17 +81,33 @@ export function useVoice() {
     level.current = 0;
     setState("working");
     window.clearTimeout(workTimer.current);
-    workTimer.current = window.setTimeout(() => setState("idle"), 1400);
+    const text = said.current.trim();
+    const pending = text ? askRef.current?.(text) : undefined;
+    if (!pending) {
+      workTimer.current = window.setTimeout(() => setState("idle"), 1400);
+      return;
+    }
+    // A stuck call must not hold the orb forever.
+    workTimer.current = window.setTimeout(() => setState("idle"), 15000);
+    void pending.finally(() => {
+      window.clearTimeout(workTimer.current);
+      setState((s) => (s === "working" ? "idle" : s));
+    });
+  }, []);
+
+  const hear = useCallback((text: string) => {
+    said.current = text;
+    setTranscript(text);
   }, []);
 
   const start = useCallback(async () => {
     window.clearTimeout(workTimer.current);
-    setTranscript("");
+    hear("");
     setState("listening");
 
     const script = new URLSearchParams(window.location.search).get("voice");
     if (script) {
-      stopRef.current = runScript(script, level, setTranscript, finish);
+      stopRef.current = runScript(script, level, hear, finish);
       return;
     }
 
@@ -106,7 +129,7 @@ export function useVoice() {
       recognition.onresult = (event) => {
         let text = "";
         for (let i = 0; i < event.results.length; i++) text += event.results[i][0].transcript;
-        setTranscript(text.trim());
+        hear(text.trim());
       };
       recognition.onend = () => {
         recognition = null;
@@ -135,7 +158,7 @@ export function useVoice() {
     } catch {
       // No mic permission: the orb still shows it's listening, it just can't swell.
     }
-  }, [finish]);
+  }, [finish, hear]);
 
   useEffect(
     () => () => {

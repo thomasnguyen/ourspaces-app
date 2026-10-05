@@ -67,7 +67,7 @@ remember the current room before
 navigating, including the default `#/` room; `OnlineCountSuffix` shows "· N here" per space via the
 presence component's `roomPresence.onlineCountForSpace`, mounted by
 `LiveSpace.tsx`'s `RoomPresenceHeartbeat` once a room is entered) ·
-`ActionDock.tsx` (bottom dock, led by `DockVoice`: the voice orb, bigger than the bar, with a "say what to add" prompt — tap either and the orb lifts and listens, the other keys step out and your words take the bar; `done` sends; nothing acts on the ask yet. After a divider: three icon keys, `✦` recap, chat + count, and `♪` (`DockSound`). Orb = `VoiceOrb.tsx` canvas over `lib/orbShader.ts` (WebGL, clear glass with liquid light in the crew/couple/trip tokens, mic level stirs and brightens it); mic + browser transcript = `lib/voice.ts` `useVoice`, and `?voice=<sentence>` plays a scripted ask with no mic for capture takes; + catch-me-up panel — a briefing, not a
+`ActionDock.tsx` (bottom dock, led by `DockVoice`: the voice orb, bigger than the bar, with a "say what to add" prompt — tap either and the orb lifts and listens, the other keys step out and your words take the bar; `done` sends; the ask goes to `onVoiceAsk` → `live/useVoiceBuild.ts` (shell, deal, watch for the card, pan, receipt; drawn by `VoiceBuildLayer.tsx`) → `convex/voiceBuild.ts` `deal` in live rooms, the marked stand-in `lib/deck/standIn.ts` in mock; feature file `features/voice-build.md`. After a divider: three icon keys, `✦` recap, chat + count, and `♪` (`DockSound`). Orb = `VoiceOrb.tsx` canvas over `lib/orbShader.ts` (WebGL, clear glass with liquid light in the crew/couple/trip tokens, mic level stirs and brightens it); mic + browser transcript = `lib/voice.ts` `useVoice`, and `?voice=<sentence>` plays a scripted ask with no mic for capture takes; + catch-me-up panel — a briefing, not a
 chat box: display title `what moved` + quiet `since friday` pill (or
 `reading the board` while generating), lime numerals, a white sticker chip
 per line naming the card (`recapTargets`, click = `onRecapJumpWidget` pans
@@ -424,7 +424,7 @@ ask streams, work, cursors and post-baseline mail. Schedules
 `ragIndexedAt` — plus emailEvents, members, widgets [`data`: typed
 discriminated union, see `widgetData.ts`], messages [+ full-text search
 index], votes, paintMarks, recaps, presence, `baselines` [one frozen board per slug,
-for `admin.ts`], `linkRefreshQueue` [batch-worker queue]; frames are widgets) · `widgetData.ts` (the 12 typed
+for `admin.ts`], `linkRefreshQueue` [batch-worker queue], `deals` [one JSON row per voice ask, `voiceBuild.ts`]; frames are widgets) · `widgetData.ts` (the 12 typed
 widget-data shapes + permissive record fallback, reverse-engineered from
 every real producer) · `spaces.ts` (CRUD + `memberCounts` aggregate) ·
 `activity.ts` (`touchSpace(ctx, spaceId, now?)` — the ONE way
@@ -528,6 +528,7 @@ models for `agent.ts`/`rag.ts`/`similar.ts`) ·
 `streamChat` line-streaming client for the voice path; dev checks
 `routes` [each job's host + model] and `fileDryRun` [mail brain on a
 synthetic email, writes nothing]) ·
+`voiceBuild.ts` (say it → it builds: `deal` action streams Lightning with `deckPrompt`, `parseDeal` per line → `applyCard` → `placeCards` (anchor = the client's shell) → `widgets.createWidget`; one JSON row per ask in `deals`; `noteLanded` adds the browser's end-of-speech → card-on-screen ms; `recent` reads them) ·
 `agent.ts` (`askAgent`: `@convex-dev/agent` thread per space, backs
 `recap.ask`'s conversational memory) ·
 `rag.ts` (`@convex-dev/rag`: indexes a space's widgets + recent chat,
