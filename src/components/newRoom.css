@@ -4,7 +4,7 @@
 
 .new-room-start {
   position: fixed;
-  z-index: 30;
+  z-index: 60;
   left: 50%;
   top: 52%;
   width: min(420px, calc(100vw - 32px));
@@ -136,8 +136,16 @@
 }
 
 @media (max-width: 800px) {
+  /* below the nameplate on a phone, above the dock */
   .new-room-start {
-    top: 46%;
+    top: auto;
+    bottom: 200px;
+    padding: 18px 18px 16px;
+    transform: translateX(-50%) rotate(-1deg);
+    animation-name: new-room-in-phone;
+  }
+  .new-room-sub {
+    margin-bottom: 10px;
   }
   .new-room-start h2 {
     font-size: 28px;
@@ -175,5 +183,12 @@
   .new-room-start li,
   .new-room-invite {
     animation: none;
+  }
+}
+
+@keyframes new-room-in-phone {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 18px) rotate(-3deg) scale(0.94);
   }
 }

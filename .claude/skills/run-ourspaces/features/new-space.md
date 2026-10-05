@@ -6,10 +6,10 @@ states:
   banner: ?notice=1 #/space/crew | wait demo-notice-make | sleep 700
   maker: ?enter=1 #/space/crew | click rail-new-space | wait space-maker | sleep 700
   named: ?enter=1 #/space/crew | click rail-new-space | wait space-maker | click space-maker-empty | type space-maker-name our house | sleep 500
-  empty: ?enter=1 #/space/n1-test-delete-me-SLUG | wait new-room-empty | sleep 1800
-  nudge: ?enter=1&newroom=first #/space/n1-test-delete-me-SLUG | wait new-room-invite | sleep 1900
-  gate: #/join/n1-test-delete-me-SLUG | wait claim-enter | sleep 900
-  knows: ?enter=1 #/space/n1-test-delete-me-SLUG/knows | wait room-knows | sleep 1300
+  empty: ?enter=1 #/space/n1-test-delete-me-zysrrq | wait new-room-empty | sleep 1800
+  nudge: ?enter=1&newroom=first #/space/n1-test-delete-me-zysrrq | wait new-room-invite | sleep 1900
+  gate: #/join/n1-test-delete-me-zysrrq | wait claim-enter | sleep 900
+  knows: ?enter=1 #/space/n1-test-delete-me-zysrrq/knows | wait room-knows | sleep 1300
 take:
 ---
 # A brand-new space (lane)
@@ -41,7 +41,7 @@ deployment: `OPEN_ROOM_DEPLOYMENTS`), `createSpace`, `joinDemoSpace`;
 `SpaceMaker.tsx`; the starter's words go through `setNextVoiceScript` in
 `src/lib/voice.ts`.
 
-**States:** lane only (`drive up --lane`). `SLUG` is the example room left on
+**States:** lane only (`drive up --lane`). the example room `n1-test-delete-me-zysrrq` is the one left on
 dev by N1 (see the N1 write-up for its id); `empty`, `nudge` and `knows` need
 a made room with no cards. `?newroom=first` forces the first-card nudge.
 Entering a room from the drive browser writes a members row for it.
