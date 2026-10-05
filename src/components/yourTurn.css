@@ -541,3 +541,21 @@
     transition: none;
   }
 }
+
+/* Everything at once (the +N key). A long pile stops cascading: the tickets
+   behind the top one are even rows, and past the panel's room the pile
+   scrolls inside it instead of pushing "what moved" off. */
+.your-turn.is-all .yt-pile {
+  max-height: min(46vh, 380px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  border-radius: 16px;
+}
+
+.your-turn.is-all .yt-item:not(.is-top) {
+  z-index: 1;
+  margin: 4px 6px 0;
+  border-radius: 10px;
+  animation-delay: calc(40ms + min(var(--i), 8) * 30ms);
+}
