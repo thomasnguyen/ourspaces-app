@@ -56,5 +56,8 @@ check-in) + `challenge.css` (`.st-back` face down, `st-flip`).
 
 **Gotchas:** the flip only plays when the lock opens under you; a load
 that is already open (`?challenge=logged`) shows the rows straight away.
-A reveal "at the same moment on every phone" needs a clock tick in live
-(today the card re-reads the time when its data changes).
+The flip is decided in the render the lock opens in, and each face-down
+slip stays under its face until the face covers it (`.st-back-under`):
+an effect a frame later used to paint the open rows once and then leave
+them blank through the stagger. A timer to `revealAt` flips it for
+everyone at that minute.

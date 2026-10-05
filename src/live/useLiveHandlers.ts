@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { LiveIdentity } from "./identity";
+import { findPerson, readCheckIn, withLog } from "../lib/challenge";
 import type { PresenceController } from "./usePresence";
 import type {
   CanvasGestureKind,
@@ -208,6 +209,19 @@ export function useLiveHandlers(
       patchWidgetData(store, spaceId, id, () => data),
     ),
     [updateDataMutation],
+  );
+  /* A check-in is logged as yourself (the server picks your row by your
+     member name); this screen shows it at once under your own name. */
+  const logCheckIn = useMutation(api.checkIns.log);
+  const checkIn = useMemo(
+    () => logCheckIn.withOptimisticUpdate((store, { spaceId, widgetId, day, value }) =>
+      patchWidgetData(store, spaceId, widgetId, (data) => {
+        const d = readCheckIn(data as Record<string, unknown>);
+        const me = findPerson(d, identity.name);
+        return (me ? withLog(d, me.name, day, value) : d) as Doc<"widgets">["data"];
+      }),
+    ),
+    [logCheckIn, identity.name],
   );
   const scrapeLink = useAction(api.firecrawl.scrapeLink);
   const searchTopic = useAction(api.firecrawl.searchTopic);
@@ -501,6 +515,11 @@ export function useLiveHandlers(
     });
   }, [identity.name, spaceId, spinWheel]);
 
+  const onCheckIn = useCallback((widgetId: string, day: number, value: number | null) => {
+    if (!spaceId) return;
+    void checkIn({ spaceId: spaceId as never, widgetId: widgetId as never, userId: identity.userId, day, value });
+  }, [checkIn, identity.userId, spaceId]);
+
   const onPlaylistTune = useCallback((
     widgetId: string,
     tune: { stationId: string; playing: boolean },
@@ -593,6 +612,7 @@ export function useLiveHandlers(
     },
     onClaim,
     onWheelSpin,
+    onCheckIn,
     onPlaylistTune,
     onLetterOpen,
     onResolveLink,

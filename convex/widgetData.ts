@@ -12,12 +12,12 @@ import { v, type Infer } from "convex/values";
  * permissive record at the end of the union. See the note above
  * `fallbackData` for the two reasons it is still there.
  *
- * The union itself is at the bottom of the file: 33 arms, in order — poll,
+ * The union itself is at the bottom of the file: 35 arms, in order — poll,
  * note, decision, countdown, linkCard, letter, photoWall, expenseSplit,
  * itinerary, potluck, rsvp, dailyQ (the 12 core types, defined first), then
  * frame, sticker, media, availability, linkShelf, playlist, jokeRegistry,
  * messageWall, chat, backendLive, quote, weather, sports, wheel, dualClock,
- * cozyColor, linkPile, hotLinks, shipPost, roundtable, and `fallbackData`
+ * cozyColor, linkPile, hotLinks, shipPost, roundtable, checkIn, standings, and `fallbackData`
  * last. `convex/schema.ts` uses it as the validator for `widgets.data`.
  */
 
@@ -395,6 +395,27 @@ const roundtableData = v.object({
   category: v.string(),
 });
 
+// A challenge the group is in together (src/lib/challenge.ts). The check-in
+// holds the data, one row of daily numbers per person; standings is only a
+// pointer at a check-in and ranks it on every render.
+export const checkInData = v.object({
+  title: v.string(),
+  kind: v.union(v.literal("number"), v.literal("done")),
+  unit: v.string(),
+  start: v.string(),
+  days: v.number(),
+  revealAt: v.optional(v.string()),
+  goal: v.optional(v.number()),
+  people: v.array(v.object({ name: v.string(), color: v.string() })),
+  logs: v.record(v.string(), v.array(v.union(v.number(), v.null()))),
+});
+
+const standingsData = v.object({
+  title: v.string(),
+  source: v.string(),
+  stake: v.optional(v.string()),
+});
+
 // Last resort. Nothing we ship lands here: all 32 types in src/data/types.ts
 // have an arm above, and every producer payload (seed, picker defaults, editor
 // panel, inbox, firecrawl) was replayed against the typed arms alone and
@@ -440,6 +461,8 @@ export const widgetDataValidator = v.union(
   hotLinksData,
   shipPostData,
   roundtableData,
+  checkInData,
+  standingsData,
   fallbackData,
 );
 
@@ -449,6 +472,7 @@ export const widgetDataValidator = v.union(
 // cast through these at the point the code already knows the type by
 // convention).
 export type PollData = Infer<typeof pollData>;
+export type CheckInWidgetData = Infer<typeof checkInData>;
 export type NoteData = Infer<typeof noteData>;
 export type DecisionData = Infer<typeof decisionData>;
 export type CountdownData = Infer<typeof countdownData>;

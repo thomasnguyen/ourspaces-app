@@ -695,6 +695,26 @@
   font-size: 16px;
 }
 
+/* the face and, while it flips, the slip it was, in one cell */
+.st-slot {
+  display: grid;
+  min-width: 0;
+}
+
+.st-slot > * {
+  grid-area: 1 / 1;
+}
+
+.st-back-under {
+  rotate: none;
+  animation: st-under-out 1ms linear both;
+  animation-delay: calc(var(--n) * 150ms + 80ms + var(--dur-stage));
+}
+
+@keyframes st-under-out {
+  to { visibility: hidden; }
+}
+
 /* the flip, last place first, the leader last */
 .is-revealing .st-face {
   transform-origin: 50% 0;
@@ -749,4 +769,5 @@
   .is-revealing .st-gap {
     animation: none;
   }
+  .st-back-under { display: none; }
 }

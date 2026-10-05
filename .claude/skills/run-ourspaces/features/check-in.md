@@ -40,11 +40,14 @@ people   { name, color }[]               who signed up, in row order
 logs     { [name]: (number | null)[] }   one slot per day, null = nothing
 ```
 
-Today is worked out from `start` and the clock, never stored. A log is
-`withLog(data, name, day, value)`; the card hands the whole next `data` to
-`onWidgetData(widgetId, data)` from `BoardLinkContext`. Mock keeps it in
-`widgetDataOverrides`; live needs `LiveSpace` to pass `updateWidgetData`.
-Without `onWidgetData` the card is read-only (no ＋).
+Today is worked out from `start` and the clock, never stored. Mock: a log is
+`withLog(data, name, day, value)` handed to `onWidgetData` (kept in
+`widgetDataOverrides`). Live: `onCheckIn(widgetId, day, value)` →
+`convex/checkIns.ts` `log`, which writes only the caller's own row (their
+member name in the room, matched to `people`), optimistic on the logger's
+screen, reactive everywhere else. Validators: `checkInData` /
+`standingsData` in `convex/widgetData.ts`. With neither handler the card is
+read-only (no ＋).
 
 **For the voice deck (next task):** a catalog entry needs only
 `{ title, kind, unit, days, revealAt?, goal? }` from the model; code fills
@@ -69,6 +72,11 @@ with a full-width `log it`.
 an editor) · provider in `Canvas.tsx`, mock store in `App.tsx`
 (`storeWidgetData`).
 
+**Live (lane):** the family is seeded on dev (`seed:seedFamily`, see
+[family](family.md)). Sit in a seat by naming yourself Casey/Dev/… at the
+gate (or preset `ourspaces:tab-identity`); harness `.context/f2/flip.mjs`
+logs on a phone and shoots the standings flipping on a second screen.
+
 **Gotchas:** tapping the cell also selects the card, so the
-drag/zoom/edit/delete bar shows in `logging`. Not in `convex/widgetData.ts`
-yet, so a live room can't save one.
+drag/zoom/edit/delete bar shows in `logging`. The server's clock is UTC:
+`log` trusts the client's day index within ±1 of its own.

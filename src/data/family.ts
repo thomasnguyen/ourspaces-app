@@ -1,6 +1,5 @@
 import type { SpaceMember, Widget } from "./types";
 import type { CheckInData, StandingsData } from "../lib/challenge";
-import "./family.css";
 
 /**
  * The family: a house of four, mid-week. Dev (dad, competitive before
@@ -15,14 +14,22 @@ import "./family.css";
  * Every date is an offset from today, so the room is always on day five.
  */
 
+/** The day the offsets count from: the viewer's today, or the one the seed passes in (Convex runs on UTC). */
+let anchor: string | null = null;
+const todayDate = () => {
+  if (!anchor) return new Date();
+  const [y, m, d] = anchor.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+
 function isoDaysFromNow(days: number): string {
-  const d = new Date();
+  const d = todayDate();
   d.setDate(d.getDate() + days);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-const weekdayFromNow = (days: number) => WEEKDAYS[(new Date().getDay() + days + 7) % 7];
+const weekdayFromNow = (days: number) => WEEKDAYS[(todayDate().getDay() + days + 7) % 7];
 
 /** The challenge started four days ago; the reveal is two mornings from now. */
 const STARTED = -4;
@@ -439,3 +446,17 @@ export const FAMILY_WIDGETS: Widget[] = [
     data: { stickerId: "rio-socks" },
   },
 ];
+
+/** The board with every date worked out from `today` (YYYY-MM-DD), as plain
+    data: the seed writes this, so the live room is on day five too. */
+export function familyWidgetsOn(today: string): Widget[] {
+  anchor = today;
+  try {
+    return JSON.parse(JSON.stringify(FAMILY_WIDGETS)) as Widget[];
+  } finally {
+    anchor = null;
+  }
+}
+
+/** The challenge corner: what the hero ask builds again on a cleared board. */
+export const FAMILY_CHALLENGE_IDS = ["fam-frame-challenge", "fam-checkin", "fam-standings", "fam-signup", "fam-reveal", "fam-deal", "fam-quote", "fam-sticker-five"];

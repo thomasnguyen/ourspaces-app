@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { Widget } from "../data/types";
 import { MemberFace } from "../components/MemberFace";
 import { getDataMode } from "../live/dataMode";
@@ -15,6 +15,7 @@ import {
   rank,
   readCheckIn,
   readStandings,
+  revealDate,
   revealLabel,
   streakOf,
   weekdayOf,
@@ -32,6 +33,8 @@ type Style = CSSProperties;
 export type BoardLink = {
   widgets: Widget[];
   onWidgetData?: (widgetId: string, data: Widget["data"]) => void;
+  /** Live: log today for yourself only (convex/checkIns.ts `log`); the server picks the row. */
+  onCheckIn?: (widgetId: string, day: number, value: number | null) => void;
 };
 export const BoardLinkContext = createContext<BoardLink>({ widgets: [] });
 
@@ -63,6 +66,15 @@ function viewerOf(data: CheckInData, today: number): string | null {
 
 /** Mock state URLs: `?challenge=logged` (you've logged today), `?challenge=final` (after the reveal). */
 function useChallenge(raw: Widget["data"] | undefined) {
+  /* the reveal flips it for everyone at the same moment: a timer to that minute */
+  const [clock, setClock] = useState(0);
+  const revealMs = revealDate(readCheckIn(raw ?? {}))?.getTime() ?? 0;
+  useEffect(() => {
+    const wait = revealMs - Date.now();
+    if (wait <= 0 || wait > 2 ** 31 - 1) return;
+    const t = window.setTimeout(() => setClock((n) => n + 1), wait + 50);
+    return () => window.clearTimeout(t);
+  }, [revealMs]);
   return useMemo(() => {
     const base = readCheckIn(raw ?? {});
     const lab = getDataMode() === "mock" ? param("challenge") : null;
@@ -75,19 +87,19 @@ function useChallenge(raw: Widget["data"] | undefined) {
       data = withLog(base, viewer, today, base.kind === "done" ? 1 : (last ?? 10));
     }
     return { data, today, day: dayIndexOf(base, now), viewer, final: lab === "final" || isRevealed(base, now) };
-  }, [raw]);
+  }, [raw, clock]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 const tilt = (seed: number) => ((seed * 37) % 9) - 4;
 
 export function CheckInWidget({ widget, style }: { widget: Widget; style: Style }) {
-  const { onWidgetData } = useContext(BoardLinkContext);
+  const { onWidgetData, onCheckIn } = useContext(BoardLinkContext);
   const { data, today, day, viewer, final } = useChallenge(widget.data);
   const mine = viewer && today >= 0 ? logOf(data, viewer, today) : null;
   const lastMine = viewer ? [...(data.logs[viewer] ?? [])].reverse().find((v) => v != null) : null;
   const [draft, setDraft] = useState<number | null>(null);
   const [stamped, setStamped] = useState<string | null>(null);
-  const canLog = Boolean(viewer && today >= 0 && !final && onWidgetData);
+  const canLog = Boolean(viewer && today >= 0 && !final && (onCheckIn || onWidgetData));
   const me = findPerson(data, viewer);
 
   const openLogger = (value?: number) => {
@@ -108,7 +120,8 @@ export function CheckInWidget({ widget, style }: { widget: Widget; style: Style 
   const commit = (value: number | null) => {
     if (!viewer || today < 0) return;
     // the stored card keeps what people really logged, never a lab patch
-    onWidgetData?.(widget.id, { ...withLog(readCheckIn(widget.data), viewer, today, value) });
+    if (onCheckIn) onCheckIn(widget.id, today, value);
+    else onWidgetData?.(widget.id, { ...withLog(readCheckIn(widget.data), viewer, today, value) });
     setDraft(null);
     if (value != null) {
       playSound("place");
@@ -270,12 +283,14 @@ export function StandingsWidget({ widget, style }: { widget: Widget; style: Styl
   const reveal = revealLabel(data);
 
   /* the flip plays when the lock opens under you, not on a load that's already open */
-  const wasLocked = useRef(locked);
+  /* decided in the render the lock opens in: an effect a frame later painted the
+     open rows once, then hid them for the flip ("rows blank before the flip") */
+  const [wasLocked, setWasLocked] = useState(locked);
   const [justOpened, setJustOpened] = useState(false);
-  useEffect(() => {
-    if (wasLocked.current && !locked) setJustOpened(true);
-    wasLocked.current = locked;
-  }, [locked]);
+  if (wasLocked !== locked) {
+    setWasLocked(locked);
+    if (wasLocked && !locked) setJustOpened(true);
+  }
 
   const open = (value?: number) => {
     window.dispatchEvent(new CustomEvent<OpenLog>(OPEN_LOG, { detail: { source: settings.source, value } }));
@@ -323,6 +338,13 @@ export function StandingsWidget({ widget, style }: { widget: Widget; style: Styl
                     <i>?</i>
                   </span>
                 ) : (
+                  <span className="st-slot">
+                  {/* while it flips, the slip it was stays under it until the face covers it */}
+                  {justOpened ? (
+                    <span className="st-back st-back-under" aria-hidden="true">
+                      <i>?</i>
+                    </span>
+                  ) : null}
                   <span className="st-face">
                     <MemberFace name={row.name} color={row.color} size="md" />
                     <b className="st-name">{row.name.toLowerCase()}{isYou ? <i>you</i> : null}</b>
@@ -335,6 +357,7 @@ export function StandingsWidget({ widget, style }: { widget: Widget; style: Styl
                         </button>
                       ) : null}
                     </span>
+                  </span>
                   </span>
                 )}
               </li>

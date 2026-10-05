@@ -15,6 +15,7 @@ import type * as agentmail from "../agentmail.js";
 import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
 import type * as batch from "../batch.js";
+import type * as checkIns from "../checkIns.js";
 import type * as crons from "../crons.js";
 import type * as digest from "../digest.js";
 import type * as emails_signIn from "../emails/signIn.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   auth: typeof auth;
   batch: typeof batch;
+  checkIns: typeof checkIns;
   crons: typeof crons;
   digest: typeof digest;
   "emails/signIn": typeof emails_signIn;

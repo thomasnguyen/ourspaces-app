@@ -7,6 +7,8 @@ import { retireCutSpaceRows, memberCounts } from "./spaces";
 import { pollTallies } from "./votes";
 import { messagesCounter, spacesCounter, widgetsCounter } from "./stats";
 import type { CountdownData, ItineraryData, LinkCardData, WidgetData } from "./widgetData";
+import { FAMILY_CHALLENGE_IDS, familyWidgetsOn } from "../src/data/family";
+import { internal } from "./_generated/api";
 
 type LinkShelfData = { title: string; links: { label: string; url: string; by?: string }[] };
 
@@ -72,6 +74,7 @@ async function seedSpace(
   ctx: MutationCtx,
   meta: (typeof SPACES_BY_ID)[string],
   now: number,
+  widgets: Widget[] = meta.widgets,
 ) {
   const slug = meta.id;
   const size = meta.canvasSize ?? (slug === "league"
@@ -105,10 +108,11 @@ async function seedSpace(
 
   const widgetIds = new Map<string, string>();
   const createdBy = seedUserId(slug, meta.members[0]?.name ?? "guest");
-  for (const widget of meta.widgets) {
+  for (const widget of widgets) {
     const id = await insertWidget(ctx, spaceId, slug, createdBy, widget, widget, now);
     widgetIds.set(`${slug}:${widget.id}`, id);
   }
+  await linkStandings(ctx, widgetIds, slug, widgets);
 
   return { spaceId, widgetIds };
 }
@@ -542,3 +546,95 @@ export const backfillLinkQuestions = internalMutation({
   },
 });
 
+
+/** A standings card points at its check-in by widget id: the mock id becomes the row's. */
+async function linkStandings(ctx: MutationCtx, widgetIds: Map<string, string>, slug: string, widgets: Widget[]) {
+  for (const w of widgets) {
+    if (w.type !== "standings") continue;
+    const id = widgetIds.get(`${slug}:${w.id}`);
+    const source = widgetIds.get(`${slug}:${String(w.data.source)}`);
+    if (id && source) await ctx.db.patch(id as Id<"widgets">, { data: { ...(w.data as WidgetData), source } as WidgetData });
+  }
+}
+
+/** Stored objects come back with their keys in another order: compare sorted. */
+const canon = (x: unknown): unknown =>
+  Array.isArray(x) ? x.map(canon) : x && typeof x === "object" ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, v]) => [k, canon(v)])) : x;
+const sameData = (a: unknown, b: unknown) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
+
+/**
+ * The family room on a live deployment, as designed and mid-week: the room,
+ * its four people, the board, the challenge on day 5 of 6 with the reveal two
+ * mornings out. Every date is worked out from `today` (the caller's local
+ * YYYY-MM-DD; Convex's clock is UTC). Idempotent: a second run on the same
+ * day writes nothing. A seeded card is the seed's own row of its type at its
+ * designed spot (or with its designed title): a missing one is put back, a
+ * changed one gets the designed data back (the check-in's logs too). Cards
+ * anyone else made are left alone. `hero: true` takes the challenge corner
+ * off instead, so a voice ask can build it again into the empty space.
+ */
+export const seedFamily = internalMutation({
+  args: { today: v.optional(v.string()), hero: v.optional(v.boolean()) },
+  returns: v.object({ created: v.boolean(), added: v.array(v.string()), patched: v.array(v.string()), removed: v.array(v.string()) }),
+  handler: async (ctx, { today, hero }) => {
+    const meta = SPACES_BY_ID.family;
+    const now = Date.now();
+    const day = today && /^\d{4}-\d{2}-\d{2}$/.test(today) ? today : new Date(now).toISOString().slice(0, 10);
+    const designed = familyWidgetsOn(day);
+    const wanted = hero ? designed.filter((w) => !FAMILY_CHALLENGE_IDS.includes(w.id)) : designed;
+    const out = { created: false, added: [] as string[], patched: [] as string[], removed: [] as string[] };
+    const space = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", "family")).unique();
+    if (!space) {
+      const { spaceId, widgetIds } = await seedSpace(ctx, meta, now, wanted);
+      await seedSpaceMessages(ctx, meta, spaceId, widgetIds, now);
+      await ctx.scheduler.runAfter(0, internal.roomBrief.refresh, { spaceId });
+      return { ...out, created: true, added: wanted.map((w) => w.id) };
+    }
+    const createdBy = seedUserId("family", meta.members[0]?.name ?? "guest");
+    const live = await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", space._id)).collect();
+    const rowFor = (w: Widget) =>
+      live.find((row) => row.createdBy === createdBy && row.type === w.type && row.x === w.x && row.y === w.y) ??
+      live.find((row) => row.createdBy === createdBy && row.type === w.type && identityOf(w) !== "" && identityOf(row) === identityOf(w));
+    const ids = new Map<string, string>();
+    for (const w of designed) {
+      const row = rowFor(w);
+      if (hero && FAMILY_CHALLENGE_IDS.includes(w.id)) {
+        if (row) {
+          await ctx.db.delete(row._id);
+          await widgetsCounter.dec(ctx);
+          out.removed.push(w.id);
+        }
+        continue;
+      }
+      if (!row) {
+        const id = await insertWidget(ctx, space._id, "family", createdBy, w, w, now);
+        ids.set(`family:${w.id}`, id);
+        out.added.push(w.id);
+        continue;
+      }
+      ids.set(`family:${w.id}`, row._id);
+      const data = convexSafe(w.data) as WidgetData;
+      // standings' source is the live id (set below), so it is left out of the comparison
+      const have = w.type === "standings" ? { ...(row.data as object), source: (data as { source: string }).source } : row.data;
+      if (!sameData(have, data) || row.x !== w.x || row.y !== w.y || row.w !== w.w || row.h !== w.h || row.z !== w.z) {
+        await ctx.db.patch(row._id, { x: w.x, y: w.y, w: w.w, h: w.h, z: w.z, data: w.type === "standings" ? ({ ...(data as object), source: (row.data as { source: string }).source } as WidgetData) : data });
+        out.patched.push(w.id);
+      }
+    }
+    for (const w of wanted) {
+      if (w.type !== "standings") continue;
+      const id = ids.get(`family:${w.id}`) as Id<"widgets"> | undefined;
+      const source = ids.get(`family:${String(w.data.source)}`);
+      const row = id ? await ctx.db.get(id) : null;
+      if (row && source && (row.data as { source?: string }).source !== source) {
+        await ctx.db.patch(row._id, { data: { ...(row.data as object), source } as WidgetData });
+        if (!out.patched.includes(w.id)) out.patched.push(w.id);
+      }
+    }
+    if (out.added.length || out.patched.length || out.removed.length) {
+      await ctx.db.patch(space._id, { lastActivityAt: now });
+      await ctx.scheduler.runAfter(0, internal.roomBrief.refresh, { spaceId: space._id });
+    }
+    return out;
+  },
+});

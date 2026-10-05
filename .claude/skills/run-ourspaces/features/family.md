@@ -29,9 +29,13 @@ from today (`STARTED = -4`, `REVEAL = 2` in `src/data/family.ts`), so the
 room is always on day 5 of 6; shot on a Wednesday it reads "till fri".
 
 **Get there:** the fourth tile in the rail (`space-link-family`), or
-`#/space/family`. Mock only until it is seeded: there is no `family` row
-in Convex, so in a live room the tile opens the fixture board without a
-backend row behind it.
+`#/space/family`. Live on the dev lane: `seed:seedFamily {today, hero?}`
+(`convex/seed.ts`) creates the room, its four seeded members and the board
+with every date from `today` (pass the local date: Convex runs on UTC);
+a rerun puts back the designed board and the mid-week logs and writes
+nothing when it is already so. `hero: true` takes the challenge corner off
+(`FAMILY_CHALLENGE_IDS`) so the voice ask can build it again. Never run it
+on prod. Wrapper: `.context/f2/seed.sh [hero]`.
 
 **Drive:** `drive sheet family:board family:logged family:knows --w 1440,390`.
 In mock you sit in the seat of the first person who hasn't logged today

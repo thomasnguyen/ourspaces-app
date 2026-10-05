@@ -119,6 +119,7 @@ export function Canvas({
   onPlaylistTune,
   onLetterOpen,
   onWidgetData,
+  onCheckIn,
   buildRoomFeed,
   roundtableRepliesByWidget = {},
   paintStrokesByWidget = {},
@@ -193,6 +194,8 @@ export function Canvas({
   onWheelSpin?: (widgetId: string, spin: { spinNonce: number; resultIndex: number }) => void;
   /** A card stores its own new data (check-in logs). Mock: local overrides. */
   onWidgetData?: (widgetId: string, data: Widget["data"]) => void;
+  /** Live: log a check-in for yourself only (convex/checkIns.ts). */
+  onCheckIn?: (widgetId: string, day: number, value: number | null) => void;
   onPlaylistTune?: (widgetId: string, tune: PlaylistTune) => void;
   onLetterOpen?: (widgetId: string, open: boolean) => void;
   buildRoomFeed?: BuildRoomFeed;
@@ -493,7 +496,7 @@ export function Canvas({
     ],
   );
 
-  const boardLink = useMemo(() => ({ widgets, onWidgetData }), [widgets, onWidgetData]);
+  const boardLink = useMemo(() => ({ widgets, onWidgetData, onCheckIn }), [widgets, onWidgetData, onCheckIn]);
 
   return (
     <BoardLinkContext.Provider value={boardLink}>

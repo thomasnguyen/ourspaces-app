@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { ConvexReactClient } from "convex/react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
+// the family board's layout; not imported from src/data/family.ts, which the Convex seed bundles
+import "./data/family.css";
 import App from "./App.tsx";
 import { getDataMode } from "./live/dataMode.ts";
 import { AuthIdentityBridge } from "./live/useAuthIdentity.ts";
