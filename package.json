@@ -11,7 +11,9 @@
     "deploy": "npm run build && npx --yes netlify-cli@27.1.2 deploy --site 3b6e9f86-2714-4074-b65e-704346455bbf --dir dist --no-build --prod",
     "deploy:convex": "npx @convex-dev/static-hosting deploy",
     "sync:storyboard": "./scripts/sync-storyboard.sh",
-    "sync:skills": "./scripts/sync-codex-skills.sh"
+    "sync:skills": "./scripts/sync-codex-skills.sh",
+    "dev:lane": "./scripts/dev-lane.sh web",
+    "deploy:dev": "./scripts/dev-lane.sh deploy"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.52",

@@ -97,8 +97,20 @@ after backend + UI changes, run it before `npm run deploy`.
 the public site and local `npm run dev` — `.env.local` points at it, so what
 you see locally IS the demo data. There is no separate dev database any more.
 Backend changes go out with `npm run deploy:convex`; **do not run `convex dev`** —
-it pushes to the retired `dusty-condor-648`, which nothing reads, so your
-changes would silently do nothing.
+it pushes to `dusty-condor-648`, which the public site never reads, so your
+changes would silently do nothing there.
+
+**The dev lane (since Oct 4).** `dusty-condor-648` is now the place to ship
+unfinished work without touching `ourspaces.io`:
+
+- `npm run deploy:dev` pushes `convex/` to the dev deployment, builds against
+  it and publishes the Netlify preview `https://dev--ourspaces-app.netlify.app`.
+- `npm run dev:lane` runs Vite against the dev deployment. Plain `npm run dev`
+  still reads and writes prod data.
+- `./scripts/dev-lane.sh backend` pushes the backend alone.
+
+While a local `nebius/.prod-freeze` file exists, agents ship only through the
+dev lane; `npm run deploy` and `npm run deploy:convex` wait for Thomas.
 
 <!-- convex-ai-start -->
 
