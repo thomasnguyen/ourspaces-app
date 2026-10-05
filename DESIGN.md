@@ -147,6 +147,9 @@ scarcity is the point.
 
 **The No-Cheap-Light Rule.** No gradients, no glows, no glassmorphism, no
 neon halos, no purple→blue washes. Color is flat and saturated or it is neutral.
+One exception: the **voice orb** in the dock (`lib/orbShader.ts`) is the only
+lit, glossy object in the app. Its light stays inside its circle: no halo, no
+glow on anything around it.
 
 ## 3. Typography
 

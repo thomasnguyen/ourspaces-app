@@ -21,6 +21,8 @@ import {
   subscribeRadio,
 } from "../lib/radio";
 import { playSound } from "../lib/sounds";
+import { useVoice } from "../lib/voice";
+import { VoiceOrb } from "./VoiceOrb";
 
 /** First-tap questions — shown until the thread has a turn. */
 const RECAP_STARTERS = ["what's still undecided?", "who hasn't answered?", "what did I miss in chat?"];
@@ -130,6 +132,53 @@ function DockRadio({
         </button>
       </div>
     </>
+  );
+}
+
+/** Talk to the space. Tap the orb: it lifts and listens, your words run
+    beside it, tap again (or done) to send. Nothing acts on the ask yet; the
+    Nemotron call lands next. */
+function DockVoice() {
+  const voice = useVoice();
+  const listening = voice.state === "listening";
+  const text = voice.transcript.length > 46 ? `…${voice.transcript.slice(-45)}` : voice.transcript;
+  const toggle = () => {
+    playSound("tap");
+    if (listening) voice.finish();
+    else void voice.start();
+  };
+
+  return (
+    <div className={`dock-voice is-${voice.state}`}>
+      <button
+        type="button"
+        className="dock-voice-orb"
+        data-testid="dock-voice-orb"
+        onClick={toggle}
+        title={listening ? "Done talking" : "Talk to the space"}
+      >
+        <VoiceOrb state={voice.state} level={voice.level} size={38} />
+      </button>
+      <div className="dock-voice-say" aria-live="polite">
+        <div className="dock-voice-say-inner">
+          {text ? (
+            <span className="dock-voice-text" data-testid="dock-voice-text">
+              {text}
+            </span>
+          ) : (
+            <span className="dock-voice-listening">
+              <i aria-hidden="true" />
+              listening
+            </span>
+          )}
+          {listening && (
+            <button type="button" className="dock-voice-done" data-testid="dock-voice-done" onClick={toggle}>
+              done
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -564,6 +613,8 @@ export function ActionDock({
         </div>
       )}
 
+      <DockVoice />
+      <span className="action-dock-divider" aria-hidden="true" />
       <button
         type="button"
         className={`action-dock-ai ${recapOpen ? "is-active" : ""}`}

@@ -12792,6 +12792,10 @@
   bottom: 18px;
   left: calc(50% + 48px);
   display: flex;
+  /* a fixed box with only left set caps itself at the space to the right of
+     that edge; max-content lets the voice strip grow both ways instead */
+  width: max-content;
+  max-width: calc(100vw - 16px);
   align-items: center;
   gap: 5px;
   border-radius: 999px;
@@ -12907,6 +12911,129 @@
   width: 1px;
   height: 24px;
   background: rgba(255, 255, 255, 0.14);
+}
+
+/* voice orb: leads the dock. Tap it and it lifts and swells, and the say
+   strip opens beside it with your words. The orb is the one lit object in
+   the app (DESIGN.md): its light stays inside the circle. */
+.dock-voice {
+  display: flex;
+  align-items: center;
+}
+
+.action-dock .dock-voice-orb {
+  position: relative;
+  width: 42px;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  transition:
+    scale var(--dur-base) var(--ease-glide),
+    translate var(--dur-quick) var(--ease-glide);
+}
+
+.dock-voice-orb .voice-orb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  pointer-events: none;
+}
+
+.action-dock .dock-voice.is-listening .dock-voice-orb {
+  scale: 1.34;
+  translate: 0 -8px;
+  transition:
+    scale var(--dur-arrive) var(--ease-pop),
+    translate var(--dur-arrive) var(--ease-pop);
+}
+
+.action-dock .dock-voice.is-working .dock-voice-orb {
+  scale: 0.9;
+}
+
+.dock-voice-say {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-columns var(--dur-base) var(--ease-glide),
+    opacity var(--dur-quick) linear;
+}
+
+.dock-voice:not(.is-idle) .dock-voice-say {
+  grid-template-columns: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-columns var(--dur-arrive) var(--ease-glide),
+    opacity var(--dur-quick) linear 60ms;
+}
+
+.dock-voice-say-inner {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.dock-voice-say-inner > :first-child {
+  margin-left: 16px;
+}
+
+.dock-voice-say-inner > :last-child {
+  margin-right: 4px;
+}
+
+.dock-voice-text {
+  max-width: 300px;
+  overflow: hidden;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+
+.dock-voice.is-working .dock-voice-text {
+  color: rgba(255, 255, 255, 0.5);
+  transition: color var(--dur-base) ease-out;
+}
+
+.dock-voice-listening {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dock-voice-listening i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-lime);
+  animation: dock-voice-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes dock-voice-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.action-dock .dock-voice-done {
+  min-height: 30px;
+  padding: 5px 12px;
+  background: white;
+  color: var(--color-sticker);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-voice-listening i {
+    animation: none;
+  }
 }
 
 /* room radio: always in the dock once the board has a station. Idle it's a
@@ -13607,6 +13734,20 @@
   }
 
   .action-dock-radio-sub {
+    display: none;
+  }
+
+  .dock-voice-text {
+    max-width: 210px;
+  }
+
+  /* phone: while you talk, the voice strip gets the whole dock */
+  .action-dock:has(.dock-voice:not(.is-idle)) > :not(.dock-voice, .recap-panel) {
+    display: none;
+  }
+
+  /* phone: the orb costs a slot, so the radio keeps only its play key */
+  .action-dock .action-dock-radio-label {
     display: none;
   }
 

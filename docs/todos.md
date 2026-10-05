@@ -5,6 +5,15 @@ Backward-looking history lives in `hackathon.md`.
 
 ## Now working
 
+- **Voice orb in the dock (2026-10-04):** the orb from the voice concepts
+  (`nebius/refs/voice/01`) now leads the bottom dock in every space. Code,
+  not an image: a WebGL shader in the crew/couple/trip colours. Tap → it lifts,
+  swells with your mic level, and your words (browser speech) run beside it;
+  `done` → a short working spin. Phone: the strip takes the whole dock while
+  you talk; the radio keeps only its play key. **Next:** send the ask to
+  Nemotron on Token Factory and land a widget. `?voice=<sentence>` scripts an
+  ask for capture takes. `npm run build` passed.
+
 - **Planning handoff refreshed (2026-10-04):** the local working-folder index
   now routes to the current product proposal. No app behavior changed.
   Continue from `nebius/README.md`; implementation remains a separate step.

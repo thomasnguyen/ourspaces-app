@@ -67,7 +67,7 @@ remember the current room before
 navigating, including the default `#/` room; `OnlineCountSuffix` shows "· N here" per space via the
 presence component's `roomPresence.onlineCountForSpace`, mounted by
 `LiveSpace.tsx`'s `RoomPresenceHeartbeat` once a room is entered) ·
-`ActionDock.tsx` (bottom dock + catch-me-up panel — a briefing, not a
+`ActionDock.tsx` (bottom dock, led by `DockVoice`: the voice orb — tap it and it lifts, listens and runs your words beside it in the dock; `done` sends; nothing acts on the ask yet. Orb = `VoiceOrb.tsx` canvas over `lib/orbShader.ts` (WebGL, three strands in the crew/couple/trip tokens, mic level swells it); mic + browser transcript = `lib/voice.ts` `useVoice`, and `?voice=<sentence>` plays a scripted ask with no mic for capture takes; + catch-me-up panel — a briefing, not a
 chat box: display title `what moved` + quiet `since friday` pill (or
 `reading the board` while generating), lime numerals, a white sticker chip
 per line naming the card (`recapTargets`, click = `onRecapJumpWidget` pans
@@ -299,7 +299,7 @@ answer chips, `panToWidget` scrolls the cited card into whichever side of
 the viewport the panel leaves clear, `startBoardScan` hops `.is-recap-scan`
 across cards in reading order while the model reads; LiveSpace auto-runs
 `recap.generate` when the panel opens on a board with no briefing) · `widgetThreads.ts` · `blockZoom.ts` ·
-`entrance.ts` · `onboarding.ts` · `avatarPhoto.ts` (centre-square 256px JPEG for your own avatar; data-url fallback for mock) · `sounds.ts` · `radio.ts` (SomaFM singleton) ·
+`entrance.ts` · `onboarding.ts` · `avatarPhoto.ts` (centre-square 256px JPEG for your own avatar; data-url fallback for mock) · `sounds.ts` · `radio.ts` (SomaFM singleton) · `voice.ts` (dock mic level + speech transcript) · `orbShader.ts` (voice orb WebGL) ·
 `backendCounts.ts` · `canvasSpacePan.ts` (hold-Space + drag pans
 `.space-scroll`, Figma-style; used by App.tsx + LiveSpace.tsx) ·
 `linkRanking.ts` (Hot Now's `pinned → voteCount×3 + replyCount×2 → newest`,
