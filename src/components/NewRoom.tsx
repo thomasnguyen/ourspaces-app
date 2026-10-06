@@ -11,9 +11,9 @@ import "./newRoom.css";
  *   invite link one tap away.
  */
 
-/** The tour's three, in the tour's order (OrbHint.tsx): the first builds the dinner pair. */
+/** The tour's three, in the tour's order (OrbHint.tsx): the first builds the dinner pair. A new room has no saved places, so its dinner starter names two (a bare "plan dinner saturday" asks where, and a tap can't answer). */
 export const STARTER_ASKS = [
-  "plan dinner saturday",
+  "plan dinner saturday: thai or tacos",
   "start a push-up challenge for us",
   "who's in this group?",
 ] as const;

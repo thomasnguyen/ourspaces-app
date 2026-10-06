@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import type { Widget } from "../data/types";
 import {
   applyCard,
+  checkCard,
   existingFor,
   footprint,
   getCard,
@@ -32,7 +33,7 @@ import {
 import type { Schema } from "../lib/deck/schema";
 import { expandRecipe, flowFor, getRecipe, isFlow, isRecipe, recipeLead, type RecipePart } from "../lib/deck/recipes";
 import { takeAskOutcome, type AskOutcome } from "../lib/voiceStage";
-import { dateIn, missingNeeds } from "../lib/deck/needs";
+import { dateIn, listIn, missingNeeds, needsOf } from "../lib/deck/needs";
 import { guessCards } from "../lib/deck/guess";
 import { shortlistDeck } from "../lib/deck/shortlist";
 import { answerFor, cardAnswer, goFor, mineFor, routeVerb, type Answer, type MineAct, type Verb, type VerbPick } from "../lib/deck/verbs";
@@ -508,7 +509,27 @@ type Item =
 function itemsOf(sp: Spec, text: string, whole: boolean): { items: Item[]; none: boolean } {
   const d = itemsOfRaw(sp, text, whole);
   // a poll's rules ("24 hours", "needs 8 of 12"): code reads them off the words and pins the time to this clock (lib/pollRules.ts)
-  return { ...d, items: d.items.map((i) => (i.ok && i.card.card === "poll" ? { ...i, card: { ...i.card, settings: pinPollRules(i.card.settings as Record<string, unknown>, sp.text) } as DealtCard } : i)) };
+  return { ...d, items: d.items.map((i) => pinWordList(i, sp.text)).map((i) => (i.ok && i.card.card === "poll" ? { ...i, card: { ...i.card, settings: pinPollRules(i.card.settings as Record<string, unknown>, sp.text) } as DealtCard } : i)) };
+}
+
+/** A list the words name ("plan dinner saturday: thai or tacos") is code's: a card the model left without it gets it, and a text slot it put the list in instead is cleared (X1). */
+function pinWordList(i: Item, said: string): Item {
+  if (i.ok) return i;
+  const list = listIn(said);
+  if (list.length < 2) return i;
+  let obj: Record<string, unknown>;
+  try {
+    obj = JSON.parse(i.raw);
+  } catch {
+    return i;
+  }
+  const { card, settings, ...flat } = obj;
+  const need = typeof card === "string" ? needsOf(card.trim().toLowerCase()).find((n) => n.as === "list") : undefined;
+  const given = (settings ?? flat) as Record<string, unknown>;
+  if (!need || (Array.isArray(given[need.field]) && (given[need.field] as unknown[]).length >= 2)) return i;
+  const kept = Object.fromEntries(Object.entries(given).filter(([, v]) => !(typeof v === "string" && list.filter((x) => v.toLowerCase().includes(x.toLowerCase())).length >= 2)));
+  const c = checkCard({ card, settings: { ...kept, [need.field]: list } });
+  return c.ok ? { ok: true, card: c.card, raw: i.raw, notes: [] } : i;
 }
 
 function itemsOfRaw(sp: Spec, text: string, whole: boolean): { items: Item[]; none: boolean } {
