@@ -841,7 +841,22 @@ export const seedHouse = internalMutation({
     }
 
     const designed = houseWidgetsOn(day).filter((w) => !hero || !HOUSE_CHALLENGE_IDS.includes(w.id));
-    const seat = (name: string) => (HOUSE_PHONE_SEATS.includes(name.toLowerCase()) ? null : seedUserId(HOUSE_SLUG, name));
+    /* Someone who has walked in on their own phone owns their rows: the newest
+       seat in the room with their name. A vote asks people by id only (R4), so
+       a yes the card knew by name alone could never be answered ("move game
+       night to sunday" asked Holly and her phone couldn't say). Open the phones,
+       then seed. Nobody on a phone yet: Thomas and Holly stay claimable by the
+       first log, Hoa and Hoang keep their seeded seats. */
+    const joined = new Map<string, Doc<"members">>();
+    const seeded = new Set(HOUSE_PEOPLE.map((p) => seedUserId(HOUSE_SLUG, p.name)));
+    for (const m of await ctx.db.query("members").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).take(500)) {
+      const key = m.name.trim().toLowerCase();
+      if (seeded.has(m.userId) || !HOUSE_PEOPLE.some((p) => p.name.toLowerCase() === key)) continue;
+      const had = joined.get(key);
+      if (!had || had.lastSeen < m.lastSeen) joined.set(key, m);
+    }
+    const onPhone = (name: string) => joined.get(name.trim().toLowerCase())?.userId;
+    const seat = (name: string) => onPhone(name) ?? (HOUSE_PHONE_SEATS.includes(name.toLowerCase()) ? null : seedUserId(HOUSE_SLUG, name));
     const createdBy = seedUserId(HOUSE_SLUG, "Thomas");
     const ids = new Map<string, Id<"widgets">>();
     const votes: Id<"votes">[] = [];
@@ -856,7 +871,7 @@ export const seedHouse = internalMutation({
       if (w.type !== "poll") continue;
       for (const option of (w.data.options as { id: string; voters: string[] }[]) ?? []) {
         for (const voter of option.voters) {
-          const voteId = await ctx.db.insert("votes", { widgetId: id, userId: seedUserId(HOUSE_SLUG, voter), optionId: option.id });
+          const voteId = await ctx.db.insert("votes", { widgetId: id, userId: onPhone(voter) ?? seedUserId(HOUSE_SLUG, voter), optionId: option.id });
           await pollTallies.insert(ctx, (await ctx.db.get(voteId))!);
           votes.push(voteId);
         }

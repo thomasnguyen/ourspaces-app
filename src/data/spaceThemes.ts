@@ -56,11 +56,14 @@ const SPACE_DEFAULT_THEMES: Record<string, SpaceThemeId> = {
   couple: "violet",
   house: "butter",
   family: "cobalt",
+  // the real house on the dev lane (convex/seed.ts seedHouse) wears the family look
+  "our-house": "cobalt",
 };
 
 /** A room whose wall is its own colour takes a second colour for tape, frames and pins. */
 const SPACE_DEFAULT_ACCENTS: Record<string, string> = {
   family: "#ffb02e",
+  "our-house": "#ffb02e",
 };
 
 export function defaultSpaceCustomization(space: SpaceMeta): SpaceCustomization {

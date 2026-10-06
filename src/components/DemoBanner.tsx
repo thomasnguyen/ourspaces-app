@@ -1,7 +1,28 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { SPACES_BY_ID } from "../data/spaces";
 
 /** The page asks the live room to open the space maker (LiveSpace listens). */
 export const MAKE_SPACE_EVENT = "ourspaces:make-space";
+
+/**
+ * The strip belongs to the tour: the rooms in the fixtures (`SPACES_BY_ID`)
+ * and every page that isn't a room. A room nobody toured (a made room, our
+ * house on the dev lane) is plain: no "Demo version", no "these rooms are the tour".
+ */
+function onTour(): boolean {
+  const room = /^#\/space\/([^/?]+)/.exec(window.location.hash)?.[1];
+  return !room || room in SPACES_BY_ID;
+}
+
+function useOnTour(): boolean {
+  const [tour, setTour] = useState(onTour);
+  useEffect(() => {
+    const read = () => setTour(onTour());
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, []);
+  return tour;
+}
 
 /**
  * `onMakeSpace` is set where rooms are open (the dev lane today, see
@@ -17,6 +38,7 @@ export function DemoBanner({ onJoinWaitlist, onMakeSpace, pending = false }: { o
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const tour = useOnTour();
 
   async function joinWaitlist(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,6 +78,8 @@ export function DemoBanner({ onJoinWaitlist, onMakeSpace, pending = false }: { o
     setError("");
     dialog.current?.showModal();
   }
+
+  if (!tour) return null;
 
   return (
     <>
