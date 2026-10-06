@@ -81,8 +81,9 @@ export function applyCard(
     const n = needsOf(def.id).find((x) => x.field === opts.blank);
     if (opts.unfinished && n) data = { ...data, unfinished: { field: n.field, slot: n.slot, ask: n.ask, card: def.id, ...opts.unfinished } satisfies Unfinished } as Widget["data"];
   }
-  // A poll's box fits three options; each one past that needs its own row.
-  const options = def.type === "poll" ? (data as { options?: unknown[] }).options?.length ?? 0 : 0;
+  // A poll's box fits three options; each one past that needs its own row (and its rules line, closes / needs, one more).
+  const pd = data as { options?: unknown[]; closesAt?: string; needs?: number };
+  const options = def.type === "poll" ? (pd.options?.length ?? 0) + (pd.closesAt || pd.needs ? 1 : 0) : 0;
   return {
     ok: true,
     notes: checked.notes,

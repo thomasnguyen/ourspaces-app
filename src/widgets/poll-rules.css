@@ -1,0 +1,152 @@
+/* A poll's rules (./pollRules.tsx): black sticker pills under the options —
+   when it closes, how far the count is from what it needs — and, once it is
+   decided, the stamp. A poll without rules wears none of this. */
+
+.poll-rules {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.poll-rule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  border-radius: var(--radius-pill);
+  padding: 3px 9px 3px 8px;
+  background: var(--color-sticker);
+  color: var(--color-card);
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* the one pop of lime: the clock is still running */
+.poll-closes-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-lime);
+}
+
+.poll-done .poll-closes-dot {
+  background: color-mix(in oklab, var(--color-card) 40%, transparent);
+}
+
+/* one pip per vote it needs; the ones it has are lit */
+.poll-needs-pips {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.poll-needs-pips i {
+  width: 4px;
+  height: 9px;
+  border-radius: 1px;
+  background: color-mix(in oklab, var(--color-card) 28%, transparent);
+}
+
+.poll-needs-pips i.is-in {
+  background: var(--color-lime);
+}
+
+/* decided: the rows stop being buttons, the losers step back */
+.poll-done .poll-row {
+  cursor: default;
+}
+
+.poll-done .live-label {
+  display: none;
+}
+
+.poll-done .poll-options li:not(.is-leading),
+.poll-verdict-failed .poll-options li {
+  opacity: 0.5;
+}
+
+/* the stamp: a black sticker with a cream ring, slapped on at an angle */
+.poll-stamp {
+  position: absolute;
+  z-index: 4;
+  right: 20px;
+  bottom: 24px;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 92px;
+  border-radius: 10px;
+  padding: 7px 14px 6px;
+  background: var(--color-sticker);
+  box-shadow:
+    inset 0 0 0 2px var(--color-sticker),
+    inset 0 0 0 3.5px var(--color-card),
+    0 6px 14px -6px color-mix(in oklab, var(--color-ink) 55%, transparent);
+  color: var(--color-card);
+  rotate: -8deg;
+  pointer-events: none;
+  animation: poll-stamp-land var(--dur-arrive) var(--ease-pop) backwards;
+}
+
+.poll-stamp strong {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.poll-stamp small {
+  color: var(--color-lime);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.poll-stamp-failed {
+  rotate: 6deg;
+}
+
+/* a winner's name can be long: the stamp keeps one line, smaller */
+.poll-stamp-won strong,
+.poll-stamp-tie strong {
+  max-width: 150px;
+  overflow: hidden;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* it lands like a hand stamp: in big and tilted, a little squash at impact, settled */
+@keyframes poll-stamp-land {
+  0% {
+    opacity: 0;
+    scale: 1.9;
+    translate: 0 -10px;
+  }
+  60% {
+    opacity: 1;
+    scale: 1.06 0.94;
+    translate: 0 0;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poll-stamp {
+    animation: none;
+  }
+}

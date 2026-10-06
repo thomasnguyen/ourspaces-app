@@ -36,7 +36,7 @@ const resultV = v.object({
 type Result = typeof resultV.type;
 
 /** Ops that set a value: a waiting one is dropped if someone changed that field meanwhile. Adds and removes re-check by re-running. */
-const SETS = new Set(["rename", "setWhen", "setDate", "setDays", "setDay"]);
+const SETS = new Set(["rename", "setWhen", "setDate", "setDays", "setDay", "setNeeds", "setCloses"]);
 
 export async function run(ctx: MutationCtx, a: { spaceId: Id<"spaces">; widgetId: Id<"widgets">; op: EditOp; by: string; byUserId: string; today: string; kind: "edit" | "undo"; life?: number; noLookup?: boolean }): Promise<Result> {
   const widget = await ctx.db.get(a.widgetId);

@@ -1,5 +1,6 @@
 import type { Space, SpaceMeta, Widget } from "./types";
 import { BUILD_ROOM_CANVAS, withBuildRoomLayout } from "../lib/buildRoomPresentation";
+import { localIso } from "../lib/pollRules";
 import { FAMILY_CHALLENGE_IDS, FAMILY_MEMBERS, FAMILY_WIDGETS } from "./family";
 
 /** `?family=hero` (mock): the family board with its challenge corner cleared, for the hero ask to build into. */
@@ -627,6 +628,32 @@ export const LEAGUE_WIDGETS: Widget[] = [
         { id: "b", label: "veggie", votes: 1, total: 4, voters: ["Jules"] },
         { id: "c", label: "half & half", votes: 1, total: 4, voters: ["Maya"] },
       ],
+    },
+  },
+  {
+    // the commissioner's rule change: a vote that closes tomorrow night and needs 8 of the league's 12 (?poll=passed / ?poll=closed)
+    id: "league-faab",
+    type: "poll",
+    x: 928,
+    y: 410,
+    w: 272,
+    h: 250,
+    z: 3,
+    rotate: -1.2,
+    data: {
+      question: "FAAB budget to $200?",
+      tone: "butter",
+      options: [
+        { id: "a", label: "yes", votes: 5, total: 7, voters: ["Sam", "Kenji", "Jules", "Marcus", "Theo"] },
+        { id: "b", label: "no", votes: 2, total: 7, voters: ["Maya", "Rio"] },
+      ],
+      needs: 8,
+      closesAt: (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        d.setHours(21, 0, 0, 0);
+        return localIso(d);
+      })(),
     },
   },
   {

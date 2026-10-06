@@ -40,6 +40,7 @@ import type { VoiceEnd, VoiceHooks } from "../lib/voice";
 import { applyEdit, editFor, type Choice, type EditOp } from "../lib/deck/edits";
 import { askLine } from "../lib/choiceVote";
 import { titleOfWidget } from "../lib/deck/existing";
+import { pinPollRules } from "../lib/pollRules";
 
 /**
  * Say it → it builds, the room's half (the model's half is convex/voiceBuild.ts).
@@ -505,6 +506,12 @@ type Item =
 
 /** A call's answer as cards: the brain route's tokens resolved against the room, then checked. */
 function itemsOf(sp: Spec, text: string, whole: boolean): { items: Item[]; none: boolean } {
+  const d = itemsOfRaw(sp, text, whole);
+  // a poll's rules ("24 hours", "needs 8 of 12"): code reads them off the words and pins the time to this clock (lib/pollRules.ts)
+  return { ...d, items: d.items.map((i) => (i.ok && i.card.card === "poll" ? { ...i, card: { ...i.card, settings: pinPollRules(i.card.settings as Record<string, unknown>, sp.text) } as DealtCard } : i)) };
+}
+
+function itemsOfRaw(sp: Spec, text: string, whole: boolean): { items: Item[]; none: boolean } {
   if (sp.route.route === "brain" && sp.facts) {
     const d = parseDealResolved(text, whole, sp.facts, sp.text);
     return {

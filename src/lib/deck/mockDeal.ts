@@ -19,6 +19,7 @@ import { beat } from "../voiceTimings";
 import { flowFor } from "./recipes";
 import type { CardId } from "./catalog";
 import { guessCard, titleFromWords } from "./guess";
+import { rulesSaid } from "../pollRules";
 
 type StandIn = { card: CardId | "challenge" | "dinner" | "hangout" | "cabin" | "potluck"; settings: Record<string, string | number | string[]> };
 
@@ -137,10 +138,15 @@ export function standInFor(said: string, menu?: string): StandIn | null {
   if (flow === "potluck") return { card: flow, settings: { title: "potluck", items: ["mains", "salad", "dessert", "drinks", "ice"] } };
   switch (card) {
     case "poll": {
-      const question = (base.question as string) ?? `${title.replace(/\?$/, "")}?`.slice(0, 80);
+      // a vote with rules ("24 hours", "needs 8 of 12"): the rules as said, the question without them, yes or no
+      const rules = rulesSaid(said);
+      const ruled = !!(rules.closes || rules.needs);
+      const topic = ruled ? lower(titleFromWords(rules.rest, "poll")).replace(/^(?:(?:put|have|take)\s+)?(.+?)\s+(?:up\s+)?(?:for|to)\s+a\s+vote$/, "$1").replace(/^(?:a\s+)?vote\s+on\s+/, "") || title : title;
+      const question = (base.question as string) ?? `${topic.replace(/\?$/, "")}?`.slice(0, 80);
+      const said2 = { ...(rules.closes ? { closes: rules.closes } : {}), ...(rules.needs ? { needs: rules.needs } : {}) };
       // the group's own places when the words are about where to eat; else what the words named
-      if (places && FOOD.test(said) && !named.length) return { card, settings: { question, options: [places, "somewhere else"] } };
-      return { card, settings: { question, options: (base.options as string[]) ?? (named.length ? named : FOOD.test(said) ? ["tacos", "pho", "pizza"] : ["yes", "no", "maybe"]) } };
+      if (places && FOOD.test(said) && !named.length) return { card, settings: { question, options: [places, "somewhere else"], ...said2 } };
+      return { card, settings: { question, options: (base.options as string[]) ?? (ruled ? (listFromWords(rules.rest).length ? listFromWords(rules.rest) : ["yes", "no"]) : named.length ? named : FOOD.test(said) ? ["tacos", "pho", "pizza"] : ["yes", "no", "maybe"]), ...said2 } };
     }
     case "checklist":
       return { card, settings: { title: (base.title as string) ?? title.slice(0, 40), items: (base.items as string[]) ?? (named.length ? named : ["snacks", "drinks", "playlist"]) } };

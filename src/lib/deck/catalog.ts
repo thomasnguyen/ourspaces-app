@@ -11,6 +11,7 @@
 import type { Widget, WidgetType } from "../../data/types";
 import { RADIO_STATIONS } from "../radio";
 import { WIDGET_SIZES } from "../widgetDefaults";
+import { closesFromWords, needsFromWords } from "../pollRules";
 import { date, list, num, oneOf, rows, text, zone, type Field, type Infer, type Need, type Said, type Schema } from "./schema";
 
 /** What the room knows when a card turns into a widget. */
@@ -63,19 +64,27 @@ const RADIO_CHIPS = RADIO_STATIONS.map((s) => s.chip);
 export const CATALOG = [
   card({
     id: "poll",
-    use: "the group votes on one question",
+    use: "the group votes on one question; closes / needs only when said, in the words (\"24 hours\", \"8 of 12\")",
     type: "poll",
-    settings: { question: text(80), options: list(2, 5, { itemMax: 32 }) },
-    edits: { addOption: text(32), removeOption: text(32), rename: text(80) },
+    // closes / needs: the words as said; code makes them a time and a number (lib/pollRules.ts), the model never does date maths
+    settings: { question: text(80), options: list(2, 5, { itemMax: 32 }), closes: text(24, { optional: true }), needs: text(16, { optional: true }) },
+    edits: { addOption: text(32), removeOption: text(32), rename: text(80), setNeeds: num(1, 50), setCloses: text(24) },
     needs: [
       need("question", "what are we voting on?", "add the question", "text"),
       need("options", "what are the choices?", "add choices", "list", (w) => w.list.length >= 2 || (!!w.topic && !OWN_CHOICES.test(w.topic))),
     ],
-    build: (s, ctx) => ({
-      question: s.question,
-      options: s.options.map((label, i) => ({ id: LETTERS[i], label, votes: 0, total: 0, voters: [] })),
-      waitingOn: others(ctx),
-    }),
+    build: (s, ctx) => {
+      // the asker's screen pins `closes` to its local time first (useVoiceBuild `itemsOf`), so the server's clock never resolves it
+      const closesAt = s.closes ? closesFromWords(s.closes) : null;
+      const needs = s.needs ? needsFromWords(s.needs, ctx.people.length) : null;
+      return {
+        question: s.question,
+        options: s.options.map((label, i) => ({ id: LETTERS[i], label, votes: 0, total: 0, voters: [] })),
+        waitingOn: others(ctx),
+        ...(closesAt ? { closesAt } : {}),
+        ...(needs ? { needs } : {}),
+      };
+    },
   }),
   card({
     id: "checklist",

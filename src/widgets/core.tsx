@@ -10,6 +10,8 @@ import { MemberFace } from "../components/MemberFace";
 import { playSound } from "../lib/sounds";
 import "./phone-cards.css";
 import "./poll-web.css";
+import "./poll-rules.css";
+import { PollRulesLine, PollStamp, pollRulesClass, usePollRules } from "./pollRules";
 
 type Style = CSSProperties;
 
@@ -351,16 +353,19 @@ export function CountdownWidget({ widget, style }: { widget: Widget; style: Styl
 const reviewCount = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : n.toLocaleString("en-US"));
 
 function PollWidgetComponent({
-  widget,
+  widget: card,
   style,
   selectedOptionId,
-  onVote,
+  onVote: castVote,
 }: {
   widget: Widget;
   style: Style;
   selectedOptionId?: string;
   onVote?: (optionId: string) => void;
 }) {
+  // its rules (closes / needs, ./pollRules.tsx): once decided, nobody votes and the verdict is stamped on
+  const { widget, outcome, now } = usePollRules(card, selectedOptionId);
+  const onVote = outcome?.done ? undefined : castVote;
   const options = useMemo(() => widget.data.options as {
     id: string;
     label: string;
@@ -394,7 +399,7 @@ function PollWidgetComponent({
   );
 
   return (
-    <div className={`widget-shell widget-poll poll-tone-${tone}`} style={style}>
+    <div className={`widget-shell widget-poll poll-tone-${tone}${pollRulesClass(outcome)}`} style={style}>
       <div className="poll-pin" aria-hidden="true" />
       <div className="poll-content">
         <div className="poll-heading">
@@ -497,7 +502,9 @@ function PollWidgetComponent({
             </div>
           )
         )}
+        <PollRulesLine outcome={outcome} now={now} />
       </div>
+      <PollStamp outcome={outcome} />
     </div>
   );
 }
