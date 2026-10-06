@@ -9,6 +9,8 @@ import { messagesCounter, spacesCounter, widgetsCounter } from "./stats";
 import type { CountdownData, ItineraryData, LinkCardData, WidgetData } from "./widgetData";
 import { FAMILY_CHALLENGE_IDS, familyWidgetsOn } from "../src/data/family";
 import { internal } from "./_generated/api";
+import { asPrompt, dealLikely, HOUSE_PROMPTS, likelyFacts, type LikelyFact } from "../src/lib/games/facts";
+import type { RoomKnows } from "../src/lib/roomKnows";
 
 type LinkShelfData = { title: string; links: { label: string; url: string; by?: string }[] };
 
@@ -707,6 +709,9 @@ const HOUSE_PEOPLE = [
   { name: "Hoa", color: "#13b8a6" },
   { name: "Hoang", color: "#ff7c42" },
 ];
+/** The board, with room under "this week" for the games corner (scoreboard + game card, 720 x 560, placed by
+    code in the first clear spot: lib/games/place.ts); our-house is in LIVE_GAME_ROOMS. */
+const HOUSE_CANVAS = { w: 1330, h: 1990 };
 /** The two phones sit in Thomas's and Holly's seats: their rows stay unclaimed so the phone that logs first owns it. */
 const HOUSE_PHONE_SEATS = ["thomas", "holly"];
 export const HOUSE_CHALLENGE_IDS = ["house-frame-challenge", "house-checkin", "house-standings", "house-signup", "house-reveal", "house-deal"];
@@ -718,6 +723,9 @@ function houseWidgetsOn(today: string): Widget[] {
   const wd = (n: number) => ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][at(n).getUTCDay()];
   const yes = (name: string) => ({ name, status: "yes" as const });
   return [
+    /* dinner tonight, answered: two yeses, a no, one nobody's heard from. First in creation order so the brief's
+       @coming(…) lists it before "who's in" (who's driving to dinner = only the yeses). */
+    { id: "house-dinner-rsvp", type: "rsvp", x: 56, y: 1068, w: 230, h: 250, z: 3, rotate: 0.8, data: { title: "dinner tonight · 7", responses: [yes("Holly"), yes("Thomas"), { name: "Hoa", status: "no" as const }], waitingOn: ["Hoang"] } },
     { id: "house-frame-challenge", type: "frame", x: 32, y: 48, w: 1266, h: 650, z: 0, data: { title: `push-ups till ${wd(2)}`, subtitle: "the four of us" } },
     {
       id: "house-checkin", type: "checkIn", x: 56, y: 110, w: 600, h: 420, z: 4, rotate: -0.6,
@@ -732,7 +740,7 @@ function houseWidgetsOn(today: string): Widget[] {
     { id: "house-reveal", type: "countdown", x: 1090, y: 368, w: 182, h: 262, z: 3, rotate: 2, data: { event: `the reveal · ${wd(2)} 9:00`, targetDate: iso(2), startDate: iso(-4), tone: "butter", hyped: ["Hoang", "Thomas", "Holly"] } },
     { id: "house-deal", type: "note", x: 56, y: 552, w: 400, h: 128, z: 2, rotate: -1, data: { kicker: "the deal", text: "log before bed or it didn't happen. knees don't count.", author: "Thomas", tone: "white" } },
 
-    { id: "house-frame-week", type: "frame", x: 32, y: 744, w: 1266, h: 470, z: 0, data: { title: "this week", subtitle: "dinner, games, bumi" } },
+    { id: "house-frame-week", type: "frame", x: 32, y: 744, w: 1266, h: 610, z: 0, data: { title: "this week", subtitle: "dinner, games, bumi" } },
     {
       id: "house-dinner", type: "poll", x: 56, y: 806, w: 270, h: 230, z: 4, rotate: -1.2,
       data: {
@@ -800,12 +808,12 @@ export const seedHouse = internalMutation({
     if (!space) {
       const spaceId = await ctx.db.insert("spaces", {
         name: "our house", type: "ongoing", icon: "⌂", color: "#3f70ff", slug: HOUSE_SLUG, tagline: "four of us and bumi",
-        canvasW: 1330, canvasH: 1250, createdAt: now, lastActivityAt: now,
+        canvasW: HOUSE_CANVAS.w, canvasH: HOUSE_CANVAS.h, createdAt: now, lastActivityAt: now,
       });
       await spacesCounter.inc(ctx);
       space = (await ctx.db.get(spaceId))!;
     } else {
-      await ctx.db.patch(space._id, { lastActivityAt: now });
+      await ctx.db.patch(space._id, { lastActivityAt: now, canvasW: HOUSE_CANVAS.w, canvasH: HOUSE_CANVAS.h });
     }
     const spaceId = space._id;
 
@@ -885,5 +893,47 @@ export const seedHouse = internalMutation({
     }
     await ctx.scheduler.runAfter(0, internal.roomBrief.refresh, { spaceId });
     return { ids: { spaceId, members, widgets: [...ids.values()], votes }, removed, cards: ids.size };
+  },
+});
+
+/**
+ * A most-likely-to game in our house, started for a phone (the video's games take, .context/house/take.mjs games).
+ * The phones are anonymous seats and a tour-style room only lets a joined member start one (games.start), so the
+ * take starts it here, in the starter's newest phone seat, dealt the way games.start deals: the room's facts
+ * (likelyFacts / dealLikely), the house prompts topping up to three, one wording call. Join, begin and every pick
+ * go through the public mutations from the phones. An open game is returned as it is. Cleanup: games:sweep by id.
+ */
+export const houseGame = internalMutation({
+  args: { starter: v.optional(v.string()) },
+  returns: v.object({ gameId: v.id("games"), fresh: v.boolean(), prompts: v.array(v.string()) }),
+  handler: async (ctx, { starter = "Holly" }) => {
+    const space = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", HOUSE_SLUG)).unique();
+    if (!space) throw new Error(`no ${HOUSE_SLUG}: run seed:seedHouse first`);
+    const spaceId = space._id;
+    const on = await ctx.db.query("games").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(5);
+    const open = on.find((g) => g.phase !== "done" && g.kind !== "jigsaw");
+    if (open) return { gameId: open._id, fresh: false, prompts: [] };
+    const key = starter.trim().toLowerCase();
+    const seats = (await ctx.db.query("members").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).take(500)).filter(
+      (m) => m.name.trim().toLowerCase() === key && m.userId !== seedUserId(HOUSE_SLUG, starter),
+    );
+    const me = seats.sort((a, b) => b.lastSeen - a.lastSeen)[0];
+    if (!me) throw new Error(`no phone seat for ${starter} in ${HOUSE_SLUG}: open the phone first`);
+    const row = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
+    const brief = row ? (JSON.parse(row.facts) as { knows?: Pick<RoomKnows, "people" | "lines">; told?: RoomKnows["told"]; forgot?: RoomKnows["forgot"] }) : {};
+    const people = (brief.knows?.people ?? HOUSE_PEOPLE).filter((p) => p.name.trim().toLowerCase() !== key);
+    const cast = [{ name: me.name, color: me.color }, ...people.map(({ name, color }) => ({ name, color }))].slice(0, 8);
+    const facts = dealLikely(likelyFacts(brief.knows?.lines ?? [], brief.forgot ?? [], brief.told ?? []), on.length);
+    const all: LikelyFact[] = facts.length >= 3 ? facts : [...facts, ...HOUSE_PROMPTS].slice(0, 3);
+    const now = Date.now();
+    const gameId = await ctx.db.insert("games", {
+      spaceId, kind: "most-likely", name: "most likely to", phase: "invite", round: 0,
+      startedBy: { userId: me.userId, name: me.name, color: me.color }, startedAt: now, cast, worded: "templates (wording…)",
+    });
+    await ctx.db.insert("gamePlayers", { gameId, userId: me.userId, name: me.name, color: me.color, joinedAt: now, fromRound: 0 });
+    for (const [n, f] of all.entries()) await ctx.db.insert("gameRounds", { gameId, n, prompt: asPrompt(f, n), winners: [] });
+    await ctx.scheduler.runAfter(0, internal.games.word, { gameId });
+    await ctx.scheduler.runAfter(180_000, internal.games.tick, { gameId, phase: "expire", n: 0 });
+    return { gameId, fresh: true, prompts: all.map((f) => f.template.text) };
   },
 });

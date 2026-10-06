@@ -126,4 +126,4 @@ export const KEEPSAKE_SPOTS: Record<string, { x: number; y: number; rotate: numb
 };
 
 /** Live rooms where games are on (the scoreboard card sits on the board). */
-export const LIVE_GAME_ROOMS = new Set(["crew", "house", "couple", "family"]);
+export const LIVE_GAME_ROOMS = new Set(["crew", "house", "couple", "family", "our-house"]);
