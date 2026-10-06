@@ -33,3 +33,24 @@
 .widget-poll:is(:has(.poll-web), :has(.poll-options li:nth-child(5))) :is(.poll-row-base, .poll-row-fill) {
   min-height: 27px;
 }
+
+/* seven or more (the house's places and three found ones): smaller still */
+.widget-poll:has(.poll-options li:nth-child(7)) .poll-options {
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.widget-poll:has(.poll-options li:nth-child(7)) :is(.poll-row-base, .poll-row-fill) {
+  min-height: 20px;
+  font-size: 11px;
+}
+
+.widget-poll:has(.poll-options li:nth-child(7)) :is(.poll-row-base, .poll-row-fill):has(.poll-web) {
+  padding-block: 1px;
+}
+
+.widget-poll:has(.poll-options li:nth-child(7)) .poll-web {
+  margin-top: 0;
+  font-size: 8.5px;
+  line-height: 1.1;
+}

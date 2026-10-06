@@ -423,10 +423,9 @@ function PollWidgetComponent({
                 <span className="poll-option-label">
                   {option.label}
                   {option.web && (
-                    // where the web found it: the page's numbers (a rating, a review count) when it had them · the site · the mark
+                    // where the web found it: the page's number (its rating, else its review count) · the site · the mark
                     <small className="poll-web" data-testid="poll-web" data-url={option.web.url}>
-                      {option.web.rating !== undefined && `${option.web.rating} · `}
-                      {option.web.reviews !== undefined && `${reviewCount(option.web.reviews)} reviews · `}
+                      {option.web.rating !== undefined ? `${option.web.rating} · ` : option.web.reviews !== undefined ? `${reviewCount(option.web.reviews)} reviews · ` : ""}
                       {option.web.host} · <i>from the web</i>
                     </small>
                   )}

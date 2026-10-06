@@ -268,6 +268,8 @@ function inCity(hit: Hit, city: string) {
   const all = `${decodeURIComponent(hit.url).replace(/[-_+]/g, " ")} ${hit.title} ${hit.content}`.toLowerCase();
   const [name, state] = city.split(/,\s*/);
   if (!all.includes(name.toLowerCase())) return false;
+  // Tripadvisor names the state in the address: ".../Restaurants-g33020-…-San_Jose_California-Ramen.html"
+  if (state?.toUpperCase() === "CA" && all.includes(`${name.toLowerCase()} california`)) return true;
   // another place with the same name: "San Jose, Costa Rica", "Province of San Jose", "San Jose, IL"
   if (/costa rica|province of/.test(all)) return false;
   const other = [...all.matchAll(new RegExp(`${name.toLowerCase()},\\s*([a-z]{2})\\b`, "g"))].map((m) => m[1]);

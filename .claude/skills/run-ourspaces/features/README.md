@@ -35,6 +35,7 @@ plus the wide beats table over the stage.
 | [flows](flows.md) | crew | dinner · dinner-stage · hangout · cabin · potluck · cut (mock stand-ins; live via the two-browser harness) |
 | [new-space](new-space.md) | crew → a made room (lane) | banner · maker · named · empty · nudge · gate · knows (+ the two-device walk) |
 | [first-minute](first-minute.md) | crew (lane) | cold · notice · door · nodoor · cursor · hint · starter · landed |
+| [dinner-web](dinner-web.md) | our house (lane) | ask · ask-tonight · ask-sushi · rows · add · added · added-dumplings · drawer (Tavily, the lookup) |
 
 ## Header format
 
