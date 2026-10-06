@@ -3,7 +3,7 @@ export { CATALOG, CARD_IDS, cardSize, footprint, getCard } from "./catalog";
 export type { Card, CardContext, CardId, DealtCard } from "./catalog";
 export { applyCard, checkCard } from "./apply";
 export type { Applied, CardCheck } from "./apply";
-export { placeCards, placeReason } from "./place";
+export { placeCards, placeReason, stackParts } from "./place";
 export type { PlaceRoom, Placement, Rect } from "./place";
 export { catalogJson, dealTurn, deckPrompt, parseDeal, roomContext } from "./prompt";
 export type { Deal, DealItem } from "./prompt";

@@ -11,10 +11,11 @@ import "./newRoom.css";
  *   invite link one tap away.
  */
 
+/** The tour's three, in the tour's order (OrbHint.tsx): the first builds the dinner pair. */
 export const STARTER_ASKS = [
-  "who's in this group?",
-  "plan something for this weekend",
+  "plan dinner saturday",
   "start a push-up challenge for us",
+  "who's in this group?",
 ] as const;
 
 export function NewRoomStart({ roomName, onAsk }: { roomName: string; onAsk: (words: string) => void }) {

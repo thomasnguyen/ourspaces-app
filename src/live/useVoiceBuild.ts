@@ -12,6 +12,7 @@ import {
   parsePartialCard,
   placeCards,
   placeReason,
+  stackParts,
   resolveCard,
   routeAsk,
   scrubTokens,
@@ -316,6 +317,7 @@ export function refusedLine(error: string | null | undefined): string | undefine
 }
 
 const DOCK_ROOM = 20; // clear air between a landed card and the dock
+const SLIP_ROOM = 56; // the "pico said it" slip above the lead card, and the banner's shadow
 const HANDOFF_MS = 520; // the ring's let-go (--dur-stage, plus a frame)
 const LEAVE_MS = 240; // the slip's exit (--dur-base, plus a frame)
 const FRAME_PAD = 12; // a frame's label, garland and dashes paint past its box
@@ -371,11 +373,13 @@ function glideScroll(scroller: HTMLElement, dx: number, dy: number, ms = 900) {
 }
 
 /** The shortest move that brings `r` into the view with air around it (canvas
-    units). Bigger than the view (a group on a phone): its top-left corner, so
-    the lead card is the one on screen and the rest runs under the dock. */
+    units). Bigger than the view (a group on a phone): its top-left corner with
+    the slip's room above it, so the lead card is the one on screen and the
+    rest runs under the dock. */
 function panFor(r: Rect, v: Rect) {
   const airX = Math.min(120, Math.max(24, (v.w - r.w) / 2));
-  const airY = Math.min(96, Math.max(24, (v.h - r.h) / 2));
+  // taller than the view (a stacked pair on a phone): room for the slip above the lead card, the rest runs under the dock
+  const airY = Math.min(96, Math.max(r.h > v.h - 48 ? SLIP_ROOM : 24, (v.h - r.h) / 2));
   const axis = (a: number, len: number, va: number, vlen: number, air: number) =>
     a < va + air || len > vlen - air * 2 ? a - (va + air) : a + len > va + vlen - air ? a + len - (va + vlen - air) : 0;
   return { dx: axis(r.x, r.w, v.x, v.w, airX), dy: axis(r.y, r.h, v.y, v.h, airY) };
@@ -398,6 +402,15 @@ function measure(scroller: HTMLElement | null) {
     // Above the dock.
     h: (Math.min(s.bottom, dockTop - DOCK_ROOM) - top) / scale,
   };
+  // The screen itself, unclamped: a phone opens the room with the canvas box
+  // starting below the scroller's top, and a pan measured from the clamped
+  // view lands that much short (FM2b). Placement keeps `view`; the camera pans by this.
+  const screen = {
+    x: (s.left - c.left) / scale,
+    y: (s.top - c.top) / scale,
+    w: (Math.min(s.right, window.innerWidth) - s.left) / scale,
+    h: (Math.min(s.bottom, dockTop - DOCK_ROOM) - s.top) / scale,
+  };
   const board = Array.from(canvas.querySelectorAll<HTMLElement>("[data-widget-id]"), (el) => {
     const r = el.getBoundingClientRect();
     return { id: el.dataset.widgetId ?? "", x: (r.left - c.left) / scale, y: (r.top - c.top) / scale, w: r.width / scale, h: r.height / scale };
@@ -418,7 +431,7 @@ function measure(scroller: HTMLElement | null) {
   const reachX = (scroller.scrollWidth - scroller.scrollLeft - (c.left - s.left)) / scale;
   const reachY = (scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop + (dockTop - DOCK_ROOM - c.top)) / scale;
   const bounds = { x: 0, y: 0, w: Math.max(canvas.offsetWidth, reachX), h: Math.max(view.y + view.h, reachY) };
-  return { canvas, scroller, scale, view, board, bounds };
+  return { canvas, scroller, scale, view, screen, board, bounds };
 }
 type Measured = NonNullable<ReturnType<typeof measure>>;
 
@@ -1338,8 +1351,8 @@ export function useVoiceBuild({
       setDrafts([]);
       setShell(null);
       // The camera goes to it: centred in the view (as far as the room scrolls).
-      const dx = r.x + r.w / 2 - (m.view.x + m.view.w / 2);
-      const dy = r.y + r.h / 2 - (m.view.y + m.view.h / 2);
+      const dx = r.x + r.w / 2 - (m.screen.x + m.screen.w / 2);
+      const dy = r.y + r.h / 2 - (m.screen.y + m.screen.h / 2);
       glideScroll(m.scroller, Math.round(dx * m.scale), Math.round(dy * m.scale));
       setFound({
         widgetId: item.id,
@@ -1396,13 +1409,17 @@ export function useVoiceBuild({
       s.shown = kept.find((k) => k.card.card === "checkin") ? "checkin" : (kept[0].card.card as CardId);
       const m = measure(scrollerRef.current) ?? s.m;
       if (!m) return fail("no canvas");
-      // the group is placed as one footprint (the frame round it, or a flow's pair side by side)
-      const size = { w: Math.max(...kept.map((k) => k.part!.at.x + k.part!.size.w)), h: Math.max(...kept.map((k) => k.part!.at.y + Math.max(k.part!.size.h, k.widget.h))) };
+      // the group is placed as one footprint (the frame round it, or a flow's pair side by side);
+      // a flow's pair on a view too narrow for it (a phone) stacks, so both cards land in view
+      const parts = kept.map((k) => ({ at: k.part!.at, size: { w: k.part!.size.w, h: Math.max(k.part!.size.h, k.widget.h) } }));
+      const stack = kept.length === 2 && kept.every((k) => k.card.card !== "frame") ? stackParts(parts, m.screen) : null;
+      const at = (i: number) => stack?.at[i] ?? parts[i].at;
+      const size = stack?.size ?? { w: Math.max(...parts.map((p) => p.at.x + p.size.w)), h: Math.max(...parts.map((p) => p.at.y + p.size.h)) };
       const placeRoom = { widgets: m.board, view: m.view, bounds: m.bounds, selected: room.current.selectedId?.() ?? null, held: room.current.held?.() };
       const [spot] = placeCards([size], placeRoom);
-      s.trace.place = `recipe group ${size.w}×${size.h}: ${placeReason([size], [spot], placeRoom)}`;
+      s.trace.place = `recipe group ${size.w}×${size.h}${stack ? " (stacked for a narrow view)" : ""}: ${placeReason([size], [spot], placeRoom)}`;
       const box = { ...spot, ...size };
-      const placed = kept.map((k) => ({ ...k, widget: { ...k.widget, x: spot.x + k.part!.at.x, y: spot.y + k.part!.at.y, ...(k.widget.data.flowTag ? { data: { ...k.widget.data, flowBox: box } } : {}) } }));
+      const placed = kept.map((k, i) => ({ ...k, widget: { ...k.widget, x: spot.x + at(i).x, y: spot.y + at(i).y, ...(k.widget.data.flowTag ? { data: { ...k.widget.data, flowBox: box } } : {}) } }));
       // on this screen, before anything is written, a linked part already points at its source's draft
       for (const k of placed) {
         const l = k.part!.link;
@@ -1410,8 +1427,8 @@ export function useVoiceBuild({
         if (l && from) k.widget = { ...k.widget, data: { ...k.widget.data, [l.fill]: from.widget.id } };
       }
       const group = { ...spot, ...size };
-      if (!inView(group, m.view)) {
-        const pan = panFor(group, m.view);
+      if (!inView(group, m.screen)) {
+        const pan = panFor(group, m.screen);
         glideScroll(m.scroller, pan.dx * m.scale, pan.dy * m.scale);
       }
       setShell(null);
@@ -2104,8 +2121,8 @@ export function useVoiceBuild({
         w: Math.max(...spots.map((p, i) => p.x + sizes[i].w)) - Math.min(...spots.map((p) => p.x)),
         h: Math.max(...spots.map((p, i) => p.y + sizes[i].h)) - Math.min(...spots.map((p) => p.y)),
       };
-      if (!inView(cluster, m.view)) {
-        const pan = panFor(cluster, m.view);
+      if (!inView(cluster, m.screen)) {
+        const pan = panFor(cluster, m.screen);
         glideScroll(m.scroller, pan.dx * m.scale, pan.dy * m.scale);
       }
       // The ring goes solid and lets go; the slip goes on the card.

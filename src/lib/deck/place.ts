@@ -178,3 +178,37 @@ export function placeReason(
       : "nearest clear spot to the middle of your view";
   return `${near}, ${where}; clear of ${room.widgets.length} objects`;
 }
+
+/** The gap between stacked cards: room for the thread's tag, and air round it. */
+const STACK_GAP = { min: 48, max: 88 };
+/** The lower card steps to the right: the thread runs diagonally, its tag
+    clear of what hangs at the upper card's foot ("call it"), and the stack
+    reads as placed by a hand, not a grid. Capped by the view's width. */
+const STACK_NUDGE = 96;
+
+/**
+ * A flow's pair on a view too narrow for it side by side (a phone): the cards
+ * stack top to bottom in the recipe's order, the thread runs down between
+ * them, and the whole group fits the view's width. Null when the pair fits as
+ * laid out, so the recipe's own layout stands.
+ */
+export function stackParts(
+  parts: ReadonlyArray<{ at: Placement; size: { w: number; h: number } }>,
+  view: { w: number; h: number },
+): { at: Placement[]; size: { w: number; h: number } } | null {
+  if (parts.length < 2) return null;
+  const wide = Math.max(...parts.map((p) => p.at.x + p.size.w));
+  if (wide <= view.w - PAD * 2) return null;
+  const tall = parts.reduce((h, p) => h + p.size.h, 0);
+  const gap = Math.round(Math.min(STACK_GAP.max, Math.max(STACK_GAP.min, (view.h - PAD * 2 - tall) / (parts.length - 1))));
+  const at: Placement[] = [];
+  let y = 0;
+  let w = 0;
+  parts.forEach((p, i) => {
+    const x = Math.max(0, Math.min(i * STACK_NUDGE, view.w - PAD * 2 - p.size.w));
+    at.push({ x, y });
+    w = Math.max(w, x + p.size.w);
+    y += p.size.h + gap;
+  });
+  return { at, size: { w, h: y - gap } };
+}
