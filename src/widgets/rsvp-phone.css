@@ -1,0 +1,21 @@
+/* Who's-in on a phone (FM2d): the first-minute pair stacks poll over who's-in, and the
+   view above the dock is shorter than the two footprints, so a waiting who's-in ran its
+   "waiting on the poll" ticket under the dock. While it waits, the card says each thing
+   once and is only as tall as what it says; the ticket rides its foot. */
+@media (max-width: 800px) {
+  /* "waiting on maya + jules + …" already says no one has answered */
+  .widget-group-body:has(> .card-waiting) > .widget-rsvp .rsvp-empty:has(~ .rsvp-waiting) {
+    display: none;
+  }
+
+  /* the group sizes to the card, not to its 260 footprint; a size container has no
+     content height, so the card measures its width only (its height queries are for
+     short desk cards) */
+  .widget-group:has(> .widget-group-body > .widget-rsvp ~ .card-waiting) {
+    height: auto !important;
+  }
+
+  .widget-group-body:has(> .card-waiting) > .widget-rsvp {
+    container-type: inline-size;
+  }
+}

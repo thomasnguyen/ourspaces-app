@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
 ready: dock-voice-orb
-testids: dock-voice-orb voice-stage voice-stage-left voice-stage-right voice-stage-text voice-stage-status voice-stage-wave voice-stage-card voice-stage-parts voice-stage-part-question voice-stage-part-option-0 voice-stage-part-option-1 voice-stage-part-option-2 voice-stage-part-title voice-stage-part-item-0 voice-stage-part-who voice-stage-part-event voice-stage-part-date voice-stage-part-days voice-stage-part-total voice-stage-part-person-0 voice-stage-chip-0 voice-stage-chip-3 voice-stage-mute voice-stage-finish voice-stage-beats voice-stage-ask voice-stage-offers voice-stage-offer-0 voice-stage-sources voice-stage-found voice-found-pulse voice-landed voice-stage-cluster
+testids: dock-voice-orb voice-stage voice-stage-left voice-stage-right voice-stage-text voice-stage-status voice-stage-wave voice-stage-card voice-stage-parts voice-stage-part-question voice-stage-part-option-0 voice-stage-part-option-1 voice-stage-part-option-2 voice-stage-part-title voice-stage-part-item-0 voice-stage-part-who voice-stage-part-event voice-stage-part-date voice-stage-part-days voice-stage-part-total voice-stage-part-person-0 voice-stage-chip-0 voice-stage-chip-3 voice-stage-mute voice-stage-finish voice-stage-beats voice-stage-ask voice-stage-ask-slip voice-stage-offers voice-stage-offer-0 voice-stage-sources voice-stage-found voice-found-pulse voice-landed voice-stage-cluster
 states:
   poll: ?voicePace=talk&voice=add a poll for Saturday dinner
   countdown: ?voicePace=talk&voice=countdown to Holly's birthday on November 14
@@ -21,7 +21,7 @@ states:
   countdown-mid: ?stageFreeze=complete&voicePace=talk&voice=countdown to Holly's birthday on November 14 | click dock-voice-orb | wait voice-stage-card | sleep 4600
   checklist-mid: ?stageFreeze=complete&voicePace=talk&voice=who's bringing what for the potluck | click dock-voice-orb | wait voice-stage-card | sleep 4400
   split-mid: ?stageFreeze=complete&voicePace=talk&voice=split the cabin, 640 | click dock-voice-orb | wait voice-stage-card | sleep 4000
-  ask: ?voicePace=talk&voice=add a poll | click dock-voice-orb | wait voice-stage-ask | sleep 900
+  ask: ?voicePace=talk&voice=add a poll | click dock-voice-orb | wait voice-stage-ask-slip | sleep 900
   ask-answered: ?voicePace=talk&voice=add a poll … … … for Saturday dinner
   ask-offer: ?voicePace=talk&voice=add a poll | click dock-voice-orb | wait voice-stage-offer-0 | sleep 500 | click voice-stage-offer-0 | wait voice-stage-sources | sleep 500
   room: ?stageFreeze=complete&voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-stage-sources | sleep 600
@@ -76,8 +76,9 @@ Status and the two keys (mute, finish) share one bar under the orb.
 
 **It asks for the rest.** Name a card with nothing to put in it ("add a
 poll") and the pause does not end the ask: the ring goes white and waits,
-"what's it about?" lands on the card's shoulder (`voice-stage-ask`), your
-words end on a lime caret, and under the card the room offers what it
+"what's it about?" lands on the card's shoulder (`voice-stage-ask`) and in
+the slip under your words (`voice-stage-ask-slip`; a phone shows the slip
+only, so drive waits on it), your words end on a lime caret, and under the card the room offers what it
 already knows could fill it (`voice-stage-offer-0..`: "where we eat · from
 your saved places"). Say the rest or tap one. Four quiet seconds: a guess
 that is already showing is kept, an empty card is let go, nothing is built.

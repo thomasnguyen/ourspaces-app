@@ -216,7 +216,7 @@ with the `spaces-pop-email` prefix.
 captures shared with `ShipRoom`; all pure, fed one `BuildRoomFeed` prop threaded
 Canvas → WidgetCard) · `core.tsx` (sticker, frame, countdown, poll, note…; imports `phone-cards.css`: under 800px the poll fills its spot and grows rather than clip, 4+ choices tighten, the torn paper tears at the edge, "call it" and who's-in's waiting ticket sit inside their cards) ·
 `challenge.tsx` + `challenge.css` (`CheckInWidget`, `StandingsWidget`, `BoardLinkContext` = the board's widgets and `onWidgetData`, provided by `Canvas`; maths and the `CheckInData` / `StandingsData` types in `src/lib/challenge.ts`; feature files `check-in.md`, `standings.md`) ·
-`extras.tsx` (rsvp, dailyQ, availability, Firecrawl link card, link shelf, playlist, expense,
+`extras.tsx` (rsvp (+ `rsvp-phone.css`: under 800px a who's-in waiting on the poll sizes to its words, so its ticket clears the dock), dailyQ, availability, Firecrawl link card, link shelf, playlist, expense,
 itinerary (+ `itinerary.css`: the day column sized to the longest day via subgrid), quote, weather, sports, letter — kraft envelope that unfolds; buttons
 inside so WidgetCard's drag capture doesn't eat the click…) · `CozyColorWidget.tsx` (full-screen
 paint-by-number game on an inline SVG board: 50 closed vector regions fill via

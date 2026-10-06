@@ -3,18 +3,18 @@ route: #/space/crew
 ready: dock-voice-orb
 testids: voice-stage-ask voice-stage-ask-slip voice-stage-offers voice-stage-offer-0 voice-stage-card card-slot card-slot-input voice-landed
 states:
-  poll: ?voicePace=talk&timing=0&voice=add a poll | click dock-voice-orb | wait voice-stage-ask | sleep 500
-  poll-second: ?voicePace=talk&timing=0&voice=add a poll …2600 the team name | click dock-voice-orb | wait voice-stage-ask | sleep 4200
+  poll: ?voicePace=talk&timing=0&voice=add a poll | click dock-voice-orb | wait voice-stage-ask-slip | sleep 500
+  poll-second: ?voicePace=talk&timing=0&voice=add a poll …2600 the team name | click dock-voice-orb | wait voice-stage-ask-slip | sleep 4200
   poll-answered: ?voicePace=talk&timing=0&voice=add a poll …2600 the team name …2600 otters, owls or bats | click dock-voice-orb | wait voice-landed | sleep 1200
   delegated: ?voicePace=talk&timing=0&voice=add a poll …2600 saturday dinner | click dock-voice-orb | wait voice-landed | sleep 1200
   countdown: ?voicePace=talk&timing=0&voice=start a countdown | click dock-voice-orb | wait voice-stage-offer-0 | sleep 500
   countdown-offer: ?voicePace=talk&timing=0&voice=start a countdown | click dock-voice-orb | wait voice-stage-offer-0 | sleep 500 | click voice-stage-offer-0 | wait voice-landed | sleep 1200
-  countdown-when: ?voicePace=talk&timing=0&voice=countdown to the bake sale | click dock-voice-orb | wait voice-stage-ask | sleep 500
-  split: ?voicePace=talk&timing=0&voice=split the bill | click dock-voice-orb | wait voice-stage-ask | sleep 500
-  challenge: ?voicePace=talk&timing=0&voice=set up a challenge | click dock-voice-orb | wait voice-stage-ask | sleep 500
+  countdown-when: ?voicePace=talk&timing=0&voice=countdown to the bake sale | click dock-voice-orb | wait voice-stage-ask-slip | sleep 500
+  split: ?voicePace=talk&timing=0&voice=split the bill | click dock-voice-orb | wait voice-stage-ask-slip | sleep 500
+  challenge: ?voicePace=talk&timing=0&voice=set up a challenge | click dock-voice-orb | wait voice-stage-ask-slip | sleep 500
   walkaway: ?voicePace=talk&timing=0&voice=add a poll …2600 the team name | click dock-voice-orb | wait voice-landed | sleep 1500
   unfinished: ?voicePace=talk&timing=0&voice=add a poll …2600 the team name | click dock-voice-orb | wait card-slot | sleep 2500
-  letgo: ?voicePace=talk&timing=0&voice=add a poll | click dock-voice-orb | wait voice-stage-ask | sleep 6000
+  letgo: ?voicePace=talk&timing=0&voice=add a poll | click dock-voice-orb | wait voice-stage-ask-slip | sleep 6000
 take:
   poll-answered: poll-answered real 30fps 420f warmup 1200 | 6 click dock-voice-orb
   countdown-offer: countdown real 30fps 300f warmup 1200 | 6 click dock-voice-orb | 90 click voice-stage-offer-0
@@ -66,4 +66,7 @@ Drawer: `trace.asked` (questions, last word → question ms, pins, direct).
 `poll-answered` (both answered: built by code, no model) · `delegated` (one
 answer, the model fills options) · `countdown` / `countdown-offer` (an offer
 from the room answers what + when) · `countdown-when` · `split` · `challenge`
-· `walkaway` / `unfinished` (lands with its slot) · `letgo`.
+· `walkaway` / `unfinished` (lands with its slot) · `letgo`. The asked
+states wait on the words' slip (`voice-stage-ask-slip`): on a phone the slip
+asks and the card's shoulder (`voice-stage-ask`) stays hidden, so a wait on
+the shoulder times out at 390.

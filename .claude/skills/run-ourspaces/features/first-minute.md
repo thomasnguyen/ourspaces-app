@@ -21,6 +21,10 @@ the own cursor and the orb hint show where to start; a starter ask lands a
 first card, and the card asks for a vote: the first starter, "plan dinner
 saturday", builds the poll-and-who's-in pair from `features/flows.md`
 (`dinner`), so there are choices to tap. Lane only (`drive up --lane`).
+On a phone the pair stacks, poll over who's-in; while who's-in waits on the
+poll it drops "no one's answered yet" (the "waiting on …" line says it) and
+is only as tall as its words, so its "waiting on the poll" ticket clears the
+dock (`src/widgets/rsvp-phone.css`).
 Both `starter` and `landed` write that pair to the dev crew board; the
 second run of either reads "already here" until your ids are swept.
 
