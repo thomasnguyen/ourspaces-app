@@ -72,6 +72,17 @@ write). The held version (two people) is `.context/tv1a/holder.mjs`: a
 second seat holds the house poll while `add` runs, prints the ghost as it
 fills, lets go.
 
+**Takes (two phones, live, one lookup each):** `node .context/house/take.mjs
+ramen --slug tavily` reseeds the house, Holly drags the dinner poll, Thomas
+says "add ramen", it waits for `[data-ghost-changed] .poll-web` and lets go
+1.2 s later (both phones + two-up at 24 fps). `take.mjs dinner --slug tavily`:
+Holly asks "where should we eat Saturday", waits for three web rows, sweeps
+the new poll by id; crop the poll from `holly.mp4` (`poll.json` has its box).
+Receipt at 1440: `node .context/tv1c/receipt.mjs` (asks, opens
+`dev-context-lookup`, clips it, sweeps the poll by id). Known: on the holder's
+own phone a drag pauses the card's animations, so the row's fill-in glide
+(`poll-web-fill`, from opacity 0) stays invisible until she lets go.
+
 **Code:** `convex/tavily.ts` · hooks in `convex/voiceBuild.ts`
 (`noteCommitted`) and `convex/edits.ts` (`run`) · `convex/widgetData.ts`
 (poll option `web`) · row `src/widgets/core.tsx` + `poll-web.css` · drawer
