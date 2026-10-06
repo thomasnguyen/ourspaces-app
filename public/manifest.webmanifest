@@ -1,0 +1,18 @@
+{
+  "id": "/",
+  "name": "OurSpaces",
+  "short_name": "OurSpaces",
+  "description": "Your people's live shared board. Talk to it and it makes the card.",
+  "start_url": "/?enter=1#/space/our-house",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#211922",
+  "theme_color": "#0b0b0e",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

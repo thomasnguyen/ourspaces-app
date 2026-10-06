@@ -27505,3 +27505,24 @@ body:has(.demo-banner) .settings-sheet {
   box-shadow: 2px 2px 0 var(--color-ink);
   color: var(--color-ink);
 }
+
+/* The installed app (Add to Home Screen, the kitchen iPad). index.html sets
+   viewport-fit=cover and a black-translucent status bar, so the page runs
+   under the clock and the home indicator: the demo strip grows by the top
+   inset (every offset below it reads --demo-banner-height) and everything
+   pinned to the bottom edge lifts by the bottom one. Browser tabs: no-op.
+   features/ipad.md */
+@media (display-mode: standalone) {
+  :root { --demo-banner-height: calc(54px + env(safe-area-inset-top)); }
+  .demo-banner { padding-top: calc(8px + env(safe-area-inset-top)); }
+  .action-dock,
+  .paper-bg[data-space-id="buildroom"] .action-dock,
+  .space-live-strip,
+  .paper-bg[data-space-id="buildroom"] .space-live-strip { bottom: calc(18px + env(safe-area-inset-bottom)); }
+  .app-about-link { bottom: calc(9px + env(safe-area-inset-bottom)); }
+  .dev-readout { bottom: calc(3px + env(safe-area-inset-bottom)); }
+  @media (max-width: 800px) {
+    .space-rail { bottom: calc(10px + env(safe-area-inset-bottom)); }
+    .action-dock { bottom: calc(94px + env(safe-area-inset-bottom)); }
+  }
+}

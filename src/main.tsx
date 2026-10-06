@@ -12,12 +12,15 @@ import { UpdateNudge } from "./components/UpdateNudge.tsx";
 import { DemoBanner, MAKE_SPACE_EVENT } from "./components/DemoBanner.tsx";
 import { api } from "../convex/_generated/api";
 import { useQuery } from "convex/react";
+import { watchStandalone } from "./lib/standalone.ts";
 import "./index.css";
 
 const url = import.meta.env.VITE_CONVEX_URL as string | undefined;
 const mode = getDataMode();
 
 const convexClient = url ? new ConvexReactClient(url) : null!;
+// the installed app (kitchen iPad): stay awake, reconnect after sleep (features/ipad.md)
+if (mode === "live" && url) watchStandalone(convexClient);
 
 function MissingConvexConfig() {
   return (
