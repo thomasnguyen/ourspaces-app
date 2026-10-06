@@ -19,3 +19,25 @@
     container-type: inline-size;
   }
 }
+
+/* The waiting line runs as one sentence on a phone. The card is 200px wide and the crew board
+   sets this line at 14px, so seven names take four lines; as a flex row the dots and faces
+   hung mid-list, as if "Jules + Sam" were the faces. Inline, they lead the sentence and the
+   names wrap under them across the card. */
+@media (max-width: 800px) {
+  .widget-rsvp .rsvp-waiting {
+    display: block;
+  }
+
+  .widget-rsvp .rsvp-waiting > .rsvp-mark,
+  .widget-rsvp .rsvp-waiting > .member-face {
+    display: inline-block;
+    vertical-align: middle;
+    translate: 0 -1px;
+  }
+
+  .widget-rsvp .rsvp-waiting > .rsvp-mark,
+  .widget-rsvp .rsvp-waiting > .member-face:last-of-type {
+    margin-right: 5px;
+  }
+}

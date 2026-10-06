@@ -24,7 +24,8 @@ saturday", builds the poll-and-who's-in pair from `features/flows.md`
 On a phone the pair stacks, poll over who's-in; while who's-in waits on the
 poll it drops "no one's answered yet" (the "waiting on …" line says it) and
 is only as tall as its words, so its "waiting on the poll" ticket clears the
-dock (`src/widgets/rsvp-phone.css`).
+dock; its "waiting on Rio + clover + …" line runs as one sentence, dots and
+faces first and the names wrapping under them (`src/widgets/rsvp-phone.css`).
 Both `starter` and `landed` write that pair to the dev crew board; the
 second run of either reads "already here" until your ids are swept.
 
