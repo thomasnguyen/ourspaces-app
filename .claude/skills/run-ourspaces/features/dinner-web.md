@@ -61,7 +61,8 @@ room's `tavilyRoomDay` limit. Receipt: the lookup's `aiWrites` row (kind
 receipt: the line; asked / near (city · where from) / took (ms, per step) /
 credits / picked by (+ the fact used); `kept · n`, each place with the row's
 number, reviews, host and its page (`dev-context-lookup-kept`); `skipped ·
-n` grouped by why, names struck; what landed.
+n` grouped by why, names struck; what landed. Shown on any live ask, an add included (done by code, no
+model); mock mode has none.
 
 **Drive:** lane states write real cards and lookups (a search credit each).
 `ask*` leave a poll: delete it by its id (`harness:sweep`). `add*` add an
@@ -79,9 +80,11 @@ says "add ramen", it waits for `[data-ghost-changed] .poll-web` and lets go
 Holly asks "where should we eat Saturday", waits for three web rows, sweeps
 the new poll by id; crop the poll from `holly.mp4` (`poll.json` has its box).
 Receipt at 1440: `node .context/tv1c/receipt.mjs` (asks, opens
-`dev-context-lookup`, clips it, sweeps the poll by id). Known: on the holder's
-own phone a drag pauses the card's animations, so the row's fill-in glide
-(`poll-web-fill`, from opacity 0) stays invisible until she lets go.
+`dev-context-lookup`, clips it, sweeps the poll by id). A drag pauses the card's
+animations (index.css); `poll-web.css` keeps `poll-web-fill` running under it,
+so the holder sees her own row fill in too. An add's lookup shows in the
+drawer the same way: `node .context/tv1d/receipt.mjs "add ramen to the dinner
+poll" add` (the add lands on the house poll; reseed the house after).
 
 **Code:** `convex/tavily.ts` · hooks in `convex/voiceBuild.ts`
 (`noteCommitted`) and `convex/edits.ts` (`run`) · `convex/widgetData.ts`
