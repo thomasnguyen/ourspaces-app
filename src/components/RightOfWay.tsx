@@ -14,6 +14,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { applyEdit, type EditOp } from "../lib/deck/edits";
 import { playSound } from "../lib/sounds";
 import { visitSources } from "./RoomKnows";
+import { LookupTick, useSeenAt } from "./LookupTick";
 import "./right-of-way.css";
 
 export type RowLease = { thing: string; kind: string; userId: string; name: string; color: string; since: number; letGoAt?: number; scripted?: boolean };
@@ -145,6 +146,11 @@ function Ghost({ host, ghost, mine, me, landing, onCancel, leaving }: { host: HT
   // the changed part: what the op names (the new option, the struck one, the new name)
   const want = String(w?.op?.value ?? "").toLowerCase().trim();
   const removal = Boolean(w?.op && REMOVES.has(w.op.op));
+  // waiting on the web (convex/tavily.ts): the ticket reads "0.4s looking up near San Jose · the house's city",
+  // a ticking numeral where the holder's name would be; when the web answers it lands like a let-go
+  const lookup = held.kind === "lookup";
+  const seenAt = useSeenAt(ghost.id);
+  const [lookLine, lookWhat] = lookup ? [ghost.text.match(/looking up .*$/)?.[0], ghost.text.replace(/ · looking up .*$/, "")] : [undefined, undefined];
   useLayoutEffect(() => {
     if (!el || !want || leaving) return;
     const marked = changedParts(el, want);
@@ -157,14 +163,14 @@ function Ghost({ host, ghost, mine, me, landing, onCancel, leaving }: { host: HT
     if (landing) setWasLanding(true);
   }, [landing]);
   useEffect(() => {
-    if (!leaving || !wasLanding || !el || !want || removal) return;
+    if (!leaving || !(wasLanding || lookup) || !el || !want || removal) return;
     const marked = changedParts(el, want);
     marked.forEach((m) => m.setAttribute("data-ghost-landed", ""));
     window.setTimeout(() => marked.forEach((m) => m.removeAttribute("data-ghost-landed")), LANDED_MS);
-  }, [leaving, wasLanding, el, want, removal]);
+  }, [leaving, wasLanding, lookup, el, want, removal]);
   if (!el) return null;
-  const what = ghost.kind === "link" ? "fills in" : ghost.kind === "puzzle" ? "the space's piece" : ghost.text || "a change";
-  const going = landing || wasLanding;
+  const what = ghost.kind === "link" ? "fills in" : ghost.kind === "puzzle" ? "the space's piece" : (lookup ? lookWhat : ghost.text) || "a change";
+  const going = landing || wasLanding || (lookup && leaving);
   return createPortal(
     <div
       className={`row-ghost${going ? " is-landing" : ""}${leaving ? " is-leaving" : ""}`}
@@ -178,9 +184,17 @@ function Ghost({ host, ghost, mine, me, landing, onCancel, leaving }: { host: HT
         <b>{what}</b>
       </span>
       <span className="row-ghost-on" data-testid="row-ghost-on">
-        {going ? (
+        {going && lookup ? (
+          <>
+            <LookupTick since={seenAt} frozenAt={Date.now()} /> the web answered
+          </>
+        ) : going ? (
           <>
             <b>{on.name.toLowerCase()}</b> let go
+          </>
+        ) : lookup ? (
+          <>
+            <LookupTick since={seenAt} /> {lookLine ?? "looking it up"}
           </>
         ) : (
           <>

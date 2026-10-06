@@ -1,56 +1,139 @@
-/* A poll option the lookup found on the web (convex/tavily.ts): the name, then
-   one small line under it, "4.6 · tripadvisor · from the web". Plain on
-   purpose; the look-pass restyles it. */
-.poll-web {
-  display: block;
-  overflow: hidden;
-  margin-top: 1px;
-  font-family: var(--font-sans);
-  font-size: 9.5px;
-  font-weight: 600;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  opacity: 0.78;
+/* A poll option the lookup found on the web (convex/tavily.ts). Two lines in
+   the row: the place in the row's own type, under it the page's numbers, the
+   site, and a black "from the web" sticker (lime on ink, the "live" label's
+   colours). House places carry nothing. The line never truncates: the
+   sticker drops to its own line first, then the words wrap. */
+.poll-option-label:has(.poll-web) {
+  display: grid;
+  gap: 2px;
+  overflow: visible;
+  white-space: normal;
 }
 
-.poll-web i {
-  font-style: normal;
+.poll-web-name {
+  display: block;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.poll-web {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 5px;
+  row-gap: 3px;
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.005em;
+}
+
+.poll-web-src {
+  color: color-mix(in oklab, currentColor 74%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.poll-web-src b {
+  color: currentColor;
   font-weight: 800;
 }
 
+.poll-web-mark {
+  display: inline-block;
+  padding: 2px 5px 2px;
+  border-radius: 999px;
+  background: var(--color-sticker);
+  color: var(--color-lime);
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* inside the vote bar the sticker inverts, so it stays a sticker on every tone (violet's bars are ink) */
+.poll-row-fill .poll-web-mark {
+  background: var(--poll-fill-ink);
+  color: var(--poll-fill);
+}
+
+/* a web row is two lines: its own padding, no minimum */
 .poll-row-base:has(.poll-web),
 .poll-row-fill:has(.poll-web) {
-  padding-block: 4px;
+  min-height: 0;
+  padding-block: 5px;
 }
 
 /* five or more choices, or one the web added: tighter rows so they all sit on the card */
 .widget-poll:is(:has(.poll-web), :has(.poll-options li:nth-child(5))) .poll-options {
   gap: 5px;
+  margin-top: 9px;
+}
+
+.widget-poll:is(:has(.poll-web), :has(.poll-options li:nth-child(5))) :is(.poll-row-base, .poll-row-fill):not(:has(.poll-web)) {
+  min-height: 26px;
+}
+
+/* seven or more (the house's places and three found ones): the ballot's own type stays 12px,
+   the question steps down one size, the rows close up and the card keeps its sparkle corner */
+.widget-poll:has(.poll-options li:nth-child(7)) .poll-heading h3 {
+  font-size: 18px;
+}
+
+.widget-poll:has(.poll-options li:nth-child(7)) .poll-content {
+  padding-bottom: 26px;
+}
+
+.widget-poll:has(.poll-options li:nth-child(7)) .poll-options {
+  gap: 3px;
   margin-top: 8px;
 }
 
-.widget-poll:is(:has(.poll-web), :has(.poll-options li:nth-child(5))) :is(.poll-row-base, .poll-row-fill) {
-  min-height: 27px;
-}
-
-/* seven or more (the house's places and three found ones): smaller still */
-.widget-poll:has(.poll-options li:nth-child(7)) .poll-options {
-  gap: 2px;
-  margin-top: 6px;
-}
-
-.widget-poll:has(.poll-options li:nth-child(7)) :is(.poll-row-base, .poll-row-fill) {
-  min-height: 20px;
-  font-size: 11px;
+.widget-poll:has(.poll-options li:nth-child(7)) :is(.poll-row-base, .poll-row-fill):not(:has(.poll-web)) {
+  min-height: 22px;
 }
 
 .widget-poll:has(.poll-options li:nth-child(7)) :is(.poll-row-base, .poll-row-fill):has(.poll-web) {
-  padding-block: 1px;
+  padding-block: 4px;
 }
 
-.widget-poll:has(.poll-options li:nth-child(7)) .poll-web {
-  margin-top: 0;
-  font-size: 8.5px;
-  line-height: 1.1;
+/* the web's rows arrive: pop, 40 ms apart (the asked poll's three; nothing already on the poll moves) */
+.poll-options li:has(.poll-web) {
+  animation: poll-web-arrive var(--dur-arrive) var(--ease-pop) backwards;
+  animation-delay: calc(var(--wi, 0) * 40ms);
+}
+
+/* the fill-in: a waiting row's words change under the holder's thumb ("ramen" → the place
+   and its line). The label is keyed on its words, so it glides in rather than flashing. */
+[data-ghost-changed="add"] .poll-option-label {
+  animation: poll-web-fill var(--dur-arrive) var(--ease-glide) both;
+}
+
+[data-ghost-changed="add"] .poll-option-label .poll-web {
+  animation: poll-web-fill var(--dur-arrive) var(--ease-glide) 80ms both;
+}
+
+@keyframes poll-web-arrive {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+    scale: 0.97;
+  }
+}
+
+@keyframes poll-web-fill {
+  from {
+    opacity: 0;
+    translate: -5px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poll-options li:has(.poll-web),
+  [data-ghost-changed="add"] .poll-option-label,
+  [data-ghost-changed="add"] .poll-option-label .poll-web {
+    animation: none;
+  }
 }

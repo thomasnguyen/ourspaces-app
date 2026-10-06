@@ -6,6 +6,7 @@ import { feedVoiceStage, replyTone } from "../lib/voiceStage";
 import { playSound } from "../lib/sounds";
 import type { ResolveNote, RoomFacts } from "../lib/deck";
 import { LookupReceipt } from "./LookupReceipt";
+import { LookupTick, useSeenAt } from "./LookupTick";
 
 /** The dev readout (one thin strip) and its drawer show on the dev lane, or
     anywhere with `?timing=1`. `?timing=table` adds the stage's wide beats
@@ -56,6 +57,11 @@ function ShellRing({ shell, tint }: { shell: VoiceShell; tint: CSSProperties }) 
 
 /** The ask was already on the board: a ring in the asker's colour pulses
     once around that widget (following it while the camera glides). */
+/** The lookup slip's clock, from the moment this ask's slip showed it. */
+function SlipTick({ traceKey }: { traceKey: number }) {
+  return <LookupTick since={useSeenAt(String(traceKey))} />;
+}
+
 /** The asker's undo on an edit's slip: a few seconds, one tap, back through the same door. */
 function UndoButton({ undo }: { undo: () => Promise<string> }) {
   const [state, setState] = useState<"ready" | "busy" | string>("ready");
@@ -614,6 +620,8 @@ export function VoiceBuildLayer({
           >
             <span className="voice-landed voice-found" data-testid="voice-found" data-widget-ref={found.widgetId} data-card={found.card}>
               {found.done ?? <>already here{found.by ? ` · ${found.by} made it` : ""}</>}
+              {/* waiting on the web (convex/tavily.ts): the slip's line gets its ticking numeral */}
+              {found.done?.startsWith("looking up") && <SlipTick traceKey={found.traceKey} />}
             </span>
             {found.undo && <UndoButton key={found.traceKey} undo={found.undo} />}
             {found.next === "spin" && (

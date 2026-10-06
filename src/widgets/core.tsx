@@ -347,8 +347,8 @@ export function CountdownWidget({ widget, style }: { widget: Widget; style: Styl
   );
 }
 
-/** A review count as the page gave it: exact, or "1.3k" when the page rounded it (convex/tavily.ts keeps that as 1,300). */
-const reviewCount = (n: number) => (n >= 1000 && n % 100 === 0 ? `${n / 1000}k` : n.toLocaleString("en-US"));
+/** A review count short enough for the row: exact under a thousand, else "1.3k" (the receipt keeps the page's exact number). */
+const reviewCount = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : n.toLocaleString("en-US"));
 
 function PollWidgetComponent({
   widget,
@@ -407,6 +407,8 @@ function PollWidgetComponent({
         <ul className="poll-options">
           {options.map((option, optionIndex) => {
             const selected = selectedOptionId === option.id;
+            // the web's rows arrive 40 ms apart, counted among themselves
+            const webIndex = option.web ? options.slice(0, optionIndex).filter((o) => o.web).length : 0;
             const votes = option.votes + (selected ? 1 : 0);
             const total = option.total + (hasLocalVote ? 1 : 0);
             const percent = Math.round((votes / Math.max(total, 1)) * 100);
@@ -420,16 +422,23 @@ function PollWidgetComponent({
             const rowInner = (
               <>
                 <span className="poll-check" />
-                <span className="poll-option-label">
-                  {option.label}
-                  {option.web && (
-                    // where the web found it: the page's number (its rating, else its review count) · the site · the mark
+                {option.web ? (
+                  // a place the web found: two lines, the name over one number the page said (its rating, else its review
+                  // count; none when it had none) · the site · the mark. Keyed on the words: a waiting row's fill-in glides in.
+                  <span className="poll-option-label" key={option.label}>
+                    <span className="poll-web-name">{option.label}</span>
                     <small className="poll-web" data-testid="poll-web" data-url={option.web.url}>
-                      {option.web.rating !== undefined ? `${option.web.rating} · ` : option.web.reviews !== undefined ? `${reviewCount(option.web.reviews)} reviews · ` : ""}
-                      {option.web.host} · <i>from the web</i>
+                      <span className="poll-web-src">
+                        {option.web.rating !== undefined ? <b>{option.web.rating}</b> : option.web.reviews !== undefined ? <b>{reviewCount(option.web.reviews)} reviews</b> : null}
+                        {(option.web.rating !== undefined || option.web.reviews !== undefined) && " · "}
+                        {option.web.host}
+                      </span>
+                      <i className="poll-web-mark">from the web</i>
                     </small>
-                  )}
-                </span>
+                  </span>
+                ) : (
+                  <span className="poll-option-label">{option.label}</span>
+                )}
                 {selected && <span className="poll-you-tag">you</span>}
                 {shownVoters.length > 0 && (
                   <span className="poll-row-faces" aria-hidden="true">
@@ -450,7 +459,7 @@ function PollWidgetComponent({
             return (
               <li
                 key={option.id}
-                style={{ "--i": optionIndex } as Style}
+                style={{ "--i": optionIndex, "--wi": webIndex } as Style}
                 className={`${selected ? "is-selected" : ""} ${leading ? "is-leading" : ""}`}
               >
                 <button
