@@ -21,11 +21,12 @@ for anything not tracked).
   sessions are working), `nebius/eval/r3-proof.md` (the Right of Way
   evidence).
 - **Working a task:** read `nebius/loop/standing.md` (the rules every worker
-  gets) and the playbook that fits from the local hackathon skill next to
-  `eye-candy` (gitignored; its `playbooks/` and `levers.md`). Reach any feature's state with `drive go <feature>:<state>` from
+  gets) and the playbook that fits in `.claude/skills/hack-mode/playbooks/`
+  (`levers.md` beside it lists every script). Reach any feature's state with `drive go <feature>:<state>` from
   the feature map in `.claude/skills/run-ourspaces/features/` instead of
   searching the code. Every finished task gets a write-up in
-  `nebius/eval/<id>-<name>.md` and a log entry via that skill's `scripts/loop.mjs close`.
+  `nebius/eval/<id>-<name>.md` and a log entry via
+  `node .claude/skills/hack-mode/scripts/loop.mjs close`.
 - **Update `nebius/README.md` Status after each step**, same as
   `docs/todos.md`, and add a row to `DIRECTORY.md` when you add a doc.
 - **Models:** AI work runs on NVIDIA Nemotron via Nebius Token Factory

@@ -1,6 +1,23 @@
-**Read `AGENTS.md` first** — it has the current focus (the Nebius × NVIDIA
-hackathon; working folder `nebius/`, local-only) and the project rules (no
-tests, reply style, design constraints).
+**Read `AGENTS.md` first** — the project rules (no tests, reply style, design
+constraints) and the current focus: the Nebius × NVIDIA hackathon, due Fri Oct
+30 2026, 10:00 PT.
+
+**Then find your doc in `nebius/DIRECTORY.md`** before opening anything else
+in `nebius/` — one line per doc, grouped by purpose, with the five to read
+first (`overnight-log.md`, `path-to-win.md`, `loop/gates.md`, `queue.md`,
+`eval/r3-proof.md`). The folder has 40-odd files and most are evidence.
+
+**Working a task:** `nebius/loop/standing.md` is binding; the playbooks are in
+`.claude/skills/hack-mode/playbooks/`; reach any feature state with
+`node .claude/skills/run-ourspaces/drive.mjs go <feature>:<state>` from the
+feature map in `.claude/skills/run-ourspaces/features/`; read
+`.claude/skills/eye-candy/SKILL.md` before any visible change.
+
+**Prod is frozen** (`nebius/.prod-freeze`): ship to the dev lane only with
+`npm run deploy:dev`. Never `npm run deploy` or `npm run deploy:convex`.
+
+This file and `AGENTS.md` are gitignored (they name local-only folders), so a
+clone won't have them; `README.md` is what judges read.
 
 <!-- convex-ai-start -->
 
