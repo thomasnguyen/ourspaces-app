@@ -19,8 +19,8 @@
  */
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
-import { existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync, statSync } from "node:fs";
-import { homedir } from "node:os";
+import { existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync, statSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -624,6 +624,60 @@ function srcTestIds() {
   return { ids, prefixes };
 }
 
+/* ---------- cold (no daemon needed): the first paint a stranger gets, fresh profile per shot ---------- */
+
+const COLD_URL = "https://dev--ourspaces-app.netlify.app/";
+const COLD_LOCAL = "http://127.0.0.1:5291/";
+const COLD_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+
+const runQuiet = (bin, argv, ms = 90000) => new Promise((res, rej) => {
+  const p = spawn(bin, argv, { stdio: "ignore" });
+  const t = setTimeout(() => { p.kill("SIGKILL"); rej(new Error(`${bin} timed out`)); }, ms);
+  p.on("error", rej);
+  p.on("exit", (code) => { clearTimeout(t); code === 0 ? res() : rej(new Error(`${bin} exited ${code}`)); });
+});
+
+/* Chrome writes --screenshot, then never exits on this Mac: wait for the file, then kill it */
+async function coldChrome(argv, png, ms = 90000) {
+  const p = spawn(existsSync(COLD_CHROME) ? COLD_CHROME : findChrome(), argv, { stdio: "ignore", detached: true });
+  for (let i = 0; i < ms / 250; i++) {
+    await sleep(250);
+    if (existsSync(png) && statSync(png).size > 0) break;
+    if (p.exitCode !== null) break;
+  }
+  if (p.exitCode === null) { try { process.kill(-p.pid, "SIGKILL"); } catch {} }
+  if (!existsSync(png) || statSync(png).size === 0) throw new Error(`no screenshot from Chrome for ${argv.at(-1)}`);
+}
+
+/* one headless Chrome per width, its own temp profile (no sessionStorage persona, no notice dismissed), downscaled to a JPEG */
+async function coldShot(url, w, out) {
+  const h = w <= 500 ? 844 : 900;
+  const tmp = mkdtempSync(join(tmpdir(), "cold-"));
+  try {
+    const png = join(tmp, "shot.png");
+    await coldChrome(["--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check", `--user-data-dir=${join(tmp, "profile")}`, `--window-size=${w},${h}`, "--virtual-time-budget=9000", `--screenshot=${png}`, url], png);
+    await runQuiet("sips", ["-Z", "1000", "-s", "format", "jpeg", png, "--out", out]);
+  } finally { await sleep(400); rmSync(tmp, { recursive: true, force: true }); }
+}
+
+async function cold(args) {
+  const flag = (k) => { const i = args.indexOf(k); return i < 0 ? null : (args.splice(i, 2)[1] ?? ""); };
+  const hash = flag("--hash"), name = flag("--name"), wArg = flag("--w");
+  const local = args.includes("--local");
+  args = args.filter((a) => a !== "--local");
+  const widths = (wArg ?? "1440,390").split(",").map(Number).filter(Boolean);
+  const base = args[0] ?? (local ? COLD_LOCAL : COLD_URL);
+  const url = hash ? `${base.replace(/#.*$/, "")}${hash.startsWith("#") ? hash : `#${hash}`}` : base;
+  mkdirSync(SHOTS, { recursive: true });
+  const outs = widths.map((w) => {
+    const label = name ?? (w <= 500 ? "phone" : "desk");
+    return { w, out: join(SHOTS, `cold-${label}-${w}.jpg`) };
+  });
+  await Promise.all(outs.map(({ w, out }) => coldShot(url, w, out)));
+  console.log(`cold · ${url}`);
+  for (const { out } of outs) console.log(`  ${rel(out)}`);
+}
+
 /* ---------- check (no daemon needed) ---------- */
 
 function check() {
@@ -704,6 +758,7 @@ const [cmd, ...args] = process.argv.slice(2);
 try {
   if (cmd === "__daemon") await daemon(args[0] ?? "mock");
   else if (cmd === "check") check();
+  else if (cmd === "cold") await cold(args);
   else if (cmd === "down") await down();
   else if (!cmd || cmd === "help") console.log("drive up [--lane] | go <f>[:<s>] [--w 390] [--shot] | click|wait <id> | type <id> <text> | shot [name] | sheet <f:s>… [--w 1440,390] | two <f:s> | take <f>[:<recipe>] [--w 390] [--real|--det] | eval <file> | check | down");
   else {
