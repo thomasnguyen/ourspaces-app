@@ -3002,6 +3002,13 @@
   transition: clip-path var(--dur-arrive) var(--ease-glide);
 }
 
+/* Any votes at all: the bar starts past the check (~16%) and scales over the
+   rest, so a one-of-five row reads as a short bar, not a pink blob sitting on
+   the first two letters of its label. Zero stays empty. */
+.poll-row:not([style*="--poll-pct: 0%"]) .poll-row-fill {
+  clip-path: inset(0 calc((100% - var(--poll-pct, 0%)) * 0.84) 0 0 round 999px);
+}
+
 /* leading row — ink ring drawn above the fill + a tiny crown on the bar */
 .poll-options li.is-leading .poll-row::after {
   content: "";
@@ -27307,6 +27314,9 @@ body:has(.demo-banner) .settings-sheet {
   z-index: 99990;
   display: flex;
   overflow: hidden;
+  /* max-content: pinned near the board's right edge, shrink-to-fit squeezed
+     "juno added ramen" to one word per line */
+  width: max-content;
   max-width: 340px;
   border: 2px solid var(--color-ink);
   border-radius: 13px;

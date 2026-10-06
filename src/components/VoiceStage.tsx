@@ -496,6 +496,8 @@ function StageCard({
   const scale = useMemo(() => (widget ? stageScale(widget.w, widget.h) : 1), [widget?.type, widget?.w]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!widget) return null;
   const whole = build.complete && reveal.all;
+  // a cluster of one reads as its card ("poll"), never "1 cards, linked"
+  const linkedCount = build.cluster ? build.cluster.cards.filter((w) => w.type !== "frame").length : 0;
   // the room's facts in this card, once the parts they filled are on screen
   const sources = build.parts.some((p) => p.room && p.id in reveal.at) ? build.sources : [];
   return (
@@ -508,7 +510,7 @@ function StageCard({
       data-asking-field={asking && question ? question.field : undefined}
     >
       <header className="voice-two-kind">
-        <b>{build.cluster ? `${build.cluster.cards.filter((w) => w.type !== "frame").length} cards, linked` : (build.kind ?? "card")}</b>
+        <b>{linkedCount > 1 ? `${linkedCount} cards, linked` : (build.kind ?? "card")}</b>
         <span className="voice-two-parts" data-testid="voice-stage-parts">
           {build.parts.map((p) => (
             <i
