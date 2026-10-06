@@ -27,6 +27,7 @@ import {
 } from "../src/lib/deck";
 import { VERB_CHOICES, VERB_LETTERS, VERB_Q } from "../src/lib/deck/verbs";
 import { rightOfWay } from "./rightOfWay";
+import { lookupAfterBuild } from "./tavily";
 import { noteSpendIn, type Gate } from "./guard";
 
 /**
@@ -423,6 +424,8 @@ export const noteCommitted = internalMutation({
     if (!dealId || !row) return null;
     const before = (JSON.parse(row.run) as { committed?: string[] }).committed ?? [];
     await patchRun(ctx, dealId, { committed: [...before, ...args.ids], committedAt: args.at });
+    // Tavily, the lookup: a "where should we eat …" poll gets real places under the house's own (tavily.ts)
+    await lookupAfterBuild(ctx, { spaceId: args.spaceId, dealId, run: row.run, ids: args.ids });
     return null;
   },
 });

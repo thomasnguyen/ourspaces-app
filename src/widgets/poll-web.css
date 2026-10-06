@@ -1,0 +1,35 @@
+/* A poll option the lookup found on the web (convex/tavily.ts): the name, then
+   one small line under it, "4.6 · tripadvisor · from the web". Plain on
+   purpose; the look-pass restyles it. */
+.poll-web {
+  display: block;
+  overflow: hidden;
+  margin-top: 1px;
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.78;
+}
+
+.poll-web i {
+  font-style: normal;
+  font-weight: 800;
+}
+
+.poll-row-base:has(.poll-web),
+.poll-row-fill:has(.poll-web) {
+  padding-block: 4px;
+}
+
+/* five or more choices, or one the web added: tighter rows so they all sit on the card */
+.widget-poll:is(:has(.poll-web), :has(.poll-options li:nth-child(5))) .poll-options {
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.widget-poll:is(:has(.poll-web), :has(.poll-options li:nth-child(5))) :is(.poll-row-base, .poll-row-fill) {
+  min-height: 27px;
+}

@@ -30,6 +30,8 @@ const pollData = v.object({
       votes: v.number(),
       total: v.number(),
       voters: v.optional(v.array(v.string())),
+      // a real place the lookup found (convex/tavily.ts): its page, the host, and a number only when the page had one
+      web: v.optional(v.object({ url: v.string(), host: v.string(), rating: v.optional(v.number()), reviews: v.optional(v.number()) })),
     }),
   ),
   waitingOn: v.optional(v.array(v.string())),

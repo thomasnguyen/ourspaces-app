@@ -31,6 +31,8 @@ const app = defineApp({
     // Any non-empty value routes around the Convex AI Gateway (see convex/ai.ts).
     AI_GATEWAY_DISABLED: v.optional(v.string()),
     AGENTMAIL_API_KEY: v.string(),
+    // Tavily, the lookup (convex/tavily.ts). Unset = no lookup: the poll lands as it always did.
+    TAVILY_API_KEY: v.optional(v.string()),
     AGENTMAIL_WEBHOOK_SECRET: v.optional(v.string()),
     SITE_URL: v.optional(v.string()),
     // Google sign-in (docs/accounts.md). Unset = the button never shows.

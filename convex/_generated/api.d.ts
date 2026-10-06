@@ -61,6 +61,7 @@ import type * as tables_rightOfWay from "../tables/rightOfWay.js";
 import type * as tables_rooms from "../tables/rooms.js";
 import type * as tables_voice from "../tables/voice.js";
 import type * as voiceBuild from "../voiceBuild.js";
+import type * as tavily from "../tavily.js";
 import type * as votes from "../votes.js";
 import type * as waitlist from "../waitlist.js";
 import type * as widgetData from "../widgetData.js";
@@ -128,6 +129,7 @@ declare const fullApi: ApiFromModules<{
   "tables/voice": typeof tables_voice;
   voiceBuild: typeof voiceBuild;
   votes: typeof votes;
+  tavily: typeof tavily;
   waitlist: typeof waitlist;
   widgetData: typeof widgetData;
   widgets: typeof widgets;

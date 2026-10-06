@@ -1689,7 +1689,8 @@ export function useVoiceBuild({
                 // someone holds it: the stage says so plainly and lets go to the board, where the ghost waits
                 const who = out.on.name.toLowerCase();
                 setEdit(null);
-                pointWith("edit", target.id, `waiting on ${who} · ${who} is ${({ drag: "moving it", type: "typing in it", vote: "choosing" } as Record<string, string>)[out.on.kind] ?? "holding it"}`);
+                // waiting on the web (convex/tavily.ts): the server's line, "looking up ramen near San Jose · the house's city"
+                pointWith("edit", target.id, out.on.kind === "lookup" ? out.text : `waiting on ${who} · ${who} is ${({ drag: "moving it", type: "typing in it", vote: "choosing" } as Record<string, string>)[out.on.kind] ?? "holding it"}`);
                 const clearSlip = () => setFound((f) => (f && f.traceKey === s.key ? null : f));
                 if (out.writeId && vh.settled)
                   void vh.settled(out.writeId).then((o) => {

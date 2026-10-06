@@ -5,6 +5,7 @@ import type { AskTrace, StageName, VoiceEdit, VoiceFound, VoiceLanded, VoiceRece
 import { feedVoiceStage, replyTone } from "../lib/voiceStage";
 import { playSound } from "../lib/sounds";
 import type { ResolveNote, RoomFacts } from "../lib/deck";
+import { LookupReceipt } from "./LookupReceipt";
 
 /** The dev readout (one thin strip) and its drawer show on the dev lane, or
     anywhere with `?timing=1`. `?timing=table` adds the stage's wide beats
@@ -348,6 +349,8 @@ function ContextDrawer({
           <p>no router (this room has none)</p>
         )}
       </section>
+
+      {!mock && <LookupReceipt at={t.at} ids={[...t.cards.flatMap((c) => (c.widgetId ? [c.widgetId] : [])), ...(t.found?.widgetId ? [t.found.widgetId] : []), ...(t.found?.check.ok ? [t.found.check.item.id] : [])]} />}
 
       {nonMake ? (
         <section>

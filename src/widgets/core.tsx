@@ -9,6 +9,7 @@ import type { Widget } from "../data/types";
 import { MemberFace } from "../components/MemberFace";
 import { playSound } from "../lib/sounds";
 import "./phone-cards.css";
+import "./poll-web.css";
 
 type Style = CSSProperties;
 
@@ -346,6 +347,9 @@ export function CountdownWidget({ widget, style }: { widget: Widget; style: Styl
   );
 }
 
+/** A review count as the page gave it: exact, or "1.3k" when the page rounded it (convex/tavily.ts keeps that as 1,300). */
+const reviewCount = (n: number) => (n >= 1000 && n % 100 === 0 ? `${n / 1000}k` : n.toLocaleString("en-US"));
+
 function PollWidgetComponent({
   widget,
   style,
@@ -363,6 +367,8 @@ function PollWidgetComponent({
     votes: number;
     total: number;
     voters?: string[];
+    /** a real place the lookup found (convex/tavily.ts) */
+    web?: { url: string; host: string; rating?: number; reviews?: number };
   }[], [widget.data.options]);
   const waitingOn = (widget.data.waitingOn as string[] | undefined) ?? [];
   const tone = String(widget.data.tone ?? "blush");
@@ -414,7 +420,17 @@ function PollWidgetComponent({
             const rowInner = (
               <>
                 <span className="poll-check" />
-                <span className="poll-option-label">{option.label}</span>
+                <span className="poll-option-label">
+                  {option.label}
+                  {option.web && (
+                    // where the web found it: the page's numbers (a rating, a review count) when it had them · the site · the mark
+                    <small className="poll-web" data-testid="poll-web" data-url={option.web.url}>
+                      {option.web.rating !== undefined && `${option.web.rating} · `}
+                      {option.web.reviews !== undefined && `${reviewCount(option.web.reviews)} reviews · `}
+                      {option.web.host} · <i>from the web</i>
+                    </small>
+                  )}
+                </span>
                 {selected && <span className="poll-you-tag">you</span>}
                 {shownVoters.length > 0 && (
                   <span className="poll-row-faces" aria-hidden="true">

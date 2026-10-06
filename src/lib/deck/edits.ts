@@ -21,7 +21,10 @@ import type { Field } from "./schema";
 import { blankSlot, fillSlot, type Unfinished } from "./needs";
 
 type W = { id: string; type: string; data: Record<string, unknown> };
-export type EditOp = { op: string; value: string | number; item?: string };
+/** `web`: a real place the lookup found (convex/tavily.ts), carried onto the option it adds; a client can't send one (convex/edits.ts opV). */
+export type EditOp = { op: string; value: string | number; item?: string; web?: WebMark };
+/** Where a poll option came from when the web found it: the page, its host, and a number only when the page had one. */
+export type WebMark = { url: string; host: string; rating?: number; reviews?: number };
 export type FieldChange = { field: string; old: unknown; new: unknown };
 /** A person whose choice an edit would override: `id` where the card knows it, `why` = their choice in words. */
 export type Chooser = { id?: string; name: string; why: string };
@@ -147,7 +150,7 @@ export function applyEdit(w: { type: string; data: Record<string, unknown> }, op
       if (opts.some((o) => low(o.label) === low(str))) return fail(`${str} is already on it`);
       if (opts.length >= 8) return fail("the poll is full");
       const id = [...LETTERS].find((l) => !opts.some((o) => o.id === l)) ?? `o${opts.length}`;
-      return done({ ...d, options: [...opts, { id, label: str, votes: 0, total: 0, voters: [] }] }, `added ${str}`, str, { op: "removeOption", value: str });
+      return done({ ...d, options: [...opts, { id, label: str, votes: 0, total: 0, voters: [], ...(op.web ? { web: op.web } : {}) }] }, `added ${str}`, str, { op: "removeOption", value: str });
     }
     case "removeOption": {
       const opts = (d.options as { id: string; label: string; voters?: string[] }[] | undefined) ?? [];

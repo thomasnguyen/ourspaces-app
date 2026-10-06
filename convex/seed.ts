@@ -891,8 +891,32 @@ export const seedHouse = internalMutation({
       const row = (await ctx.db.get(standings))!;
       await ctx.db.patch(standings, { data: { ...(row.data as object), source: checkin } as WidgetData });
     }
+    await tellHouseCity(ctx, spaceId);
     await ctx.scheduler.runAfter(0, internal.roomBrief.refresh, { spaceId });
     return { ids: { spaceId, members, widgets: [...ids.values()], votes }, removed, cards: ids.size };
+  },
+});
+
+/** The house is in San Jose: a told fact (Thomas's), so the lookup (convex/tavily.ts) has a city. A rebuild keeps told facts. */
+const HOUSE_CITY = "we're in San Jose, CA";
+async function tellHouseCity(ctx: MutationCtx, spaceId: Id<"spaces">) {
+  const row = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
+  const facts = row ? (JSON.parse(row.facts) as { told?: RoomKnows["told"] }) : {};
+  if (facts.told?.some((t) => t.text === HOUSE_CITY)) return;
+  const told = [...(facts.told ?? []), { id: "t-house-city", text: HOUSE_CITY, by: "Thomas", color: HOUSE_PEOPLE[0].color, at: Date.now() }];
+  if (row) await ctx.db.patch(row._id, { facts: JSON.stringify({ ...facts, told }) });
+  else await ctx.db.insert("briefs", { spaceId, text: "", facts: JSON.stringify({ told }), at: 0 });
+}
+
+/** Only the city, on the house as it is (no reset): `npx convex run seed:houseCity` on the dev lane. */
+export const houseCity = internalMutation({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) => {
+    const space = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", HOUSE_SLUG)).unique();
+    if (!space) return false;
+    await tellHouseCity(ctx, space._id);
+    return true;
   },
 });
 

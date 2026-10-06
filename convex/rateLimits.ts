@@ -43,6 +43,8 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   firecrawlScrape: { kind: "token bucket", rate: 20, period: MINUTE, capacity: 10 },
   firecrawlSearch: { kind: "token bucket", rate: 10, period: MINUTE, capacity: 5 },
   firecrawlCrawl: { kind: "token bucket", rate: 3, period: HOUR, capacity: 2 },
+  // Tavily, the lookup (convex/tavily.ts): a search credit or two per ask, per room per day.
+  tavilyRoomDay: { kind: "fixed window", rate: 40, period: DAY },
   // The orb's wake-up ping costs nothing, but it is not an open relay.
   voiceWarm: { kind: "token bucket", rate: 6, period: MINUTE, capacity: 6 },
 });

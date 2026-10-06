@@ -5,6 +5,7 @@ import type { Id } from "./_generated/dataModel";
 import { applyEdit, type EditOp } from "../src/lib/deck/edits";
 import { cardCtx, commitEdit, rightOfWay } from "./rightOfWay";
 import { openVote } from "./choiceVotes";
+import { lookupForEdit } from "./tavily";
 
 /**
  * Voice edits (src/lib/deck/edits.ts): "add ramen to the dinner poll".
@@ -37,7 +38,7 @@ type Result = typeof resultV.type;
 /** Ops that set a value: a waiting one is dropped if someone changed that field meanwhile. Adds and removes re-check by re-running. */
 const SETS = new Set(["rename", "setWhen", "setDate", "setDays", "setDay"]);
 
-async function run(ctx: MutationCtx, a: { spaceId: Id<"spaces">; widgetId: Id<"widgets">; op: EditOp; by: string; byUserId: string; today: string; kind: "edit" | "undo"; life?: number }): Promise<Result> {
+export async function run(ctx: MutationCtx, a: { spaceId: Id<"spaces">; widgetId: Id<"widgets">; op: EditOp; by: string; byUserId: string; today: string; kind: "edit" | "undo"; life?: number; noLookup?: boolean }): Promise<Result> {
   const widget = await ctx.db.get(a.widgetId);
   // a card in another room is never touched
   if (!widget || widget.spaceId !== a.spaceId) return { status: "failed", text: "that card isn't in this room", fields: [] };
@@ -50,6 +51,9 @@ async function run(ctx: MutationCtx, a: { spaceId: Id<"spaces">; widgetId: Id<"w
   // people's choices in the way: what it would be with their consent (it may still be impossible: "a poll needs two options")
   const c = r.ok ? r : applyEdit(card, a.op, { ...base, consent: true });
   if (!c.ok) return { status: "failed", text: c.reason, fields: [] };
+  // Tavily, the lookup (tavily.ts): "add ramen to the dinner poll" waits for a real ramen place; nobody holding the poll, it waits on the web
+  const look = r.ok && a.kind === "edit" && !a.noLookup ? await lookupForEdit(ctx, { widget, op: a.op, by: who, today: a.today, text: c.text }) : null;
+  if (look?.waits) return { status: "wait", text: look.waits.text, writeId: look.waits.writeId, fields: ["options"], verdict: "wait", on: look.waits.on, pendingId: look.waits.pendingId };
   // the one door (rightOfWay.ts): others' choices are `ask`, someone holding the card is `wait`
   const door = await rightOfWay(ctx, {
     kind: a.kind, spaceId: a.spaceId, widgetId: widget._id, by: who, fields: c.fields, text: choice ? choice.ask : c.text, undo: c.undo,
@@ -60,6 +64,7 @@ async function run(ctx: MutationCtx, a: { spaceId: Id<"spaces">; widgetId: Id<"w
     const vote = await openVote(ctx, { widget, choice, op: a.op, changed: c.changed, today: a.today, by: who, writeId: door.writeId, life: a.life });
     return { status: "ask", text: door.reason, writeId: door.writeId, fields: [], verdict: "ask", vote: { id: vote.voteId, state: vote.state, who: vote.who, why: choice.people.map((p) => `${p.name} ${p.why}`), stake: choice.stake, ask: choice.ask } };
   }
+  if (door.verdict === "wait" && look?.fill && door.pendingId) await look.fill(door.pendingId);
   if (door.verdict === "wait") return { status: "wait", text: door.reason, writeId: door.writeId, fields: c.fields.map((f) => f.field), verdict: "wait", ...(door.on ? { on: door.on } : {}), ...(door.pendingId ? { pendingId: door.pendingId } : {}) };
   if (door.verdict !== "go") return { status: "refused", text: door.reason, writeId: door.writeId, fields: [], verdict: door.verdict };
   await commitEdit(ctx, widget, c);
