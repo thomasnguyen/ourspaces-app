@@ -370,12 +370,14 @@ function glideScroll(scroller: HTMLElement, dx: number, dy: number, ms = 900) {
   requestAnimationFrame(step);
 }
 
-/** The shortest move that brings `r` into the view with air around it (canvas units). */
+/** The shortest move that brings `r` into the view with air around it (canvas
+    units). Bigger than the view (a group on a phone): its top-left corner, so
+    the lead card is the one on screen and the rest runs under the dock. */
 function panFor(r: Rect, v: Rect) {
   const airX = Math.min(120, Math.max(24, (v.w - r.w) / 2));
   const airY = Math.min(96, Math.max(24, (v.h - r.h) / 2));
   const axis = (a: number, len: number, va: number, vlen: number, air: number) =>
-    a < va + air ? a - (va + air) : a + len > va + vlen - air ? a + len - (va + vlen - air) : 0;
+    a < va + air || len > vlen - air * 2 ? a - (va + air) : a + len > va + vlen - air ? a + len - (va + vlen - air) : 0;
   return { dx: axis(r.x, r.w, v.x, v.w, airX), dy: axis(r.y, r.h, v.y, v.h, airY) };
 }
 

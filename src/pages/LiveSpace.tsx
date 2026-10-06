@@ -42,6 +42,7 @@ import { JoinForm } from "../components/JoinForm";
 import { useAccount } from "../live/useJoin";
 import { isPersonaName, PERSONAS, resetIdentity, updateIdentity } from "../live/identity";
 import { NewRoomInvite, NewRoomStart } from "../components/NewRoom";
+import { OrbHint, orbHintWanted } from "../components/OrbHint";
 import { MAKE_SPACE_EVENT } from "../components/DemoBanner";
 import { setNextVoiceScript } from "../lib/voice";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -409,6 +410,8 @@ export function LiveSpacePage({
   const [gateLeaving, setGateLeaving] = useState(false);
   const gateCursorPoint = useRef<GatePoint | null>(null);
   const [ownCursorOn] = useState(ownCursorWanted);
+  // the orb hint on a first visit to a tour room (FM1b, components/OrbHint.tsx)
+  const [orbHint, setOrbHint] = useState(orbHintWanted);
   const gateTimers = useRef<number[]>([]);
   const [claimLeaving, setClaimLeaving] = useState(false);
   const [claimPoint, setClaimPoint] = useState<GatePoint | null>(null);
@@ -3361,6 +3364,11 @@ export function LiveSpacePage({
       />
       {madeRoom && roomEntered && !gateOpen && cardCount === 0 && status !== "loading" && !nudgeTake && (
         <NewRoomStart roomName={space?.name ?? ""} onAsk={askStarter} />
+      )}
+      {/* a tour room, first visit: the hint pinned to the orb, its starters
+          through the same path as the empty room's */}
+      {orbHint && !madeRoom && !!SPACES_BY_ID[slug] && roomEntered && !gateOpen && !gateLeaving && !claimOpen && status !== "loading" && (
+        <OrbHint roomName={mockSpace.name} onAsk={askStarter} onGone={() => setOrbHint(false)} />
       )}
       {showInviteNudge && (
         <NewRoomInvite

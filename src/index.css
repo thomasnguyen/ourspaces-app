@@ -27287,9 +27287,9 @@ body:has(.demo-banner) .settings-sheet {
 }
 
 @media (max-width: 640px) {
+  /* a phone has no strip for it: the dock sits over the rail (FM1b look-pass) */
   .dev-readout {
-    left: 8px;
-    max-width: calc(100vw - 16px);
+    display: none;
   }
 
   .dev-context {

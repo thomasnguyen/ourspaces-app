@@ -1170,6 +1170,25 @@ body.voice-stage-up .voice-found-pulse {
     text-align: center;
   }
 
+  /* the phone stacks orb, words, card: the offers (the thing to tap) come
+     before the card, so a tall card runs under the edge, never the offer */
+  .voice-two-card > .voice-two-offers {
+    order: 1;
+  }
+
+  .voice-two-card > .voice-two-fly {
+    order: 2;
+  }
+
+  .voice-two-card > .voice-two-sources {
+    order: 3;
+  }
+
+  /* stacked, the words' slip already asks it: the card's shoulder stays quiet */
+  .voice-stage.is-two:has(.voice-two-ask-slip) .voice-two-kind > .voice-two-ask:not(.is-found) {
+    display: none;
+  }
+
   .voice-two-kind {
     justify-content: center;
   }

@@ -1,0 +1,216 @@
+/* The orb hint (OrbHint.tsx): a black slip pinned above the orb on a first
+   visit to a tour room. Sticker material, cream type, lime once (the live
+   dot), a tail that points at the orb; it folds into the orb when the first
+   ask starts. Under the door's scrim (71), level with the dock (70) and
+   clear of it. Tokens from @theme in index.css. */
+
+.orb-hint {
+  --orb-x: 50%;
+  --orb-top: calc(100vh - 72px);
+  --tail: 26px;
+  position: fixed;
+  z-index: 70;
+  left: calc(var(--orb-x) - var(--tail) - 18px);
+  bottom: calc(100vh - var(--orb-top) + 22px);
+  width: min(380px, calc(100vw - 24px));
+  border-radius: 20px;
+  padding: 16px 18px 16px;
+  background: var(--color-sticker);
+  color: var(--color-card);
+  box-shadow: 0 8px 0 rgba(45, 22, 31, 0.24);
+  transform-origin: calc(var(--tail) + 18px) calc(100% + 22px);
+  rotate: -1.2deg;
+  animation: orb-hint-in var(--dur-stage) var(--ease-pop) 700ms both;
+}
+
+/* the tail: a corner of the slip, pointing down at the orb */
+.orb-hint::after {
+  position: absolute;
+  bottom: -7px;
+  left: calc(var(--tail) + 18px - 9px);
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--color-sticker);
+  rotate: 45deg;
+  content: "";
+}
+
+.orb-hint-kicker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-card) 60%, var(--color-sticker));
+}
+
+.orb-hint-kicker i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-lime);
+  animation: orb-hint-blink 1.6s ease-in-out infinite;
+}
+
+.orb-hint h2 {
+  margin: 3px 0 2px;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.orb-hint-sub {
+  margin: 6px 0 12px;
+  max-width: 30ch;
+  font-size: 14px;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--color-card) 78%, var(--color-sticker));
+}
+
+.orb-hint ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.orb-hint li {
+  animation: orb-hint-chip-in var(--dur-arrive) var(--ease-pop) calc(880ms + var(--i) * 70ms) both;
+}
+
+.orb-hint li button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: 8px 14px 8px 10px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  font: 600 13px/1.1 var(--font-sans);
+  cursor: pointer;
+  transition:
+    transform var(--dur-quick) var(--ease-glide),
+    background var(--dur-quick) var(--ease-glide);
+}
+
+.orb-hint li button span {
+  font-size: 9px;
+  color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+}
+
+.orb-hint li button:hover {
+  background: var(--color-lime);
+  transform: translateY(-2px);
+}
+
+.orb-hint li button:active {
+  transform: scale(0.97);
+  transition-duration: var(--dur-instant);
+}
+
+.orb-hint-dismiss {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-card) 55%, var(--color-sticker));
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--dur-quick) var(--ease-glide), background var(--dur-quick) var(--ease-glide);
+}
+
+.orb-hint-dismiss:hover {
+  background: color-mix(in srgb, var(--color-card) 12%, transparent);
+  color: var(--color-card);
+}
+
+/* the fold: it leaves on glide, into the orb it was pointing at */
+.orb-hint.is-leaving,
+.orb-hint.is-leaving li {
+  animation: orb-hint-out var(--dur-base) var(--ease-glide) both;
+}
+
+/* if the stage is already up, it is gone whatever React is mid-way through */
+body.voice-stage-up .orb-hint {
+  display: none;
+}
+
+@keyframes orb-hint-in {
+  from {
+    opacity: 0;
+    scale: 0.78;
+    translate: 0 14px;
+  }
+}
+
+@keyframes orb-hint-chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.9);
+  }
+}
+
+@keyframes orb-hint-out {
+  to {
+    opacity: 0;
+    scale: 0.5;
+    translate: 0 18px;
+  }
+}
+
+@keyframes orb-hint-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* phone: the dock sits over the rail, the hint sits over the dock, both
+   edge to edge; the starters as a column so each ask reads whole */
+@media (max-width: 800px) {
+  .orb-hint {
+    --tail: 26px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    padding: 14px 16px 14px;
+    rotate: -0.8deg;
+  }
+
+  .orb-hint::after {
+    left: calc(var(--orb-x) - 12px - 9px);
+  }
+
+  .orb-hint h2 {
+    font-size: 26px;
+  }
+
+  .orb-hint-sub {
+    margin-bottom: 10px;
+    max-width: none;
+  }
+
+  .orb-hint ul {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-hint,
+  .orb-hint li,
+  .orb-hint-kicker i {
+    animation: none;
+  }
+}
