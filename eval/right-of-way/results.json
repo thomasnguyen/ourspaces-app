@@ -2,18 +2,46 @@
  "frozenAt": "2026-10-05T23:11:59.102Z",
  "labelsHash": "6e888fc4e277b4ff",
  "scenarios": 162,
+ "batches": [
+  {
+   "name": "r4",
+   "frozenAt": "2026-10-05T23:40:17.235Z",
+   "labelsHash": "ccbca50556d9e0d1",
+   "count": 18,
+   "ids": [
+    "R4-01",
+    "R4-02",
+    "R4-03",
+    "R4-04",
+    "R4-05",
+    "R4-06",
+    "R4-07",
+    "R4-08",
+    "R4-09",
+    "R4-10",
+    "R4-11",
+    "R4-12",
+    "R4-13",
+    "R4-14",
+    "R4-15",
+    "R4-16",
+    "R4-17",
+    "R4-18"
+   ]
+  }
+ ],
  "clear": 155,
  "ambiguous": 7,
- "ran": "2026-10-05T23:25:48.553Z",
+ "ran": "2026-10-06T00:02:34.246Z",
  "arms": {
   "gate": {
    "clear": {
     "n": 155,
-    "right": 149,
-    "harmful": 5,
-    "held": 1,
+    "right": 153,
+    "harmful": 0,
+    "held": 2,
     "heldWait": 1,
-    "heldAsk": 0,
+    "heldAsk": 1,
     "heldNever": 0,
     "other": 0,
     "person": 0,
@@ -38,11 +66,11 @@
    "groups": {
     "gate": {
      "n": 44,
-     "right": 44,
+     "right": 43,
      "harmful": 0,
-     "held": 0,
+     "held": 1,
      "heldWait": 0,
-     "heldAsk": 0,
+     "heldAsk": 1,
      "heldNever": 0,
      "other": 0,
      "person": 0,
@@ -66,8 +94,8 @@
     },
     "adversarial": {
      "n": 47,
-     "right": 41,
-     "harmful": 5,
+     "right": 46,
+     "harmful": 0,
      "held": 1,
      "heldWait": 1,
      "heldAsk": 0,
@@ -82,11 +110,11 @@
    "kinds": {
     "edit": {
      "n": 127,
-     "right": 123,
-     "harmful": 3,
-     "held": 1,
+     "right": 125,
+     "harmful": 0,
+     "held": 2,
      "heldWait": 1,
-     "heldAsk": 0,
+     "heldAsk": 1,
      "heldNever": 0,
      "other": 0,
      "person": 0,
@@ -110,8 +138,8 @@
     },
     "link": {
      "n": 6,
-     "right": 4,
-     "harmful": 2,
+     "right": 6,
+     "harmful": 0,
      "held": 0,
      "heldWait": 0,
      "heldAsk": 0,
@@ -168,11 +196,11 @@
    "labels": {
     "go": {
      "n": 48,
-     "right": 47,
+     "right": 46,
      "harmful": 0,
-     "held": 1,
+     "held": 2,
      "heldWait": 1,
-     "heldAsk": 0,
+     "heldAsk": 1,
      "heldNever": 0,
      "other": 0,
      "person": 0,
@@ -196,8 +224,8 @@
     },
     "ask": {
      "n": 43,
-     "right": 38,
-     "harmful": 5,
+     "right": 43,
+     "harmful": 0,
      "held": 0,
      "heldWait": 0,
      "heldAsk": 0,
@@ -223,12 +251,45 @@
      "goOf": 0
     }
    },
+   "batches": {
+    "r4": {
+     "n": 18,
+     "right": 18,
+     "harmful": 0,
+     "held": 0,
+     "heldWait": 0,
+     "heldAsk": 0,
+     "heldNever": 0,
+     "other": 0,
+     "person": 0,
+     "invalid": 0,
+     "harmfulOf": 8,
+     "goOf": 10
+    }
+   },
    "usPerDecision": {
-    "median": 0.9933540000000107,
-    "p90": 1.674874999999986,
-    "max": 4.253917000000001
+    "median": 0.96712500000001,
+    "p90": 1.6855624999999892,
+    "max": 3.0917705000000026
    },
    "misses": [
+    {
+     "id": "G10",
+     "ambiguous": false,
+     "want": {
+      "verdict": "go",
+      "who": [],
+      "why": "tara claimed towels herself"
+     },
+     "got": {
+      "verdict": "ask",
+      "who": [
+       "Tara"
+      ],
+      "why": "tara has towels"
+     },
+     "result": "held:ask"
+    },
     {
      "id": "X23",
      "ambiguous": false,
@@ -245,91 +306,6 @@
       "why": "Tara holds it (drag)"
      },
      "result": "held:wait"
-    },
-    {
-     "id": "X30",
-     "ambiguous": false,
-     "want": {
-      "verdict": "ask",
-      "who": [
-       "Maya"
-      ],
-      "why": "the maya who paid $600 is the member, not the guest asking"
-     },
-     "got": {
-      "verdict": "go",
-      "who": [],
-      "why": "go"
-     },
-     "result": "harmful"
-    },
-    {
-     "id": "X34",
-     "ambiguous": false,
-     "want": {
-      "verdict": "ask",
-      "who": [
-       "Jo"
-      ],
-      "why": "jo's vote came after the vote was called; nobody asked jo"
-     },
-     "got": {
-      "verdict": "go",
-      "who": [],
-      "why": "go"
-     },
-     "result": "harmful"
-    },
-    {
-     "id": "X35",
-     "ambiguous": false,
-     "want": {
-      "verdict": "ask",
-      "who": [
-       "Maya"
-      ],
-      "why": "the rewrite sets maya's paid $200 back to $0"
-     },
-     "got": {
-      "verdict": "go",
-      "who": [],
-      "why": "go"
-     },
-     "result": "harmful"
-    },
-    {
-     "id": "X36",
-     "ambiguous": false,
-     "want": {
-      "verdict": "ask",
-      "who": [
-       "Holly"
-      ],
-      "why": "holly picked oct 16 by hand; the link would override it"
-     },
-     "got": {
-      "verdict": "go",
-      "who": [],
-      "why": "go"
-     },
-     "result": "harmful"
-    },
-    {
-     "id": "X53",
-     "ambiguous": false,
-     "want": {
-      "verdict": "ask",
-      "who": [
-       "Sam"
-      ],
-      "why": "the yes is the other sam's"
-     },
-     "got": {
-      "verdict": "go",
-      "who": [],
-      "why": "go"
-     },
-     "result": "harmful"
     }
    ]
   },
