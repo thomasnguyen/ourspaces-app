@@ -8,13 +8,32 @@ for anything not tracked).
 
 ## Hackathon work
 
-- **Start at `nebius/README.md`.** It has the dates, status, open decisions
-  and an index of everything else for the entry. The folder is local-only
-  (gitignored); skip it if a clone doesn't have it.
-- **Update its Status section after each step**, same as `docs/todos.md`.
-- **Models:** new AI work runs on NVIDIA Nemotron via Nebius Token Factory
-  (OpenAI-compatible API), and the existing OpenAI calls in `convex/ai.ts`
-  move over to it. Until then they still call OpenAI.
+- **Find the doc before reading anything: `nebius/DIRECTORY.md`.** One line
+  per doc, grouped by purpose, with the five to read first. Open only the
+  one or two it names for your task; the folder has 40-odd files and most
+  are evidence. The folder is local-only (gitignored); skip it if a clone
+  doesn't have it.
+- **The five that matter:** `nebius/overnight-log.md` (what got built,
+  newest first, with screenshots and the misses), `nebius/path-to-win.md`
+  (the plan; §9 holds Thomas's open decisions), `nebius/loop/gates.md`
+  (decisions parked for Thomas, each with a default), `nebius/queue.md`
+  (the tasks, in order; the top says who owns which files when two
+  sessions are working), `nebius/eval/r3-proof.md` (the Right of Way
+  evidence).
+- **Working a task:** read `nebius/loop/standing.md` (the rules every worker
+  gets) and the playbook that fits from the local hackathon skill next to
+  `eye-candy` (gitignored; its `playbooks/` and `levers.md`). Reach any feature's state with `drive go <feature>:<state>` from
+  the feature map in `.claude/skills/run-ourspaces/features/` instead of
+  searching the code. Every finished task gets a write-up in
+  `nebius/eval/<id>-<name>.md` and a log entry via that skill's `scripts/loop.mjs close`.
+- **Update `nebius/README.md` Status after each step**, same as
+  `docs/todos.md`, and add a row to `DIRECTORY.md` when you add a doc.
+- **Models:** AI work runs on NVIDIA Nemotron via Nebius Token Factory
+  (OpenAI-compatible API) through `convex/nebius.ts`; on the dev
+  deployment every AI feature already uses it (`convex/ai.ts`). Prod is
+  frozen on Oct 4's build and still calls OpenAI until the freeze lifts.
+- **Prod is frozen** (`nebius/.prod-freeze`): ship to the dev lane only
+  (`npm run deploy:dev` → https://dev--ourspaces-app.netlify.app).
 
 ## Rules
 
