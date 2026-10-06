@@ -10,7 +10,7 @@ states:
   cursor: ?door=0&cursor=1 #/space/crew | wait own-cursor
   hint: ?door=0&hint=1 #/space/crew | wait orb-hint
   starter: ?door=0&hint=1 #/space/crew | click orb-hint-starter-0 | wait voice-stage | sleep 1500
-  landed: ?door=0&hint=1&voice=start a push-up challenge for us&voicePace=talk #/space/crew | wait voice-landed
+  landed: ?door=0&hint=1&voice=start a push-up challenge for us&voicePace=talk #/space/crew | click dock-voice-orb | wait voice-landed
 take:
 ---
 # The first minute (lane)
