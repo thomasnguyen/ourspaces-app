@@ -162,6 +162,11 @@ Backward-looking history lives in `hackathon.md`.
   focus. Everything for the entry lives in the local-only `nebius/` folder;
   start at `nebius/README.md` (dates, status, open decisions). There is no
   LICENSE yet.
+  **Oct 6: our own deadline is Sun Oct 12** (Thomas is away from then through
+  the close): freeze Sat Oct 10, shoot Oct 10, submit Oct 12 able to win as-is,
+  Oct 13–30 loop only. Pilot: real users only in the Impact table; tour rooms,
+  scripted scenarios and labeled simulated weeks allowed anywhere else
+  (`nebius/pilot.md`).
 
 - **Nemotron behind every AI feature, dev only (2026-10-04):** with
   `NEBIUS_API_KEY` set (dev `dusty-condor-648` only), `convex/ai.ts` sends
