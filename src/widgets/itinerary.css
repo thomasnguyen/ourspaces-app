@@ -1,0 +1,21 @@
+/* itinerary rows: the day column is as wide as the longest day on the card
+   ("Saturday", "nov 11"), shared by every row through subgrid, so a day never
+   runs into its plan. The base look stays in index.css (── itinerary ──); the
+   old fixed 36px column let "Saturday" (51px) overflow into the plan text. */
+.widget-shell.widget-itinerary ul {
+  display: grid;
+  grid-template-columns: fit-content(45%) minmax(0, 1fr);
+  column-gap: 10px;
+}
+
+.widget-shell.widget-itinerary li {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  column-gap: 10px;
+  align-items: baseline;
+}
+
+.widget-shell.widget-itinerary li > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

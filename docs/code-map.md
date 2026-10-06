@@ -215,7 +215,7 @@ captures shared with `ShipRoom`; all pure, fed one `BuildRoomFeed` prop threaded
 Canvas → WidgetCard) · `core.tsx` (sticker, frame, countdown, poll, note…) ·
 `challenge.tsx` + `challenge.css` (`CheckInWidget`, `StandingsWidget`, `BoardLinkContext` = the board's widgets and `onWidgetData`, provided by `Canvas`; maths and the `CheckInData` / `StandingsData` types in `src/lib/challenge.ts`; feature files `check-in.md`, `standings.md`) ·
 `extras.tsx` (rsvp, dailyQ, availability, Firecrawl link card, link shelf, playlist, expense,
-itinerary, quote, weather, sports, letter — kraft envelope that unfolds; buttons
+itinerary (+ `itinerary.css`: the day column sized to the longest day via subgrid), quote, weather, sports, letter — kraft envelope that unfolds; buttons
 inside so WidgetCard's drag capture doesn't eat the click…) · `CozyColorWidget.tsx` (full-screen
 paint-by-number game on an inline SVG board: 50 closed vector regions fill via
 CSS `--paint-*` vars, numbers live in the SVG, tapping a dim number switches

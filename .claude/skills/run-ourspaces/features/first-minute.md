@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
 ready: demo-banner
-testids: demo-banner demo-make-space demo-welcome-notice demo-notice-explore claim-enter own-cursor orb-hint orb-hint-starter-0 orb-hint-starter-1 orb-hint-starter-2 orb-hint-dismiss dock-voice-orb voice-stage voice-landed admin-door-crew
+testids: demo-banner demo-make-space demo-welcome-notice demo-notice-explore claim-enter own-cursor orb-hint orb-hint-starter-0 orb-hint-starter-1 orb-hint-starter-2 orb-hint-dismiss dock-voice-orb voice-stage voice-stage-cluster voice-landed admin-door-crew
 states:
   cold: #/space/crew
   notice: ?notice=1 #/space/crew | wait demo-welcome-notice
@@ -9,8 +9,8 @@ states:
   nodoor: ?door=0 #/space/crew | wait dock-voice-orb
   cursor: ?door=0&cursor=1 #/space/crew | wait own-cursor
   hint: ?door=0&hint=1 #/space/crew | wait orb-hint
-  starter: ?door=0&hint=1 #/space/crew | click orb-hint-starter-0 | wait voice-stage | sleep 1500
-  landed: ?door=0&hint=1&voice=start a push-up challenge for us&voicePace=talk #/space/crew | click dock-voice-orb | wait voice-landed
+  starter: ?door=0&hint=1&voicePace=talk #/space/crew | click orb-hint-starter-0 | wait voice-stage-cluster | sleep 700
+  landed: ?door=0&hint=1&voice=plan dinner saturday&voicePace=talk #/space/crew | click dock-voice-orb | wait voice-landed | sleep 1800
 take:
 ---
 # The first minute (lane)
@@ -18,7 +18,11 @@ take:
 **For a user:** a stranger lands on the room cold. The demo banner and the
 welcome notice say what this is; the door asks for a name and a look; then
 the own cursor and the orb hint show where to start; a starter ask lands a
-first card, and the card asks for a vote. Lane only (`drive up --lane`).
+first card, and the card asks for a vote: the first starter, "plan dinner
+saturday", builds the poll-and-who's-in pair from `features/flows.md`
+(`dinner`), so there are choices to tap. Lane only (`drive up --lane`).
+Both `starter` and `landed` write that pair to the dev crew board; the
+second run of either reads "already here" until your ids are swept.
 
 **Where it lives:** `src/components/DemoBanner.tsx` (banner, notice,
 `demo-make-space`), `ClaimCard.tsx` (the door, `claim-enter`) and

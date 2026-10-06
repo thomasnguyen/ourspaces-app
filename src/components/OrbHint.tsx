@@ -14,7 +14,7 @@ import "./orbHint.css";
 export const ORB_HINT_KEY = "ourspaces:orb-hint";
 
 export const ORB_HINT_STARTERS = [
-  "plan something for this weekend",
+  "plan dinner saturday",
   "start a push-up challenge for us",
   "who's in this group?",
 ] as const;

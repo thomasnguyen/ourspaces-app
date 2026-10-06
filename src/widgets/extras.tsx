@@ -4,6 +4,7 @@ import { MemberFace } from "../components/MemberFace";
 import { playSound } from "../lib/sounds";
 import { useContext } from "react";
 import { BoardLinkContext } from "./challenge";
+import "./itinerary.css";
 import { getIdentity } from "../live/identity";
 import { getDataMode } from "../live/dataMode";
 import {
