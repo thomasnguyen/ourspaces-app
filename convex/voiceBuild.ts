@@ -698,9 +698,10 @@ export async function noteOutcome(
   const id = String(widget._id);
   const row = rows.find((r) => r.run.includes(id));
   if (!row) return;
-  const run = JSON.parse(row.run) as { committed?: string[]; outcome?: { kind: string; afterMs: number; field?: string }[] };
+  const run = JSON.parse(row.run) as { committed?: string[]; outcome?: { kind: string; id?: string; afterMs: number; field?: string }[] };
   if (!run.committed?.includes(id)) return;
-  const outcome = [...(run.outcome ?? []), { kind: what.kind, afterMs: now - widget.createdAt, ...(what.kind === "edited" ? { field: what.field } : {}) }].slice(-8);
+  // id: which card of the ask it was (convex/pilot.ts counts kept / edited / deleted per card)
+  const outcome = [...(run.outcome ?? []), { kind: what.kind, id, afterMs: now - widget.createdAt, ...(what.kind === "edited" ? { field: what.field } : {}) }].slice(-8);
   await ctx.db.patch(row._id, { run: JSON.stringify({ ...run, outcome }) });
 }
 
