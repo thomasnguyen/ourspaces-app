@@ -694,3 +694,181 @@ export const backfillSeatIds = internalMutation({
     return null;
   },
 });
+
+/* ── our house: the real house on the dev lane, for the video ──────────────
+   Thomas, Holly, Hoa and Hoang; Bumi is the dog (a fact on the board, not a
+   member). The challenge is on day 5 of 6 (Holly hasn't logged today; forty
+   puts her first), a dinner poll without ramen, game night on friday with
+   three yeses, Bumi's walks and the usual dinner places. Dates from `today`. */
+const HOUSE_SLUG = "our-house";
+const HOUSE_PEOPLE = [
+  { name: "Thomas", color: "#3f70ff" },
+  { name: "Holly", color: "#e9369d" },
+  { name: "Hoa", color: "#13b8a6" },
+  { name: "Hoang", color: "#ff7c42" },
+];
+/** The two phones sit in Thomas's and Holly's seats: their rows stay unclaimed so the phone that logs first owns it. */
+const HOUSE_PHONE_SEATS = ["thomas", "holly"];
+export const HOUSE_CHALLENGE_IDS = ["house-frame-challenge", "house-checkin", "house-standings", "house-signup", "house-reveal", "house-deal"];
+
+function houseWidgetsOn(today: string): Widget[] {
+  const [y, m, d] = today.split("-").map(Number);
+  const at = (n: number) => new Date(Date.UTC(y, m - 1, d + n));
+  const iso = (n: number) => at(n).toISOString().slice(0, 10);
+  const wd = (n: number) => ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][at(n).getUTCDay()];
+  const yes = (name: string) => ({ name, status: "yes" as const });
+  return [
+    { id: "house-frame-challenge", type: "frame", x: 32, y: 48, w: 1266, h: 650, z: 0, data: { title: `push-ups till ${wd(2)}`, subtitle: "the four of us" } },
+    {
+      id: "house-checkin", type: "checkIn", x: 56, y: 110, w: 600, h: 420, z: 4, rotate: -0.6,
+      data: {
+        title: "push-ups", kind: "number", unit: "push-ups", start: iso(-4), days: 6, revealAt: `${iso(2)}T09:00`,
+        people: HOUSE_PEOPLE,
+        logs: { Hoang: [36, 38, 30, 34, 32], Thomas: [30, 32, 35, 33, 35], Holly: [30, 32, 34, 35, null], Hoa: [20, 25, null, 28, 30] },
+      },
+    },
+    { id: "house-standings", type: "standings", x: 690, y: 104, w: 372, h: 430, z: 4, rotate: 1, data: { title: "standings", source: "house-checkin", stake: "most by the reveal picks friday's dinner. last place walks bumi all weekend." } },
+    { id: "house-signup", type: "rsvp", x: 1086, y: 96, w: 190, h: 250, z: 3, rotate: -1.5, data: { title: "who's in", responses: HOUSE_PEOPLE.map((p) => yes(p.name)), waitingOn: [] } },
+    { id: "house-reveal", type: "countdown", x: 1090, y: 368, w: 182, h: 262, z: 3, rotate: 2, data: { event: `the reveal · ${wd(2)} 9:00`, targetDate: iso(2), startDate: iso(-4), tone: "butter", hyped: ["Hoang", "Thomas", "Holly"] } },
+    { id: "house-deal", type: "note", x: 56, y: 552, w: 400, h: 128, z: 2, rotate: -1, data: { kicker: "the deal", text: "log before bed or it didn't happen. knees don't count.", author: "Thomas", tone: "white" } },
+
+    { id: "house-frame-week", type: "frame", x: 32, y: 744, w: 1266, h: 470, z: 0, data: { title: "this week", subtitle: "dinner, games, bumi" } },
+    {
+      id: "house-dinner", type: "poll", x: 56, y: 806, w: 270, h: 230, z: 4, rotate: -1.2,
+      data: {
+        question: "dinner tonight?", tone: "sky",
+        options: [
+          { id: "a", label: "pho", votes: 2, total: 4, voters: ["Hoa", "Hoang"] },
+          { id: "b", label: "tacos", votes: 1, total: 4, voters: ["Thomas"] },
+          { id: "c", label: "thai curry", votes: 1, total: 4, voters: ["Holly"] },
+          { id: "d", label: "pizza", votes: 0, total: 4, voters: [] },
+        ],
+      },
+    },
+    { id: "house-game-night", type: "rsvp", x: 356, y: 800, w: 230, h: 260, z: 3, rotate: 1.2, data: { title: "game night · friday", responses: [yes("Holly"), yes("Hoa"), yes("Hoang")], waitingOn: ["Thomas"] } },
+    {
+      id: "house-bumi-walks", type: "potluck", x: 616, y: 806, w: 340, h: 230, z: 3, rotate: -0.8,
+      data: {
+        title: "bumi's walks", kicker: "training tue + thu", tone: "butter", openCount: 0,
+        items: [
+          { name: "7am walk", by: "Thomas", claimed: true },
+          { name: "lunch walk", by: "Hoa", claimed: true },
+          { name: "evening walk", by: "Holly", claimed: true },
+          { name: "training pickup", by: "Hoang", claimed: true },
+        ],
+      },
+    },
+    { id: "house-bumi", type: "note", x: 986, y: 800, w: 290, h: 132, z: 3, rotate: 1.5, data: { kicker: "bumi", text: "bumi's the dog. dinner at 6, no table scraps, training tuesdays and thursdays.", author: "Holly", tone: "warm" } },
+    {
+      id: "house-places", type: "linkShelf", x: 986, y: 956, w: 290, h: 230, z: 3, rotate: -1,
+      data: {
+        title: "dinner, the usual", tone: "butter",
+        links: [
+          { label: "the pho place (maps)", url: "maps.google.com", by: "Hoa" },
+          { label: "the taco truck (maps)", url: "maps.google.com", by: "Thomas" },
+          { label: "thai on the corner (maps)", url: "maps.google.com", by: "Holly" },
+          { label: "pizza friday (maps)", url: "maps.google.com", by: "Hoang" },
+        ],
+      },
+    },
+  ];
+}
+
+const houseIds = v.object({
+  spaceId: v.optional(v.id("spaces")),
+  members: v.array(v.id("members")),
+  widgets: v.array(v.id("widgets")),
+  votes: v.array(v.id("votes")),
+});
+
+/**
+ * Resets our house to its designed state. `prev` is what the last run made
+ * (the caller keeps it, .context/house/ids.json): those widgets and poll votes
+ * are deleted by id and the board is written again; the room and its four
+ * members are kept. Nothing else in the room is touched (standing order 10a).
+ * `hero: true` leaves the challenge corner off so the voice ask builds it.
+ */
+export const seedHouse = internalMutation({
+  args: { today: v.optional(v.string()), hero: v.optional(v.boolean()), prev: v.optional(houseIds) },
+  returns: v.object({ ids: houseIds, removed: v.number(), cards: v.number() }),
+  handler: async (ctx, { today, hero, prev }) => {
+    const now = Date.now();
+    const day = today && /^\d{4}-\d{2}-\d{2}$/.test(today) ? today : new Date(now).toISOString().slice(0, 10);
+    let space = prev?.spaceId ? await ctx.db.get(prev.spaceId) : null;
+    const bySlug = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", HOUSE_SLUG)).unique();
+    if (bySlug && bySlug._id !== space?._id) throw new Error(`${HOUSE_SLUG} exists but isn't in the ids file: not ours to reset`);
+    if (!space) {
+      const spaceId = await ctx.db.insert("spaces", {
+        name: "our house", type: "ongoing", icon: "⌂", color: "#3f70ff", slug: HOUSE_SLUG, tagline: "four of us and bumi",
+        canvasW: 1330, canvasH: 1250, createdAt: now, lastActivityAt: now,
+      });
+      await spacesCounter.inc(ctx);
+      space = (await ctx.db.get(spaceId))!;
+    } else {
+      await ctx.db.patch(space._id, { lastActivityAt: now });
+    }
+    const spaceId = space._id;
+
+    // the four members: kept when they are still there, else made
+    const members: Id<"members">[] = [];
+    for (const p of HOUSE_PEOPLE) {
+      const userId = seedUserId(HOUSE_SLUG, p.name);
+      const kept = prev?.members.length ? await Promise.all(prev.members.map((id) => ctx.db.get(id))) : [];
+      const row = kept.find((m) => m && m.spaceId === spaceId && m.userId === userId);
+      if (row) {
+        members.push(row._id);
+        continue;
+      }
+      const id = await ctx.db.insert("members", { spaceId, userId, name: p.name, color: p.color, lastSeen: now });
+      await memberCounts.insert(ctx, (await ctx.db.get(id))!);
+      members.push(id);
+    }
+
+    // last run's cards and votes, by id only
+    let removed = 0;
+    for (const id of prev?.votes ?? []) {
+      const vote = await ctx.db.get(id);
+      if (!vote) continue;
+      await ctx.db.delete(id);
+      await pollTallies.delete(ctx, vote);
+    }
+    for (const id of prev?.widgets ?? []) {
+      const w = await ctx.db.get(id);
+      if (!w || w.spaceId !== spaceId) continue;
+      await ctx.db.delete(id);
+      await widgetsCounter.dec(ctx);
+      removed++;
+    }
+
+    const designed = houseWidgetsOn(day).filter((w) => !hero || !HOUSE_CHALLENGE_IDS.includes(w.id));
+    const seat = (name: string) => (HOUSE_PHONE_SEATS.includes(name.toLowerCase()) ? null : seedUserId(HOUSE_SLUG, name));
+    const createdBy = seedUserId(HOUSE_SLUG, "Thomas");
+    const ids = new Map<string, Id<"widgets">>();
+    const votes: Id<"votes">[] = [];
+    for (const w of designed) {
+      const data = stampSeats(w.type, w.data, seat) ?? w.data;
+      const id = await ctx.db.insert("widgets", {
+        spaceId, type: w.type, x: w.x, y: w.y, w: w.w, h: w.h, z: w.z, rotate: w.rotate,
+        data: convexSafe(data) as WidgetData, createdBy, createdAt: now,
+      });
+      await widgetsCounter.inc(ctx);
+      ids.set(w.id, id);
+      if (w.type !== "poll") continue;
+      for (const option of (w.data.options as { id: string; voters: string[] }[]) ?? []) {
+        for (const voter of option.voters) {
+          const voteId = await ctx.db.insert("votes", { widgetId: id, userId: seedUserId(HOUSE_SLUG, voter), optionId: option.id });
+          await pollTallies.insert(ctx, (await ctx.db.get(voteId))!);
+          votes.push(voteId);
+        }
+      }
+    }
+    const standings = ids.get("house-standings");
+    const checkin = ids.get("house-checkin");
+    if (standings && checkin) {
+      const row = (await ctx.db.get(standings))!;
+      await ctx.db.patch(standings, { data: { ...(row.data as object), source: checkin } as WidgetData });
+    }
+    await ctx.scheduler.runAfter(0, internal.roomBrief.refresh, { spaceId });
+    return { ids: { spaceId, members, widgets: [...ids.values()], votes }, removed, cards: ids.size };
+  },
+});
