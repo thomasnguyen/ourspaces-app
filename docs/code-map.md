@@ -212,7 +212,7 @@ with the `spaces-pop-email` prefix.
 **widgets/** — `buildroom.tsx` (the dev guild's four: `linkPile`, `hotLinks`,
 `shipPost`, `roundtable`; also `ShipPreview`, the illustrated demo project
 captures shared with `ShipRoom`; all pure, fed one `BuildRoomFeed` prop threaded
-Canvas → WidgetCard) · `core.tsx` (sticker, frame, countdown, poll, note…) ·
+Canvas → WidgetCard) · `core.tsx` (sticker, frame, countdown, poll, note…; imports `phone-cards.css`: under 800px the poll fills its spot and grows rather than clip, 4+ choices tighten, the torn paper tears at the edge, "call it" and who's-in's waiting ticket sit inside their cards) ·
 `challenge.tsx` + `challenge.css` (`CheckInWidget`, `StandingsWidget`, `BoardLinkContext` = the board's widgets and `onWidgetData`, provided by `Canvas`; maths and the `CheckInData` / `StandingsData` types in `src/lib/challenge.ts`; feature files `check-in.md`, `standings.md`) ·
 `extras.tsx` (rsvp, dailyQ, availability, Firecrawl link card, link shelf, playlist, expense,
 itinerary (+ `itinerary.css`: the day column sized to the longest day via subgrid), quote, weather, sports, letter — kraft envelope that unfolds; buttons

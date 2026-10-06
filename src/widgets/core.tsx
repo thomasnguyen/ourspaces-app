@@ -8,6 +8,7 @@ import { getStickerDefinition } from "../data/stickers";
 import type { Widget } from "../data/types";
 import { MemberFace } from "../components/MemberFace";
 import { playSound } from "../lib/sounds";
+import "./phone-cards.css";
 
 type Style = CSSProperties;
 

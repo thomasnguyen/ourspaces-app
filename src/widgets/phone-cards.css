@@ -1,0 +1,71 @@
+/* Phone cards (FM2c): on a phone the poll and who's-in keep everything inside their
+   own paper. The deck sizes them for the desk and the old phone rule pinned the poll
+   at 250px, so a fourth option and "call it" painted past the torn edge, and the
+   "waiting on the poll" ticket hung under who's-in. Desk is untouched. */
+@media (max-width: 800px) {
+  /* the card fills the spot it was placed in and grows rather than clip */
+  .widget-group-body > .widget-poll {
+    flex-shrink: 0;
+    height: auto !important;
+    min-height: 100%;
+  }
+
+  /* the torn paper's tear sits at the card's bottom edge, not 14% above it */
+  .paper-bg.space-theme-blush .widget-group-body > .widget-poll::before,
+  .paper-bg[data-space-id^="crew"] .widget-group-body > .widget-poll::before {
+    background-size: 100% 123%;
+    background-position: center 46.5%;
+  }
+
+  .paper-bg.space-theme-blush .widget-group-body > .widget-poll .poll-content,
+  .paper-bg[data-space-id^="crew"] .widget-group-body > .widget-poll .poll-content {
+    padding-bottom: 22px;
+  }
+
+  /* four or more choices: tighter rows so they all sit on the paper */
+  .widget-poll:has(.poll-options li:nth-child(4)) .poll-options {
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .widget-poll:has(.poll-options li:nth-child(4)) :is(.poll-row-base, .poll-row-fill) {
+    min-height: 30px;
+  }
+
+  /* "call it" rides inside the card, under the last choice */
+  .widget-group-body:has(> .card-call-it) > .widget-poll .poll-content {
+    padding-bottom: 54px !important;
+  }
+
+  .widget-group-body > .card-call-it {
+    bottom: 16px;
+  }
+
+  /* "call it" is the footer now; the "no votes yet" nudge would sit under it */
+  .widget-group-body:has(> .card-call-it) > .widget-poll .poll-empty {
+    display: none;
+  }
+
+  /* the waiting ticket is a full ticket inside who's-in, under "+ respond" */
+  .widget-group-body:has(> .card-waiting) > .widget-rsvp {
+    flex-shrink: 0;
+    height: auto !important;
+    min-height: 100%;
+    padding-bottom: 52px !important;
+  }
+
+  /* the ghost seats are decoration; the ticket needs their room */
+  .widget-group-body:has(> .card-waiting) > .widget-rsvp .rsvp-empty-faces {
+    display: none;
+  }
+
+  .widget-group-body > .card-waiting {
+    top: auto;
+    right: 14px;
+    bottom: 12px;
+    justify-content: center;
+    border-top: 2px dashed var(--color-lime);
+    border-radius: 14px;
+    transform-origin: 50% 100%;
+  }
+}
