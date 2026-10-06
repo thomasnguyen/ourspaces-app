@@ -108,9 +108,9 @@ export function keeperNoteSlot(
 }
 
 const PINNED_LINK_COVERS: Record<string, string> = {
-  "bl-1": "/assets/link-card-collage-violet.png",
-  "bl-19": "/assets/link-card-riso.png",
-  "bl-32": "/assets/link-card-ceramic.png",
+  "bl-1": "/assets/link-card-collage-violet.webp",
+  "bl-19": "/assets/link-card-riso.webp",
+  "bl-32": "/assets/link-card-ceramic.webp",
 };
 
 function cssPixels(value: string) {

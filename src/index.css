@@ -25218,7 +25218,7 @@
 .vendor-reading-slip strong { display: block; font: 800 18px/1.2 var(--font-display); letter-spacing: -.025em; }
 .vendor-reading-slip small { display: block; margin-top: 5px; color: var(--color-muted); font-size: 10px; }
 .vendor-reading-slip > span:last-child { margin-left: auto; font-size: 19px; }
-.vendor-reading-pile-0 .vendor-reading-slip { min-height: 190px; align-items: flex-start; flex-wrap: wrap; padding: 20px; background: var(--color-card) url('/assets/link-card-collage-violet.png') no-repeat right bottom / 42%; }
+.vendor-reading-pile-0 .vendor-reading-slip { min-height: 190px; align-items: flex-start; flex-wrap: wrap; padding: 20px; background: var(--color-card) url('/assets/link-card-collage-violet.webp') no-repeat right bottom / 42%; }
 .vendor-reading-pile-0 .vendor-reading-slip > div { flex-basis: calc(100% - 58px); }
 .vendor-reading-pile-0 .vendor-reading-slip strong { max-width: 12ch; font-size: 28px; }
 .vendor-reading-pile-0 .vendor-reading-slip small { max-width: 18ch; margin-top: 14px; }

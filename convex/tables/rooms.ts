@@ -52,6 +52,9 @@ export const widgets = defineTable({
   embeddedText: v.optional(v.string()),
 })
   .index("by_space", ["spaceId"])
+  // Room-wide reads of one card type (every poll, the check-in): a subscription
+  // on this range doesn't re-run when some other card on the board moves.
+  .index("by_space_and_type", ["spaceId", "type"])
   .vectorIndex("by_embedding", { vectorField: "embedding", dimensions: EMBEDDING_DIMENSIONS, filterFields: ["spaceId"] });
 
 export const messages = defineTable({

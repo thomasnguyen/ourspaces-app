@@ -230,15 +230,15 @@ export const forRoom = query({
   },
 });
 
-/** A running challenge on the scoreboard (the family's push-ups), behind the standings' own lock. Its own query: it reads
-    the board, and a query that reads the board re-runs on every card write. */
+/** A running challenge on the scoreboard (the family's push-ups), behind the standings' own lock. Its own query, and it reads
+    only the check-in (by_space_and_type): a query over the whole board re-runs on every card write. */
 export const challenge = query({
   args: { spaceId: v.id("spaces"), userId: v.string() },
   returns: v.any(),
   handler: async (ctx, { spaceId, userId }) => {
     const now = Date.now();
     const me = await caller(ctx, spaceId, userId);
-    const checkIn = (await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).take(300)).find((w) => w.type === "checkIn");
+    const checkIn = await ctx.db.query("widgets").withIndex("by_space_and_type", (q) => q.eq("spaceId", spaceId).eq("type", "checkIn")).first();
     let challenge = null;
     if (checkIn) {
       const data = readCheckIn(checkIn.data as Record<string, unknown>);

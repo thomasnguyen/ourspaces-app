@@ -129,9 +129,11 @@ export const inSpace = query({
   returns: v.array(v.object({ widgetId: v.id("widgets"), userId: v.string(), optionId: v.string(), voterName: v.string() })),
   handler: async (ctx, { spaceId }) => {
     if (!(await canRead(ctx, spaceId))) return [];
-    const polls = (
-      await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).collect()
-    ).filter((widget) => widget.type === "poll");
+    // Polls only: a read of the whole board would re-run this on every card write.
+    const polls = await ctx.db
+      .query("widgets")
+      .withIndex("by_space_and_type", (q) => q.eq("spaceId", spaceId).eq("type", "poll"))
+      .collect();
     const rows = (
       await Promise.all(
         polls.map((poll) =>

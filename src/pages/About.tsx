@@ -11,7 +11,7 @@ const REPO_URL = "https://github.com/thomasnguyen/ourspaces-app";
 const CAKE_POLL = getSpace("crew").widgets.find((widget) => widget.id === "poll-cake")!;
 
 const ROOMS = [
-  { slug: "crew", label: "the friends", detail: "birthdays, big plans, inside jokes", color: "league", image: "/assets/the-crew-snapshot-thumb.jpg" },
+  { slug: "crew", label: "the friends", detail: "birthdays, big plans, inside jokes", color: "league", image: "/assets/the-crew-snapshot-thumb.webp" },
   { slug: "couple", label: "the two of you", detail: "a little closer, even from far away", color: "couple", image: "/assets/space-covers/us-two.png" },
   { slug: "house", label: "the housemates", detail: "shared chores. shared chaos.", color: "trip", image: "/assets/space-covers/the-house.png" },
   { slug: "buildroom", label: "the builders", detail: "good links and things you made", color: "crew", symbol: "</>" },
@@ -78,7 +78,7 @@ function BoardPreview() {
         <div className="about-board">
           <span className="about-board-label">Maya’s birthday club <span>✳</span></span>
           <figure className="about-photo">
-            <img src="/assets/the-crew-snapshot.jpg" alt="six friends around a cafe table" />
+            <img src="/assets/the-crew-snapshot.webp" alt="six friends around a cafe table" />
             <figcaption>same people, next friday.</figcaption>
           </figure>
           <img className="about-ours" src="/assets/stickers/ours.png" alt="“ours” bubble sticker" />

@@ -31,7 +31,7 @@ const DAY_MS = 86_400_000;
 const FIRST_PAGE = 15;
 /* Two drops by the same person within this window read as one run. */
 const RUN_GAP_MS = 30 * 60_000;
-const LINK_CARD_FALLBACK = "/assets/link-card-fallback.jpg";
+const LINK_CARD_FALLBACK = "/assets/link-card-fallback.webp";
 /* How long a freshly resolved row keeps its "printing" choreography. */
 const LANDING_MS = 1800;
 

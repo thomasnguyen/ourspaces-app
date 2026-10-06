@@ -164,28 +164,28 @@ export function FirecrawlReel() {
         {/* the same card, four times, onto the pile */}
         <div className="fc-at" style={at(900, 500)}>
           <Card
-            cover="/assets/link-card-collage-amber.png" domain="anthropic.com" kind="article"
+            cover="/assets/link-card-collage-amber.webp" domain="anthropic.com" kind="article"
             title="building effective agents" desc="Workflows vs agents, and why most problems want the simpler one."
             read="read · 8 days ago" go="var(--t-c1)" land="var(--t-k1)" sx={0} sy={0} tilt="-2deg" oldest
           />
         </div>
         <div className="fc-at" style={at(900, 500)}>
           <Card
-            cover="/assets/link-card-riso.png" domain="react.dev" kind="docs"
+            cover="/assets/link-card-riso.webp" domain="react.dev" kind="docs"
             title="you might not need an effect" desc="Most effects are derived state wearing a costume."
             read="read · 6 days ago" go="var(--t-c2)" land="var(--t-k2)" sx={26} sy={-22} tilt="1.5deg"
           />
         </div>
         <div className="fc-at" style={at(900, 500)}>
           <Card
-            cover="/assets/link-card-collage-teal.png" domain="aphyr.com" kind="article"
+            cover="/assets/link-card-collage-teal.webp" domain="aphyr.com" kind="article"
             title="strong consistency models" desc="Linearizable, sequential, causal, drawn as a lattice you can point at."
             read="read · 3 days ago" go="var(--t-c3)" land="var(--t-k3)" sx={52} sy={-44} tilt="-1deg"
           />
         </div>
         <div className="fc-at" style={at(900, 500)}>
           <Card
-            cover="/assets/link-card-ceramic.png" domain="github.com" kind="repo"
+            cover="/assets/link-card-ceramic.webp" domain="github.com" kind="repo"
             title="ripgrep" desc="Recursive search that respects gitignore and is genuinely fast."
             read="read · today" go="var(--t-c4)" land="var(--t-k4)" sx={78} sy={-66} tilt="2deg"
           />

@@ -778,12 +778,12 @@ export function MediaWidget({ widget, style }: { widget: Widget; style: Style })
         src={String(
           widget.data.thumbnailSrc ??
             widget.data.src ??
-            "/assets/the-crew-snapshot-thumb.jpg",
+            "/assets/the-crew-snapshot-thumb.webp",
         )}
         alt={String(widget.data.caption)}
         onError={(event) => {
           event.currentTarget.onerror = null;
-          event.currentTarget.src = "/assets/the-crew-snapshot-thumb.jpg";
+          event.currentTarget.src = "/assets/the-crew-snapshot-thumb.webp";
         }}
       />
       <figcaption>

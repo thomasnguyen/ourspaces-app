@@ -46,7 +46,7 @@ type ShelfLink = {
   contributor?: string;
 };
 
-const LINK_CARD_FALLBACK = "/assets/link-card-fallback.jpg";
+const LINK_CARD_FALLBACK = "/assets/link-card-fallback.webp";
 
 function linkCardHref(value: string) {
   const url = value.trim();
@@ -979,12 +979,12 @@ export function PhotoWallWidget({ widget, style }: { widget: Widget; style: Styl
             >
               <span className="photo-wall-frame">
                 <img
-                  src={photo.thumbnailSrc ?? photo.src ?? "/assets/the-crew-snapshot-thumb.jpg"}
+                  src={photo.thumbnailSrc ?? photo.src ?? "/assets/the-crew-snapshot-thumb.webp"}
                   alt={photo.caption}
                   style={{ objectPosition: photo.focus ?? "center" }}
                   onError={(event) => {
                     event.currentTarget.onerror = null;
-                    event.currentTarget.src = "/assets/the-crew-snapshot-thumb.jpg";
+                    event.currentTarget.src = "/assets/the-crew-snapshot-thumb.webp";
                   }}
                 />
               </span>
@@ -995,12 +995,12 @@ export function PhotoWallWidget({ widget, style }: { widget: Widget; style: Styl
             <span className="photo-wall-tape" aria-hidden="true" />
             <span className="photo-wall-frame">
               <img
-                src={cover.thumbnailSrc ?? cover.src ?? "/assets/the-crew-snapshot-thumb.jpg"}
+                src={cover.thumbnailSrc ?? cover.src ?? "/assets/the-crew-snapshot-thumb.webp"}
                 alt={cover.caption}
                 style={{ objectPosition: cover.focus ?? "center 35%" }}
                 onError={(event) => {
                   event.currentTarget.onerror = null;
-                  event.currentTarget.src = "/assets/the-crew-snapshot-thumb.jpg";
+                  event.currentTarget.src = "/assets/the-crew-snapshot-thumb.webp";
                 }}
               />
             </span>

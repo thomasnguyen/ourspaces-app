@@ -53,7 +53,7 @@ export function MemberFace({
           : resolvedAvatar
             ? undefined
             : {
-              backgroundImage: "url('/assets/the-crew-snapshot-thumb.jpg')",
+              backgroundImage: "url('/assets/the-crew-snapshot-thumb.webp')",
               backgroundPosition: FACE_POSITIONS[name] ?? "50% 50%",
             }),
       }}
