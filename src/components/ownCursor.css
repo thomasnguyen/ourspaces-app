@@ -1,0 +1,59 @@
+/* Your own cursor on the board (OwnCursor.tsx): the door's cursor, kept.
+   Under the door's scrim (71), which hands over to it. */
+.own-cursor-layer {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  pointer-events: none;
+}
+
+.own-cursor {
+  opacity: 0;
+  transition: opacity var(--dur-quick) var(--ease-glide);
+}
+
+.own-cursor.is-shown {
+  opacity: 1;
+}
+
+.own-cursor .live-cursor-entrance {
+  transform-origin: 0 0;
+}
+
+/* The first time it shows it arrives the way the door's does; after that
+   (and after a handover from the door) it only fades over the chrome. */
+.own-cursor.is-shown:not(.has-arrived) .live-cursor-entrance {
+  animation: gate-cursor-in var(--dur-arrive) var(--ease-pop) both;
+}
+
+/* The door's cursor settles to true size and stays; this one appears under it. */
+.gate-cursor.is-leaving.is-handing-over .live-cursor-entrance {
+  animation: none;
+}
+
+body.voice-stage-up .own-cursor-layer {
+  display: none;
+}
+
+/* One cursor on screen: the OS arrow goes over the board... */
+body.own-cursor-on:not(.voice-stage-up) .space-scroll,
+body.own-cursor-on:not(.voice-stage-up) .space-scroll * {
+  cursor: none !important;
+}
+
+/* ...and comes back, native, wherever you type or press (OwnCursor's NATIVE). */
+body.own-cursor-on:not(.voice-stage-up) .space-scroll :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="button"], [type="submit"]), textarea, [contenteditable]:not([contenteditable="false"])),
+body.own-cursor-on:not(.voice-stage-up) .space-scroll [contenteditable]:not([contenteditable="false"]) * {
+  cursor: text !important;
+}
+
+body.own-cursor-on:not(.voice-stage-up) .space-scroll :is(button, select, input[type="checkbox"], input[type="radio"], input[type="range"], input[type="button"], input[type="submit"]),
+body.own-cursor-on:not(.voice-stage-up) .space-scroll button * {
+  cursor: pointer !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .own-cursor .live-cursor-entrance {
+    animation: none !important;
+  }
+}

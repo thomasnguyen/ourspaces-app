@@ -359,6 +359,7 @@ export const overview = query({
       name: v.string(),
       icon: v.string(),
       color: v.string(),
+      door: v.boolean(),
       live: v.object({ widgets: v.number(), messages: v.number(), members: v.number() }),
       baseline: v.union(
         v.null(),
@@ -390,6 +391,7 @@ export const overview = query({
         name: space.name,
         icon: space.icon,
         color: space.color,
+        door: space.door !== false,
         live: { widgets: widgets.length, messages: messages.length, members: members.length },
         baseline: parsed
           ? { savedAt: saved!.savedAt, widgets: parsed.widgets.length, messages: parsed.messages.length, bytes: saved!.json.length }
@@ -397,6 +399,21 @@ export const overview = query({
       });
     }
     return rows.sort((a, b) => a.name.localeCompare(b.name));
+  },
+});
+
+/** The door switch: on (absent or true), a fresh browser walks through the
+ *  name + look card; off, it lands in the room on its random persona. An
+ *  invite link (#/join/<slug>) shows the door either way. */
+export const setDoor = mutation({
+  args: { key: v.string(), slug: v.string(), door: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, { key, slug, door }) => {
+    requireAdmin(key);
+    const space = await spaceBySlug(ctx, slug);
+    if (!space) throw new Error(`no space with slug "${slug}"`);
+    await ctx.db.patch(space._id, { door });
+    return null;
   },
 });
 

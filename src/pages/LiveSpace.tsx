@@ -47,6 +47,7 @@ import { setNextVoiceScript } from "../lib/voice";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useAvatarUpload } from "../live/useAvatarUpload";
 import { GateCursor, type GatePoint } from "../components/GateCursor";
+import { OwnCursor, ownCursorWanted } from "../components/OwnCursor";
 import { MemberFace } from "../components/MemberFace";
 import { PhotoWallGallery } from "../components/PhotoWallGallery";
 import { ReadingRoom, type RoomReply } from "../components/ReadingRoom";
@@ -407,16 +408,23 @@ export function LiveSpacePage({
   const [claimOpen, setClaimOpen] = useState(false);
   const [gateLeaving, setGateLeaving] = useState(false);
   const gateCursorPoint = useRef<GatePoint | null>(null);
+  const [ownCursorOn] = useState(ownCursorWanted);
   const gateTimers = useRef<number[]>([]);
   const [claimLeaving, setClaimLeaving] = useState(false);
   const [claimPoint, setClaimPoint] = useState<GatePoint | null>(null);
   const claimTimer = useRef<number | null>(null);
-  /* `?enter=1` walks straight past the gate (takes and drive states). */
+  /* The door. `?enter=1` / `?door=0` walk straight past it (takes and drive
+     states), `?door=1` forces it, and a room whose door is off (#/admin,
+     admin.setDoor) lets a fresh browser in on its random persona. An invite
+     link always shows it. */
+  const [doorParam] = useState(() => new URLSearchParams(window.location.search).get("door"));
   const [entered, setEntered] = useState(
     () =>
       !isInviteEntry &&
+      doorParam !== "1" &&
       (window.sessionStorage.getItem(CLAIM_DISMISSED_KEY) === "done" ||
-        new URLSearchParams(window.location.search).get("enter") === "1"),
+        new URLSearchParams(window.location.search).get("enter") === "1" ||
+        doorParam === "0"),
   );
   const [arrivalPeer, setArrivalPeer] = useState<LivePeer | null>(null);
   const arrivalTimer = useRef<number | null>(null);
@@ -499,7 +507,8 @@ export function LiveSpacePage({
   const addPaintStroke = useMutation(api.paint.addStroke);
   const clearPaint = useMutation(api.paint.clear);
   const ensureCozyColorWidget = useMutation(api.paint.ensureCozyColorWidget);
-  const roomEntered = entered && !isInviteEntry;
+  const doorForced = isInviteEntry || doorParam === "1";
+  const roomEntered = (entered || (!doorForced && space?.door === false)) && !isInviteEntry;
   /* The identity popover: your cursor rides while it is open (so "that's
      your cursor" is literally true), and it leaves the way the gate does —
      the card collapses into the cursor, then the drawn cursor hands over. */
@@ -574,7 +583,10 @@ export function LiveSpacePage({
   // isn't there". Show the same dead-link card the invite path uses.
   const isMissingSpace =
     !isInviteEntry && mode === "live" && status === "missing";
-  const gateOpen = !roomEntered && !isInvalidInvite && !isMissingSpace;
+  /* Hold the door until the room row says whether it has one, so a door-off
+     room never flashes the card on a cold load. */
+  const doorKnown = doorForced || mode !== "live" || space !== undefined;
+  const gateOpen = !roomEntered && doorKnown && !isInvalidInvite && !isMissingSpace;
   useEffect(() => {
     setCustomization(defaultSpaceCustomization(mockSpace));
     setSpaceDraft(null);
@@ -3297,7 +3309,13 @@ export function LiveSpacePage({
           leaving={gateLeaving || claimLeaving}
           positionRef={gateCursorPoint}
           initialPoint={roomEntered ? claimPoint : null}
+          handOver={ownCursorOn}
         />
+      )}
+      {/* Your own cursor on the canvas, once the door (or the identity
+          popover) has handed it over. */}
+      {ownCursorOn && roomEntered && !gateLeaving && !claimOpen && !claimLeaving && (
+        <OwnCursor identity={identity} initialPoint={gateCursorPoint.current} />
       )}
       {isInvalidInvite || isMissingSpace ? (
         <div className="invalid-invite-card" role="alert">

@@ -32,8 +32,8 @@ The build room remains at `#/space/buildroom`.
 ## src/ directories
 
 `components/DemoBanner.tsx` — app-wide demo notice mounted by `main.tsx` in
-both live and mock modes. Where rooms are open (`convex/spaces.ts` `roomsOpen`, by deployment: the dev lane only) live mode passes `onMakeSpace` and the waitlist becomes "make your own space" (opens the maker through `MAKE_SPACE_EVENT`); an invite link skips the notice. A welcome modal explains this is a test version,
-once per tab session, with explore and waitlist actions. In live mode, `main.tsx`
+both live and mock modes. Where rooms are open (`convex/spaces.ts` `roomsOpen`, by deployment: the dev lane only) live mode passes `onMakeSpace` and the waitlist becomes "make your own space" (opens the maker through `MAKE_SPACE_EVENT`); the dev lane is also known from the Convex URL so its first paint already says it, and anywhere else `pending` draws the strip with no offer until `roomsOpen` answers. A welcome modal explains this is a test version;
+it never opens by itself, only on `?notice=1` or the "Demo version" label, with explore and waitlist actions. In live mode, `main.tsx`
 passes a typed `waitlist.join` mutation callback; success only appears after
 the email is saved. Mock mode keeps the explicit no-storage preview.
 The dialog pairs a violet photo/sticker collage with the notice or form; on
@@ -87,7 +87,7 @@ idle "tap play", live = dancing bars + track (and on the `♪` key), `is-join`
 `scrollIntoView` on `[data-widget-id]`; playing from the dock goes through the
 same tune handler as the widget so `playedBy`/`playing` sync) ·
 `CanvasNavigator.tsx` (minimap) · `CanvasEdgePan.tsx` · `SpaceEditorPanel.tsx`
-(theme editor) · `SettingsSheet.tsx` (slides out beside the rail: name, your face, `LookRow` with a ninth "my photo" tile, account row = join form or saved-email + sign out; live wiring — storage upload, `JoinForm`, `signOut` — comes in through props so the mock page shows it too; plan in `docs/accounts.md`) · `LookRow.tsx` (the eight persona looks + optional own-photo tile, shared by the gate, popover and sheet; `isPersonaLook`) · `PhotoInput.tsx` (the hidden file input behind every "my photo" tap: crop → `upload` → identity) · `ClaimCard.tsx` (the entry gate + identity popover: room name/faces/live count, the loud name field, eight fictional 3D looks in a four-column picker, lime ring + checkmarked “you” badge on the selected look, Enter submits; on `leaving` the card WAAPI-collapses into the cursor tip) · `GateCursor.tsx` (your own LiveCursor riding the real pointer while the gate is up, `canFollowPointer` = hover + fine pointer; writes the tip position for the collapse to aim at; also mounted while the identity popover is open, with `initialPoint` = the self-face click) · `FirstRunSticky.tsx` ·
+(theme editor) · `SettingsSheet.tsx` (slides out beside the rail: name, your face, `LookRow` with a ninth "my photo" tile, account row = join form or saved-email + sign out; live wiring — storage upload, `JoinForm`, `signOut` — comes in through props so the mock page shows it too; plan in `docs/accounts.md`) · `LookRow.tsx` (the eight persona looks + optional own-photo tile, shared by the gate, popover and sheet; `isPersonaLook`) · `PhotoInput.tsx` (the hidden file input behind every "my photo" tap: crop → `upload` → identity) · `ClaimCard.tsx` (the entry gate + identity popover: room name/faces/live count, the loud name field, eight fictional 3D looks in a four-column picker, lime ring + checkmarked “you” badge on the selected look, Enter submits; on `leaving` the card WAAPI-collapses into the cursor tip) · `GateCursor.tsx` (your own LiveCursor riding the real pointer while the gate is up, `canFollowPointer` = hover + fine pointer; writes the tip position for the collapse to aim at; also mounted while the identity popover is open, with `initialPoint` = the self-face click; `handOver` = settle and stay so OwnCursor takes over) · `OwnCursor.tsx` + `ownCursor.css` (the same LiveCursor on the canvas once you are in: local only, rAF-written, OS arrow hidden over `.space-scroll` and native over inputs/buttons/editable, hidden over chrome, off-window and under the voice stage; `?cursor=0` off, phones nothing; test id `own-cursor` with `data-shown`) · door switch in `LiveSpace.tsx`: `?door=1` forces the gate, `?door=0`/`?enter=1` skip it, `space.door === false` skips it except on `#/join/`) · `FirstRunSticky.tsx` ·
 `PlacementGhost.tsx` (pick it up, put it down — a sticker or widget chosen in
 the tray rides the cursor at its real footprint and lands where you click;
 shift-click keeps it in hand, esc/right-click drops it. Rendered inside
@@ -142,7 +142,7 @@ the nameplate; `MailArrivalLive` subscribes to `mailArrival.recentInbound`,
 **pages/** — `LiveSpace.tsx` (live canvas) ·
 `Admin.tsx` (`#/admin` — the back room, linked from nowhere: one row per
 space with what is on its board now, when its baseline was frozen, and
-reset / re-freeze / open, under a master strip whose one key resets every
+reset / re-freeze / door on|off (`admin-door-<slug>`) / open, under a master strip whose one key resets every
 room at once. Gated server-side on `ADMIN_KEY` (the page holds no
 secret; a working key is remembered in localStorage). Live mode only — App.tsx
 shows a "drop ?mock=1" note otherwise, since main.tsx mounts no Convex
@@ -414,7 +414,7 @@ with a real job below, not just mounted.
 
 `admin.ts` (the back room's backend, `#/admin`: `saveBaseline` freezes a
 room's board into the `baselines` table as JSON, `resetToBaseline` wipes what
-is there and replays it, `overview`/`check` feed the page, and `resetAll` does every room with a
+is there and replays it, `overview`/`check` feed the page, `setDoor` flips a room's `door` (absent = on; off = a fresh browser skips the name + look card, invite links still show it), and `resetAll` does every room with a
 baseline in one transaction (the master reset). Every function
 calls `requireAdmin(key)` against `env.ADMIN_KEY`. Restores the space row's
 look + widgets + votes + paint + messages, remapping every id on the way in;

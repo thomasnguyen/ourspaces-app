@@ -6,9 +6,11 @@ export const MAKE_SPACE_EVENT = "ourspaces:make-space";
 /**
  * `onMakeSpace` is set where rooms are open (the dev lane today, see
  * `roomsOpen` in convex/spaces.ts): the waitlist becomes "make your own".
- * Without it the banner and notice offer the waitlist, as on prod.
+ * Without it the banner and notice offer the waitlist, as on prod. `pending`
+ * (the lane question not answered yet) draws the strip with neither offer, so
+ * the dev lane never paints "Join the waitlist" for a frame.
  */
-export function DemoBanner({ onJoinWaitlist, onMakeSpace }: { onJoinWaitlist?: (email: string) => Promise<null>; onMakeSpace?: () => void }) {
+export function DemoBanner({ onJoinWaitlist, onMakeSpace, pending = false }: { onJoinWaitlist?: (email: string) => Promise<null>; onMakeSpace?: () => void; pending?: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [view, setView] = useState<"notice" | "waitlist">("notice");
   const [submitted, setSubmitted] = useState(false);
@@ -31,12 +33,10 @@ export function DemoBanner({ onJoinWaitlist, onMakeSpace }: { onJoinWaitlist?: (
     }
   }
 
+  /* The notice never opens by itself: a stranger lands in the room. `?notice=1`
+     opens it (takes and the video). */
   useEffect(() => {
-    /* a link that drops you into a game, or a friend's invite link, doesn't open on the notice */
-    if (/^#\/?join\//.test(window.location.hash)) sessionStorage.setItem("ourspaces-demo-notice-seen", "1");
-    if (!sessionStorage.getItem("ourspaces-demo-notice-seen") && !/[?&](game|jigsaw)=/.test(window.location.search)) {
-      dialog.current?.showModal();
-    }
+    if (new URLSearchParams(window.location.search).get("notice") === "1") dialog.current?.showModal();
   }, []);
 
   function openNotice() {
@@ -63,7 +63,7 @@ export function DemoBanner({ onJoinWaitlist, onMakeSpace }: { onJoinWaitlist?: (
         <button className="demo-banner-label" onClick={openNotice} data-testid="demo-notice-open">
           <span className="demo-mini-spark">✳</span> Demo version
         </button>
-        {onMakeSpace ? (
+        {pending ? null : onMakeSpace ? (
           <>
             <p>These rooms are the tour. <span>Yours starts empty.</span></p>
             <button className="demo-banner-cta" onClick={makeSpace} data-testid="demo-make-space">
@@ -81,7 +81,6 @@ export function DemoBanner({ onJoinWaitlist, onMakeSpace }: { onJoinWaitlist?: (
       </aside>
 
       <dialog className="demo-waitlist" ref={dialog} data-testid="demo-waitlist-dialog"
-        onClose={() => sessionStorage.setItem("ourspaces-demo-notice-seen", "1")}
         onClick={(event) => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
         <div className="demo-waitlist-layout">
           <div className="demo-poster" aria-hidden="true">

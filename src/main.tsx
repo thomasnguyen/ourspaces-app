@@ -37,13 +37,19 @@ function MissingConvexConfig() {
   );
 }
 
+/* The dev lane is known from the URL before the query answers, so its first
+   paint already says "make your own" (keep in step with convex/spaces.ts
+   `OPEN_ROOM_DEPLOYMENTS`). Anywhere else the strip waits for the answer. */
+const OPEN_LANE = /dusty-condor-648/.test(url ?? "");
+
 /** Live: the banner asks the deployment whether rooms are open (by lane, convex/spaces.ts `roomsOpen`). */
 function LiveDemoBanner() {
-  const open = useQuery(api.spaces.roomsOpen, {});
+  const open = useQuery(api.spaces.roomsOpen, {}) ?? (OPEN_LANE || undefined);
   return (
     <DemoBanner
       onJoinWaitlist={(email) => convexClient.mutation(api.waitlist.join, { email })}
       onMakeSpace={open ? () => window.dispatchEvent(new Event(MAKE_SPACE_EVENT)) : undefined}
+      pending={open === undefined}
     />
   );
 }

@@ -13,9 +13,10 @@ export function canFollowPointer() {
 /**
  * Your cursor, shown to you, for as long as the entry gate is up.
  *
- * Nobody sees their own cursor on the canvas, so the gate is the one moment
- * the app shows you what the room will: the same LiveCursor the canvas draws
- * for a peer, riding your real pointer over the blurred room. Tap a look on
+ * The gate is where you first meet your cursor: the same LiveCursor the
+ * canvas draws for a peer, riding your real pointer over the blurred room.
+ * When the door opens it hands over to OwnCursor, which keeps it on the
+ * canvas from then on. Tap a look on
  * the card and it recolours under your hand. The scrim hides the OS arrow
  * (cursor: none) so there is exactly one cursor on screen. Phones get the
  * parked copy inside the card instead (see .claim-you-perch). The identity
@@ -26,6 +27,7 @@ export function GateCursor({
   leaving,
   positionRef,
   initialPoint = null,
+  handOver = false,
 }: {
   identity: LiveIdentity;
   leaving: boolean;
@@ -34,6 +36,8 @@ export function GateCursor({
   /** Where the pointer already is (the click that opened the popover), so the
    *  cursor appears at once instead of on the first move. */
   initialPoint?: GatePoint | null;
+  /** OwnCursor takes over where this one stops: settle to true size, no fade. */
+  handOver?: boolean;
 }) {
   const node = useRef<HTMLDivElement | null>(null);
   const [shown, setShown] = useState(false);
@@ -76,7 +80,7 @@ export function GateCursor({
         emoji={identity.emoji}
         avatarUrl={identity.avatarUrl}
         label={identity.name}
-        className={`gate-cursor ${shown ? "is-shown" : "is-hidden"}${leaving ? " is-leaving" : ""}`}
+        className={`gate-cursor ${shown ? "is-shown" : "is-hidden"}${leaving ? " is-leaving" : ""}${leaving && handOver ? " is-handing-over" : ""}`}
       />
     </div>
   );

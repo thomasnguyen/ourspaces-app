@@ -55,6 +55,7 @@ export function Admin() {
   const resetToBaseline = useMutation(api.admin.resetToBaseline);
   const resetAll = useMutation(api.admin.resetAll);
   const saveBaseline = useMutation(api.admin.saveBaseline);
+  const setDoor = useMutation(api.admin.setDoor);
 
   useEffect(() => {
     document.title = "back room · ourspaces";
@@ -89,6 +90,21 @@ export function Admin() {
         const out = await saveBaseline({ key, slug });
         setNote(`${slug} baseline saved — ${out.widgets} widgets, ${out.messages} messages (${(out.bytes / 1024).toFixed(1)} KB).`);
       }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message.replace(/^.*Error:\s*/s, "") : String(caught));
+    } finally {
+      setBusy("");
+    }
+  };
+
+  /* The door is a switch, not a destructive act: no confirm step. */
+  const flipDoor = async (slug: string, door: boolean) => {
+    setBusy(`door:${slug}`);
+    setError("");
+    setNote("");
+    try {
+      await setDoor({ key, slug, door });
+      setNote(door ? `${slug}: a fresh browser walks through the door.` : `${slug}: a fresh browser walks straight in. Invite links still show the door.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message.replace(/^.*Error:\s*/s, "") : String(caught));
     } finally {
@@ -231,6 +247,16 @@ export function Admin() {
                   onClick={() => setPending({ slug: room.slug, kind: "save" })}
                 >
                   {busy === `save:${room.slug}` ? "saving…" : room.baseline ? "re-freeze" : "freeze"}
+                </button>
+                <button
+                  type="button"
+                  className={room.door ? "is-door-on" : "is-door-off"}
+                  disabled={busy !== ""}
+                  onClick={() => void flipDoor(room.slug, !room.door)}
+                  data-testid={`admin-door-${room.slug}`}
+                  data-door={room.door ? "on" : "off"}
+                >
+                  {busy === `door:${room.slug}` ? "…" : room.door ? "door on" : "door off"}
                 </button>
                 <a href={normalSpaceHash(room.slug)}>open ↗</a>
               </div>

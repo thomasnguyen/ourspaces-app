@@ -27,6 +27,9 @@ export const spaces = defineTable({
   // rename or delete it from the client. Only createSpace writes it from
   // the caller's identity, never an argument.
   ownerId: v.optional(v.string()),
+  // The door (name + look card) a fresh browser walks through. Absent = on;
+  // false = straight in on a random persona. #/admin flips it (admin.setDoor).
+  door: v.optional(v.boolean()),
 })
   .index("by_name", ["name"]).index("by_slug", ["slug"])
   .index("by_inbox", ["inboxId"]).index("by_owner", ["ownerId"]);
