@@ -36,6 +36,9 @@ const pollData = v.object({
   ),
   waitingOn: v.optional(v.array(v.string())),
   tone: v.optional(v.string()),
+  // the vote's rules (src/lib/pollRules.ts): when it closes, a local "YYYY-MM-DDTHH:MM" like a check-in's revealAt; the votes an option needs to pass
+  closesAt: v.optional(v.string()),
+  needs: v.optional(v.number()),
 });
 
 const noteData = v.object({

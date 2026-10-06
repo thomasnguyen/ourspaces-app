@@ -8,6 +8,7 @@
  */
 import type { Widget } from "../data/types";
 import { widgetIsInsideFrame } from "./frameMembership";
+import { pollOutcome } from "./pollRules";
 import { findPerson, isRevealed, loggableDay, logOf, rank, readCheckIn } from "./challenge";
 
 export type TurnStanding =
@@ -198,6 +199,8 @@ export function yourTurn(input: TurnInput): TurnItem[] {
       const options = listOf<{ id: string; label: string; voters?: string[] }>(data.options);
       const voters = options.flatMap((option) => listOf<string>(option.voters));
       if (options.length < 2 || mine.polls[widget.id] || data.selectedOptionId || voters.some((name) => isMe(name))) continue;
+      // a vote that closed or passed waits on nobody
+      if (pollOutcome(data, listOf<{ id: string; label: string; votes: number }>(data.options)).done) continue;
       // every member has voted: the room is done with it, a guest's vote settles nothing
       if (guest && voters.length > 0 && notYet(voters).length === 0) continue;
       push(widget, {

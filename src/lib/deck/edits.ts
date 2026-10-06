@@ -19,6 +19,7 @@
 import { CATALOG, revealOf } from "./catalog";
 import type { Field } from "./schema";
 import { blankSlot, fillSlot, type Unfinished } from "./needs";
+import { closesDate, closesFromWords, closesLabel, needsFromWords, pollOutcome } from "../pollRules";
 
 type W = { id: string; type: string; data: Record<string, unknown> };
 /** `web`: a real place the lookup found (convex/tavily.ts), carried onto the option it adds; a client can't send one (convex/edits.ts opV). */
@@ -41,7 +42,7 @@ export type Cleared = { note: string; people: number; votesFor?: string };
  * `consent`: the people at stake agreed (a passed vote, or it was only the
  * asker's own choice), so it applies and clears what no longer makes sense.
  */
-export type EditCtx = { today: string; votes?: Record<string, number>; voters?: Record<string, { id: string; name: string }[]>; consent?: boolean };
+export type EditCtx = { today: string; /** this clock (ms), for a poll's deadline; a screen's own when left out, none on the server */ now?: number; votes?: Record<string, number>; voters?: Record<string, { id: string; name: string }[]>; consent?: boolean };
 
 const BY_TYPE = new Map<string, (typeof CATALOG)[number]>(CATALOG.map((c) => [c.type as string, c]));
 /** The ops a widget type takes, op → its value's field. */
@@ -71,6 +72,10 @@ export function fieldsOf(type: string, op: string, consent = false): string[] {
       return ["days"];
     case "setDays":
       return ["days", "revealAt"];
+    case "setNeeds":
+      return ["needs"];
+    case "setCloses":
+      return ["closesAt"];
     case "rename":
       return RENAMES[type] ? [RENAMES[type]] : [];
     default:
@@ -125,6 +130,13 @@ export function applyEdit(w: { type: string; data: Record<string, unknown> }, op
   const d = w.data;
   const str = typeof op.value === "string" ? clip(op.value, f) : "";
   const consent = Boolean(ctx.consent);
+  // a vote that closed or passed is everyone's finished choice: changing what it asked, or its rules, asks all who voted
+  if (w.type === "poll" && !consent && POLL_RESULT_OPS.has(op.op)) {
+    const voters = pollVoters(d, ctx);
+    const out = pollOutcome(d, pollCounts(d, ctx), new Date(ctx.now ?? (typeof window === "undefined" ? 0 : Date.now())));
+    const q = low(d.question).replace(/\?$/, "") || "the vote";
+    if (out.done && voters.length) return conflict({ key: "result", stake: `${q} ${out.closed && out.stamp?.kind !== "passed" ? "closed" : out.stamp?.label ?? "is decided"} · ${people(voters.length)} voted`, ask: `reopen ${q}?`, people: voters });
+  }
   const done = (data: Record<string, unknown>, text: string, changed: string, undo: EditOp, cleared?: Cleared): EditResult => {
     const fields = touched(d, data).map((field) => ({ field, old: d[field], new: data[field] }));
     if (!fields.length) return fail("nothing changes");
@@ -247,9 +259,39 @@ export function applyEdit(w: { type: string; data: Record<string, unknown> }, op
       const cut = past.length ? { logs: Object.fromEntries(Object.entries(logs).map(([k, r]) => [k, r.slice(0, n)])) } : {};
       return done({ ...d, days: n, revealAt: revealOf(start, n), ...cut }, `${n} days now`, `${n}`, { op: "setDays", value: Number(d.days ?? n) }, past.length ? { note: `days ${n + 1}+ cleared · ${people(past.length)}'s logs`, people: past.length } : undefined);
     }
+    case "setNeeds":
+    case "setCloses": {
+      // a poll's rules (lib/pollRules.ts); 0 / "" takes the rule off (undo of a first rule)
+      const needs = op.op === "setNeeds";
+      const key = needs ? "needs" : "closesAt";
+      const n = Math.round(Number(op.value));
+      const at = needs ? null : String(op.value) ? closesFromWords(String(op.value)) : "";
+      if (needs ? !Number.isFinite(n) || n < 0 || n > 50 : at === null) return fail(needs ? "needs must be 0–50" : "no time to close it");
+      const value = needs ? n || undefined : at || undefined;
+      const old = d[key] as number | string | undefined;
+      const said = needs ? (n ? `needs ${n}` : "no number needed") : at ? closesLabel(closesDate(at)!) : "no deadline";
+      // the outcome people voted under changes: everyone who voted is asked, as with an option they chose
+      const voters = pollVoters(d, ctx);
+      if (voters.length && !consent && value !== old)
+        return conflict({ key: "rules", stake: `${people(voters.length)} voted under ${old === undefined ? "no rule" : needs ? `needs ${old}` : closesLabel(closesDate(old)!)}`, ask: `${said}?`, people: voters });
+      const { [key]: _gone, ...rest } = d;
+      return done(value === undefined ? rest : { ...d, [key]: value }, said, said, { op: op.op, value: old ?? (needs ? 0 : "") });
+    }
   }
   return fail(`unknown op ${op.op}`);
 }
+
+/** Ops on a poll that a closed or passed vote turns into a question for everyone who voted. */
+const POLL_RESULT_OPS = new Set(["addOption", "removeOption", "setNeeds", "setCloses"]);
+type PollRow = { id: string; label: string; votes?: number; voters?: string[] };
+/** Each option's votes: the votes table on the server, the card on a screen. */
+const pollCounts = (d: Record<string, unknown>, ctx: EditCtx) =>
+  ((d.options as PollRow[] | undefined) ?? []).map((o) => ({ id: o.id, label: o.label, votes: ctx.votes ? (ctx.votes[o.id] ?? 0) : (o.votes ?? o.voters?.length ?? 0) }));
+/** Everyone who voted, with what they voted for (ids where the server knows them). */
+const pollVoters = (d: Record<string, unknown>, ctx: EditCtx): Chooser[] =>
+  ((d.options as PollRow[] | undefined) ?? []).flatMap((o) =>
+    (ctx.voters ? (ctx.voters[o.id] ?? []) : (o.voters ?? []).map((name) => ({ name }))).map((p) => ({ ...p, why: `voted ${low(o.label)}` })),
+  );
 
 /** "game night · friday" → ["game night", "friday"]. */
 export function splitWhen(title: string): [string, string] {
@@ -366,10 +408,15 @@ const clean = (s: string) =>
     .replace(/^((hey|ok|okay|so|um|uh|please|alright|orb|can you|could you),?\s+)+/, "");
 const REF = "(?:it|this|that|(?:the|our|my|this|that) (.+?))";
 /** One edit sentence: the op family, the value, the card phrase (if named), an item (setDay). */
-type Said = { fam: "add" | "remove" | "rename" | "when" | "length" | "fill"; value: string; phrase?: string; item?: string };
+type Said = { fam: "add" | "remove" | "rename" | "when" | "length" | "fill" | "needs" | "closes"; value: string; phrase?: string; item?: string };
 export function parseSaid(said: string): Said | null {
   const t = clean(said);
   let m: RegExpExecArray | null;
+  // a vote's rules: "make it need 7", "the trade vote needs a majority", "close it friday", "keep the vote open till sunday"
+  if ((m = new RegExp(`^(?:make|set|change) ${REF} (?:to )?needs? (.+)$`).exec(t)) || (m = /^(?:it|(?:the|our|my|this|that) (.+?)) needs (.+)$/.exec(t)))
+    if (needsFromWords(m[2], 2)) return { fam: "needs", value: m[2], phrase: m[1] };
+  if ((m = new RegExp(`^(?:close|end|extend|keep) ${REF} (?:open )?(?:at |on |in |by |till |until |to |through )?(.+)$`).exec(t)) && closesFromWords(m[2]))
+    return { fam: "closes", value: m[2], phrase: m[1] };
   // the missing part of an unfinished card, said outright: "the choices are tacos, pho and pizza"
   if ((m = /^(?:the )?(choices|options|items|things|total|cost|date|day|question|words)(?: (?:for|on) (?:the|our|my|this|that) (.+?))? (?:are|is|was|will be) (.+)$/.exec(t)))
     return { fam: "fill", value: t, phrase: m[2] };
@@ -426,6 +473,8 @@ const FAM_OPS: Record<Said["fam"], Record<string, string>> = {
   rename: Object.fromEntries(Object.keys(RENAMES).map((k) => [k, "rename"])),
   when: { rsvp: "setWhen", countdown: "setDate", itinerary: "setDay" },
   length: { checkIn: "setDays" },
+  needs: { poll: "setNeeds" },
+  closes: { poll: "setCloses" },
   fill: {},
 };
 
@@ -516,6 +565,17 @@ function opFor(p: Said, w: W, ctx: EditCtx): EditOp | null {
     return iso ? { op, value: iso } : null;
   }
   if (op === "setDays") return { op, value: Number(p.value) };
+  // the words become a number and a local time here, on the asker's clock; the server re-applies the number and the time
+  if (op === "setNeeds") {
+    const opts = (w.data.options as PollRow[] | undefined) ?? [];
+    const room = opts.reduce((a, o) => a + (o.voters?.length ?? o.votes ?? 0), 0) + ((w.data.waitingOn as unknown[] | undefined)?.length ?? 0);
+    const n = needsFromWords(p.value, Math.max(2, room));
+    return n ? { op, value: n } : null;
+  }
+  if (op === "setCloses") {
+    const at = closesFromWords(p.value);
+    return at ? { op, value: at } : null;
+  }
   if (op === "setDay") {
     const days = (w.data.days as { plan: string }[] | undefined) ?? [];
     const item = p.item ?? (days.length === 1 ? days[0].plan : undefined);
