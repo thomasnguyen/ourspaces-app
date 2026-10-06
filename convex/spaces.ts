@@ -164,7 +164,7 @@ function randomSuffix() {
  * offers the waitlist. To open prod, add "necessary-cobra-892" here.
  */
 declare const process: { env: Record<string, string | undefined> };
-const OPEN_ROOM_DEPLOYMENTS = ["dusty-condor-648"];
+const OPEN_ROOM_DEPLOYMENTS = ["dusty-condor-648", "necessary-cobra-892"]; // Oct 6: rooms open on prod too (Thomas: "ship"; the pilot runs on ourspaces.io)
 const openRooms = () => OPEN_ROOM_DEPLOYMENTS.some((name) => (process.env.CONVEX_CLOUD_URL ?? "").includes(name));
 
 export const roomsOpen = query({
