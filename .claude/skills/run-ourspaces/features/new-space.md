@@ -23,9 +23,14 @@ dashed "+"): pick "start empty" or a starting point, name it on the preview,
 walks through the room's own gate (name + look; a fresh browser starts on a
 random persona and never on one already in the room), and lands on an empty
 board with a black card: "<room> · just made / say the first thing / tap the
-orb and talk, or try one:" and three starter asks ("who's in this group?",
-"plan something for this weekend", "start a push-up challenge for us"); a tap
-plays those words into the orb as if they were said. When the first card
+orb and talk, or try one:" and three starter asks ("plan dinner saturday:
+thai or tacos", "start a push-up challenge for us", "who's in this group?");
+a tap plays those words into the orb as if they were said. The dinner one
+names its two places: a bare "plan dinner on saturday" in a room with no
+saved places asks "where are we choosing between?" and waits for a spoken
+answer (a scripted take says it after a hesitation: `plan dinner on saturday
+…2500 the thai place or the taco truck`); with no answer it is let go, no
+card. Either way it lands the poll + who's-in pair. When the first card
 lands and you're still alone, a pill above the dock: "first card's up. it
 gets good when your people are in. · copy invite link" (phones: "send the
 link", the share sheet). A friend's invite link skips the demo notice and
