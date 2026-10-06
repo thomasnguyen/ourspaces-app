@@ -137,3 +137,9 @@
     animation: none;
   }
 }
+
+/* a drag pauses every animation in its card (index.css): the holder's own row still fills in under her thumb */
+.widget-group.is-dragging [data-ghost-changed="add"] .poll-option-label,
+.widget-group.is-dragging [data-ghost-changed="add"] .poll-option-label .poll-web {
+  animation-play-state: running !important;
+}

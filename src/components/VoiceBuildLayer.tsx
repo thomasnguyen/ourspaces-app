@@ -356,7 +356,8 @@ function ContextDrawer({
         )}
       </section>
 
-      {!mock && <LookupReceipt at={t.at} ids={[...t.cards.flatMap((c) => (c.widgetId ? [c.widgetId] : [])), ...(t.found?.widgetId ? [t.found.widgetId] : []), ...(t.found?.check.ok ? [t.found.check.item.id] : [])]} />}
+      {/* an add is done by code (no model), so the lookup shows on any live ask, not only a model one */}
+      {!MOCK && <LookupReceipt at={t.at} ids={[...t.cards.flatMap((c) => (c.widgetId ? [c.widgetId] : [])), ...(t.found?.widgetId ? [t.found.widgetId] : []), ...(t.found?.check.ok ? [t.found.check.item.id] : [])]} />}
 
       {nonMake ? (
         <section>
