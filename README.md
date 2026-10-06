@@ -1,124 +1,120 @@
 # OurSpaces
 
-> Group chats forget. Spaces remember.
+> Say "poll for Saturday" and it's on your friends' screens. The AI never cuts in.
 
-One page your whole group can mess with at the same time. Move a photo, vote on
-the cake, claim what you're bringing, colour a picture together — it lands on
-everyone's screen while they're still looking. And every space has its own
-email address.
+A shared board for your group that builds itself when you talk to it. Tap the
+orb, say what you need, and the card lands on everyone's screen in under a
+second, filled in by **NVIDIA Nemotron on Nebius Token Factory**. Then it's a
+normal card anyone can vote on, claim or drag.
 
-**Live, no signup:** https://ourspaces.io · **Video (2:56):**
-https://www.youtube.com/watch?v=0VVFWbfX1QQ · **Build log:** [`hackathon.md`](hackathon.md)
+**Live:** https://ourspaces.io · **Built for:** the Nebius × NVIDIA Global AI
+Hackathon · **By** Thomas Nguyen (build) and Holly Tran (design)
 
-Built for the [Convex All Gas Hackathon](https://www.convex.dev/hackathons/all-gas)
-by Thomas Nguyen (build) and Holly Tran (design). Vibe coded with Codex in 26 days.
+<p align="center"><img src=".github/readme/loop-challenge.webp" width="900" alt="One sentence, 'set up a push-up challenge for the four of us', and six linked cards land on the family's board"></p>
+<p align="center"><sub>"Set up a push-up challenge for the four of us": six linked cards on every screen 1.6 s after the last word.</sub></p>
 
-<p align="center"><img src=".github/readme/demo.gif" width="900" alt="the crew: pan the board, open a thread on the saved links"></p>
+## What you can say
 
-## Try it in a minute
-
-1. Open [the crew](https://ourspaces.io/#/space/crew) in two tabs. Vote in one;
-   the bar moves in the other, with the voter's face on it.
-2. Drag a card. The other tab shows your cursor and the card moving.
-3. Email a receipt to `ourspaces@agentmail.to`. A sealed letter lands on the
-   board, the space files it as an expense split across the group, writes the
-   reason on the slip, and emails you back.
-4. Open [the build room](https://ourspaces.io/#/space/buildroom) and paste a
-   link. It comes back as a card with a summary and two questions to argue about.
-
-| the build room — Firecrawl reads every link | us two — a letter, a countdown, colouring together |
+| You say | What happens on every screen |
 |---|---|
-| ![](.github/readme/build-room.jpg) | ![](.github/readme/us-two.jpg) |
+| "Add a poll for Saturday dinner" | A real poll, 610 ms after your last word |
+| "Who's driving to Maya's?" | A wheel with exactly the four people who said yes |
+| "Set up a push-up challenge for the four of us" | Six linked cards: who's in, a check-in grid, face-down standings, the deal, a countdown |
+| "Put the trade up for a vote, 24 hours" | A yes/no vote that closes for everyone at once |
+| "When's Maya's birthday?" | A short answer, and the view moves to the card it came from |
+| "Add a poll for cake flavor" (one exists) | Nothing new. It takes you to the poll that's already there |
 
-![shared expenses, daily question, saved links](.github/readme/expenses.jpg)
+<p align="center"><img src=".github/readme/loop-journey-1.webp" width="900" alt="'Plan dinner Saturday' builds a poll and a who's-in card that waits for the winner"></p>
+
+## The AI waits its turn
+
+An AI acting for a group fails in one way: it changes something a person is in
+the middle of, or undoes something they already chose. We don't ask the model
+to be careful. **The model proposes; a lease table in code decides.**
+
+- A **lease** is a person's hand on a card: dragging it, typing in it, holding
+  a vote. Every screen shows it as a halo with their name.
+- An AI change to a held card **waits** as a ghost ("waiting for Sam") and
+  lands when they let go.
+- A change that would undo a vote or a claim **asks the people who made it**.
+
+<p align="center"><img src=".github/readme/loop-waits.webp" width="900" alt="Two screens: Sam drags the poll, Tara's spoken edit waits as a dashed row and lands when he lets go"></p>
+
+**Why not just ask the model?** We wrote 192 situations (a board, people's
+hands and choices, one change the AI wants to make) and put each to Nemotron
+Ultra:
+
+| Who decides | Overrode a person (of 96) | Blocked a harmless change (of 96) | Added delay |
+|---|---|---|---|
+| Nemotron Ultra, "should it apply this now?" | 38 | 30 | 1,033 ms |
+| Nemotron Ultra, with our rules in the prompt | 18 | 15 | 1,083 ms |
+| The lease table in code | 0 | 0 | under 1 ms |
+
+The code row is the reference (its answers are the labels), so read the table
+as how far a careful prompt is from the rule. On the deployed app, two
+browsers: **38 of 38** AI changes to a held card waited. The scenarios, answers
+and a replay you can run are in [`eval/right-of-way/`](eval/right-of-way/).
+
+## How one ask works
+
+**The model only decides what a model must decide.** It fills every field and
+picks the cards for a bigger ask. Code picks the action, places the card,
+checks the write, and turns pointers like "the people who are coming" into
+real names, so the model can't invent one.
+
+![One ask in five steps: listen, start early, fill, check, sync](.github/readme/15-architecture.jpg)
+
+| Model (Token Factory) | Job |
+|---|---|
+| `nvidia/Nemotron-3_5-Lightning`, thinking off | Plain asks; first card back in 436 ms |
+| `nvidia/Nemotron-3-Ultra-550b-a55b` | Asks that need facts about the group, multi-card asks, questions: right cards 15 of 15 (Lightning: 6 of 15) |
+
+A call fires while you're still talking and is thrown away if you keep going,
+so the answer is usually back before you stop. That's about 3 calls per ask,
+**0.03 cents** for a plain one, discarded calls included.
+
+**What Nemotron adds**, same asks with every model call switched off:
+
+| Test | Rules only | With Nemotron |
+|---|---|---|
+| Asks that only make sense if it knows the group (10) | 1 | 9 |
+| Plain asks, fields filled correctly (8) | 2 | 7 |
+| The push-up challenge, 10 runs | one empty card | six cards, the right four people, 10 of 10 |
+
+Each space has a page called **what this space knows**: who's in the group,
+what's coming up, how you usually do things. Every line shows its source and
+anyone can cross one out.
+
+![What this space knows: each fact with its source and a cross-out](.github/readme/13-knows.jpg)
+
+## Where it falls short
+
+- A bigger model alone didn't help: with the group's facts pasted into the
+  prompt, Lightning and Ultra both got 1 of 10. Pointers and worked examples
+  took it to 9.
+- A brand-new space is weaker: 2 right, 5 partly right, 3 wrong.
+- 18 of 20 spoken questions were answered correctly; 2 were wrong.
+- These are small tests we wrote ourselves, not recordings of real groups.
+  No real group has used it yet; a pilot starts in October.
+
+<p align="center"><img src=".github/readme/loop-undo.webp" width="900" alt="The AI adds pineapple pizza to the dinner poll; one tap on undo takes it back"></p>
+
+## Try it
+
+1. Open [the crew](https://ourspaces.io/#/space/crew) in two tabs. Vote in
+   one; the bar moves in the other.
+2. Tap the orb and say "add a poll for Friday game night". It lands in both.
+3. Grab a card in one tab and ask the orb to change it in the other. The
+   change waits until you let go.
 
 ## Stack
 
-Convex (database, live sync, auth, files, crons, hosting, and the **Convex AI
-Gateway** for every model call) · Vite + React + TypeScript · Tailwind v4 ·
-AgentMail · Firecrawl · OpenAI
-
-## Convex depth
-
-- **Components (17 used in code):** `static-hosting` (serves this site —
-  `convex/staticHosting.ts`), `firecrawl` (scrape, web search, durable crawl),
-  `agentMail` (our own first-party component in `convex/components/agentMail/`
-  — create/send/reply/label over the AgentMail REST API, plus an inbound store
-  with webhook dedup), `migrations`, `aggregate` (poll tallies + member counts
-  as two *named instances* — `convex/votes.ts`, `convex/spaces.ts`),
-  `sharded-counter` (global live totals), `rate-limiter` (LLM/mail/paint
-  quotas), `action-retrier`, `action-cache` (scrape + question-gen caching),
-  `workpool` (bounded recap fan-out), `workflow` (durable weekly digest),
-  `batch-worker` (stale-link refresh queue), `agent` (ask-the-space threads),
-  `rag` (semantic grounding for `recap.ask`), `persistent-text-streaming` (the
-  ask answer types itself into the dock over `/api/ask-stream`, persisted so a
-  reload or a second window reads the same one), `presence` ("N here").
-  `aggregate` counts as its two instance names; `auth` is a library, not an
-  `app.use`d component; `@convex-dev/ai-sdk-provider` is an AI SDK provider
-  (`convex/ai.ts` imports `convexGateway` from it).
-- **Convex Auth (`@convex-dev/auth`):** silent anonymous guest sessions, so
-  every visitor has a real identity without a login form, plus optional join
-  with a six-digit code emailed through AgentMail (`convex/auth.ts`,
-  `convex/otp.ts`). The canvas is never behind a wall.
-- **Schema:** 13 tables, 30 indexes, 1 full-text search index, 1 vector index —
-  spaces, members, widgets (a 33-arm `data` union validating 32 widget types),
-  messages, votes, paint marks, recaps, presence, ask streams, email events,
-  saved room baselines. Every field carries a `v.` validator and every
-  relation is a typed `v.id()` link (widgets, members, messages → spaces;
-  votes → widgets); each index is a single or compound key matched to one
-  access pattern. `widgets.by_embedding` powers "already on the board"
-  (`convex/similar.ts`): arriving mail is embedded and `ctx.vectorSearch` asks
-  if the room has it.
-- **Realtime:** every in-space surface is a Convex subscription — no refetch,
-  no invalidate-on-write, no hand-rolled sync. Each is a `useQuery` /
-  `usePaginatedQuery` against an indexed query:
-
-  ```ts
-  // src/live/useSpaceData.ts — the whole board in one subscription
-  const result = useQuery(api.spaces.getSpaceWithWidgets, mode === "live" ? { slug } : "skip");
-  ```
-
-  | surface | query | file |
-  |---|---|---|
-  | the canvas — any drag, resize, edit or delete lands for everyone | `spaces.getSpaceWithWidgets` | `src/live/useSpaceData.ts` |
-  | cursors + gesture locks; `claimGesture`/`finishGesture` arbitrate writes | `presence.listHereNow` | `src/live/usePresence.ts` |
-  | poll bars, with voter names; `pollTallies` aggregate for counts-only sites | `votes.getResults` | `src/live/useLivePoll.ts` |
-  | collaborative paint-by-number marks | `paint.listBySpace` | `src/pages/LiveSpace.tsx` |
-  | the thread — cursor pagination + a `search_text` full-text index | `messages.listBySpace` | `src/pages/LiveSpace.tsx` |
-  | recap strip, rewritten by the cron | `recap.latest` | `src/pages/LiveSpace.tsx` |
-  | "N here" — header, live strip and rail read one query, so they can't disagree | `roomPresence.onlineForSpace` | `src/components/Rail.tsx` |
-  | global totals via `sharded-counter`; takes a `now` bucket re-keyed every 15s | `stats.getLiveCounts` | `src/pages/LiveBlock.tsx` |
-  | crawled pages stream in as they arrive | `firecrawl.listCrawlPages` | `src/components/CrawlStrip.tsx` |
-  | a publish patches the deployment row; open tabs are offered a refresh before lazy chunks 404 | `staticHosting.getCurrentDeployment` | `src/components/UpdateNudge.tsx` |
-
-  Widget moves use `.withOptimisticUpdate()` (`src/live/useLiveHandlers.ts`);
-  the gesture path keeps a hand-rolled one because `finishGesture` can refuse a
-  commit and an optimistic update cannot read that verdict.
-- **Functions:** 45 queries + 72 mutations + 34 actions = 151, every one with
-  a `returns:` validator. Plus 6 HTTP actions (svix-verified inbound mail,
-  `/api/ask-stream`), which return a `Response` and so have no `returns:` slot.
-  All use the object syntax with `args` + `returns`. Every database read goes
-  through `withIndex`, a search index or `ctx.vectorSearch`; there is no
-  `.filter()` on a query anywhere in `convex/`. Queries only read, mutations
-  only write, actions own every network call.
-- **Scheduling:** 4 crons (stale-presence sweep every 5 min, daily recap via
-  workpool, Friday digest via a durable workflow, Friday stale-link refresh) +
-  scheduled functions. **File storage:** photo-wall uploads become prints.
-
-## Sponsor stack, doing real work
-
-- **AgentMail** gives every space a real inbox. Inbound mail is routed onto the
-  canvas — sealed letter, link into the reading pile, or an AI-filed expense
-  row / itinerary day — and the space **replies in-thread and labels** each
-  message with what it did.
-- **Firecrawl** turns pasted webpages into reactive rich-post widgets, powers
-  **research a topic** (web search → cards) and **crawl a site** (durable crawl
-  whose pages stream live into the reading room).
-- **OpenAI via the Convex AI Gateway**, on a short-lived deployment credential
-  rather than an API key we carry: `openai/gpt-4o-mini` for structured filing
-  decisions and chat, `openai/text-embedding-3-small` (1536 dims) for rag and
-  the echo index. It is a decider, never a chatbot UI — the reason is written on
-  the object it filed.
+NVIDIA Nemotron on Nebius Token Factory (every AI feature, OpenAI-compatible
+API, `convex/nebius.ts`) · Convex (database, live sync, auth, scheduling,
+the lease table and the Right of Way gate in `convex/rightOfWay.ts`) ·
+Tavily (real places for "where should we eat") · AgentMail (every space has
+an inbox) · Firecrawl (links become cards) · Vite + React + TypeScript ·
+Tailwind v4
 
 ## Run
 
@@ -126,5 +122,8 @@ AgentMail · Firecrawl · OpenAI
 npm install
 npx convex dev        # once, to provision; writes .env.local
 npm run dev           # frontend
-npm run dev:backend   # convex dev
 ```
+
+Set `NEBIUS_API_KEY` on your Convex deployment for the voice features.
+
+MIT License.
