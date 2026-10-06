@@ -44,6 +44,7 @@ type Env = {
   readonly JWT_PRIVATE_KEY: string | undefined;
   readonly OPENAI_API_KEY: string | undefined;
   readonly SITE_URL: string | undefined;
+  readonly TAVILY_API_KEY: string | undefined;
 };
 
 /**
