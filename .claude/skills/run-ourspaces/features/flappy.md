@@ -7,14 +7,16 @@ states:
   open: ?as=Rio&flappy=open | wait flappy-canvas | sleep 900
   flying: ?as=Rio&flappy=open | wait flappy-canvas | click flappy-canvas | sleep 350 | click flappy-canvas | sleep 350 | click flappy-canvas | sleep 300
   over: ?as=Rio&flappy=open | wait flappy-canvas | click flappy-canvas | wait flappy-over | sleep 700
+  auto: ?as=Rio&flappy=auto | wait flappy-canvas | sleep 9500
 ---
 # Flappy (the room's week-long high score)
 
 **For a user:** the scoreboard's `flappy · beat the room →` pill opens a
 sheet over the board in the classic flappy look, drawn in code (no borrowed
 sprites): teal sky, clouds, a city and bushes in parallax, shaded green
-pipes, striped grass. You are the bird: your face as the body, a beak, a
-tail in your colour, a wing that beats. `get ready` → score pops per pipe
+pipes, striped grass. You are the classic bird in your colour (pale belly,
+big eye, two-lip beak, a wing that beats); friends perch as small birds in
+theirs where their best run went down. `get ready` → score pops per pipe
 with a ding → hit = white flash + shake → `game over` with a medal panel
 (bronze 10, silver 20, gold 30, platinum 40). Sounds are synthesised
 (WebAudio), off when the app's sound is off. Everyone in the room
@@ -29,7 +31,7 @@ your score, "new best", and how many more to pass the next person;
 hash, in a live room only what was flown here shows. Nothing reaches the
 scoreboard points or Convex yet.
 
-**State URLs:** `?flappy=open` opens the sheet at once.
+**State URLs:** `?flappy=open` opens the sheet at once; `?flappy=auto` opens it and flies itself through the gaps (for takes and to see the perched birds).
 
 **Code:** `src/components/games/Flappy.tsx` (+ `flappy.css` `.fl-*`), pill
 mounted in `Scoreboard.tsx`'s footer. Physics on a fixed 1/120 s step.

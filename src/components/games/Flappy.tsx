@@ -1,6 +1,6 @@
 /**
  * Flappy: the room's week-long high-score game. Everyone flies the same pipes
- * (seeded by room + week), the bird is your face (beak, wing, tail), and the
+ * (seeded by room + week), the bird is the classic one in your colour, and the
  * room's bests sit beside the canvas with flags on the course where each of
  * them went down. The world is the classic look, drawn here (no borrowed
  * sprites): teal sky, clouds, a city, bushes, green pipes, striped grass.
@@ -8,7 +8,6 @@
  */
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { getAvatarSrc } from "../../data/avatars";
 import type { GamePerson } from "../../lib/games/types";
 import { useGames } from "../../lib/games/useMockGames";
 import { getSoundEnabled } from "../../lib/sounds";
@@ -17,7 +16,7 @@ import "./flappy.css";
 
 const W = 360, H = 560, GROUND = 76, FLOOR = H - GROUND;
 const GRAVITY = 1500, FLAP = -430, SPEED = 150, STEP = 1 / 120;
-const PIPE_W = 62, LIP = 6, LIP_H = 24, GAP = 158, SPACING = 214, FIRST = 400, R = 19, BIRD_X = 100;
+const PIPE_W = 62, LIP = 6, LIP_H = 24, GAP = 158, SPACING = 214, FIRST = 400, R = 13, BIRD_X = 100;
 
 type Best = GamePerson & { best: number };
 type Phase = "ready" | "play" | "dead";
@@ -125,7 +124,7 @@ function useChirps() {
 
 export function FlappyStart() {
   const api = useGames();
-  const [open, setOpen] = useState(() => new URLSearchParams(location.search).get("flappy") === "open");
+  const [open, setOpen] = useState(() => new URLSearchParams(location.search).get("flappy") !== null);
   if (!api) return null;
   const people = api.rows.map(({ name, color }) => ({ name, color }));
   return (
@@ -153,7 +152,7 @@ function FlappySheet({ room, me, people, seeded, onClose }: { room: string; me: 
   live.current = { me, people, record, onClose, chirp, mine };
 
   useEffect(() => {
-    const { me, people } = live.current;
+    const { me } = live.current;
     const sfx = (k: Parameters<typeof chirp>[0]) => live.current.chirp(k);
     const el = canvas.current!;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -170,19 +169,6 @@ function FlappySheet({ room, me, people, seeded, onClose }: { room: string; me: 
       beak: v("--fl-beak"), beakLo: v("--fl-beak-lo"), wing: v("--fl-wing"),
     };
     const display = v("--font-display");
-    const face = new Image();
-    const src = getAvatarSrc(me.name);
-    if (src) face.src = src;
-    const faces = new Map<string, HTMLImageElement>();
-    for (const p of people) {
-      const s = getAvatarSrc(p.name);
-      if (s) {
-        const img = new Image();
-        img.src = s;
-        faces.set(p.name, img);
-      }
-    }
-
     /* the backdrop, painted once as three tiles that loop at their own speeds */
     const tile = (h: number, paint: (g: CanvasRenderingContext2D) => void) => {
       const t = document.createElement("canvas");
@@ -278,8 +264,14 @@ function FlappySheet({ room, me, people, seeded, onClose }: { room: string; me: 
 
     const pipeX = (n: number) => FIRST + n * SPACING - dist;
 
+    /* ?flappy=auto flies itself through the gaps, for takes */
+    const auto = new URLSearchParams(location.search).get("flappy") === "auto";
     const step = (dt: number) => {
       t += dt;
+      if (auto && state !== "dead") {
+        const next = Math.max(0, Math.floor((dist + BIRD_X - FIRST - PIPE_W - LIP - 16) / SPACING) + 1);
+        if (state === "ready" ? t > 1.2 : y > gapY(seed, next) + 24 && vy > 0) flapRef.current();
+      }
       if (state === "ready") {
         y = H / 2 - 50 + Math.sin(t * 5) * 7;
         scroll += SPEED * dt;
@@ -310,9 +302,9 @@ function FlappySheet({ room, me, people, seeded, onClose }: { room: string; me: 
       const n = Math.max(0, Math.floor((dist + BIRD_X - FIRST - PIPE_W) / SPACING));
       for (const k of [n, n + 1]) {
         const x = pipeX(k);
-        if (BIRD_X + R - 3 > x - LIP && BIRD_X - R + 3 < x + PIPE_W + LIP) {
+        if (BIRD_X + 15 > x - LIP && BIRD_X - 15 < x + PIPE_W + LIP) {
           const g = gapY(seed, k);
-          if (y - R + 3 < g - GAP / 2 || y + R - 3 > g + GAP / 2) return die(true);
+          if (y - 11 < g - GAP / 2 || y + 11 > g + GAP / 2) return die(true);
         }
       }
     };
@@ -338,72 +330,73 @@ function FlappySheet({ room, me, people, seeded, onClose }: { room: string; me: 
       shade(x - LIP, bot, PIPE_W + LIP * 2, LIP_H);
     };
 
-    const ellipse = (x: number, yy: number, rx: number, ry: number, rot: number, fill: string) => {
-      ctx.beginPath();
-      ctx.ellipse(x, yy, rx, ry, rot, 0, Math.PI * 2);
-      ctx.fillStyle = fill;
-      ctx.fill();
-      ctx.strokeStyle = c.ink;
+    /* the bird, the classic shape in a person's colour: round body, pale belly,
+       big eye, two-lip beak, a wing that beats */
+    const drawBird = (x: number, yy: number, color: string, tilt: number, beat: number, k = 1) => {
+      ctx.save();
+      ctx.translate(x, yy);
+      ctx.rotate(tilt);
+      ctx.scale(k, k);
       ctx.lineWidth = 2.5;
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = c.ink;
+      /* body + belly */
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 17, 13, 0, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle = c.card;
+      ctx.globalAlpha = 0.4;
+      ctx.beginPath();
+      ctx.ellipse(2, 10, 13, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.25;
+      ctx.beginPath();
+      ctx.ellipse(-4, -7, 9, 4, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 17, 13, 0, 0, Math.PI * 2);
       ctx.stroke();
+      /* eye */
+      ctx.beginPath();
+      ctx.arc(8, -5, 6.5, 0, Math.PI * 2);
+      ctx.fillStyle = c.card;
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(10.5, -4.5, 2.4, 0, Math.PI * 2);
+      ctx.fillStyle = c.ink;
+      ctx.fill();
+      /* beak: upper and lower lip */
+      ctx.beginPath();
+      ctx.roundRect(7, 0, 15, 6, 3);
+      ctx.fillStyle = c.beak;
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.roundRect(6, 6, 13, 5, 2.5);
+      ctx.fillStyle = c.beakLo;
+      ctx.fill();
+      ctx.stroke();
+      /* wing */
+      ctx.save();
+      ctx.translate(-9, 2);
+      ctx.rotate(-0.15 + beat * 0.6);
+      ctx.beginPath();
+      ctx.ellipse(0, -beat * 3, 8.5, 5.5, 0, 0, Math.PI * 2);
+      ctx.fillStyle = c.wing;
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      ctx.restore();
     };
-
-    /* the bird: your face as the body, a beak, a tail in your colour and a wing that beats */
     const bird = () => {
       const tilt = state === "ready" ? 0 : state === "dead" ? Math.min(Math.PI / 2, Math.max(-0.4, vy / 600)) : Math.max(-0.42, Math.min(Math.PI / 2, (vy - 120) / 560));
       const beat = state === "dead" ? 0 : Math.sin(t - flapAt < 0.25 ? t * 38 : t * 18);
-      ctx.save();
-      ctx.translate(BIRD_X, y);
-      ctx.rotate(tilt);
-      /* tail */
-      ctx.beginPath();
-      ctx.moveTo(-R + 2, -2);
-      ctx.lineTo(-R - 13, -10);
-      ctx.lineTo(-R - 9, 1);
-      ctx.lineTo(-R - 13, 10);
-      ctx.closePath();
-      ctx.fillStyle = me.color;
-      ctx.fill();
-      ctx.strokeStyle = c.ink;
-      ctx.lineWidth = 2.5;
-      ctx.lineJoin = "round";
-      ctx.stroke();
-      /* body: drop shadow, colour ring, the face */
-      ctx.fillStyle = c.ink;
-      ctx.beginPath();
-      ctx.arc(2, 3, R + 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = me.color;
-      ctx.beginPath();
-      ctx.arc(0, 0, R + 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(0, 0, R, 0, Math.PI * 2);
-      ctx.clip();
-      if (face.complete && face.naturalWidth) ctx.drawImage(face, -R, -R, R * 2, R * 2);
-      else {
-        ctx.fillStyle = c.card;
-        ctx.fillRect(-R, -R, R * 2, R * 2);
-        ctx.fillStyle = c.ink;
-        ctx.font = `800 18px ${display}`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(me.name.slice(0, 1).toUpperCase(), 0, 1);
-        ctx.textBaseline = "alphabetic";
-      }
-      ctx.restore();
-      ctx.strokeStyle = c.ink;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(0, 0, R + 3, 0, Math.PI * 2);
-      ctx.stroke();
-      /* beak, two lips */
-      ellipse(R + 7, 1, 10, 5, 0.05, c.beak);
-      ellipse(R + 5, 8, 8, 4, 0.1, c.beakLo);
-      /* wing, beating up and down on the near side */
-      ellipse(-R + 1, 6 - beat * 4, 11, 7, -0.25 + beat * 0.55, c.wing);
-      ctx.restore();
+      drawBird(BIRD_X, y, me.color, tilt, beat);
     };
 
     const draw = () => {
@@ -451,40 +444,28 @@ function FlappySheet({ room, me, people, seeded, onClose }: { room: string; me: 
       ctx.fillRect(-10, FLOOR - 1, W + 20, 3);
       ctx.fillRect(-10, FLOOR + 15, W + 20, 2);
 
-      /* a flag with each friend's face where their best run went down */
+      /* each friend's bird perched on a post where their best run went down */
       if (state !== "ready") {
         for (const r of rowsRef.current) {
           if (r.name === me.name) continue;
           const fx = FIRST + r.best * SPACING - dist + PIPE_W + (SPACING - PIPE_W) / 2;
           if (fx < -40 || fx > W + 40) continue;
           ctx.fillStyle = c.ink;
-          ctx.fillRect(fx - 1.5, FLOOR - 30, 3, 30);
-          ctx.fillStyle = r.color;
-          ctx.beginPath();
-          ctx.arc(fx, FLOOR - 40, 13, 0, Math.PI * 2);
-          ctx.fill();
-          const img = faces.get(r.name);
-          if (img?.complete && img.naturalWidth) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(fx, FLOOR - 40, 11, 0, Math.PI * 2);
-            ctx.clip();
-            ctx.drawImage(img, fx - 11, FLOOR - 51, 22, 22);
-            ctx.restore();
-          }
-          ctx.strokeStyle = c.ink;
-          ctx.lineWidth = 2.5;
-          ctx.beginPath();
-          ctx.arc(fx, FLOOR - 40, 13, 0, Math.PI * 2);
-          ctx.stroke();
+          ctx.fillRect(fx - 1.5, FLOOR - 26, 3, 26);
+          drawBird(fx, FLOOR - 34, r.color, 0, Math.sin(t * 6 + fx) * 0.3, 0.72);
+          /* their name and score on an ink pill in the sand */
+          const label = `${r.name.toLowerCase()} ${r.best}`;
           ctx.font = `800 13px ${display}`;
           ctx.textAlign = "center";
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = c.ink;
-          const label = `${r.name.toLowerCase()} ${r.best}`;
-          ctx.strokeText(label, fx, FLOOR + 44);
+          ctx.textBaseline = "middle";
+          const lw = ctx.measureText(label).width + 16;
+          ctx.fillStyle = c.ink;
+          ctx.beginPath();
+          ctx.roundRect(fx - lw / 2, FLOOR + 28, lw, 22, 11);
+          ctx.fill();
           ctx.fillStyle = c.card;
-          ctx.fillText(label, fx, FLOOR + 44);
+          ctx.fillText(label, fx, FLOOR + 39.5);
+          ctx.textBaseline = "alphabetic";
         }
       }
 
