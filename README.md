@@ -34,11 +34,13 @@ to be careful. **The model proposes; a lease table in code decides.**
 
 - A **lease** is a person's hand on a card: dragging it, typing in it, holding
   a vote. Every screen shows it as a halo with their name.
-- An AI change to a held card **waits** as a ghost ("waiting for Sam") and
+- An AI change to a held card **waits** as a ghost ("waiting on Holly") and
   lands when they let go.
 - A change that would undo a vote or a claim **asks the people who made it**.
+- Whoever asked can take an AI change back with one tap.
 
-<p align="center"><img src=".github/readme/loop-waits.webp" width="900" alt="Two screens: Sam drags the poll, Tara's spoken edit waits as a dashed row and lands when he lets go"></p>
+<p align="center"><img src=".github/readme/loop-waits.webp" width="900" alt="Two phones in the house room: Holly holds the dinner poll, Thomas says add ramen, the row waits on Holly, fills in as a real San Jose ramen place from the web, and lands when she lets go"></p>
+<p align="center"><sub>Live, two phones: Holly holds the dinner poll; Thomas's "add ramen" waits on her, fills in from the web, and lands when she lets go.</sub></p>
 
 **Why not just ask the model?** We wrote 192 situations (a board, people's
 hands and choices, one change the AI wants to make) and put each to Nemotron
@@ -97,7 +99,7 @@ anyone can cross one out.
 - These are small tests we wrote ourselves, not recordings of real groups.
   No real group has used it yet; a pilot starts in October.
 
-<p align="center"><img src=".github/readme/loop-undo.webp" width="900" alt="The AI adds pineapple pizza to the dinner poll; one tap on undo takes it back"></p>
+<p align="center"><img src=".github/readme/loop-undo.webp" width="900" alt="Thomas says add cook at home to the dinner poll; it lands, and one tap on undo takes it back"></p>
 
 ## Try it
 
