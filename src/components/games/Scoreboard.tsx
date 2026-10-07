@@ -12,6 +12,7 @@ import { useGames } from "../../lib/games/useMockGames";
 import { AwardSticker, byStyle, GameFace } from "./parts";
 import { JigsawStart } from "./Jigsaw";
 import { SeatStart } from "./HotSeat";
+import { FlappyStart } from "./Flappy";
 import "./games.css";
 
 const LOCK: SeeLock = LOCKS.scoreboard;
@@ -111,6 +112,7 @@ export function Scoreboard() {
         {start}
         <SeatStart />
         <JigsawStart />
+        <FlappyStart />
       </footer>
     </section>
   );
