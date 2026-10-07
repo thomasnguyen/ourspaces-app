@@ -11,8 +11,13 @@ states:
 # Flappy (the room's week-long high score)
 
 **For a user:** the scoreboard's `flappy · beat the room →` pill opens a
-sheet over the board: a canvas in the room's colour, cream slabs with lime
-caps, and you as the bird (your face on your colour). Everyone in the room
+sheet over the board in the classic flappy look, drawn in code (no borrowed
+sprites): teal sky, clouds, a city and bushes in parallax, shaded green
+pipes, striped grass. You are the bird: your face as the body, a beak, a
+tail in your colour, a wing that beats. `get ready` → score pops per pipe
+with a ding → hit = white flash + shake → `game over` with a medal panel
+(bronze 10, silver 20, gold 30, platinum 40). Sounds are synthesised
+(WebAudio), off when the app's sound is off. Everyone in the room
 flies the same pipes all week (seeded by room + week). On the ground, a
 flag with each friend's face stands where their best run went down, so you
 fly past them. Beside it, the room's bests, you in your colour. Dying shows

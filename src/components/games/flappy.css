@@ -1,13 +1,32 @@
-/* Flappy: a full-screen sheet over the board, the canvas on a cream card with the room's bests beside it. */
+/* Flappy: a full-screen sheet over the board, the canvas on a cream card with the room's bests beside it.
+   The --fl-* palette is the classic flappy world; the canvas reads it off .fl-sheet. */
 
 .fl-sheet {
+  --fl-sky: oklch(0.77 0.09 206);
+  --fl-cloud: oklch(0.97 0.035 150);
+  --fl-city: oklch(0.86 0.065 175);
+  --fl-window: oklch(0.93 0.05 165);
+  --fl-bush: oklch(0.8 0.17 138);
+  --fl-bush-lo: oklch(0.7 0.16 140);
+  --fl-pipe: oklch(0.73 0.19 132);
+  --fl-pipe-hi: oklch(0.88 0.17 125);
+  --fl-pipe-lo: oklch(0.56 0.16 138);
+  --fl-ground: oklch(0.89 0.08 96);
+  --fl-ground-lo: oklch(0.82 0.09 90);
+  --fl-grass: oklch(0.84 0.2 128);
+  --fl-grass-lo: oklch(0.7 0.19 132);
+  --fl-beak: oklch(0.78 0.18 60);
+  --fl-beak-lo: oklch(0.66 0.2 40);
+  --fl-wing: oklch(0.97 0.04 95);
+  --fl-gold: oklch(0.84 0.16 85);
+
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 2000;
   display: grid;
   place-items: center;
   padding: 16px;
-  background: color-mix(in srgb, var(--color-paper-deep) 78%, transparent);
+  background: color-mix(in srgb, var(--color-paper-deep) 80%, transparent);
   animation: fl-fade var(--dur-base) var(--ease-glide) both;
 }
 
@@ -83,86 +102,187 @@
 
 .fl-canvas {
   display: block;
+  width: min(360px, calc(100vw - 54px));
+  max-height: calc(100dvh - 150px);
+  aspect-ratio: 360 / 560;
+  object-fit: contain;
   cursor: pointer;
   touch-action: none;
   user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* the big flappy words: chunky display type, white with an ink outline and a hard drop */
+.fl-title {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--fl-beak);
+  -webkit-text-stroke: 7px var(--color-ink);
+  paint-order: stroke fill;
+  text-shadow: 0 4px 0 var(--color-ink);
+  white-space: nowrap;
+}
+
+.fl-hint,
+.fl-over {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  line-height: 1.1;
+  padding-top: 18%;
 }
 
 .fl-hint {
-  position: absolute;
-  left: 50%;
-  top: 34%;
-  translate: -50% 0;
-  display: grid;
-  justify-items: center;
-  gap: 6px;
   pointer-events: none;
-  line-height: 1.1;
 }
 
-.fl-hint b {
+.fl-hint .fl-title {
+  animation: fl-arrive var(--dur-arrive) var(--ease-snap) both;
+}
+
+.fl-hint-low {
+  position: absolute;
+  top: 54%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.fl-tap {
   border: 3px solid var(--color-ink);
   border-radius: var(--radius-pill);
-  background: var(--color-lime);
-  box-shadow: 4px 4px 0 var(--color-ink);
+  background: var(--color-card);
+  box-shadow: 3px 3px 0 var(--color-ink);
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 17px;
   font-weight: 800;
-  padding: 10px 18px;
-  animation: fl-bob 1.4s var(--ease-glide) infinite alternate;
+  padding: 7px 14px 7px 11px;
+  animation: fl-bob 0.7s var(--ease-glide) infinite alternate;
 }
 
-.fl-hint span {
+.fl-tap i {
+  font-style: normal;
+}
+
+.fl-chal {
   border-radius: var(--radius-pill);
   background: var(--color-ink);
   color: var(--color-card);
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
-  padding: 5px 10px;
+  padding: 5px 11px;
 }
 
 .fl-over {
-  position: absolute;
-  left: 50%;
-  top: 22%;
-  translate: -50% 0;
+  padding-top: 14%;
+}
+
+.fl-title-over {
+  animation: fl-drop var(--dur-arrive) var(--ease-snap) both;
+}
+
+/* the score panel: medal on the left, score and best on the right */
+.fl-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 3px solid var(--color-ink);
+  border-radius: 14px;
+  background: var(--fl-ground);
+  box-shadow: 0 5px 0 var(--color-ink);
+  padding: 12px 16px;
+  animation: fl-rise var(--dur-stage) var(--ease-pop) 120ms both;
+}
+
+.fl-medal {
   display: grid;
   justify-items: center;
-  gap: 6px;
-  width: 230px;
-  border: 3px solid var(--color-ink);
-  border-radius: 18px;
-  background: var(--color-card);
-  box-shadow: 6px 6px 0 var(--color-ink);
-  line-height: 1.1;
-  padding: 16px 14px 14px;
-  animation: fl-arrive var(--dur-arrive) var(--ease-snap) both;
+  gap: 4px;
 }
 
-.fl-over-kicker {
+.fl-medal span,
+.fl-panel dt {
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--color-muted);
+  text-transform: uppercase;
+  color: var(--fl-beak-lo);
 }
 
-[data-phase="dead"] .fl-over strong {
-  font-family: var(--font-display);
-  font-size: 72px;
-  font-weight: 800;
-  line-height: 0.9;
-}
-
-.fl-over em {
-  font-family: var(--font-sans);
-  font-size: 14px;
+.fl-medal i {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border: 3px solid var(--color-ink);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--fl-ground-lo) 70%, var(--color-ink));
+  color: var(--color-card);
+  font-size: 24px;
   font-style: normal;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 6px;
+}
+
+.fl-medal.is-bronze i {
+  background: oklch(0.66 0.12 55);
+}
+
+.fl-medal.is-silver i {
+  background: oklch(0.86 0.01 250);
+}
+
+.fl-medal.is-gold i {
+  background: var(--fl-gold);
+}
+
+.fl-medal.is-platinum i {
+  background: oklch(0.94 0.03 200);
+  color: var(--fl-sky);
+}
+
+.fl-medal:not(.is-none) i {
+  animation: fl-medal var(--dur-arrive) var(--ease-snap) 420ms both;
+}
+
+.fl-panel dl {
+  display: grid;
+  justify-items: end;
+  margin: 0;
+}
+
+.fl-panel dd {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-card);
+  -webkit-text-stroke: 5px var(--color-ink);
+  paint-order: stroke fill;
+}
+
+.fl-new {
+  border-radius: 4px;
+  background: oklch(0.63 0.22 25);
+  color: var(--color-card);
+  font-size: 10px;
+  font-style: normal;
+  padding: 1px 4px;
+  margin-right: 2px;
+}
+
+.fl-over .gm-go {
+  border: 3px solid var(--color-ink);
+  box-shadow: 0 4px 0 var(--color-ink);
+  animation: fl-rise var(--dur-arrive) var(--ease-pop) 260ms both;
 }
 
 .fl-board {
@@ -235,14 +355,24 @@
   }
 }
 
-.fl-over {
-  animation-name: fl-over-in;
-}
-
-@keyframes fl-over-in {
+@keyframes fl-drop {
   from {
     opacity: 0;
-    scale: 0.8;
+    translate: 0 -30px;
+  }
+}
+
+@keyframes fl-rise {
+  from {
+    opacity: 0;
+    translate: 0 40px;
+  }
+}
+
+@keyframes fl-medal {
+  from {
+    scale: 0;
+    rotate: -40deg;
   }
 }
 
@@ -252,35 +382,80 @@
   }
 }
 
-/* a phone: the board tucks under the canvas as a row of faces */
+/* a phone: no kicker, the board tucks under the canvas as a row of chips */
 @media (max-width: 640px) {
   .fl-sheet {
     padding: 8px;
   }
 
   .fl-card {
-    padding: 12px;
+    padding: 10px 12px 12px;
+    box-shadow: 5px 5px 0 var(--color-ink);
+  }
+
+  .fl-kicker {
+    display: none;
+  }
+
+  .fl-head {
+    margin-bottom: 8px;
+  }
+
+  .fl-head h3 {
+    font-size: 26px;
+  }
+
+  .fl-close {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
   }
 
   .fl-body {
     flex-direction: column;
     align-items: center;
+    gap: 10px;
+  }
+
+  .fl-canvas {
+    max-height: calc(100dvh - 190px);
   }
 
   .fl-board {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     width: auto;
-    max-width: 360px;
-    gap: 6px;
+    max-width: 340px;
+    gap: 5px;
   }
 
   .fl-row {
     grid-template-columns: auto auto auto;
-    padding: 4px 10px 4px 4px;
+    gap: 5px;
+    border-width: 2px;
+    border-radius: 999px;
+    padding: 2px 9px 2px 2px;
+  }
+
+  .fl-row .gm-face {
+    width: 22px;
+    height: 22px;
+  }
+
+  .fl-name {
+    font-size: 12px;
+  }
+
+  .fl-row strong {
+    font-size: 14px;
   }
 
   .fl-rank {
     display: none;
+  }
+
+  .fl-title {
+    font-size: 36px;
   }
 }
