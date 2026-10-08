@@ -8,6 +8,7 @@ import "./itinerary.css";
 import "./rsvp-phone.css";
 import { getIdentity } from "../live/identity";
 import { getDataMode } from "../live/dataMode";
+import { RsvpBring } from "./linkRead";
 import {
   DEFAULT_STATION_ID,
   getRadioSnapshot,
@@ -652,6 +653,7 @@ export function RsvpWidget({
           <span>waiting on {waitingOn.join(" + ")}</span>
         </p>
       )}
+      <RsvpBring widget={widget} />
       {waitingOn.length > 0 && waitingNote && (
         <p className="rsvp-waiting-note">
           <span aria-hidden="true">💬</span>“{waitingNote}”

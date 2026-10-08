@@ -11,6 +11,7 @@ import { playSound } from "../lib/sounds";
 import "./phone-cards.css";
 import "./poll-web.css";
 import "./poll-rules.css";
+import { PlanReadWidget } from "./linkRead";
 import { PollRulesLine, PollStamp, pollRulesClass, usePollRules } from "./pollRules";
 
 type Style = CSSProperties;
@@ -214,7 +215,12 @@ function ClockCell({ value, unit }: { value: string; unit: string }) {
   );
 }
 
+/** A countdown, or the plan card a pasted link makes (`read`, convex/tavily.ts readLink). */
 export function CountdownWidget({ widget, style }: { widget: Widget; style: Style }) {
+  return widget.data.read ? <PlanReadWidget widget={widget} style={style} /> : <CountdownFace widget={widget} style={style} />;
+}
+
+function CountdownFace({ widget, style }: { widget: Widget; style: Style }) {
   const targetDate =
     typeof widget.data.targetDate === "string" ? widget.data.targetDate : null;
   const startDate =

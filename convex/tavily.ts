@@ -1,8 +1,11 @@
 import { v } from "convex/values";
-import { env, internalAction, internalMutation, internalQuery, query, type MutationCtx } from "./_generated/server";
+import { env, internalAction, internalMutation, internalQuery, mutation, query, type MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { canRead } from "./seat";
+import { canRead, requireSeat } from "./seat";
+import { widgetsCounter } from "./stats";
+import { touchSpace } from "./activity";
+import { writeWidgetData } from "./widgets";
 import { leasesOn } from "./leases";
 import { rateLimiter } from "./rateLimits";
 import { streamChat } from "./nebius";
@@ -549,5 +552,350 @@ export const sweepWeb = internalMutation({
       if (!keep.some((o) => o.id === vote.optionId)) await ctx.db.delete(vote._id);
     await ctx.db.patch(widgetId, { data: { ...(w.data as object), options: keep } as Doc<"widgets">["data"] });
     return options.length - keep.length;
+  },
+});
+
+/* ── the post vs the page: a pasted link, read (TV2a) ──────────────────────
+ * Someone pastes a link on the board (src/live/useLiveHandlers.ts, the paste
+ * entry point; Firecrawl's link card is the fallback when this is off). Two
+ * cards land at once, reading: a plan card (a countdown with `read`) and a
+ * who's in. Then the chain, one 9 s cap:
+ *   Tavily extract of the pasted page (query-focused) → code names the venue
+ *   and its town → Tavily search for the venue's own site → Tavily extract of
+ *   it, same query → code parses the parking fee for Saturday from each.
+ * The venue's own domain outranks social and review sites by a code rule
+ * (`ownSite`). The card shows the site's figure; `the post said …` only when
+ * both parsed Saturday parking for the same venue and season and they differ.
+ * No model writes a name or a number; code picks the cards and the title.
+ */
+
+const READ_Q = "parking price hours Saturday admission";
+const READ_CAP_MS = 9000;
+const SOCIAL = ["instagram", "tiktok", "facebook", "fb", "yelp", "twitter", "x", "threads", "youtube", "youtu", "pinterest", "reddit", "tripadvisor", "wikipedia", "google", "linktr", "eventbrite", "groupon", "timeout", "patch", "sfgate", "mercurynews"];
+const DAY_RE = "(mon(?:day)?s?|tue(?:s(?:day)?)?s?|wed(?:nesday)?s?|thu(?:r(?:s(?:day)?)?)?s?|fri(?:day)?s?|sat(?:urday)?s?|sun(?:day)?s?)";
+const DAY_IX: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+const SPAN = new RegExp(`\\b${DAY_RE}(?:\\s*(-|–|—|to|through|thru|&|and|/)\\s*${DAY_RE})?\\b|\\b(weekends?|daily|every ?day)\\b`, "gi");
+const AMOUNT = /\$\s?(\d{1,3}(?:\.\d{2})?)|\bfree\b/gi;
+
+export type Fee = { days: number[]; amount: number; cash: boolean; line: string };
+const dayOf = (w: string) => DAY_IX[w.toLowerCase().slice(0, 3)];
+
+/** "Mon–Thu" → 1..4, "Sat/Sun" → 6,0, "weekends" → 6,0, "daily" → all. */
+function daysOf(m: RegExpMatchArray): number[] {
+  if (m[4]) return /week/i.test(m[4]) ? [6, 0] : [0, 1, 2, 3, 4, 5, 6];
+  const a = dayOf(m[1]);
+  if (!m[3]) return [a];
+  const b = dayOf(m[3]);
+  if (/^(&|and|\/)$/i.test(m[2])) return [a, b];
+  const out = [a];
+  for (let d = a; d !== b; ) out.push((d = (d + 1) % 7));
+  return out;
+}
+
+/** Code, not the model: each "<item> … <days> … $N" a page states, paired in reading order. */
+export function feesIn(text: string, item = "parking"): Fee[] {
+  const out: Fee[] = [];
+  const clean = text.replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
+  for (const m of clean.matchAll(new RegExp(`\\b${item}\\b`, "gi"))) {
+    // from the start of its sentence, over the lines that continue it ("$30 cash only Fridays")
+    const start = Math.max(clean.lastIndexOf("\n", m.index!) + 1, clean.lastIndexOf(". ", m.index!) + 2, 0);
+    const lines = clean.slice(start, m.index! + 260).split(/\n/);
+    let passage = lines[0];
+    for (const l of lines.slice(1)) {
+      if (!/^\s*(\$|free\b|\(|(mon|tue|wed|thu|fri|sat|sun))/i.test(l)) break;
+      passage += ` ${l}`;
+    }
+    passage = passage.split(/\[\.\.\.\]|(?<=\.)\s+(?=[A-Z][a-z]+ (?!through|thru))/)[0];
+    const cash = /\bcash\b/i.test(passage);
+    const tokens = [
+      ...[...passage.matchAll(SPAN)].map((t) => ({ at: t.index!, days: daysOf(t) })),
+      ...[...passage.matchAll(AMOUNT)].map((t) => ({ at: t.index!, amount: t[1] ? Number(t[1]) : 0 })),
+    ].sort((x, y) => x.at - y.at);
+    let days: number[] | null = null;
+    let amount: number | null = null;
+    for (const t of tokens) {
+      if ("days" in t) {
+        if (amount !== null) out.push({ days: t.days, amount, cash: cash && amount > 0, line: passage.replace(/\s+/g, " ").trim().slice(0, 160) }), (amount = null);
+        else days = t.days;
+      } else if (days) {
+        out.push({ days, amount: t.amount, cash: cash && t.amount > 0, line: passage.replace(/\s+/g, " ").trim().slice(0, 160) });
+        days = null;
+      } else amount = t.amount;
+    }
+  }
+  return out;
+}
+
+/** One figure for one day, or none when the page gives two different ones. */
+export function feeOn(fees: Fee[], day: number): Fee | null {
+  const on = fees.filter((f) => f.days.includes(day));
+  if (!on.length || on.some((f) => f.amount !== on[0].amount)) return null;
+  return { ...on[0], cash: on.some((f) => f.cash) };
+}
+
+const NOT_A_NAME = /^(this|the|open|hours?|park pass|take|adding|hi|log|reply|video|photo|more|sign|follow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december)\b/i;
+const CATEGORY = /\s+(pumpkin patch|apple orchard|corn maze|christmas tree farm|farm stand|winery|brewery|restaurant|cafe|café|bakery|museum|zoo|park|festival)$/i;
+
+/** The venue a post is about: the first capitalised name in its words (not an address, a day, a month or a heading). */
+export function venueIn(text: string): string | null {
+  const head = text.replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").slice(0, 1200);
+  const word = "[A-Z][\\p{L}'’.-]*";
+  for (const m of head.matchAll(new RegExp(`${word}(?:[ \\t]+(?:${word}|&|of|the|and)){1,5}`, "gu"))) {
+    const name = m[0].replace(/\s+(of|the|and|&)$/i, "").replace(/\s+\d{4}$/, "").trim();
+    if (name.split(/\s+/).length < 2 || NOT_A_NAME.test(name) || /\b(Ave|St|Blvd|Rd|Road|Street|Hwy|Lane|Dr)\b/.test(name)) continue;
+    if (/^[^,\n]{0,40},\s*[A-Z]{2}\b/.test(head.slice(m.index!))) continue; // "Morgan Hill, CA" is the town
+    return name;
+  }
+  return null;
+}
+
+/** "225 Laguna Ave, Morgan Hill, CA 95037" → Morgan Hill; else "in Morgan Hill". */
+export function townIn(text: string): string | null {
+  const m = text.match(/,\s*([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2}),\s*(?:CA|California|[A-Z]{2})\b/) ?? text.match(/\b(?:in|join us in)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)(?=[\s!.,])/);
+  return m?.[1] ?? null;
+}
+
+/** The venue's own site: not social or a review site, and its domain carries the venue's name. */
+export function ownSite(url: string, venue: string) {
+  const host = (() => {
+    try {
+      return new URL(url).host.replace(/^www\./, "");
+    } catch {
+      return "";
+    }
+  })();
+  const base = host.split(".").slice(-2, -1)[0] ?? "";
+  if (!host || SOCIAL.includes(base)) return false;
+  // every word of the name (its first four letters), so "Spina Farms" is not spinabifidaassociation.org
+  const flat = host.replace(/[^a-z0-9]/g, "");
+  const words = venue.replace(CATEGORY, "").toLowerCase().split(/\s+/).map((w) => w.replace(/[^a-z0-9]/g, "")).filter((w) => w.length >= 3);
+  return words.length > 0 && words.every((w) => flat.includes(w.slice(0, 4)));
+}
+
+const yearsIn = (s: string) => [...s.matchAll(/\b(20\d\d)\b/g)].map((m) => Number(m[1]));
+const nounOf = (venue: string) => {
+  const w = venue.replace(CATEGORY, "").split(/\s+/).at(-1)?.toLowerCase().replace(/s$/, "") ?? "";
+  return ["farm", "winery", "brewery", "museum", "zoo", "orchard", "ranch", "garden", "park", "cafe", "bakery"].includes(w) ? w : null;
+};
+const hostName = (url: string) => {
+  try {
+    return new URL(url).host.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+};
+
+export type LinkReceipt = {
+  mode: "link";
+  line: string;
+  url: string;
+  status: string;
+  venue?: string;
+  town?: string;
+  query?: string;
+  day: string;
+  reads: { role: "post" | "site"; url: string; host: string; ms: number; credits?: number; said?: string; fee?: number; cash?: boolean }[];
+  search?: { ms: number; credits?: number; picked?: string; skipped: { host: string; why: string }[] };
+  ms: { total: number };
+  credits: { extract?: number; search?: number };
+  pickedBy: string;
+  shown: string;
+  struck?: string;
+  why?: string;
+  landed?: string;
+};
+
+const readCard = { plan: { w: 250, h: 236 }, who: { w: 200, h: 236 } };
+
+/** The paste: two cards land reading, then the chain runs. `{ ok: false }` = off here; the screen makes a Firecrawl link card. */
+export const readLink = mutation({
+  args: { spaceId: v.id("spaces"), url: v.string(), plan: v.object({ x: v.number(), y: v.number() }), who: v.object({ x: v.number(), y: v.number() }), today: v.string() },
+  returns: v.union(v.object({ ok: v.literal(true), planId: v.id("widgets"), whoId: v.id("widgets") }), v.object({ ok: v.literal(false), why: v.string() })),
+  handler: async (ctx, a) => {
+    if (!lookupOn()) return { ok: false as const, why: "off" };
+    const me = await requireSeat(ctx, a.spaceId);
+    let url: URL;
+    try {
+      url = new URL(a.url.trim().includes("://") ? a.url.trim() : `https://${a.url.trim()}`);
+    } catch {
+      return { ok: false as const, why: "not a link" };
+    }
+    if (url.protocol !== "https:" && url.protocol !== "http:") return { ok: false as const, why: "not a link" };
+    if (!(await rateLimiter.limit(ctx, "tavilyRoomDay", { key: a.spaceId })).ok) return { ok: false as const, why: "today's limit" };
+    const host = url.host.replace(/^www\./, "");
+    const now = Date.now();
+    const z = 6;
+    const planId = await ctx.db.insert("widgets", {
+      spaceId: a.spaceId, type: "countdown", ...a.plan, ...readCard.plan, z, rotate: -1, createdBy: me.userId, createdAt: now,
+      data: { event: host, tone: "butter", read: { url: url.toString(), host, at: now, step: "post" } },
+    });
+    const whoId = await ctx.db.insert("widgets", {
+      spaceId: a.spaceId, type: "rsvp", ...a.who, ...readCard.who, z, rotate: 1.2, createdBy: me.userId, createdAt: now,
+      data: { title: "who's in?", responses: [{ name: me.name, status: "yes", userId: me.userId }], waitingOn: [], bringPending: true },
+    });
+    await widgetsCounter.inc(ctx);
+    await widgetsCounter.inc(ctx);
+    await touchSpace(ctx, a.spaceId, now);
+    const line = `reading ${host} · then the venue's own page`;
+    const writeId = await log(ctx, { kind: "edit", spaceId: a.spaceId, widgetId: planId, by: { name: me.name, userId: me.userId }, fields: [], text: line }, "lookup", "reading the link");
+    await ctx.db.patch(writeId, { kind: "lookup" });
+    await ctx.scheduler.runAfter(0, internal.tavily.readRun, { spaceId: a.spaceId, planId, whoId, writeId, url: url.toString(), today: a.today, line });
+    return { ok: true as const, planId, whoId };
+  },
+});
+
+/** The next Saturday on or after today (YYYY-MM-DD). */
+function nextDay(today: string, day: number) {
+  const [y, m, d] = today.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  t.setUTCDate(t.getUTCDate() + ((day - t.getUTCDay() + 7) % 7));
+  return t.toISOString().slice(0, 10);
+}
+
+export const readRun = internalAction({
+  args: { spaceId: v.id("spaces"), planId: v.id("widgets"), whoId: v.id("widgets"), writeId: v.id("aiWrites"), url: v.string(), today: v.string(), line: v.string() },
+  returns: v.null(),
+  handler: async (ctx, a) => {
+    const t0 = Date.now();
+    const left = () => READ_CAP_MS - (Date.now() - t0);
+    const SAT = 6;
+    const r: LinkReceipt = { mode: "link", line: a.line, url: a.url, status: "ok", day: "sat", reads: [], ms: { total: 0 }, credits: {}, pickedBy: "code", shown: "" };
+    const credit = (j: Record<string, unknown>) => (j.usage as { credits?: number } | undefined)?.credits;
+    const textOf = (j: Record<string, unknown>) => ((j.results as { raw_content?: string; title?: string; url?: string }[] | undefined) ?? []);
+    let postFee: Fee | null = null;
+    let siteFee: Fee | null = null;
+    let siteUrl: string | null = null;
+    let postText = "";
+    let siteText = "";
+    try {
+      // 1 · the pasted page
+      const own = !SOCIAL.includes(hostOf(a.url));
+      const e1 = await post("extract", { urls: [a.url], query: READ_Q, chunks_per_source: 3, include_usage: true }, left());
+      const got1 = textOf(e1.json)[0];
+      postText = got1?.raw_content ?? "";
+      r.credits.extract = (credit(e1.json) ?? 0);
+      if (!e1.ok || !postText) throw new Error(e1.error ?? "couldn't read the link");
+      postFee = feeOn(feesIn(postText), SAT);
+      r.venue = (own ? got1?.title?.split(/\s+[-|–·]\s+/)[0]?.trim() : null) || venueIn(postText) || undefined;
+      r.town = townIn(postText) ?? undefined;
+      r.reads.push({ role: own ? "site" : "post", url: a.url, host: hostName(a.url), ms: e1.ms, credits: credit(e1.json), said: postFee?.line, ...(postFee ? { fee: postFee.amount, cash: postFee.cash } : {}) });
+      if (!r.venue) throw new Error("no venue named on the page");
+      await ctx.runMutation(internal.tavily.readStep, { planId: a.planId, patch: JSON.stringify({ step: "site", venue: r.venue, ...(r.town ? { town: r.town } : {}) }) });
+      if (own) {
+        // the pasted page is the venue's own: one source, no post to compare
+        siteFee = postFee;
+        siteUrl = a.url;
+        siteText = postText;
+        postFee = null;
+      } else if (left() > 2500) {
+        // 2 · the venue's own site, found by search; social and review sites never count as it
+        r.query = `${r.venue}${r.town ? ` ${r.town}` : ""}`;
+        const s = await post("search", { query: r.query, search_depth: "basic", max_results: 6, include_usage: true }, left() - 1200);
+        r.credits.search = credit(s.json);
+        const hits = (s.json.results as Hit[] | undefined) ?? [];
+        const skipped: { host: string; why: string }[] = [];
+        const pick = hits.find((h) => {
+          if (ownSite(h.url, r.venue!)) return true;
+          skipped.push({ host: hostName(h.url), why: SOCIAL.includes(hostOf(h.url)) ? "social or a review site" : "not the venue's domain" });
+          return false;
+        });
+        r.search = { ms: s.ms, credits: credit(s.json), picked: pick?.url, skipped: skipped.slice(0, 6) };
+        if (pick && left() > 600) {
+          const more = hits.filter((h) => h !== pick && hostName(h.url) === hostName(pick.url)).slice(0, 1).map((h) => h.url);
+          const e2 = await post("extract", { urls: [pick.url, ...more], query: READ_Q, chunks_per_source: 3, include_usage: true }, left());
+          r.credits.extract = (r.credits.extract ?? 0) + (credit(e2.json) ?? 0);
+          siteText = textOf(e2.json).map((x) => `${x.title ?? ""}\n${x.raw_content ?? ""}`).join("\n\n");
+          siteFee = feeOn(textOf(e2.json).flatMap((x) => feesIn(x.raw_content ?? "")), SAT);
+          siteUrl = pick.url;
+          r.reads.push({ role: "site", url: pick.url, host: hostName(pick.url), ms: e2.ms, credits: credit(e2.json), said: siteFee?.line, ...(siteFee ? { fee: siteFee.amount, cash: siteFee.cash } : {}) });
+          if (!e2.ok) r.status = e2.error ?? "the site didn't read";
+        } else if (!pick) r.status = "no site of its own in the results";
+      } else r.status = "out of time before the site";
+    } catch (e) {
+      r.status = String(e instanceof Error ? e.message : e).slice(0, 120);
+    }
+    // the guards: same venue (its name on the site), same season (no other year named), same day (Saturday parsed on both)
+    const year = Number(a.today.slice(0, 4));
+    const venueOk = !!r.venue && !!siteText && siteText.toLowerCase().includes(r.venue.toLowerCase().replace(CATEGORY, "").split(/\s+/)[0]);
+    const seasonOk = [postText, siteText].every((t) => !yearsIn(t).length || yearsIn(t).includes(year));
+    const noun = r.venue ? nounOf(r.venue) : null;
+    const label = noun ? `the ${noun}'s site` : "their site";
+    const fee = siteFee ?? postFee;
+    const fromSite = !!siteFee;
+    const struck = fromSite && postFee && venueOk && seasonOk && postFee.amount !== siteFee!.amount ? postFee.amount : undefined;
+    r.why = struck !== undefined ? `both parsed Saturday parking for ${r.venue}; they differ, the ${noun ?? "venue"}'s own page wins` : postFee && siteFee ? (postFee.amount === siteFee.amount ? "both agree" : !venueOk ? "the site didn't name the venue: no compare" : "another season named: no compare") : siteFee ? "only the site gave Saturday parking" : postFee ? "only the post gave Saturday parking" : "neither page gave Saturday parking";
+    const money = (n: number) => (n === 0 ? "free" : `$${n}`);
+    r.shown = fee ? `parking ${money(fee.amount)}${fee.cash ? " cash" : ""} Sat · ${fromSite ? label : "the post"}` : "";
+    if (struck !== undefined) r.struck = `the post said ${money(struck)}`;
+    r.ms.total = Date.now() - t0;
+    const read = {
+      step: "done",
+      ...(r.venue ? { venue: r.venue.replace(CATEGORY, "") } : {}),
+      ...(r.town ? { town: r.town } : {}),
+      day: "sat",
+      ...(fee ? { fee: { item: "parking", amount: fee.amount, cash: fee.cash } } : {}),
+      ...(fee ? { source: fromSite && siteUrl ? { label, url: siteUrl, host: hostName(siteUrl) } : { label: "the post", url: a.url, host: hostName(a.url) } } : {}),
+      ...(struck !== undefined ? { post: { amount: struck, url: a.url } } : {}),
+      ...(!fee ? { note: r.venue ? "no parking price on either page" : "nothing to plan from this page" } : {}),
+      ms: r.ms.total,
+    };
+    const bring = fee && fee.amount > 0 ? (fee.cash ? `bring $${fee.amount} cash` : `parking $${fee.amount}`) : undefined;
+    await ctx.runMutation(internal.tavily.readLand, { planId: a.planId, whoId: a.whoId, writeId: a.writeId, patch: JSON.stringify(read), event: r.venue ? `${r.venue.replace(CATEGORY, "")}${r.town ? ` · ${r.town}` : ""}` : "", targetDate: nextDay(a.today, SAT), whoTitle: r.venue ? "who's in · sat" : "", ...(bring ? { bring } : {}), receipt: JSON.stringify(r) });
+    return null;
+  },
+});
+
+export const readStep = internalMutation({
+  args: { planId: v.id("widgets"), patch: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { planId, patch }) => {
+    const w = await ctx.db.get(planId);
+    const read = (w?.data as { read?: object } | undefined)?.read;
+    if (!w || !read) return null;
+    await ctx.db.patch(planId, { data: { ...(w.data as object), read: { ...read, ...(JSON.parse(patch) as object) } } as Doc<"widgets">["data"] });
+    return null;
+  },
+});
+
+export const readLand = internalMutation({
+  args: { planId: v.id("widgets"), whoId: v.id("widgets"), writeId: v.id("aiWrites"), patch: v.string(), event: v.string(), targetDate: v.string(), whoTitle: v.string(), bring: v.optional(v.string()), receipt: v.string() },
+  returns: v.null(),
+  handler: async (ctx, a) => {
+    const r = JSON.parse(a.receipt) as LinkReceipt;
+    const plan = await ctx.db.get(a.planId);
+    const landed: string[] = [];
+    if (plan) {
+      const d = plan.data as { read?: object; event?: string };
+      await writeWidgetData(ctx, plan, { ...d, ...(a.event ? { event: a.event } : {}), targetDate: a.targetDate, read: { ...(d.read ?? {}), ...(JSON.parse(a.patch) as object) } } as Doc<"widgets">["data"]);
+      landed.push(r.shown ? `plan: ${a.event} · ${r.shown}${r.struck ? ` (struck: ${r.struck})` : ""}` : `plan: ${a.event || "the link"}`);
+    }
+    const who = await ctx.db.get(a.whoId);
+    if (who) {
+      const d = who.data as Record<string, unknown>;
+      const { bringPending: _, ...rest } = d;
+      await writeWidgetData(ctx, who, { ...rest, ...(a.whoTitle ? { title: a.whoTitle } : {}), ...(a.bring ? { bring: a.bring } : {}) } as Doc<"widgets">["data"]);
+      if (a.bring) landed.push(`who's in: ${a.bring}`);
+    }
+    r.landed = landed.join(" · ") || "the cards were deleted";
+    const row = await ctx.db.get(a.writeId);
+    if (row) await ctx.db.patch(row._id, { text: r.shown ? `${a.event} · ${r.shown}` : row.text, outcome: JSON.stringify({ state: "replaced", ms: Date.now() - row.at, on: "the web", why: "the web answered", receipt: r }) });
+    return null;
+  },
+});
+
+/** Test cleanup (dev lane): delete the cards one paste made, by id. */
+export const sweepRead = internalMutation({
+  args: { ids: v.array(v.id("widgets")) },
+  returns: v.number(),
+  handler: async (ctx, { ids }) => {
+    let n = 0;
+    for (const id of ids) {
+      const w = await ctx.db.get(id);
+      if (!w) continue;
+      await ctx.db.delete(id);
+      await widgetsCounter.dec(ctx);
+      n++;
+    }
+    return n;
   },
 });

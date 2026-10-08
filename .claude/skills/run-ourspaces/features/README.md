@@ -37,6 +37,7 @@ plus the wide beats table over the stage.
 | [first-minute](first-minute.md) | crew (lane) | cold · notice · door · nodoor · cursor · hint · starter · landed |
 | [ipad](ipad.md) | our-house (lane) | room · orb (Add to Home Screen, full screen, awake) |
 | [dinner-web](dinner-web.md) | our house (lane) | ask · ask-tonight · ask-sushi · rows · add · added · added-dumplings · drawer (Tavily, the lookup) |
+| [link-read](link-read.md) | our house (lane) | read · reading · receipt (a pasted link: the post vs the page, Tavily) |
 | [vote-rules](vote-rules.md) | league | open · passed · failed · voice · voice-needs (a poll that closes and needs a number) |
 
 ## Header format

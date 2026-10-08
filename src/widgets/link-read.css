@@ -1,0 +1,206 @@
+/* THE READ (convex/tavily.ts readLink): the plan card a pasted link makes, and the who's-in line it fills.
+   Typographic on purpose: the venue, one fee as a big numeral, the post's figure struck small under it. */
+
+.widget-plan-read {
+  position: relative;
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  box-shadow: 0 2px 0 var(--color-ink), 0 14px 28px -14px color-mix(in oklab, var(--color-ink) 45%, transparent);
+  outline: 2px solid var(--color-ink);
+  outline-offset: -2px;
+  font-family: var(--font-sans);
+}
+
+.plan-read-kicker {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px 7px;
+  background: var(--color-ink);
+  color: var(--color-lime);
+  font: 700 11px/1.2 var(--font-sans);
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+
+.plan-read-kicker em {
+  color: color-mix(in oklab, var(--color-card) 70%, transparent);
+  font-style: normal;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-read-kicker .lookup-tick {
+  color: var(--color-lime);
+}
+
+.plan-read-venue {
+  margin: 10px 12px 0;
+  font: 800 25px/1 var(--font-display);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+  animation: plan-read-in var(--dur-arrive) var(--ease-glide) both;
+}
+
+.is-post .plan-read-venue {
+  color: var(--color-muted);
+  font-size: 18px;
+}
+
+.plan-read-town {
+  margin: 3px 12px 0;
+  color: var(--color-muted);
+  font: 600 12px/1.2 var(--font-sans);
+  animation: plan-read-in var(--dur-arrive) var(--ease-glide) 40ms both;
+}
+
+.plan-read-step {
+  margin: 12px 12px 0;
+  color: var(--color-muted);
+  font: 500 12px/1.35 var(--font-sans);
+}
+
+.plan-read-fee {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "item item"
+    "num terms"
+    "struck struck";
+  align-items: end;
+  column-gap: 8px;
+  margin: 10px 12px 0;
+}
+
+.plan-read-item {
+  grid-area: item;
+  font: 700 11px/1 var(--font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.plan-read-fee strong {
+  grid-area: num;
+  padding: 0 4px;
+  background: linear-gradient(transparent 58%, var(--color-lime) 58%);
+  font: 800 50px/0.95 var(--font-display);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  animation: plan-read-pop var(--dur-arrive) var(--ease-pop) 80ms both;
+}
+
+.plan-read-terms {
+  grid-area: terms;
+  padding-bottom: 6px;
+  font: 700 14px/1.1 var(--font-sans);
+  animation: plan-read-in var(--dur-arrive) var(--ease-glide) 140ms both;
+}
+
+.plan-read-struck {
+  grid-area: struck;
+  justify-self: start;
+  margin-top: 5px;
+  color: var(--color-muted);
+  font: 500 12px/1.2 var(--font-sans);
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: var(--color-ink);
+  animation: plan-read-in var(--dur-arrive) var(--ease-glide) 260ms both;
+}
+
+.plan-read-source {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px 3px 7px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-card);
+  font: 600 11px/1.2 var(--font-sans);
+  cursor: pointer;
+  transition: translate var(--dur-quick) var(--ease-glide);
+  animation: plan-read-in var(--dur-arrive) var(--ease-glide) 200ms both;
+}
+
+.plan-read-source i {
+  color: var(--color-lime);
+  font-style: normal;
+}
+
+.plan-read-source:hover {
+  translate: 0 -1px;
+}
+
+@keyframes plan-read-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+@keyframes plan-read-pop {
+  from {
+    opacity: 0;
+    scale: 0.7;
+  }
+}
+
+/* the who's-in line: what the read says to bring */
+.rsvp-bring {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  margin: 6px 0 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-lime);
+  font: 700 12px/1.2 var(--font-sans);
+  animation: plan-read-pop var(--dur-arrive) var(--ease-pop) both;
+}
+
+.rsvp-bring.is-pending {
+  background: transparent;
+  color: var(--rsvp-muted, var(--color-muted));
+  font-weight: 600;
+  animation: none;
+}
+
+.rsvp-bring.is-pending .lookup-tick {
+  margin-left: 4px;
+  color: var(--color-ink);
+}
+
+/* the drawer: a pasted link's receipt sits where the ask drawer does */
+.link-read-drawer .link-read-said {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-muted);
+  font-style: italic;
+  quotes: "“" "”";
+}
+
+.link-read-won {
+  padding: 0 4px;
+  background: var(--color-lime);
+}
+
+.link-read-lost {
+  color: var(--color-muted);
+  text-decoration: line-through;
+}
+
+.link-read-why {
+  margin: 8px 0 0;
+}
