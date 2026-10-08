@@ -6,7 +6,7 @@ states:
   answer: ?mock=1&voicePace=talk&voice=when's maya's birthday? | click dock-voice-orb | wait voice-stage-reply | sleep 500
   answer-card: ?mock=1&voicePace=talk&voice=when's maya's birthday? | click dock-voice-orb | wait voice-stage-reply | sleep 2800
   dontknow: ?mock=1&voicePace=talk&voice=when's sam's birthday? | click dock-voice-orb | wait voice-stage-reply | sleep 500
-  recap: ?mock=1&voicePace=talk&voice=catch me up | click dock-voice-orb | wait css:.recap-panel | sleep 900
+  recap: ?mock=1&voicePace=talk&voice=catch me up | click dock-voice-orb | wait recap-panel | sleep 900
   mine: ?mock=1&voicePace=talk&voice=vote matcha | click dock-voice-orb | wait voice-stage-reply | sleep 2800
   refuse: ?mock=1&as=Rio&voicePace=talk&voice=put maya down for balloons | click dock-voice-orb | wait voice-stage-reply | sleep 500
   tie: ?mock=1&voicePace=talk&voice=who's coming to karaoke night? | click dock-voice-orb | wait voice-stage-choice-0 | sleep 400
@@ -18,11 +18,11 @@ states:
   refusesay: ?mock=1&as=Rio&voicePace=talk&voice=put maya down for balloons | sleep 600
   tiesay: ?mock=1&voicePace=talk&voice=vote matcha | sleep 600
   answersay: ?mock=1&voicePace=talk&voice=when's maya's birthday? | sleep 600
-  liveanswer: ?enter=1&timing=1&voicePace=talk&voice=when's maya's birthday? | wait css:[data-widget-id] | sleep 4000
-  liveask: ?enter=1&timing=1&voicePace=talk&voice=what's the plan for the japan trip? | wait css:[data-widget-id] | sleep 4000
-  liverecap: ?enter=1&timing=1&voicePace=talk&voice=catch me up | wait css:[data-widget-id] | sleep 4000
-  livego: ?enter=1&timing=1&voicePace=talk&voice=show me the cake poll | wait css:[data-widget-id] | sleep 4000
-  livedrawer: ?enter=1&timing=1&voicePace=talk&voice=when's maya's birthday? | wait css:[data-widget-id] | sleep 4000 | click dock-voice-orb | wait voice-stage-reply | sleep 2800 | click dev-readout | wait dev-context-verb | sleep 300
+  liveanswer: ?enter=1&timing=1&voicePace=talk&voice=when's maya's birthday? | wait widget-body | sleep 4000
+  liveask: ?enter=1&timing=1&voicePace=talk&voice=what's the plan for the japan trip? | wait widget-body | sleep 4000
+  liverecap: ?enter=1&timing=1&voicePace=talk&voice=catch me up | wait widget-body | sleep 4000
+  livego: ?enter=1&timing=1&voicePace=talk&voice=show me the cake poll | wait widget-body | sleep 4000
+  livedrawer: ?enter=1&timing=1&voicePace=talk&voice=when's maya's birthday? | wait widget-body | sleep 4000 | click dock-voice-orb | wait voice-stage-reply | sleep 2800 | click dev-readout | wait dev-context-verb | sleep 300
 take:
   answer: answersay real 30fps 210f | 3 click dock-voice-orb
   refuse: refusesay real 30fps 180f | 3 click dock-voice-orb

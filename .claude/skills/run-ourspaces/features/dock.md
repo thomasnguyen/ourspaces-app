@@ -1,14 +1,14 @@
 ---
 route: #/space/crew
 ready: dock-voice-orb
-testids: dock-voice-orb dock-recap dock-chat dock-sound dock-sound-toggle dock-radio-key
+testids: dock-voice-orb dock-recap dock-chat dock-sound dock-sound-toggle dock-radio-key color-door letter-envelope
 states:
   idle:
   house: #/space/house | sleep 600
   couple: #/space/couple | sleep 600
   family: #/space/family | sleep 600
   sound: | click dock-sound | wait dock-radio-key | sleep 450
-  recap: | click dock-recap | wait css:.recap-panel | sleep 450
+  recap: | click dock-recap | wait recap-panel | sleep 450
 ---
 # The dock (bottom bar)
 

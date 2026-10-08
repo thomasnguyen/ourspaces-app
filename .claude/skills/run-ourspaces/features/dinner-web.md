@@ -6,12 +6,12 @@ states:
   ask: ?stage=0&enter=1&timing=1&voicePace=talk&voice=where should we eat Saturday | sleep 1500 | click dock-voice-orb | wait voice-landed | sleep 9000
   ask-tonight: ?stage=0&enter=1&timing=1&voicePace=talk&voice=where should we eat tonight | sleep 1500 | click dock-voice-orb | wait voice-landed | sleep 9000
   ask-sushi: ?stage=0&enter=1&timing=1&voicePace=talk&voice=where should we eat sushi on Friday | sleep 1500 | click dock-voice-orb | wait voice-landed | sleep 9000
-  rows: ?enter=1&timing=0 | wait css:.widget-poll .poll-web | click css:.widget-poll:has(.poll-web) h3 | sleep 1500
-  add: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 900
-  added: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 8000
-  added-dumplings: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add dumplings to the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 8000
-  held: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait css:[data-ghost-changed]
-  filled: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait css:[data-ghost-changed] .poll-web
+  rows: ?enter=1&timing=0 | wait poll-web | click poll-question | sleep 1500
+  add: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 900
+  added: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 8000
+  added-dumplings: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add dumplings to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 8000
+  held: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait css:[data-ghost-changed]
+  filled: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait css:[data-ghost-changed] .poll-web
   drawer: ?stage=0&enter=1&timing=1&voicePace=talk&voice=where should we eat Saturday | sleep 1500 | click dock-voice-orb | wait voice-landed | sleep 9000 | click dev-readout | wait dev-context-lookup | sleep 300
 take:
   ask: ask real 30fps 330f

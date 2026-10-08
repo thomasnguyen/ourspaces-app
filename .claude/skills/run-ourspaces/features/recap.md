@@ -1,11 +1,11 @@
 ---
 route: #/space/crew
 ready: dock-recap
-testids: dock-recap
+testids: dock-recap recap-panel recap-line
 states:
   closed:
-  open: | click dock-recap | wait css:.recap-panel | sleep 450
-  landed: | click dock-recap | wait css:.recap-list li | sleep 2500
+  open: | click dock-recap | wait recap-panel | sleep 450
+  landed: | click dock-recap | wait recap-line | sleep 2500
 take:
   open: closed real 60fps 210f | 15 click dock-recap
 ---

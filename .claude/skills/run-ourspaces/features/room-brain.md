@@ -5,7 +5,7 @@ testids: room-knows-open room-knows room-knows-close room-knows-who room-knows-s
 states:
   door: ?mock=1
   open: ?mock=1 #/space/crew/knows | wait room-knows | sleep 900
-  visit: ?mock=1 #/space/crew/knows | wait room-knows | sleep 700 | click css:[data-key="day:Saturday"] .knows-fact | sleep 1300
+  visit: ?mock=1 #/space/crew/knows | wait room-knows | sleep 700 | click room-knows-fact-day:Saturday | sleep 1300
   forget: ?mock=1 #/space/crew/knows | wait room-knows | sleep 700 | click css:[data-key="payer:Jules"] [data-testid="room-knows-forget"] | sleep 400
   told: ?mock=1 #/space/crew/knows | wait room-knows | sleep 700 | type room-knows-tell Ash is vegetarian | click room-knows-tell-send | wait room-knows-told | sleep 400
   draft: ?mock=1 #/space/crew/knows | wait room-knows | sleep 700 | type room-knows-tell Ash is vegetarian
@@ -16,11 +16,11 @@ states:
   live: ?enter=1 #/space/crew/knows | wait room-knows | sleep 1500
   livedoor: ?enter=1 | sleep 1500
 take:
-  habit: door real 30fps 150f | 20 click room-knows-open | 75 click css:[data-key="day:Saturday"] .knows-fact
+  habit: door real 30fps 150f | 20 click room-knows-open | 75 click room-knows-fact-day:Saturday
   open: door real 30fps 90f | 15 click room-knows-open
   cross: open real 30fps 130f | 4 scroll css:[data-key="payer:Jules"] | 15 click css:[data-key="payer:Jules"] [data-testid="room-knows-forget"] | 80 click room-knows-restore
   tell: draft real 30fps 90f | 15 click room-knows-tell-send
-  visit: open real 30fps 120f | 15 click css:[data-key="day:Saturday"] .knows-fact
+  visit: open real 30fps 120f | 15 click room-knows-fact-day:Saturday
 ---
 # What this space knows (the room's brain, as a page)
 

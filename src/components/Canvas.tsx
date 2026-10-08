@@ -538,6 +538,7 @@ export function Canvas({
       } ${focusedWidgetId ? "has-widget-focus" : ""} ${
         isLeague ? "space-canvas-league" : ""
       } ${placingItem ? "is-placing" : ""}`}
+      data-testid="space-canvas"
       style={{
         minWidth: space.canvasSize?.width,
         minHeight: space.canvasSize?.height,

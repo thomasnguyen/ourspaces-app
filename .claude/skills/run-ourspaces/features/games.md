@@ -36,9 +36,9 @@ take:
   start: idle-maya-board real 30fps 400f | 70 click game-start | 215 click game-begin | 255 click css:[data-testid="game-pick"][data-name="Sam"]
   invitee: invited-live real 30fps 560f | 85 click game-invite-join | 420 click css:[data-testid="game-pick"][data-name="Sam"]
   phone: late-live real 30fps 330f | 40 click game-invite-join | 110 click css:[data-testid="game-sheet"] [data-name="Rio"]
-  reveal: play real 30fps 170f focus css:[data-widget-id="game-card"] | 15 click css:[data-testid="game-pick"][data-name="Sam"]
-  reveal-b: play-b real 30fps 170f focus css:[data-widget-id="game-card"] | 15 click css:[data-testid="game-pick"][data-name="Sam"]
-  reveal-c: play-c real 30fps 170f focus css:[data-widget-id="game-card"] | 15 click css:[data-testid="game-pick"][data-name="Sam"]
+  reveal: play real 30fps 170f focus widget-game-card | 15 click css:[data-testid="game-pick"][data-name="Sam"]
+  reveal-b: play-b real 30fps 170f focus widget-game-card | 15 click css:[data-testid="game-pick"][data-name="Sam"]
+  reveal-c: play-c real 30fps 170f focus widget-game-card | 15 click css:[data-testid="game-pick"][data-name="Sam"]
 ---
 # Games (the frame every game uses)
 

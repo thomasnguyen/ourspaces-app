@@ -1,12 +1,12 @@
 ---
 route: #/space/crew
-ready: css:.space-canvas
-testids:
+ready: space-canvas
+testids: space-canvas widget-deck-lab-0 widget-deck-lab-1 widget-deck-lab-3 widget-deck-lab-7
 states:
-  one: ?deck=1 | wait css:[data-widget-id="deck-lab-0"] | sleep 600
-  four: ?deck=4 | wait css:[data-widget-id="deck-lab-3"] | sleep 600
-  eight: ?deck=8 | wait css:[data-widget-id="deck-lab-7"] | sleep 600
-  beside: ?deck=2&deckSel=playlist | wait css:[data-widget-id="deck-lab-1"] | sleep 600
+  one: ?deck=1 | wait widget-deck-lab-0 | sleep 600
+  four: ?deck=4 | wait widget-deck-lab-3 | sleep 600
+  eight: ?deck=8 | wait widget-deck-lab-7 | sleep 600
+  beside: ?deck=2&deckSel=playlist | wait widget-deck-lab-1 | sleep 600
 take:
 ---
 # The deck (dealt cards land on the board)

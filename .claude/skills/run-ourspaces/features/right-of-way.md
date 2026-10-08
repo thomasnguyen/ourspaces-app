@@ -13,8 +13,8 @@ states:
   askland: ?mock=1&row=askland | wait row-vote | sleep 3400
   boot-ask: ?mock=1&row=askland | sleep 300
 take:
-  land: boot-land real 30fps 180f focus css:[data-widget-id="poll-cake"]
-  askland: boot-ask real 30fps 120f focus css:[data-widget-id="poll-cake"]
+  land: boot-land real 30fps 180f focus widget-poll-cake
+  askland: boot-ask real 30fps 120f focus widget-poll-cake
 ---
 # Right of Way (the AI never changes what someone is touching)
 

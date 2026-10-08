@@ -199,7 +199,7 @@ export function WheelWidget({
       </div>
       <div className="wheel-stage">
         <span className="wheel-pointer" aria-hidden="true" />
-        <svg className={`wheel-svg${isSpinning ? " is-spinning" : ""}`} viewBox="0 0 260 260" role="img" aria-label={String(widget.data.title ?? "spin wheel")}>
+        <svg className={`wheel-svg${isSpinning ? " is-spinning" : ""}`} data-testid="wheel-svg" {...(isSpinning ? { "data-testid": "wheel-spinning" } : null)} viewBox="0 0 260 260" role="img" aria-label={String(widget.data.title ?? "spin wheel")}>
           <g
             className="wheel-rotor"
             style={{ transform: `rotate(${angle}deg)`, transformOrigin: "130px 130px" }}

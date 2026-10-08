@@ -410,7 +410,7 @@ function PollWidgetComponent({
       <div className="poll-pin" aria-hidden="true" />
       <div className="poll-content">
         <div className="poll-heading">
-          <h3>{String(widget.data.question)}</h3>
+          <h3 data-testid="poll-question">{String(widget.data.question)}</h3>
           <span className="live-label">
             <i className="live-dot" aria-hidden="true" />
             live
