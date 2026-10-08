@@ -7,7 +7,7 @@ import { LinkReadReceipt } from "../components/LinkReadReceipt";
 import { WebPic } from "./webPic";
 import "./link-read.css";
 
-/* The plan card a pasted link makes (convex/tavily.ts readLink): it lands at once, reading (the host, a ticking
+/* The plan card a pasted link (convex/tavily.ts readLink) or a voice ask makes ("let's do <place> on <day>", planPlace): it lands at once, reading (the host, a ticking
    numeral), names the venue when the post is read, then fills with one fee for one day from the venue's own site.
    `the post said …` is struck small under it only when the server found both and they differ. A small picture leads
    the venue: a link tile while the post is read, the kind of place (🎃, code's table) once it is named, and the
@@ -21,6 +21,8 @@ export function PlanReadWidget({ widget, style }: { widget: Widget; style: CSSPr
   const seen = useSeenAt(widget.id);
   const [open, setOpen] = useState(() => new URLSearchParams(window.location.search).get("readReceipt") === "1");
   const done = read.step === "done";
+  // a voice ask (tavily.ts planPlace): the place was searched, the post found, not pasted
+  const asked = read.via === "voice";
   const [landedAt, setLandedAt] = useState<number | null>(done ? seen : null);
   useEffect(() => {
     if (done && landedAt === null) setLandedAt(Date.now());
@@ -31,7 +33,7 @@ export function PlanReadWidget({ widget, style }: { widget: Widget; style: CSSPr
   return (
     <article className={`widget-shell widget-plan-read is-${read.step}`} style={style} data-testid="plan-read" data-step={read.step}>
       <header className="plan-read-kicker">
-        <span>{!done ? "a link, pasted" : read.venue ? `the plan${date ? ` · ${date}` : ""}` : "a link, read"}</span>
+        <span>{!done ? (asked ? "an ask, searching" : "a link, pasted") : read.venue ? `the plan${date ? ` · ${date}` : ""}` : "a link, read"}</span>
         {done ? <em>read in {((read.ms ?? 0) / 1000).toFixed(1)}s</em> : <LookupTick since={seen} />}
       </header>
       <div className="plan-read-head">
@@ -41,7 +43,13 @@ export function PlanReadWidget({ widget, style }: { widget: Widget; style: CSSPr
       </div>
       {!done ? (
         <p className="plan-read-step" data-testid="plan-read-step">
-          {read.step === "post" ? `reading ${read.host}` : `finding ${read.venue ?? "the venue"}'s own page`}
+          {asked
+            ? read.step === "post"
+              ? `searching for ${read.venue ?? "the place"}`
+              : "reading its own page and a post"
+            : read.step === "post"
+              ? `reading ${read.host}`
+              : `finding ${read.venue ?? "the venue"}'s own page`}
         </p>
       ) : read.fee ? (
         <div className="plan-read-fee" data-testid="plan-read-fee">
@@ -54,7 +62,7 @@ export function PlanReadWidget({ widget, style }: { widget: Widget; style: CSSPr
           </span>
           {read.post && (
             <s className="plan-read-struck" data-testid="plan-read-struck">
-              the post said {money(read.post.amount)}
+              {asked ? "a post" : "the post"} said {money(read.post.amount)}
             </s>
           )}
         </div>
@@ -82,7 +90,7 @@ export function PlanReadWidget({ widget, style }: { widget: Widget; style: CSSPr
           <aside className="dev-context link-read-drawer" data-testid="dev-context-drawer">
             <header className="dev-context-head">
               <b>the read</b>
-              <span>{short(read.url)}</span>
+              <span>{asked ? read.said : short(read.url)}</span>
               <button type="button" data-testid="dev-context-close" onClick={() => setOpen(false)}>
                 close
               </button>

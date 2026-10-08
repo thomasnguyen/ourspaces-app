@@ -80,6 +80,9 @@ const linkReadData = v.object({
   // the card's picture: the first photo on the venue's own page; else the emoji for what kind of place it is (code)
   img: v.optional(v.string()),
   emoji: v.optional(v.string()),
+  // a voice ask (tavily.ts planPlace), not a paste: the sentence; the post was found by search
+  via: v.optional(v.literal("voice")),
+  said: v.optional(v.string()),
 });
 
 const countdownData = v.object({

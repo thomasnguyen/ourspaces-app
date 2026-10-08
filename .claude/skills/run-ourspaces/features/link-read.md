@@ -6,6 +6,10 @@ states:
   read: ?enter=1&timing=0&as=Hoa&paste=https://www.instagram.com/reel/Dd6ss_itvZA | wait plan-read | wait css:[data-testid="plan-read"][data-step="done"] | sleep 900
   reading: ?enter=1&timing=0&as=Hoa&paste=https://www.instagram.com/reel/Dd6ss_itvZA | wait plan-read-step
   receipt: ?enter=1&timing=0&as=Hoa&readReceipt=1&paste=https://www.instagram.com/reel/Dd6ss_itvZA | wait dev-context-read | sleep 500
+  ask: ?enter=1&timing=0&as=Hoa&voicePace=talk&voice=let's do Spina Farms pumpkin patch on Saturday | sleep 1200 | click dock-voice-orb | wait plan-read | wait css:[data-testid="plan-read"][data-step="done"] | sleep 900
+  asksay: ?enter=1&timing=0&as=Hoa&voicePace=talk&voice=let's do Spina Farms pumpkin patch on Saturday | sleep 1400
+take:
+  ask: asksay real 24fps 300f | 3 click dock-voice-orb
 ---
 # A pasted link, read (Tavily: the post vs the page)
 
@@ -26,6 +30,27 @@ post is read, the kind of place once it is named (🎃, from code's table over
 the post and the site's title), and the first photo on the venue's own page
 fading in when the read lands (`data-pic="img"`). The post's own image is
 never used. Tap `the farm's site`: the receipt drawer.
+
+**Asked, not pasted (TV2d):** tap the orb and say "let's do Spina Farms
+pumpkin patch on Saturday" (or "plan <a named place> on <day>"). No
+skeleton while you talk; at the pause the stage says `on the board ·
+searching for Spina Farms pumpkin patch` and the same two cards land where a
+paste puts them: `an ask, searching`, the venue named at once (🎃 from the
+words), `searching for …` then `reading its own page and a post`. ~6 s
+later it fills as above, the struck line reading `a post said $20` (a post
+found by search, not one you pasted). Under it: `lib/deck/verbs.ts`
+`planAsk` (code: a lead "let's do / go to / plan", a capitalised name that
+isn't a person in the room or an occasion, a weekday or "weekend"; else the
+deck builds as before) → `useVoiceBuild` `routeAt` case `plan` → the
+room's `verbs.plan` (`useLiveHandlers` `planPlace`, same spot code as a
+paste) → `tavily.planPlace` → `planRun`: two Tavily searches at once (the
+place's name on the web for its own domain; `<place> parking` on
+instagram/tiktok/facebook, posts and videos only, naming the place), the
+site and the top two posts extracted at once (posts capped at 5 s), then the
+paste's compare (`settleRead`): a post that disagrees with the site is the
+struck one; agreeing or none, the site's figure alone. Off the lanes the
+words build a card from the deck. Card data: `read.via: "voice"`,
+`read.said`. Take: `node .context/tv2d/take.mjs ask` (desktop only).
 
 **Under it:** `convex/tavily.ts` `readLink` (seated mutation, writes both
 cards, a `lookup` ledger row) → `readRun`: Tavily extract of the link

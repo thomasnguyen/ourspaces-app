@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { env, internalAction, internalMutation, internalQuery, mutation, query, type MutationCtx } from "./_generated/server";
+import { env, internalAction, internalMutation, internalQuery, mutation, query, type ActionCtx, type MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { canRead, requireSeat } from "./seat";
@@ -731,6 +731,8 @@ export type LinkReceipt = {
   mode: "link";
   line: string;
   url: string;
+  /** a voice ask (planPlace): the sentence; the post was found by search, not pasted */
+  asked?: string;
   status: string;
   venue?: string;
   town?: string;
@@ -786,6 +788,125 @@ export const readLink = mutation({
     await ctx.db.patch(writeId, { kind: "lookup" });
     await ctx.scheduler.runAfter(0, internal.tavily.readRun, { spaceId: a.spaceId, planId, whoId, writeId, url: url.toString(), today: a.today, line });
     return { ok: true as const, planId, whoId };
+  },
+});
+
+/* ── the ask: "let's do Spina Farms pumpkin patch on Saturday" (TV2d) ─────────
+ * The orb's plan verb (lib/deck/verbs.ts `planAsk`): the same two cards land at once, then Tavily searches the
+ * place twice in parallel (the web for its own site; instagram / tiktok / facebook for posts about it), one extract
+ * reads the site and the top two posts with the parking query, and the same compare as the paste runs in code.
+ * A post that disagrees with the site is the struck line ("a post said $20"); one that agrees, or none, and the
+ * card shows the site's figure alone. No model writes a name or a number. */
+const POST_DOMAINS = ["instagram.com", "tiktok.com", "facebook.com"];
+/** A post or a video, not a profile page. */
+const isPost = (url: string) => /instagram\.com\/(reel|p|tv)\/|tiktok\.com\/@[^/]+\/video\/|facebook\.com\/.+\/(videos|posts|reel)\/|facebook\.com\/(reel|watch)\b/i.test(url);
+
+export const planPlace = mutation({
+  args: { spaceId: v.id("spaces"), said: v.string(), place: v.string(), day: v.number(), plan: v.object({ x: v.number(), y: v.number() }), who: v.object({ x: v.number(), y: v.number() }), today: v.string() },
+  returns: v.union(v.object({ ok: v.literal(true), planId: v.id("widgets"), whoId: v.id("widgets") }), v.object({ ok: v.literal(false), why: v.string() })),
+  handler: async (ctx, a) => {
+    if (!lookupOn()) return { ok: false as const, why: "off" };
+    const me = await requireSeat(ctx, a.spaceId);
+    const place = a.place.replace(/\s+/g, " ").trim().slice(0, 80);
+    if (place.length < 3 || !Number.isInteger(a.day) || a.day < 0 || a.day > 6) return { ok: false as const, why: "no place" };
+    if (!(await rateLimiter.limit(ctx, "tavilyRoomDay", { key: a.spaceId })).ok) return { ok: false as const, why: "today's limit" };
+    const now = Date.now();
+    const z = 6;
+    const venue = place.replace(CATEGORY, "");
+    const planId = await ctx.db.insert("widgets", {
+      spaceId: a.spaceId, type: "countdown", ...a.plan, ...readCard.plan, z, rotate: -1, createdBy: me.userId, createdAt: now,
+      data: { event: venue, tone: "butter", read: { url: "", host: "the web", at: now, step: "post", via: "voice", said: a.said.slice(0, 160), venue, emoji: emojiOf("📍", place) } },
+    });
+    const whoId = await ctx.db.insert("widgets", {
+      spaceId: a.spaceId, type: "rsvp", ...a.who, ...readCard.who, z, rotate: 1.2, createdBy: me.userId, createdAt: now,
+      data: { title: "who's in?", responses: [{ name: me.name, status: "yes", userId: me.userId }], waitingOn: [], bringPending: true },
+    });
+    await widgetsCounter.inc(ctx);
+    await widgetsCounter.inc(ctx);
+    await touchSpace(ctx, a.spaceId, now);
+    const line = `searching for ${venue} · a post about it and its own page`;
+    const writeId = await log(ctx, { kind: "edit", spaceId: a.spaceId, widgetId: planId, by: { name: me.name, userId: me.userId }, fields: [], text: line }, "lookup", "searching the place");
+    await ctx.db.patch(writeId, { kind: "lookup" });
+    await ctx.scheduler.runAfter(0, internal.tavily.planRun, { planId, whoId, writeId, said: a.said, place, day: a.day, today: a.today, line });
+    return { ok: true as const, planId, whoId };
+  },
+});
+
+export const planRun = internalAction({
+  args: { planId: v.id("widgets"), whoId: v.id("widgets"), writeId: v.id("aiWrites"), said: v.string(), place: v.string(), day: v.number(), today: v.string(), line: v.string() },
+  returns: v.null(),
+  handler: async (ctx, a) => {
+    const t0 = Date.now();
+    const left = () => READ_CAP_MS - (Date.now() - t0);
+    const venue = a.place.replace(CATEGORY, "");
+    const first = venue.toLowerCase().split(/\s+/)[0];
+    const r: LinkReceipt = { mode: "link", line: a.line, url: "", asked: a.said, status: "ok", venue: a.place, day: DAY_NAMES[a.day].slice(0, 3).toLowerCase(), reads: [], ms: { total: 0 }, credits: {}, pickedBy: "code", shown: "" };
+    const credit = (j: Record<string, unknown>) => (j.usage as { credits?: number } | undefined)?.credits ?? 0;
+    const results = (j: Record<string, unknown>) => (j.results as { raw_content?: string; title?: string; url?: string; images?: Img[] }[] | undefined) ?? [];
+    r.emoji = emojiOf("📍", a.place);
+    let postFee: Fee | null = null, postUrl: string | null = null, postText = "";
+    let siteFee: Fee | null = null, siteUrl: string | null = null, siteText = "";
+    try {
+      // 1 · two searches at once: the web for its own site (the name alone ranks it first), the posts about its parking
+      r.query = `${a.place} · ${a.place} parking (posts)`;
+      const [web, social] = await Promise.all([
+        post("search", { query: a.place, search_depth: "basic", max_results: 8, include_usage: true }, left() - 3500),
+        post("search", { query: `${a.place} parking`, search_depth: "basic", max_results: 8, include_domains: POST_DOMAINS, include_usage: true }, left() - 3500),
+      ]);
+      r.credits.search = credit(web.json) + credit(social.json);
+      const hits = (web.json.results as Hit[] | undefined) ?? [];
+      const posts = (social.json.results as Hit[] | undefined) ?? [];
+      const skipped: { host: string; why: string }[] = [];
+      const pick = hits.find((h) => {
+        if (ownSite(h.url, venue)) return true;
+        skipped.push({ host: hostName(h.url), why: SOCIAL.includes(hostOf(h.url)) ? "social or a review site" : "not the venue's domain" });
+        return false;
+      });
+      // the top two posts that name the place (a post or a video, not a profile page)
+      const kept = posts.filter((h) => isPost(h.url) && `${h.title} ${h.content}`.toLowerCase().includes(first)).slice(0, 2);
+      for (const h of posts) if (!kept.includes(h)) skipped.push({ host: hostName(h.url), why: isPost(h.url) ? (kept.length >= 2 ? "past the top two posts" : "doesn't name the place") : "a profile, not a post" });
+      r.search = { ms: Math.max(web.ms, social.ms), credits: r.credits.search, picked: pick?.url, skipped: skipped.slice(0, 8) };
+      if (!web.ok && !social.ok) throw new Error(web.error ?? "search failed");
+      r.town = [pick?.content, ...hits.map((h) => h.content), ...kept.map((h) => h.content)].map((t) => (t ? townIn(t) : null)).find(Boolean) ?? undefined;
+      await ctx.runMutation(internal.tavily.readStep, { planId: a.planId, patch: JSON.stringify({ step: "site", ...(r.town ? { town: r.town } : {}) }) });
+      if (!pick && !kept.length) throw new Error("no site of its own and no post about it");
+      if (left() < 800) throw new Error("out of time before the reads");
+      // 2 · the site and the posts read at once, the same parking query as the paste; a slow post never holds the site
+      const [es, ep] = await Promise.all([
+        pick ? post("extract", { urls: [pick.url], query: READ_Q, chunks_per_source: 3, include_usage: true, include_images: true }, left()) : null,
+        kept.length ? post("extract", { urls: kept.map((h) => h.url), query: READ_Q, chunks_per_source: 3, include_usage: true }, Math.min(5000, left())) : null,
+      ]);
+      r.credits.extract = (es ? credit(es.json) : 0) + (ep ? credit(ep.json) : 0);
+      const got = [...(es ? results(es.json) : []), ...(ep ? results(ep.json) : [])];
+      const e = { ok: (es?.ok ?? true) && (ep?.ok ?? true), ms: Math.max(es?.ms ?? 0, ep?.ms ?? 0), error: es?.error ?? ep?.error };
+      const bare = (u: string) => u.replace(/^https?:\/\/(www\.)?/, "").replace(/[?#].*$/, "").replace(/\/$/, "");
+      const textAt = (url: string) => got.find((x) => bare(x.url ?? "") === bare(url));
+      if (pick) {
+        const g = textAt(pick.url);
+        siteText = g ? `${g.title ?? ""}\n${g.raw_content ?? ""}` : "";
+        siteFee = feeOn(feesIn(g?.raw_content ?? ""), a.day);
+        siteUrl = pick.url;
+        const img = photoOf(g?.images);
+        if (img) r.img = { url: img, from: pick.url };
+        r.emoji = emojiOf(r.emoji ?? "📍", g?.title, a.place);
+        r.reads.push({ role: "site", url: pick.url, host: hostName(pick.url), ms: es?.ms ?? 0, said: siteFee?.line, ...(siteFee ? { fee: siteFee.amount, cash: siteFee.cash } : {}) });
+      } else r.status = "no site of its own in the results";
+      // the post: one that disagrees with the site (the struck line), else the first that gave a figure
+      const read = kept.map((h) => {
+        const raw = textAt(h.url)?.raw_content ?? "";
+        const fee = raw.toLowerCase().includes(first) ? feeOn(feesIn(raw), a.day) : null;
+        r.reads.push({ role: "post", url: h.url, host: hostName(h.url), ms: ep?.ms ?? 0, said: fee?.line ?? (raw ? undefined : ep?.error ?? "couldn't read it"), ...(fee ? { fee: fee.amount, cash: fee.cash } : {}) });
+        return { url: h.url, raw, fee };
+      });
+      const chosen = read.find((x) => x.fee && siteFee && x.fee.amount !== siteFee.amount) ?? read.find((x) => x.fee);
+      if (chosen) ({ fee: postFee, url: postUrl, raw: postText } = chosen);
+      if (!e.ok) r.status = e.error ?? "the reads failed";
+    } catch (err) {
+      r.status = String(err instanceof Error ? err.message : err).slice(0, 120);
+    }
+    if (r.town === undefined) r.town = townIn(siteText) ?? townIn(postText) ?? undefined;
+    await settleRead(ctx, a, r, { postFee, postUrl, postText, siteFee, siteUrl, siteText, day: a.day, found: true }, t0);
+    return null;
   },
 });
 
@@ -866,38 +987,58 @@ export const readRun = internalAction({
     } catch (e) {
       r.status = String(e instanceof Error ? e.message : e).slice(0, 120);
     }
-    // the guards: same venue (its name on the site), same season (no other year named), same day (Saturday parsed on both)
-    const year = Number(a.today.slice(0, 4));
-    const venueOk = !!r.venue && !!siteText && siteText.toLowerCase().includes(r.venue.toLowerCase().replace(CATEGORY, "").split(/\s+/)[0]);
-    const seasonOk = [postText, siteText].every((t) => !yearsIn(t).length || yearsIn(t).includes(year));
-    const noun = r.venue ? nounOf(r.venue) : null;
-    const label = noun ? `the ${noun}'s site` : "their site";
-    const fee = siteFee ?? postFee;
-    const fromSite = !!siteFee;
-    const struck = fromSite && postFee && venueOk && seasonOk && postFee.amount !== siteFee!.amount ? postFee.amount : undefined;
-    r.why = struck !== undefined ? `both parsed Saturday parking for ${r.venue}; they differ, the ${noun ?? "venue"}'s own page wins` : postFee && siteFee ? (postFee.amount === siteFee.amount ? "both agree" : !venueOk ? "the site didn't name the venue: no compare" : "another season named: no compare") : siteFee ? "only the site gave Saturday parking" : postFee ? "only the post gave Saturday parking" : "neither page gave Saturday parking";
-    const money = (n: number) => (n === 0 ? "free" : `$${n}`);
-    r.shown = fee ? `parking ${money(fee.amount)}${fee.cash ? " cash" : ""} Sat · ${fromSite ? label : "the post"}` : "";
-    if (struck !== undefined) r.struck = `the post said ${money(struck)}`;
-    r.ms.total = Date.now() - t0;
-    const read = {
-      step: "done",
-      ...(r.venue ? { venue: r.venue.replace(CATEGORY, "") } : {}),
-      ...(r.town ? { town: r.town } : {}),
-      day: "sat",
-      ...(fee ? { fee: { item: "parking", amount: fee.amount, cash: fee.cash } } : {}),
-      ...(fee ? { source: fromSite && siteUrl ? { label, url: siteUrl, host: hostName(siteUrl) } : { label: "the post", url: a.url, host: hostName(a.url) } } : {}),
-      ...(struck !== undefined ? { post: { amount: struck, url: a.url } } : {}),
-      ...(!fee ? { note: r.venue ? "no parking price on either page" : "nothing to plan from this page" } : {}),
-      ...(r.img ? { img: r.img.url } : {}),
-      ...(r.emoji ? { emoji: r.emoji } : {}),
-      ms: r.ms.total,
-    };
-    const bring = fee && fee.amount > 0 ? (fee.cash ? `bring $${fee.amount} cash` : `parking $${fee.amount}`) : undefined;
-    await ctx.runMutation(internal.tavily.readLand, { planId: a.planId, whoId: a.whoId, writeId: a.writeId, patch: JSON.stringify(read), event: r.venue ? `${r.venue.replace(CATEGORY, "")}${r.town ? ` · ${r.town}` : ""}` : "", targetDate: nextDay(a.today, SAT), whoTitle: r.venue ? "who's in · sat" : "", ...(bring ? { bring } : {}), receipt: JSON.stringify(r) });
+    await settleRead(ctx, a, r, { postFee, postUrl: a.url, postText, siteFee, siteUrl, siteText, day: SAT, found: false }, t0);
     return null;
   },
 });
+
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/**
+ * The compare and the landing, one for the paste and the voice ask. The guards: same venue (its name on the site),
+ * same season (no other year named), same day (that day parsed on both). `found`: the post came from a search,
+ * not a paste ("a post said", not "the post said").
+ */
+async function settleRead(
+  ctx: ActionCtx,
+  a: { planId: Id<"widgets">; whoId: Id<"widgets">; writeId: Id<"aiWrites">; today: string },
+  r: LinkReceipt,
+  p: { postFee: Fee | null; postUrl: string | null; postText: string; siteFee: Fee | null; siteUrl: string | null; siteText: string; day: number; found: boolean },
+  t0: number,
+) {
+  const { postFee, siteFee, siteUrl, postText, siteText } = p;
+  const dayName = DAY_NAMES[p.day];
+  const dayShort = dayName.slice(0, 3).toLowerCase();
+  const year = Number(a.today.slice(0, 4));
+  const venueOk = !!r.venue && !!siteText && siteText.toLowerCase().includes(r.venue.toLowerCase().replace(CATEGORY, "").split(/\s+/)[0]);
+  const seasonOk = [postText, siteText].every((t) => !yearsIn(t).length || yearsIn(t).includes(year));
+  const noun = r.venue ? nounOf(r.venue) : null;
+  const label = noun ? `the ${noun}'s site` : "their site";
+  const postLabel = p.found ? "a post" : "the post";
+  const fee = siteFee ?? postFee;
+  const fromSite = !!siteFee;
+  const struck = fromSite && postFee && venueOk && seasonOk && postFee.amount !== siteFee!.amount ? postFee.amount : undefined;
+  r.why = struck !== undefined ? `both parsed ${dayName} parking for ${r.venue}; they differ, the ${noun ?? "venue"}'s own page wins` : postFee && siteFee ? (postFee.amount === siteFee.amount ? "both agree" : !venueOk ? "the site didn't name the venue: no compare" : "another season named: no compare") : siteFee ? `only the site gave ${dayName} parking` : postFee ? `only the post gave ${dayName} parking` : `neither page gave ${dayName} parking`;
+  const money = (n: number) => (n === 0 ? "free" : `$${n}`);
+  r.shown = fee ? `parking ${money(fee.amount)}${fee.cash ? " cash" : ""} ${dayName.slice(0, 3)} · ${fromSite ? label : postLabel}` : "";
+  if (struck !== undefined) r.struck = `${postLabel} said ${money(struck)}`;
+  r.ms.total = Date.now() - t0;
+  const read = {
+    step: "done",
+    ...(r.venue ? { venue: r.venue.replace(CATEGORY, "") } : {}),
+    ...(r.town ? { town: r.town } : {}),
+    day: dayShort,
+    ...(fee ? { fee: { item: "parking", amount: fee.amount, cash: fee.cash } } : {}),
+    ...(fee ? { source: fromSite && siteUrl ? { label, url: siteUrl, host: hostName(siteUrl) } : { label: postLabel, url: p.postUrl ?? "", host: hostName(p.postUrl ?? "") } } : {}),
+    ...(struck !== undefined ? { post: { amount: struck, url: p.postUrl ?? "" } } : {}),
+    ...(!fee ? { note: r.venue ? "no parking price on either page" : "nothing to plan from this page" } : {}),
+    ...(r.img ? { img: r.img.url } : {}),
+    ...(r.emoji ? { emoji: r.emoji } : {}),
+    ms: r.ms.total,
+  };
+  const bring = fee && fee.amount > 0 ? (fee.cash ? `bring $${fee.amount} cash` : `parking $${fee.amount}`) : undefined;
+  await ctx.runMutation(internal.tavily.readLand, { planId: a.planId, whoId: a.whoId, writeId: a.writeId, patch: JSON.stringify(read), event: r.venue ? `${r.venue.replace(CATEGORY, "")}${r.town ? ` · ${r.town}` : ""}` : "", targetDate: nextDay(a.today, p.day), whoTitle: r.venue ? `who's in · ${dayShort}` : "", ...(bring ? { bring } : {}), receipt: JSON.stringify(r) });
+}
 
 export const readStep = internalMutation({
   args: { planId: v.id("widgets"), patch: v.string() },

@@ -1890,6 +1890,8 @@ export function LiveSpacePage({
         return await answerAsk({ spaceId: space._id, question: said });
       },
       today: () => voiceToday(),
+      // "let's do Spina Farms pumpkin patch on Saturday": the plan card + who's in, then the web (convex/tavily.ts planPlace)
+      plan: handlers.planPlace,
       game: (said) => {
         const ask = gameAsk(said);
         const jig = jigsawRef.current;
