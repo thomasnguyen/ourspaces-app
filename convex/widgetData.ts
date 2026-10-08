@@ -30,8 +30,9 @@ const pollData = v.object({
       votes: v.number(),
       total: v.number(),
       voters: v.optional(v.array(v.string())),
-      // a real place the lookup found (convex/tavily.ts): its page, the host, and a number only when the page had one
-      web: v.optional(v.object({ url: v.string(), host: v.string(), rating: v.optional(v.number()), reviews: v.optional(v.number()) })),
+      // a real place the lookup found (convex/tavily.ts): its page, the host, and a number only when the page had one;
+      // img only when Tavily returned it for that place, emoji from code (what was asked / what the place is)
+      web: v.optional(v.object({ url: v.string(), host: v.string(), rating: v.optional(v.number()), reviews: v.optional(v.number()), img: v.optional(v.string()), emoji: v.optional(v.string()) })),
     }),
   ),
   waitingOn: v.optional(v.array(v.string())),
@@ -76,6 +77,9 @@ const linkReadData = v.object({
   post: v.optional(v.object({ amount: v.number(), url: v.string() })),
   note: v.optional(v.string()),
   ms: v.optional(v.number()),
+  // the card's picture: the first photo on the venue's own page; else the emoji for what kind of place it is (code)
+  img: v.optional(v.string()),
+  emoji: v.optional(v.string()),
 });
 
 const countdownData = v.object({

@@ -1,6 +1,7 @@
 import { useQuery } from "convex-helpers/react/cache";
 import { api } from "../../convex/_generated/api";
 import type { LinkReceipt } from "../../convex/tavily";
+import { PicLine } from "./LookupReceipt";
 import "./lookup.css";
 
 const short = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\?.*$/, "").replace(/\/$/, "");
@@ -89,6 +90,11 @@ export function LinkReadReceipt({ widgetId, since }: { widgetId: string; since: 
             </>
           )}
           {r.why && <p className="lookup-receipt-dim link-read-why">{r.why}</p>}
+          {(r.img || r.emoji) && (
+            <p className="link-read-why">
+              <PicLine img={r.img?.url} from={r.img?.from} emoji={r.emoji} />
+            </p>
+          )}
           {r.landed && <p className="lookup-receipt-landed">{r.landed}</p>}
         </>
       )}

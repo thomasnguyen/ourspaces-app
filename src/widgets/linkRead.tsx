@@ -4,12 +4,14 @@ import type { Widget } from "../data/types";
 import type { LinkRead } from "../../convex/widgetData";
 import { LookupTick, useSeenAt } from "../components/LookupTick";
 import { LinkReadReceipt } from "../components/LinkReadReceipt";
+import { WebPic } from "./webPic";
 import "./link-read.css";
 
 /* The plan card a pasted link makes (convex/tavily.ts readLink): it lands at once, reading (the host, a ticking
    numeral), names the venue when the post is read, then fills with one fee for one day from the venue's own site.
-   `the post said …` is struck small under it only when the server found both and they differ. Typographic, no
-   thumbnail: the point is what the house brings, not what the link looks like. */
+   `the post said …` is struck small under it only when the server found both and they differ. A small picture leads
+   the venue: a link tile while the post is read, the kind of place (🎃, code's table) once it is named, and the
+   first photo on the venue's own page when the read lands with one. */
 
 const money = (n: number) => (n === 0 ? "free" : `$${n}`);
 const short = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\?.*$/, "").replace(/\/$/, "");
@@ -32,8 +34,11 @@ export function PlanReadWidget({ widget, style }: { widget: Widget; style: CSSPr
         <span>{!done ? "a link, pasted" : read.venue ? `the plan${date ? ` · ${date}` : ""}` : "a link, read"}</span>
         {done ? <em>read in {((read.ms ?? 0) / 1000).toFixed(1)}s</em> : <LookupTick since={seen} />}
       </header>
-      <h3 className="plan-read-venue" key={title}>{title}</h3>
-      {read.town && <p className="plan-read-town">{read.town}</p>}
+      <div className="plan-read-head">
+        <WebPic img={done ? read.img : undefined} emoji={read.emoji ?? "🔗"} className="plan-read-pic" />
+        <h3 className="plan-read-venue" key={title}>{title}</h3>
+        {read.town && <p className="plan-read-town">{read.town}</p>}
+      </div>
       {!done ? (
         <p className="plan-read-step" data-testid="plan-read-step">
           {read.step === "post" ? `reading ${read.host}` : `finding ${read.venue ?? "the venue"}'s own page`}
