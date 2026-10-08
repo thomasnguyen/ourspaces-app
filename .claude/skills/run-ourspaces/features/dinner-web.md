@@ -76,7 +76,12 @@ fills, lets go.
 **Takes (two phones, live, one lookup each):** `node .context/house/take.mjs
 ramen --slug tavily` reseeds the house, Holly drags the dinner poll, Thomas
 says "add ramen", it waits for `[data-ghost-changed] .poll-web` and lets go
-1.2 s later (both phones + two-up at 24 fps). `take.mjs dinner --slug tavily`:
+1.2 s later (both phones + two-up at 24 fps). `take.mjs ramendesk` is the same
+take with Thomas on a 1920×1080 desktop (the poll panned to ~30% across, a
+drawn cursor clicks the orb) and Holly on a 390 phone: `desktop.mp4` +
+`phone.mp4` on one clock in `right-of-way-desktop/`, marks for ask → dashed →
+filled → let go → landed, the lookup's own receipt (`tavily:receipt`) appended
+to `marks.txt`, a four-row `strip.jpg`. `take.mjs dinner --slug tavily`:
 Holly asks "where should we eat Saturday", waits for three web rows, sweeps
 the new poll by id; crop the poll from `holly.mp4` (`poll.json` has its box).
 Receipt at 1440: `node .context/tv1c/receipt.mjs` (asks, opens
