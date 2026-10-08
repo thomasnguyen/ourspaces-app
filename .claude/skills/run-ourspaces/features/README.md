@@ -56,3 +56,5 @@ take:                            reserved for the take recipe
 A state's head is URL params (before the hash; `?mock=1` is added for you)
 and/or a route override. Steps run after `ready`. `css:<selector>` stands in
 where the app has no test id yet; `drive check` lists those.
+`<testid>[attr=value]` picks one of many by data attribute (`game-pick[data-name=Sam]`;
+several brackets ok; a space is a descendant: `room-knows-line[data-key=payer:Jules] room-knows-forget`).

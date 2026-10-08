@@ -10,8 +10,8 @@ states:
   add: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 900
   added: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 8000
   added-dumplings: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add dumplings to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 8000
-  held: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait css:[data-ghost-changed]
-  filled: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait css:[data-ghost-changed] .poll-web
+  held: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait poll-option[data-ghost-changed]
+  filled: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait poll-option[data-ghost-changed] poll-web
   drawer: ?stage=0&enter=1&timing=1&voicePace=talk&voice=where should we eat Saturday | sleep 1500 | click dock-voice-orb | wait voice-landed | sleep 9000 | click dev-readout | wait dev-context-lookup | sleep 300
 take:
   ask: ask real 30fps 330f

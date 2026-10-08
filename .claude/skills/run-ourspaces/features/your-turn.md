@@ -7,8 +7,8 @@ states:
   rio: ?as=Rio | click dock-recap | wait your-turn | sleep 700
   ash: ?as=Ash | click dock-recap | wait your-turn | sleep 700
   guest: | click dock-recap | wait your-turn | sleep 700
-  mid: ?as=Rio | click dock-recap | wait your-turn | sleep 500 | click css:.yt-item.is-top [data-choice="yes"] | sleep 240
-  next: ?as=Rio | click dock-recap | wait your-turn | sleep 500 | click css:.yt-item.is-top [data-choice="yes"] | sleep 1100
+  mid: ?as=Rio | click dock-recap | wait your-turn | sleep 500 | click your-turn-item[data-top] your-turn-choice[data-choice=yes] | sleep 240
+  next: ?as=Rio | click dock-recap | wait your-turn | sleep 500 | click your-turn-item[data-top] your-turn-choice[data-choice=yes] | sleep 1100
   more: ?as=Rio | click dock-recap | wait your-turn | sleep 500 | click your-turn-more | sleep 400
   house: ?as=theo #/space/house | click dock-recap | wait your-turn | sleep 700
   couple: #/space/couple | click dock-recap | wait your-turn | sleep 700
@@ -16,7 +16,7 @@ states:
   casey: ?as=casey #/space/family | click dock-recap | wait your-turn | sleep 700
   live: ?enter=1 | click dock-recap | wait your-turn | sleep 900
 take:
-  clear: badge real 60fps 540f | 60 click dock-recap | 170 click css:.yt-item.is-top [data-choice="yes"] | 290 click css:.yt-item.is-top [data-choice="1"] | 410 click your-turn-go
+  clear: badge real 60fps 540f | 60 click dock-recap | 170 click your-turn-item[data-top] your-turn-choice[data-choice=yes] | 290 click your-turn-item[data-top] your-turn-choice[data-choice=1] | 410 click your-turn-go
 ---
 # Your turn
 

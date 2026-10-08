@@ -233,6 +233,7 @@ export function YourTurn({
                       key={item.key}
                       className={`yt-item kind-${item.kind}${unfolded ? " is-top" : ""}${done ? " is-done" : ""}${item.soft ? " is-soft" : ""}`}
                       data-testid="your-turn-item"
+                      data-top={unfolded || undefined}
                       data-kind={item.kind}
                       style={
                         {

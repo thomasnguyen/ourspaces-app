@@ -13,7 +13,8 @@
  *   check                        every test id named in features/ exists as data-testid in src/
  *   down                         stop exactly what `up` started (recorded pids)
  *
- * A test id argument may be `css:<selector>` where the app has no test id yet.
+ * A test id argument may be `css:<selector>` where the app has no test id yet, or `<testid>[attr=value]`
+ * (several brackets ok; space-separated = descendant) to pick one of many by data attribute.
  * Vite always runs with the dev-lane env (dusty-condor dev deployment), never prod;
  * mock vs lane is only whether `?mock=1` goes in the URL.
  */
@@ -112,7 +113,15 @@ function stepIds(f) {
   return [...ids];
 }
 
-const sel = (id) => (id.startsWith("css:") ? id.slice(4) : `[data-testid="${id}"]`);
+/* a target is `css:<selector>`, or one or more space-separated test ids (descendants), each optionally filtered by
+   data attributes: `hot-seat-option[data-option=matcha]`, `room-knows-line[data-key=payer:Jules] room-knows-forget` */
+const sel = (id) => id.startsWith("css:") ? id.slice(4) : id.split(/\s+/).filter(Boolean).map((tok) => {
+  const m = tok.match(/^([^\[\s]+)((?:\[[^\]]+\])*)$/);
+  if (!m) return `[data-testid="${tok}"]`;
+  return `[data-testid="${m[1]}"]` + m[2].replace(/\[([^\]=]+)=([^\]"]+)\]/g, '[$1="$2"]');
+}).join(" ");
+/* the test ids a target names (attribute filters stripped); [] for a css: stand-in */
+const testIdsOf = (id) => id.startsWith("css:") ? [] : id.split(/\s+/).filter(Boolean).map((tok) => tok.replace(/\[.*$/, ""));
 
 /* ---------- daemon ---------- */
 
@@ -443,8 +452,8 @@ async function take(S, args, out) {
 
   /* every test id the take clicks must be in src/ — fail before filming, by name */
   const srcIds = srcTestIds();
-  for (const a of t.actions) if (!a.target.startsWith("css:") && !srcIds.ids.has(a.target) && !srcIds.prefixes.some((p) => a.target.startsWith(p)))
-    throw new Error(`take ${n}:${recipe}: test id "${a.target}" (frame ${a.frame}) is not a data-testid in src/`);
+  for (const a of t.actions) for (const tid of testIdsOf(a.target)) if (!srcIds.ids.has(tid) && !srcIds.prefixes.some((p) => tid.startsWith(p)))
+    throw new Error(`take ${n}:${recipe}: test id "${tid}" (frame ${a.frame}) is not a data-testid in src/`);
 
   mkdirSync(TAKES, { recursive: true });
   const base = `${n}-${recipe}${wArg && wArg !== 1440 ? `-${w}` : ""}`;
@@ -497,8 +506,8 @@ async function filmDeterministic(S, f, st, t, { w, h, dsf }, frameDir, where) {
   const actions = {};
   for (const a of t.actions) {
     if (actions[a.frame]) throw new Error(`take ${where}: two actions on frame ${a.frame}`);
-    actions[a.frame] = a.target.startsWith("css:")
-      ? `(() => { const el = document.querySelector(${JSON.stringify(a.target.slice(4))}); if (!el) throw new Error("no ${a.target.replace(/"/g, "'")}"); el.${a.verb === "click" ? "click()" : "scrollIntoView({block:'center'})"}; })()`
+    actions[a.frame] = a.target.startsWith("css:") || /[\[\s]/.test(a.target) // css: and filtered targets run as a selector
+      ? `(() => { const el = document.querySelector(${JSON.stringify(sel(a.target))}); if (!el) throw new Error("no css:${sel(a.target).replace(/"/g, "'")}"); el.${a.verb === "click" ? "click()" : "scrollIntoView({block:'center'})"}; })()`
       : { [a.verb]: a.target };
   }
   const actFile = join(frameDir, "..", `${frameDir.split("/").pop()}-actions.json`);
@@ -688,8 +697,10 @@ function check() {
     const f = parseFeature(file.replace(/\.md$/, ""));
     for (const id of stepIds(f)) {
       if (id.startsWith("css:")) { css.push(`${f.name}: ${id}`); continue; }
-      mentioned.add(id);
-      if (!srcIds.has(id) && !prefixes.some((p) => id.startsWith(p))) missing.push(`${f.name}: ${id}`);
+      for (const tid of testIdsOf(id)) {
+        mentioned.add(tid);
+        if (!srcIds.has(tid) && !prefixes.some((p) => tid.startsWith(p))) missing.push(`${f.name}: ${tid}`);
+      }
     }
   }
   const unmapped = [...srcIds].filter((id) => !mentioned.has(id));

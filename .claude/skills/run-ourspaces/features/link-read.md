@@ -3,10 +3,10 @@ route: #/space/our-house
 ready: dock-voice-orb
 testids: plan-read web-pic dev-context-pic plan-read-step plan-read-fee plan-read-struck plan-read-source rsvp-bring rsvp-bring-pending dev-context-drawer dev-context-lookup dev-context-read lookup-tick
 states:
-  read: ?enter=1&timing=0&as=Hoa&paste=https://www.instagram.com/reel/Dd6ss_itvZA | wait plan-read | wait css:[data-testid="plan-read"][data-step="done"] | sleep 900
+  read: ?enter=1&timing=0&as=Hoa&paste=https://www.instagram.com/reel/Dd6ss_itvZA | wait plan-read | wait plan-read[data-step=done] | sleep 900
   reading: ?enter=1&timing=0&as=Hoa&paste=https://www.instagram.com/reel/Dd6ss_itvZA | wait plan-read-step
   receipt: ?enter=1&timing=0&as=Hoa&readReceipt=1&paste=https://www.instagram.com/reel/Dd6ss_itvZA | wait dev-context-read | sleep 500
-  ask: ?enter=1&timing=0&as=Hoa&voicePace=talk&voice=let's do Spina Farms pumpkin patch on Saturday | sleep 1200 | click dock-voice-orb | wait plan-read | wait css:[data-testid="plan-read"][data-step="done"] | sleep 900
+  ask: ?enter=1&timing=0&as=Hoa&voicePace=talk&voice=let's do Spina Farms pumpkin patch on Saturday | sleep 1200 | click dock-voice-orb | wait plan-read | wait plan-read[data-step=done] | sleep 900
   asksay: ?enter=1&timing=0&as=Hoa&voicePace=talk&voice=let's do Spina Farms pumpkin patch on Saturday | sleep 1400
 take:
   ask: asksay real 24fps 300f | 3 click dock-voice-orb
