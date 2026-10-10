@@ -34,15 +34,12 @@ type Env = {
   readonly AGENTMAIL_API_KEY: string;
   readonly AGENTMAIL_WEBHOOK_SECRET: string | undefined;
   readonly AI_GATEWAY_DISABLED: string | undefined;
-  readonly AI_PROXY_TOKEN: string | undefined;
-  readonly AI_PROXY_URL: string | undefined;
   readonly AUTH_GOOGLE_ID: string | undefined;
   readonly AUTH_GOOGLE_SECRET: string | undefined;
   readonly FIRECRAWL_API_KEY: string;
   readonly FIRECRAWL_WEBHOOK_SECRET: string | undefined;
   readonly JWKS: string | undefined;
   readonly JWT_PRIVATE_KEY: string | undefined;
-  readonly OPENAI_API_KEY: string | undefined;
   readonly SITE_URL: string | undefined;
   readonly TAVILY_API_KEY: string | undefined;
 };

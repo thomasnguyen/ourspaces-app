@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { embed } from "ai";
 import { internal } from "./_generated/api";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
-import { embeddingModel } from "./ai";
+import { embeddingModel } from "./rag";
 import { summarizeWidget } from "./recap";
 import type { Id } from "./_generated/dataModel";
 

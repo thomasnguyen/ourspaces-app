@@ -1,23 +1,76 @@
 import { v } from "convex/values";
 import { RAG } from "@convex-dev/rag";
-import { createOpenAI } from "@ai-sdk/openai";
 import { components, internal } from "./_generated/api";
-import { internalAction, internalMutation, internalQuery } from "./_generated/server";
-import { embeddingModel, EMBEDDING_DIMENSIONS, EMBEDDING_MODEL } from "./ai";
+import { env, internalAction, internalMutation, internalQuery } from "./_generated/server";
+import { getServiceToken } from "convex/server";
+import { wrapEmbeddingModel } from "ai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { EMBEDDING_DIMENSIONS } from "./ai";
 
 const REINDEX_STALE_MS = 5 * 60 * 1000;
 
 /**
+ * The one model in the app that isn't Nemotron: text embeddings for search.
+ *
+ * Every chat call goes to NVIDIA Nemotron on Nebius Token Factory (convex/ai.ts,
+ * convex/nebius.ts). Embeddings stay here because Token Factory has no
+ * embedding model the stored vectors can use: its only one is
+ * Qwen3-Embedding-8B, while every vector already in `widgets.by_embedding`
+ * and in the rag component is a 1536-dim OpenAI text-embedding-3-small.
+ * Switching would mean re-embedding every room for no visible change.
+ *
+ * The call goes through the Convex AI Gateway, which authenticates as this
+ * deployment (`getServiceToken("ai-gateway")`, minted per request inside the
+ * running action), so there is no OpenAI key in the app or its env. Callers
+ * (this file, similar.ts) check `embeddingModel()` and degrade to no search when
+ * it is null; `AI_GATEWAY_DISABLED` (any non-empty value) is that off switch.
+ */
+
+const GATEWAY_BASE_URL = "https://ai-gateway.convex.dev/v1";
+const GATEWAY_EMBEDDING_MODEL = "openai/text-embedding-3-small";
+/** The gateway rejects an embeddings batch larger than this. */
+const GATEWAY_MAX_EMBEDDINGS_PER_CALL = 512;
+
+/** The gateway as an AI SDK provider: an OpenAI-compatible client whose
+ *  `fetch` mints the deployment's service token. Building it touches no
+ *  network; the token is minted per request, inside the action that called. */
+function gatewayProvider() {
+  return createOpenAICompatible({
+    name: "convexGateway",
+    baseURL: GATEWAY_BASE_URL,
+    fetch: async (input, init) => {
+      const headers = new Headers(init?.headers);
+      headers.set("Authorization", `Bearer ${await getServiceToken("ai-gateway")}`);
+      return await globalThis.fetch(input, { ...init, headers });
+    },
+  });
+}
+
+function wrapped() {
+  return wrapEmbeddingModel({
+    model: gatewayProvider().embeddingModel(GATEWAY_EMBEDDING_MODEL),
+    middleware: {
+      specificationVersion: "v4",
+      overrideMaxEmbeddingsPerCall: () => GATEWAY_MAX_EMBEDDINGS_PER_CALL,
+    },
+  });
+}
+
+/** The embedding model, or null when the gateway is switched off. */
+export function embeddingModel() {
+  return env.AI_GATEWAY_DISABLED?.trim() ? null : wrapped();
+}
+
+/**
  * rag component: semantic search over a space's widgets + recent chat,
  * grounding recap.ask with retrieved context instead of a raw snapshot
- * dump. Embeddings come from the Convex AI Gateway (see ai.ts) — the same
- * 1536-dim text-embedding-3-small the index was built with. Never crashes
- * at module load when unconfigured, matching the languageModel() fallback
- * pattern; callers check embeddingModel() before indexing/searching.
+ * dump. Embeddings come from embeddingModel() above — the same 1536-dim
+ * model the index was built with. Never crashes at module load when switched
+ * off (the model is built but never called: callers check embeddingModel()
+ * before indexing/searching).
  */
 export const rag = new RAG(components.rag, {
-  textEmbeddingModel:
-    embeddingModel() ?? createOpenAI({ apiKey: "unconfigured" }).embedding(EMBEDDING_MODEL),
+  textEmbeddingModel: wrapped(),
   embeddingDimension: EMBEDDING_DIMENSIONS,
 });
 

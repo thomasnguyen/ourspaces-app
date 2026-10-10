@@ -25,10 +25,8 @@ const app = defineApp({
   env: {
     FIRECRAWL_API_KEY: v.string(),
     FIRECRAWL_WEBHOOK_SECRET: v.optional(v.string()),
-    OPENAI_API_KEY: v.optional(v.string()),
-    AI_PROXY_URL: v.optional(v.string()),
-    AI_PROXY_TOKEN: v.optional(v.string()),
-    // Any non-empty value routes around the Convex AI Gateway (see convex/ai.ts).
+    // Any non-empty value switches off embeddings, the one model call that
+    // goes through the Convex AI Gateway (convex/rag.ts).
     AI_GATEWAY_DISABLED: v.optional(v.string()),
     AGENTMAIL_API_KEY: v.string(),
     // Tavily, the lookup (convex/tavily.ts). Unset = no lookup: the poll lands as it always did.
