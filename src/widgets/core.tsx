@@ -11,6 +11,8 @@ import { playSound } from "../lib/sounds";
 import "./phone-cards.css";
 import "./poll-web.css";
 import "./poll-rules.css";
+import { PlanReadWidget } from "./linkRead";
+import { WebPic } from "./webPic";
 import { PollRulesLine, PollStamp, pollRulesClass, usePollRules } from "./pollRules";
 
 type Style = CSSProperties;
@@ -214,7 +216,12 @@ function ClockCell({ value, unit }: { value: string; unit: string }) {
   );
 }
 
+/** A countdown, or the plan card a pasted link makes (`read`, convex/tavily.ts readLink). */
 export function CountdownWidget({ widget, style }: { widget: Widget; style: Style }) {
+  return widget.data.read ? <PlanReadWidget widget={widget} style={style} /> : <CountdownFace widget={widget} style={style} />;
+}
+
+function CountdownFace({ widget, style }: { widget: Widget; style: Style }) {
   const targetDate =
     typeof widget.data.targetDate === "string" ? widget.data.targetDate : null;
   const startDate =
@@ -373,7 +380,7 @@ function PollWidgetComponent({
     total: number;
     voters?: string[];
     /** a real place the lookup found (convex/tavily.ts) */
-    web?: { url: string; host: string; rating?: number; reviews?: number };
+    web?: { url: string; host: string; rating?: number; reviews?: number; img?: string; emoji?: string };
   }[], [widget.data.options]);
   const waitingOn = (widget.data.waitingOn as string[] | undefined) ?? [];
   const tone = String(widget.data.tone ?? "blush");
@@ -403,7 +410,7 @@ function PollWidgetComponent({
       <div className="poll-pin" aria-hidden="true" />
       <div className="poll-content">
         <div className="poll-heading">
-          <h3>{String(widget.data.question)}</h3>
+          <h3 data-testid="poll-question">{String(widget.data.question)}</h3>
           <span className="live-label">
             <i className="live-dot" aria-hidden="true" />
             live
@@ -431,6 +438,7 @@ function PollWidgetComponent({
                   // a place the web found: two lines, the name over one number the page said (its rating, else its review
                   // count; none when it had none) · the site · the mark. Keyed on the words: a waiting row's fill-in glides in.
                   <span className="poll-option-label" key={option.label}>
+                    <WebPic img={option.web.img} emoji={option.web.emoji ?? "🍽️"} className="poll-web-pic" />
                     <span className="poll-web-name">{option.label}</span>
                     <small className="poll-web" data-testid="poll-web" data-url={option.web.url}>
                       <span className="poll-web-src">

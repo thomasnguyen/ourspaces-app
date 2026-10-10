@@ -8,6 +8,33 @@ const short = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/
 /** The drawer's lookup section (convex/tavily.ts), laid out as a receipt: the line, then what Tavily was asked,
     where the city came from, the time per step and credits, who picked and the fact it used; each place kept
     with the row's own line and its page; the skipped ones grouped by why; what landed. Dev drawer only. */
+/** Which picture the row shows: the photo and the page Tavily returned it on, else the emoji and why. */
+export function PicLine({ img, from, emoji }: { img?: string; from?: string; emoji?: string }) {
+  if (!img && !emoji) return null;
+  return img ? (
+    <span className="lookup-receipt-pic" data-testid="dev-context-pic" data-pic="img">
+      <img src={img} alt="" referrerPolicy="no-referrer" />
+      <span>
+        picture{" "}
+        <a href={img} target="_blank" rel="noreferrer">
+          {short(img).split("/").pop()}
+        </a>
+        {from && (
+          <span className="lookup-receipt-dim">
+            {" "}
+            · on <a href={from} target="_blank" rel="noreferrer">{short(from).split("/")[0]}</a>, the page it was found on
+          </span>
+        )}
+      </span>
+    </span>
+  ) : (
+    <span className="lookup-receipt-pic" data-testid="dev-context-pic" data-pic="emoji">
+      <i>{emoji}</i>
+      <span className="lookup-receipt-dim">no photo of its own in the results · the emoji is code's, from what it is</span>
+    </span>
+  );
+}
+
 export function LookupReceipt({ at, ids }: { at: number; ids: string[] }) {
   const slug = /#\/space\/([^/?]+)/.exec(window.location.hash)?.[1];
   const space = useQuery(api.spaces.getBySlug, slug ? { slug } : "skip");
@@ -72,6 +99,7 @@ export function LookupReceipt({ at, ids }: { at: number; ids: string[] }) {
                       <a href={k.url} target="_blank" rel="noreferrer">
                         {short(k.url)}
                       </a>
+                      <PicLine img={k.img} from={k.imgFrom} emoji={k.emoji} />
                     </span>
                   </li>
                 ))}

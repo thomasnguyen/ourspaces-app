@@ -8,6 +8,7 @@ import "./itinerary.css";
 import "./rsvp-phone.css";
 import { getIdentity } from "../live/identity";
 import { getDataMode } from "../live/dataMode";
+import { RsvpBring } from "./linkRead";
 import {
   DEFAULT_STATION_ID,
   getRadioSnapshot,
@@ -198,7 +199,7 @@ export function WheelWidget({
       </div>
       <div className="wheel-stage">
         <span className="wheel-pointer" aria-hidden="true" />
-        <svg className={`wheel-svg${isSpinning ? " is-spinning" : ""}`} viewBox="0 0 260 260" role="img" aria-label={String(widget.data.title ?? "spin wheel")}>
+        <svg className={`wheel-svg${isSpinning ? " is-spinning" : ""}`} data-testid="wheel-svg" {...(isSpinning ? { "data-testid": "wheel-spinning" } : null)} viewBox="0 0 260 260" role="img" aria-label={String(widget.data.title ?? "spin wheel")}>
           <g
             className="wheel-rotor"
             style={{ transform: `rotate(${angle}deg)`, transformOrigin: "130px 130px" }}
@@ -652,6 +653,7 @@ export function RsvpWidget({
           <span>waiting on {waitingOn.join(" + ")}</span>
         </p>
       )}
+      <RsvpBring widget={widget} />
       {waitingOn.length > 0 && waitingNote && (
         <p className="rsvp-waiting-note">
           <span aria-hidden="true">💬</span>“{waitingNote}”

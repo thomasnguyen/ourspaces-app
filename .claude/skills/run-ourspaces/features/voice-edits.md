@@ -8,15 +8,15 @@ states:
   mockrefuse: ?mock=1&voicePace=talk&voice=take matcha off the cake poll | click dock-voice-orb | wait voice-stage-reply | sleep 400
   mocktentative: ?mock=1&voicePace=talk&voice=add ube to the cake poll and … | click dock-voice-orb | wait voice-stage-edit | sleep 300
   mockdrawer: ?mock=1&timing=1&voicePace=talk&voice=add ube to the cake poll | click dock-voice-orb | wait voice-found | sleep 1500 | click dev-readout | wait dev-context-edit | sleep 300
-  ramen: ?enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 1200
-  time: ?enter=1&timing=1&select=game night&voicePace=talk&voice=move it to 7:30 | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 1200
-  undo: ?enter=1&timing=1&voicePace=talk&voice=add sunscreen to the packing list | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait voice-edit-undo | click voice-edit-undo | wait voice-edit-undone | sleep 400
-  refuse: ?enter=1&timing=1&voicePace=talk&voice=take pizza off the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait voice-stage-reply | sleep 400
+  ramen: ?enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 1200
+  time: ?enter=1&timing=1&select=game night&voicePace=talk&voice=move it to 7:30 | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 1200
+  undo: ?enter=1&timing=1&voicePace=talk&voice=add sunscreen to the packing list | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-edit-undo | click voice-edit-undo | wait voice-edit-undone | sleep 400
+  refuse: ?enter=1&timing=1&voicePace=talk&voice=take pizza off the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-stage-reply | sleep 400
   mocksay: ?mock=1&voicePace=talk&voice=add ube to the cake poll | sleep 600
   mockrefusesay: ?mock=1&voicePace=talk&voice=take matcha off the cake poll | sleep 600
-  ramensay: ?enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait css:[data-widget-id] | sleep 2500
-  refusesay: ?enter=1&timing=1&voicePace=talk&voice=take pizza off the dinner poll | wait css:[data-widget-id] | sleep 2500
-  undosay: ?enter=1&timing=1&voicePace=talk&voice=add sunscreen to the packing list | wait css:[data-widget-id] | sleep 2500
+  ramensay: ?enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500
+  refusesay: ?enter=1&timing=1&voicePace=talk&voice=take pizza off the dinner poll | wait widget-body | sleep 2500
+  undosay: ?enter=1&timing=1&voicePace=talk&voice=add sunscreen to the packing list | wait widget-body | sleep 2500
 take:
   mock: mocksay real 30fps 210f | 3 click dock-voice-orb
   mockrefuse: mockrefusesay real 30fps 180f | 3 click dock-voice-orb

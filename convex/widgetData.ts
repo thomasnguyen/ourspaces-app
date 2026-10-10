@@ -30,8 +30,9 @@ const pollData = v.object({
       votes: v.number(),
       total: v.number(),
       voters: v.optional(v.array(v.string())),
-      // a real place the lookup found (convex/tavily.ts): its page, the host, and a number only when the page had one
-      web: v.optional(v.object({ url: v.string(), host: v.string(), rating: v.optional(v.number()), reviews: v.optional(v.number()) })),
+      // a real place the lookup found (convex/tavily.ts): its page, the host, and a number only when the page had one;
+      // img only when Tavily returned it for that place, emoji from code (what was asked / what the place is)
+      web: v.optional(v.object({ url: v.string(), host: v.string(), rating: v.optional(v.number()), reviews: v.optional(v.number()), img: v.optional(v.string()), emoji: v.optional(v.string()) })),
     }),
   ),
   waitingOn: v.optional(v.array(v.string())),
@@ -63,6 +64,27 @@ const decisionData = v.object({
   promotedFromMessageId: v.optional(v.id("messages")),
 });
 
+const linkReadData = v.object({
+  url: v.string(),
+  host: v.string(),
+  at: v.number(),
+  step: v.union(v.literal("post"), v.literal("site"), v.literal("done")),
+  venue: v.optional(v.string()),
+  town: v.optional(v.string()),
+  day: v.optional(v.string()),
+  fee: v.optional(v.object({ item: v.string(), amount: v.number(), cash: v.boolean() })),
+  source: v.optional(v.object({ label: v.string(), url: v.string(), host: v.string() })),
+  post: v.optional(v.object({ amount: v.number(), url: v.string() })),
+  note: v.optional(v.string()),
+  ms: v.optional(v.number()),
+  // the card's picture: the first photo on the venue's own page; else the emoji for what kind of place it is (code)
+  img: v.optional(v.string()),
+  emoji: v.optional(v.string()),
+  // a voice ask (tavily.ts planPlace), not a paste: the sentence; the post was found by search
+  via: v.optional(v.literal("voice")),
+  said: v.optional(v.string()),
+});
+
 const countdownData = v.object({
   event: v.optional(v.string()),
   targetDate: v.optional(v.string()),
@@ -71,6 +93,8 @@ const countdownData = v.object({
   tone: v.optional(v.string()),
   // who set the date by hand (the editor); a voice edit moving it asks them first (choiceVotes.ts)
   dateBy: v.optional(v.object({ id: v.optional(v.string()), name: v.string() })),
+  // a pasted link, read (convex/tavily.ts readLink): the venue, one fee for one day from its own site, and what the post said only when it differs
+  read: v.optional(linkReadData),
 });
 
 // Matches firecrawl.ts's scrape payload plus the savedBy/savedAt/questions
@@ -178,6 +202,9 @@ const rsvpData = v.object({
   waitingOn: v.optional(v.array(v.string())),
   waitingNote: v.optional(v.string()),
   tone: v.optional(v.string()),
+  // what to bring, from a read link's fee ("bring $30 cash"); pending while the read runs (convex/tavily.ts readLink)
+  bring: v.optional(v.string()),
+  bringPending: v.optional(v.boolean()),
 });
 
 const dailyQData = v.object({
@@ -485,6 +512,7 @@ export type CheckInWidgetData = Infer<typeof checkInData>;
 export type NoteData = Infer<typeof noteData>;
 export type DecisionData = Infer<typeof decisionData>;
 export type CountdownData = Infer<typeof countdownData>;
+export type LinkRead = Infer<typeof linkReadData>;
 export type LinkCardData = Infer<typeof linkCardData>;
 export type LetterData = Infer<typeof letterData>;
 export type PhotoWallData = Infer<typeof photoWallData>;

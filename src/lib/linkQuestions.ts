@@ -43,7 +43,7 @@ const CANNED_PAIRS: [string, string][] = [
   ],
 ];
 
-/** Offline/mock stand-in for the OpenAI starters — deterministic per title. */
+/** Offline/mock stand-in for the Nemotron starters — deterministic per title. */
 export function cannedLinkQuestions(seed: string): LinkQuestion[] {
   let hash = 0;
   for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;

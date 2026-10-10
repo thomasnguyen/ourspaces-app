@@ -225,7 +225,7 @@ function cannedAsk(snapshot: Snapshot, question: string): { reply: string; widge
   };
 }
 
-async function askOpenAi(
+async function askNemotron(
   kind: "recap" | "ask",
   snapshot: Snapshot,
   extra?: string,
@@ -253,7 +253,7 @@ async function askOpenAi(
   // downstream (cannedRecap / cannedAsk), which is exactly how the gateway's
   // json_schema downgrade hid for hours.
   const parsed = await completeJson({ job: kind, system, user }).catch((error) => {
-    console.error(`recap.askOpenAi(${kind}) failed:`, error);
+    console.error(`recap.askNemotron(${kind}) failed:`, error);
     return null;
   });
   if (!parsed) return null;
@@ -465,7 +465,7 @@ async function buildRecap(
   kind: "daily" | "ask",
 ): Promise<RecapPayload> {
   const snap = await ctx.runQuery(internal.recap.snapshot, { spaceId });
-  const generated = (await askOpenAi("recap", snap).catch((error) => {
+  const generated = (await askNemotron("recap", snap).catch((error) => {
     console.error("recap.buildRecap fell back to canned prose:", error);
     return null;
   })) as RecapPayload | null;
@@ -576,12 +576,10 @@ export const ask = action({
             `Chat: ${JSON.stringify(snap.chat).slice(0, 1000)}` +
             (retrieved ? `\n\nMost relevant to this question:\n${retrieved.slice(0, 2000)}` : "") +
             `\n\nQuestion: ${question}` +
-            // Naming the shape — and the word "json" — is load-bearing, not
-            // decoration. The gateway's provider has no json_schema, so the
-            // agent's generateObject degrades to json_object, and OpenAI 400s
-            // a json_object request whose messages never say "json". Without
-            // this line every ask on this path fell through to cannedAsk and
-            // looked like an answer. See convex/ai.ts. The streaming twin in
+            // Naming the shape — and the word "json" — keeps the answer
+            // parseable even when a provider drops json_schema to json_object
+            // (which rejects a request whose messages never say "json"); that
+            // once sent every ask to cannedAsk. The streaming twin in
             // streaming.ts writes prose and must NOT get this.
             '\n\nAnswer with one JSON object: {"reply":"<1-2 sentences, lowercase>",' +
             '"widgetId":"<id from the board, optional>",' +

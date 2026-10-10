@@ -474,6 +474,7 @@ export function ActionDock({
       {recapOpen && (
         <div
           className={`recap-panel${expanded ? " is-expanded" : ""}`}
+          data-testid="recap-panel"
           role="status"
           aria-live="polite"
           ref={panelRef}
@@ -553,7 +554,7 @@ export function ActionDock({
                       <span className="recap-num" aria-hidden="true">
                         {String(index + 1).padStart(2, "0")}
                       </span>
-                      <div className="recap-line">
+                      <div className="recap-line" data-testid="recap-line">
                         <p>{line.text}</p>
                         {(target || line.messageId) && (
                           <span className="recap-chips">

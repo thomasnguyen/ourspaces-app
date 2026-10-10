@@ -14,6 +14,12 @@ function onTour(): boolean {
   return !room || room in SPACES_BY_ID;
 }
 
+/** `?take=1`: a recording. No strip, no tour banner, on any room (takes only). */
+function recording(): boolean {
+  const hashQuery = window.location.hash.split("?")[1] ?? "";
+  return [window.location.search, hashQuery].some((q) => new URLSearchParams(q).get("take") === "1");
+}
+
 function useOnTour(): boolean {
   const [tour, setTour] = useState(onTour);
   useEffect(() => {
@@ -79,7 +85,7 @@ export function DemoBanner({ onJoinWaitlist, onMakeSpace, pending = false }: { o
     dialog.current?.showModal();
   }
 
-  if (!tour) return null;
+  if (!tour || recording()) return null;
 
   return (
     <>

@@ -1,17 +1,17 @@
 ---
 route: #/space/our-house
 ready: dock-voice-orb
-testids: dock-voice-orb voice-landed voice-found poll-web poll-option row-ghost row-ghost-on lookup-tick dev-readout dev-context-drawer dev-context-lookup dev-context-lookup-kept
+testids: dock-voice-orb voice-landed voice-found poll-web web-pic dev-context-pic poll-option row-ghost row-ghost-on lookup-tick dev-readout dev-context-drawer dev-context-lookup dev-context-lookup-kept
 states:
   ask: ?stage=0&enter=1&timing=1&voicePace=talk&voice=where should we eat Saturday | sleep 1500 | click dock-voice-orb | wait voice-landed | sleep 9000
   ask-tonight: ?stage=0&enter=1&timing=1&voicePace=talk&voice=where should we eat tonight | sleep 1500 | click dock-voice-orb | wait voice-landed | sleep 9000
   ask-sushi: ?stage=0&enter=1&timing=1&voicePace=talk&voice=where should we eat sushi on Friday | sleep 1500 | click dock-voice-orb | wait voice-landed | sleep 9000
-  rows: ?enter=1&timing=0 | wait css:.widget-poll .poll-web | click css:.widget-poll:has(.poll-web) h3 | sleep 1500
-  add: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 900
-  added: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 8000
-  added-dumplings: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add dumplings to the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 8000
-  held: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait css:[data-ghost-changed]
-  filled: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait css:[data-widget-id] | sleep 2500 | click dock-voice-orb | wait css:[data-ghost-changed] .poll-web
+  rows: ?enter=1&timing=0 | wait poll-web | click poll-question | sleep 1500
+  add: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 900
+  added: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 8000
+  added-dumplings: ?stage=0&enter=1&timing=1&voicePace=talk&voice=add dumplings to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait voice-found | sleep 8000
+  held: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait poll-option[data-ghost-changed]
+  filled: ?stage=0&enter=1&timing=0&voicePace=talk&voice=add ramen to the dinner poll | wait widget-body | sleep 2500 | click dock-voice-orb | wait poll-option[data-ghost-changed] poll-web
   drawer: ?stage=0&enter=1&timing=1&voicePace=talk&voice=where should we eat Saturday | sleep 1500 | click dock-voice-orb | wait voice-landed | sleep 9000 | click dev-readout | wait dev-context-lookup | sleep 300
 take:
   ask: ask real 30fps 330f
@@ -27,7 +27,15 @@ web`. One to three seconds later up to three real places land under the
 house's (`pop`, 40 ms apart), each a two-line row: `ADEGA` over a small line
 `4.1 · tripadvisor` and a lime-on-ink `from the web` sticker (the page's
 rating, else its review count, only when the page had one; the sticker
-drops to its own line before anything truncates).
+drops to its own line before anything truncates). Each web row leads with
+a small picture (`web-pic`, `data-pic="img"` or `"emoji"`): a photo only
+when Tavily returned it for that place (the first photo on the place's own
+page, a Tripadvisor review; on a list page only an image whose alt text or
+file name names the place, `.../la-foret-restaurant.jpg`), else an emoji
+from code's table (`KINDS` in `convex/tavily.ts`: what was asked, else what
+the name or its line says, 🍽️ by default). The emoji tile is a fixed box;
+the photo fades in over it and a failed load leaves the emoji. Yelp pages
+don't extract, so a Yelp-only place shows its emoji.
 "add ramen to the dinner poll": the ramen row lands dashed (waiting on the
 web; the ticket off the card reads `0.4s looking up near San Jose · the
 house's city` with the numeral ticking, `lookup-tick`, no spinner), fills
@@ -60,7 +68,9 @@ room's `tavilyRoomDay` limit. Receipt: the lookup's `aiWrites` row (kind
 **Drawer:** click `dev-readout` → `dev-context-lookup`, laid out as a
 receipt: the line; asked / near (city · where from) / took (ms, per step) /
 credits / picked by (+ the fact used); `kept · n`, each place with the row's
-number, reviews, host and its page (`dev-context-lookup-kept`); `skipped ·
+number, reviews, host and its page (`dev-context-lookup-kept`) and its
+picture (`dev-context-pic`: the photo's file and the page it was on, or the
+emoji and why); `skipped ·
 n` grouped by why, names struck; what landed. Shown on any live ask, an add included (done by code, no
 model); mock mode has none.
 
@@ -76,7 +86,12 @@ fills, lets go.
 **Takes (two phones, live, one lookup each):** `node .context/house/take.mjs
 ramen --slug tavily` reseeds the house, Holly drags the dinner poll, Thomas
 says "add ramen", it waits for `[data-ghost-changed] .poll-web` and lets go
-1.2 s later (both phones + two-up at 24 fps). `take.mjs dinner --slug tavily`:
+1.2 s later (both phones + two-up at 24 fps). `take.mjs ramendesk` is the same
+take with Thomas on a 1920×1080 desktop (the poll panned to ~30% across, a
+drawn cursor clicks the orb) and Holly on a 390 phone: `desktop.mp4` +
+`phone.mp4` on one clock in `right-of-way-desktop/`, marks for ask → dashed →
+filled → let go → landed, the lookup's own receipt (`tavily:receipt`) appended
+to `marks.txt`, a four-row `strip.jpg`. `take.mjs dinner --slug tavily`:
 Holly asks "where should we eat Saturday", waits for three web rows, sweeps
 the new poll by id; crop the poll from `holly.mp4` (`poll.json` has its box).
 Receipt at 1440: `node .context/tv1c/receipt.mjs` (asks, opens
@@ -86,9 +101,14 @@ so the holder sees her own row fill in too. An add's lookup shows in the
 drawer the same way: `node .context/tv1d/receipt.mjs "add ramen to the dinner
 poll" add` (the add lands on the house poll; reseed the house after).
 
+**Desktop take with the picture (TV2c):** `node .context/tv2c/take.mjs ramen`
+(Holly holds off-camera, only the 1920×1080 desktop is recorded) →
+`nebius/video/takes/ramen-desktop-img/` with a `focus x,y,w,h` line in
+`marks.txt`.
+
 **Code:** `convex/tavily.ts` · hooks in `convex/voiceBuild.ts`
 (`noteCommitted`) and `convex/edits.ts` (`run`) · `convex/widgetData.ts`
-(poll option `web`) · row `src/widgets/core.tsx` + `poll-web.css` · drawer
+(poll option `web`) · row `src/widgets/core.tsx` + `poll-web.css` · picture `src/widgets/webPic.tsx` + `web-pic.css` · drawer
 `src/components/LookupReceipt.tsx` + `lookup.css` · the ticking numeral
 `src/components/LookupTick.tsx` (on the ticket in `RightOfWay.tsx`, on the
 slip in `VoiceBuildLayer.tsx`) · slip text `src/live/useVoiceBuild.ts` (a

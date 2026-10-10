@@ -150,3 +150,36 @@
   font-size: 11px;
   font-weight: 700;
 }
+
+/* which picture a row or the plan card shows (TV2c): the photo and the page it was on, else the emoji */
+.lookup-receipt-pic {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.lookup-receipt-pic img,
+.lookup-receipt-pic i {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: color-mix(in oklab, var(--color-ink) 10%, transparent);
+  font-style: normal;
+  font-size: 14px;
+}
+
+.lookup-receipt-pic > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lookup-receipt-kept .lookup-receipt-pic a,
+.lookup-receipt-pic a {
+  display: inline;
+  white-space: normal;
+}

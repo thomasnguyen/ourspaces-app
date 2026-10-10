@@ -1,7 +1,7 @@
 ---
 route: #/space/crew
 ready: demo-banner
-testids: demo-banner demo-make-space demo-welcome-notice demo-notice-explore claim-enter own-cursor orb-hint orb-hint-starter-0 orb-hint-starter-1 orb-hint-starter-2 orb-hint-dismiss dock-voice-orb voice-stage voice-stage-cluster voice-landed admin-door-crew
+testids: demo-banner demo-make-space demo-welcome-notice demo-notice-explore claim-enter own-cursor orb-hint orb-hint-starter-0 orb-hint-starter-1 orb-hint-starter-2 orb-hint-dismiss dock-voice-orb voice-stage voice-stage-cluster voice-landed admin-door-crew demo-notice-open demo-notice-waitlist demo-waitlist-open demo-waitlist-dialog demo-waitlist-back demo-waitlist-close demo-waitlist-done demo-waitlist-email demo-waitlist-error demo-waitlist-submit
 states:
   cold: #/space/crew
   notice: ?notice=1 #/space/crew | wait demo-welcome-notice

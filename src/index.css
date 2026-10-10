@@ -1703,6 +1703,23 @@
   }
 }
 
+/* An idle strip ("live sync" and nothing else) stays off the board — it
+   covered cards on a phone and said nothing. It comes back for news, and as
+   the wayfinder once the title has scrolled away. */
+.space-live-strip.is-idle:not(.has-since) {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .space-live-strip.is-idle {
+    display: none;
+  }
+}
+
+.is-canvas-away .space-live-strip.is-idle {
+  display: inline-flex;
+}
+
 /* A room opened over the board is the whole screen; the strip steps back. */
 .has-photo-gallery .space-live-strip,
 .has-entry-gate .space-live-strip {
@@ -25353,6 +25370,7 @@
 /* Vendor wordmarks keep the original artwork and its clear space. */
 .vendor-logo { display: flex; align-items: center; width: 210px; height: 68px; max-width: 100%; flex-shrink: 0; }
 .vendor-logo img { display: block; height: auto; max-width: none; flex-shrink: 0; }
+.vendor-logo-text { font: 800 22px/1.1 "Bricolage Grotesque", system-ui; letter-spacing: -0.01em; }
 .vendor-logo-convex img { width: 235px; margin-left: -30px; }
 .vendor-logo-openai img { width: 225px; margin-left: -34px; }
 .vendor-logo-agentmail img { width: 180px; }

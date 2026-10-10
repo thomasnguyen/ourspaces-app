@@ -1008,6 +1008,7 @@ function WidgetCardComponent({
       }}
       ref={syncInert}
       data-widget-id={widget.id}
+      data-testid={`widget-${widget.id}`}
       data-widget-type={widget.type}
       aria-hidden={focusSoftened || undefined}
       onPointerDown={(event) => {
@@ -1017,6 +1018,7 @@ function WidgetCardComponent({
     >
       <div
         className="widget-group-body"
+        data-testid="widget-body"
         onClick={(e) => {
           if ((e.target as HTMLElement).closest("button, input, a")) {
             /* A click that ends a drag must not press the control under it

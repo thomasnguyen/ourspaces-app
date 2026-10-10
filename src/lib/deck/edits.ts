@@ -25,7 +25,7 @@ type W = { id: string; type: string; data: Record<string, unknown> };
 /** `web`: a real place the lookup found (convex/tavily.ts), carried onto the option it adds; a client can't send one (convex/edits.ts opV). */
 export type EditOp = { op: string; value: string | number; item?: string; web?: WebMark };
 /** Where a poll option came from when the web found it: the page, its host, and a number only when the page had one. */
-export type WebMark = { url: string; host: string; rating?: number; reviews?: number };
+export type WebMark = { url: string; host: string; rating?: number; reviews?: number; img?: string; emoji?: string };
 export type FieldChange = { field: string; old: unknown; new: unknown };
 /** A person whose choice an edit would override: `id` where the card knows it, `why` = their choice in words. */
 export type Chooser = { id?: string; name: string; why: string };

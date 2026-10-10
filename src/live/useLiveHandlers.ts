@@ -13,6 +13,8 @@ import type {
 } from "./presenceTypes";
 import type { LinkCardScrape, Widget } from "../data/types";
 import { playSound } from "../lib/sounds";
+import { placeCards } from "../lib/deck/place";
+import { cannedLinkQuestions } from "../lib/linkQuestions";
 
 type GesturePhase = "claiming" | "accepted" | "rejected";
 
@@ -232,6 +234,8 @@ export function useLiveHandlers(
     [logCheckIn, identity.name],
   );
   const scrapeLink = useAction(api.firecrawl.scrapeLink);
+  const readLink = useMutation(api.tavily.readLink);
+  const planPlaceM = useMutation(api.tavily.planPlace);
   const searchTopic = useAction(api.firecrawl.searchTopic);
   const crawlSite = useAction(api.firecrawl.crawlSite);
   const [overrides, setOverrides] = useState<Record<string, Partial<Widget>>>({});
@@ -570,6 +574,99 @@ export function useLiveHandlers(
     [scrapeLink, spaceId],
   );
 
+  /** Where the read's two cards go: one column, the plan over its who's in, placed by code in the asker's view. */
+  const readSpot = useCallback(() => {
+    const scroller = document.querySelector<HTMLElement>(".space-scroll");
+    const canvas = scroller?.querySelector<HTMLElement>(".space-canvas");
+    if (!scroller || !canvas) return null;
+    const scale = canvas.getBoundingClientRect().width / canvas.offsetWidth || 1;
+    const c = canvas.getBoundingClientRect();
+    const sc = scroller.getBoundingClientRect();
+    const dockTop = document.querySelector(".action-dock")?.getBoundingClientRect().top ?? sc.bottom;
+    const left = Math.max(sc.left, c.left), top = Math.max(sc.top, c.top);
+    const view = { x: (left - c.left) / scale, y: (top - c.top) / scale, w: (Math.min(sc.right, window.innerWidth) - left) / scale, h: (Math.min(sc.bottom, dockTop - 20) - top) / scale };
+    const board = Array.from(canvas.querySelectorAll<HTMLElement>("[data-widget-id], [data-frame-id]"), (el) => {
+      const r = el.getBoundingClientRect();
+      return { id: el.dataset.widgetId ?? el.dataset.frameId ?? "", x: (r.left - c.left) / scale, y: (r.top - c.top) / scale, w: r.width / scale, h: r.height / scale };
+    }).filter((b) => b.id);
+    // one column, the plan over its who's in: the pair fits a phone's view as well as a laptop's
+    const [spot] = placeCards([{ w: 250, h: 236 * 2 + 20 }], { widgets: board, view, bounds: { x: 0, y: 0, w: Math.max(canvas.offsetWidth, view.x + view.w), h: Math.max(canvas.offsetHeight, view.y + view.h) } });
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    return { scroller, dockTop, plan: { x: spot.x, y: spot.y }, who: { x: spot.x + 30, y: spot.y + 256 }, today };
+  }, []);
+  /** No clear spot in this view: the cards went to the nearest one; bring them on screen for the asker. */
+  const bringIntoView = useCallback(async (planId: string, at: NonNullable<ReturnType<typeof readSpot>>) => {
+    for (let k = 0; k < 30; k++) {
+      const el = document.querySelector<HTMLElement>(`[data-widget-id="${planId}"]`);
+      if (el) {
+        const r = el.getBoundingClientRect(), v = at.scroller.getBoundingClientRect();
+        if (r.left < v.left || r.right > v.right || r.top < v.top || r.bottom > at.dockTop) el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+        break;
+      }
+      await new Promise((ok) => window.setTimeout(ok, 50));
+    }
+  }, []);
+  /* A link pasted on the board (not into a field): with the lookup on here, Tavily reads it and the venue's own
+     page (convex/tavily.ts readLink: a plan card + who's in land at once, reading); otherwise Firecrawl's link
+     card, as before. `window.__pasteLink(url)` is the same path for a take. Placed by code in the asker's view. */
+  const pasteLink = useCallback(
+    async (url: string) => {
+      if (!spaceId) return;
+      const at = readSpot();
+      if (!at) return;
+      const { plan, who, today } = at;
+      playSound("place");
+      const read = await readLink({ spaceId: spaceId as never, url, plan, who, today }).catch(() => ({ ok: false as const, why: "failed" }));
+      if (read.ok) return void (await bringIntoView(read.planId, at));
+      if (read.why === "not a link") return;
+      // the fallback: Firecrawl's link card, where the plan card would have gone
+      const scraped = await scrapeLink({ url, spaceId: spaceId as never });
+      await create({
+        spaceId: spaceId as never, type: "linkCard", x: plan.x, y: plan.y, w: 300, h: 300, z: nextZ.current + 1, rotate: -1,
+        data: { ...scraped, savedBy: identity.name, savedAt: Date.now(), questions: cannedLinkQuestions(scraped.title || url) },
+      });
+    },
+    [bringIntoView, create, identity.name, readLink, readSpot, scrapeLink, spaceId],
+  );
+  /* The orb's plan verb: "let's do Spina Farms pumpkin patch on Saturday" (lib/deck/verbs.ts planAsk). The same two
+     cards as a paste, in the same spot, then the web searches the place (convex/tavily.ts planPlace). */
+  const planPlace = useCallback(
+    async (said: string, ask: { place: string; day: number }): Promise<{ ok: true; planId: string } | { ok: false; why: string }> => {
+      if (!spaceId) return { ok: false, why: "off" };
+      const at = readSpot();
+      if (!at) return { ok: false, why: "off" };
+      const { plan, who, today } = at;
+      const out = await planPlaceM({ spaceId: spaceId as never, said, place: ask.place, day: ask.day, plan, who, today });
+      if (!out.ok) return out;
+      playSound("place");
+      void bringIntoView(out.planId, at);
+      return { ok: true, planId: out.planId };
+    },
+    [bringIntoView, planPlaceM, readSpot, spaceId],
+  );
+  useEffect(() => {
+    if (!spaceId) return;
+    const onPaste = (event: ClipboardEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest("input, textarea, [contenteditable='true']")) return;
+      const text = event.clipboardData?.getData("text/plain").trim() ?? "";
+      if (!/^https?:\/\/\S+$/i.test(text)) return;
+      event.preventDefault();
+      void pasteLink(text);
+    };
+    document.addEventListener("paste", onPaste);
+    const w = window as unknown as { __pasteLink?: (url: string) => Promise<void>; __pasted?: boolean };
+    w.__pasteLink = pasteLink;
+    // the state URL: ?paste=<link> pastes it once, after the board has drawn (features/link-read.md)
+    const asked = new URLSearchParams(window.location.search).get("paste");
+    const timer = asked && !w.__pasted ? window.setTimeout(() => { w.__pasted = true; void pasteLink(asked); }, 2500) : undefined;
+    return () => {
+      document.removeEventListener("paste", onPaste);
+      window.clearTimeout(timer);
+    };
+  }, [pasteLink, spaceId]);
+
   // Firecrawl web search → link-card-shaped hits for the pile.
   const onSearchTopic = useCallback(
     async (query: string) => await searchTopic({ query, spaceId: (spaceId as never) ?? undefined }),
@@ -586,6 +683,7 @@ export function useLiveHandlers(
   return {
     overrides,
     deleted,
+    planPlace,
     onGestureStart,
     onGestureChange,
     onGestureEnd,

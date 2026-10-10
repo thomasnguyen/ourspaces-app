@@ -29,10 +29,10 @@ states:
   play-seat: ?as=Maya&game=round&play=seat&live=1 | wait game-round | sleep 600
   idle-sam: ?as=Sam
 take:
-  reveal: play real 30fps 250f focus css:[data-widget-id="game-card"] | 15 click css:[data-testid="hot-seat-option"][data-option="matcha"]
-  reveal-phone: play real 30fps 250f | 15 click css:[data-testid="hot-seat-option"][data-option="matcha"]
-  seat: play-seat real 30fps 330f focus css:[data-widget-id="game-card"] | 280 click css:[data-testid="hot-seat-react"][data-kind="who-told-you"]
-  seat-phone: play-seat real 30fps 330f | 280 click css:[data-testid="hot-seat-react"][data-kind="who-told-you"]
+  reveal: play real 30fps 250f focus widget-game-card | 15 click hot-seat-option[data-option=matcha]
+  reveal-phone: play real 30fps 250f | 15 click hot-seat-option[data-option=matcha]
+  seat: play-seat real 30fps 330f focus widget-game-card | 280 click hot-seat-react[data-kind=who-told-you]
+  seat-phone: play-seat real 30fps 330f | 280 click hot-seat-react[data-kind=who-told-you]
 ---
 # The hot seat ("how well do you know maya")
 

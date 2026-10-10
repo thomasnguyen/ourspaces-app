@@ -1,13 +1,13 @@
 ---
 route: #/space/house
 ready: wheel-spin
-testids: wheel-spin
+testids: wheel-spin wheel-svg
 states:
   idle:
   spinning: | click wheel-spin | sleep 500
-  landed: | click wheel-spin | sleep 100 | wait css:.wheel-svg:not(.is-spinning) | sleep 300
+  landed: | click wheel-spin | sleep 100 | wait wheel-svg | sleep 300
 take:
-  spin: idle real 60fps 270f focus css:.wheel-svg | 15 click wheel-spin
+  spin: idle real 60fps 270f focus wheel-svg | 15 click wheel-spin
 ---
 # Spin the wheel
 

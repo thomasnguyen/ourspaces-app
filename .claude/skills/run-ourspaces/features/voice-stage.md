@@ -16,7 +16,7 @@ states:
   type: ?stageFreeze=type&voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-stage-card | sleep 2600
   mid: ?stageFreeze=mid&voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-stage-card | sleep 3200
   complete: ?stageFreeze=complete&voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-stage-card | sleep 3600
-  closing: ?slow=3&voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | sleep 9000 | wait css:.voice-stage[data-phase=closing] | sleep 420
+  closing: ?slow=3&voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | sleep 9000 | wait voice-stage[data-phase=closing] | sleep 420
   landed: ?voicePace=talk&voice=add a poll for Saturday dinner | click dock-voice-orb | wait voice-landed | sleep 2200
   countdown-mid: ?stageFreeze=complete&voicePace=talk&voice=countdown to Holly's birthday on November 14 | click dock-voice-orb | wait voice-stage-card | sleep 4600
   checklist-mid: ?stageFreeze=complete&voicePace=talk&voice=who's bringing what for the potluck | click dock-voice-orb | wait voice-stage-card | sleep 4400

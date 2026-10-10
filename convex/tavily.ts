@@ -1,8 +1,11 @@
 import { v } from "convex/values";
-import { env, internalAction, internalMutation, internalQuery, query, type MutationCtx } from "./_generated/server";
+import { env, internalAction, internalMutation, internalQuery, mutation, query, type ActionCtx, type MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { canRead } from "./seat";
+import { canRead, requireSeat } from "./seat";
+import { widgetsCounter } from "./stats";
+import { touchSpace } from "./activity";
+import { writeWidgetData } from "./widgets";
 import { leasesOn } from "./leases";
 import { rateLimiter } from "./rateLimits";
 import { streamChat } from "./nebius";
@@ -38,7 +41,7 @@ import type { Told } from "../src/lib/roomKnows";
  */
 
 /** The deployments the lookup runs on (the key alone isn't enough: prod joins on Thomas's word). */
-const LANES = ["dusty-condor-648"];
+const LANES = ["dusty-condor-648", "necessary-cobra-892"]; // dev + prod; the key decides the rest
 export const lookupOn = () => !!env.TAVILY_API_KEY?.trim() && LANES.some((name) => env.CONVEX_CLOUD_URL.includes(name));
 
 const CAP_MS = 6000;
@@ -50,7 +53,7 @@ const FOODS = ["ramen", "pho", "sushi", "tacos", "taco", "pizza", "thai", "korea
 const WEB: Holder = { userId: "web", name: "the web", color: "var(--color-lime)", kind: "lookup" };
 
 type Ctx = { city: string; show: string; from: string; usual: string[]; facts: string[] };
-type Place = { name: string; host: string; url: string; rating?: number; reviews?: number; closed?: boolean; text: string; order: number };
+type Place = { name: string; host: string; url: string; rating?: number; reviews?: number; closed?: boolean; text: string; order: number; img?: string; imgFrom?: string };
 export type Receipt = {
   mode: "poll" | "add";
   said: string;
@@ -63,7 +66,7 @@ export type Receipt = {
   credits: { search?: number; extract?: number };
   pickedBy?: string;
   fact?: string;
-  kept: { name: string; host: string; url: string; rating?: number; reviews?: number; source: string }[];
+  kept: { name: string; host: string; url: string; rating?: number; reviews?: number; source: string; img?: string; imgFrom?: string; emoji: string }[];
   skipped: { name: string; host: string; why: string }[];
   landed?: string;
 };
@@ -111,6 +114,37 @@ async function roomCtx(ctx: MutationCtx, spaceId: Id<"spaces">, said: string): P
 }
 
 const foodIn = (said: string) => FOODS.find((f) => new RegExp(`\\b${f}\\b`, "i").test(said));
+
+/* ── the picture: an image Tavily returned for THAT place, else an emoji from code ──
+ * A place's own page (a Yelp /biz/, a Tripadvisor review, the venue's site): the first photo on it.
+ * A list page: only an image whose own words name the place. Nothing else, never the model's pick;
+ * the emoji comes from this table, read off what the ask or the card already knows. */
+const KINDS: [RegExp, string][] = [
+  [/pumpkin/i, "🎃"], [/corn maze/i, "🌽"], [/christmas tree/i, "🎄"], [/apple|orchard/i, "🍎"], [/winery|vineyard|wine/i, "🍷"], [/brewery|beer/i, "🍺"],
+  [/(pho|phở)/i, "🍜"], [/ramen|noodle|udon|vietnamese/i, "🍜"], [/sushi|omakase/i, "🍣"], [/taco|taquer|mexican|burrito/i, "🌮"], [/pizz|italian|pasta/i, "🍕"],
+  [/dim sum|dumpling|xiao long/i, "🥟"], [/hot ?pot|shabu/i, "🍲"], [/curry|indian|thai/i, "🍛"], [/korean|bbq|barbecue/i, "🍖"], [/burger/i, "🍔"], [/steak/i, "🥩"],
+  [/seafood|oyster|crab/i, "🦐"], [/boba|tea house/i, "🧋"], [/coffee|cafe|café|espresso/i, "☕"], [/bakery|pastry|croissant/i, "🥐"], [/brunch|pancake|breakfast/i, "🥞"],
+  [/vegan|salad/i, "🥗"], [/mediterranean|falafel|gyro/i, "🥙"], [/tapas/i, "🍢"], [/chinese/i, "🥡"], [/japanese|izakaya/i, "🍱"], [/museum/i, "🏛️"], [/zoo/i, "🦁"], [/festival|fair/i, "🎪"], [/farm|ranch/i, "🚜"], [/park|garden/i, "🌳"],
+];
+export const emojiOf = (fallback: string, ...texts: (string | undefined)[]) => {
+  for (const t of texts) for (const [re, e] of KINDS) if (t && re.test(t)) return e;
+  return fallback;
+};
+type Img = string | { url: string; description?: string | null };
+const NOT_PHOTO = /\.(svg|gif|ico)(\?|$)|logo|icon|badge|wordmark|placeholder|sprite|avatar|emoji|tiktok|instagram|facebook|twitter|pinterest|static\.tacdn|staticmap|maps\.google|screen_?shot/i;
+const urlOf = (i: Img) => (typeof i === "string" ? i : i.url);
+const fileOf = (u: string) => {
+  try {
+    return decodeURIComponent(new URL(u).pathname.split("/").pop() ?? "").replace(/\.\w+$/, "").replace(/[-_]+/g, " ");
+  } catch {
+    return "";
+  }
+};
+/** The first photo in a page's images (a jpg/webp before a png), or none. */
+export function photoOf(imgs: Img[] | undefined) {
+  const ok = (imgs ?? []).map(urlOf).filter((u) => /^https:\/\//.test(u) && !NOT_PHOTO.test(u));
+  return ok.find((u) => /\.(jpe?g|webp)(\?|$)/i.test(u)) ?? ok[0];
+}
 
 /** The lookup's own ledger row (kind "lookup"); with a ghost, its pending row waiting on the web. */
 async function open(ctx: MutationCtx, a: { spaceId: Id<"spaces">; widget: Doc<"widgets">; by: { name: string; userId?: string }; text: string; ghost?: EditOp; today: string }) {
@@ -181,7 +215,7 @@ export async function lookupForEdit(ctx: MutationCtx, a: { widget: Doc<"widgets"
 
 /* ── the chain ─────────────────────────────────────────────────────────── */
 
-type Hit = { url: string; title: string; content: string };
+type Hit = { url: string; title: string; content: string; images?: Img[] };
 
 async function post(path: "search" | "extract", body: object, ms: number): Promise<{ ok: boolean; json: Record<string, unknown>; ms: number; error?: string }> {
   const t0 = Date.now();
@@ -234,16 +268,21 @@ export function placesIn(hit: Hit, cityName: string, order0: number): Place[] {
   const host = hostOf(hit.url);
   const text = `${hit.title}\n${hit.content}`;
   const out: Place[] = [];
+  // on a list page, a picture counts only when its own words name the place: its alt text, or the caption its file is named
+  // after (Tripadvisor: ".../original-joe-s-san-jose.jpg")
+  const named = (name: string) => low(name).length >= 5 ? (hit.images ?? []).find((i) => !NOT_PHOTO.test(urlOf(i)) && low(`${typeof i === "string" ? "" : i.description ?? ""} ${fileOf(urlOf(i))}`).includes(low(name))) : undefined;
   const add = (name: string | null, seg: string, extra: Partial<Place> = {}) => {
     if (!name) return;
-    out.push({ name, host, url: hit.url, rating: ratingIn(seg), reviews: reviewsIn(seg), closed: closedIn(seg), text: seg.slice(0, 240), order: order0 + out.length, ...extra });
+    const pic = extra.img ? null : named(name);
+    out.push({ name, host, url: hit.url, rating: ratingIn(seg), reviews: reviewsIn(seg), closed: closedIn(seg), text: seg.slice(0, 240), order: order0 + out.length, ...(pic ? { img: urlOf(pic), imgFrom: hit.url } : {}), ...extra });
   };
   const single = /\/biz\/|\/r\/|Restaurant_Review/.test(hit.url);
   if (single) {
     // "KUMAKO RAMEN DEN - Updated … - 1063 Reviews - 487 Saratoga Ave, San Jose" / "Kumako Ramen Den - San Jose, CA"
     const head = hit.title.split(/\s+[-|–]\s+|,\s/)[0];
     const mixed = hit.content.match(new RegExp(head.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"))?.[0];
-    add(cleanName(mixed && /[a-z]/.test(mixed) ? mixed : head, cityName), text.slice(0, 600));
+    const img = photoOf(hit.images);
+    add(cleanName(mixed && /[a-z]/.test(mixed) ? mixed : head, cityName), text.slice(0, 600), img ? { img, imgFrom: hit.url } : {});
     return out;
   }
   // a list: "1. Kumako Den · (227 reviews). Japanese ; 2. Fogo de Chão …" or "1. Pho Long Thinh. 4.8. 4.8 of 5 bubbles"
@@ -302,7 +341,7 @@ export const lookup = internalAction({
     const want = a.mode === "add" ? 1 : 3;
     let picks: Place[] = [];
     try {
-      const s = await post("search", { query, search_depth: "basic", max_results: 6, include_usage: true, include_domains: DOMAINS }, left());
+      const s = await post("search", { query, search_depth: "basic", max_results: 6, include_usage: true, include_domains: DOMAINS, include_images: true }, left());
       r.ms.search = s.ms;
       r.credits.search = (s.json.usage as { credits?: number } | undefined)?.credits;
       if (!s.ok) throw new Error(s.error);
@@ -312,11 +351,11 @@ export const lookup = internalAction({
       // the Tripadvisor list, extracted, when one came back and there's time (names with their bubbles and counts)
       const ta = here.find((h) => hostOf(h.url) === "tripadvisor" && !/Restaurant_Review/.test(h.url));
       if (ta && left() > 2500) {
-        const e = await post("extract", { urls: [ta.url], query: `${a.food} restaurant name rating reviews`, chunks_per_source: 3, include_usage: true }, Math.min(1500, left() - 1500));
+        const e = await post("extract", { urls: [ta.url], query: `${a.food} restaurant name rating reviews`, chunks_per_source: 3, include_usage: true, include_images: true }, Math.min(1500, left() - 1500));
         r.ms.extract = e.ms;
         r.credits.extract = (e.json.usage as { credits?: number } | undefined)?.credits;
-        const raw = ((e.json.results as { raw_content?: string }[] | undefined) ?? [])[0]?.raw_content;
-        if (raw) here.push({ url: ta.url, title: ta.title, content: raw.replace(/!\[[^\]]*\]\([^)]*\)/g, " ").slice(0, 6000) });
+        const got = ((e.json.results as { raw_content?: string; images?: string[] }[] | undefined) ?? [])[0];
+        if (got?.raw_content) here.push({ url: ta.url, title: ta.title, content: got.raw_content.replace(/!\[[^\]]*\]\([^)]*\)/g, " ").slice(0, 6000), images: got.images });
       }
       const cityName = a.room.show;
       const seen = new Map<string, Place>();
@@ -325,7 +364,7 @@ export const lookup = internalAction({
           const k = low(p.name);
           const had = seen.get(k);
           if (!had) seen.set(k, p);
-          else seen.set(k, { ...had, rating: had.rating ?? p.rating, reviews: had.reviews ?? p.reviews, closed: had.closed || p.closed, ...(had.rating === undefined && had.reviews === undefined && (p.rating !== undefined || p.reviews !== undefined) ? { url: p.url, host: p.host, text: p.text } : {}) });
+          else seen.set(k, { ...had, rating: had.rating ?? p.rating, reviews: had.reviews ?? p.reviews, closed: had.closed || p.closed, ...(!had.img && p.img ? { img: p.img, imgFrom: p.imgFrom } : {}), ...(had.rating === undefined && had.reviews === undefined && (p.rating !== undefined || p.reviews !== undefined) ? { url: p.url, host: p.host, text: p.text } : {}) });
         }
       });
       // what's on the poll right now, and the house's usual places: never offered again
@@ -349,18 +388,19 @@ export const lookup = internalAction({
         if (why) r.skipped.push({ name: p.name, host: p.host, why });
         else cands.push(p);
       }
-      // the ones the page gave a number for first, then in the web's order
+      // the ones the page gave a number for first, then the ones with a picture of their own, then in the web's order
       const rated = (p: Place) => Number(p.rating !== undefined || p.reviews !== undefined);
-      const pool = [...cands].sort((x, y) => rated(y) - rated(x) || x.order - y.order).slice(0, 10);
+      const pic = (p: Place) => Number(!!p.img);
+      const pool = [...cands].sort((x, y) => rated(y) - rated(x) || pic(y) - pic(x) || x.order - y.order).slice(0, 10);
       // Nemotron Lightning picks by number and names the room fact it used; code keeps only real numbers
       if (pool.length > 0 && left() > 900 && (await ctx.runQuery(internal.guard.underCeiling, {}))) {
         const t1 = Date.now();
-        const list = pool.map((p, i) => `${i + 1}. ${p.name} · ${p.host}${p.rating !== undefined ? ` · ${p.rating} of 5` : ""}${p.reviews !== undefined ? ` · ${num(p.reviews)} reviews` : ""}`).join("\n");
+        const list = pool.map((p, i) => `${i + 1}. ${p.name} · ${p.host}${p.rating !== undefined ? ` · ${p.rating} of 5` : ""}${p.reviews !== undefined ? ` · ${num(p.reviews)} reviews` : ""}${p.img ? " · photo" : ""}`).join("\n");
         const asked = streamChat({
           model: "lightning",
           maxTokens: 120,
           messages: [
-            { role: "system", content: `You pick places for a group's ${a.mode === "add" ? "poll: one place for what they asked" : "dinner poll: up to 3, best first"}. Never one of their usual places or one already on the poll. Prefer places with a rating or a review count. Reply with one line of JSON: {"picks":[numbers],"fact":"the one room fact you used, copied exactly, or empty"}` },
+            { role: "system", content: `You pick places for a group's ${a.mode === "add" ? "poll: one place for what they asked" : "dinner poll: up to 3, best first"}. Never one of their usual places or one already on the poll. Prefer places with a rating or a review count, then ones with a photo. Reply with one line of JSON: {"picks":[numbers],"fact":"the one room fact you used, copied exactly, or empty"}` },
             { role: "user", content: `Room facts:\n${[...a.room.facts, `on the poll: ${poll.join(", ")}`].map((f) => `- ${f}`).join("\n")}\nAsked: "${a.mode === "add" ? `add ${a.said} to the dinner poll` : a.said}"\nPlaces found on the web:\n${list}` },
           ],
         });
@@ -390,7 +430,12 @@ export const lookup = internalAction({
     } catch (e) {
       r.status = String(e instanceof Error ? e.message : e).slice(0, 120);
     }
-    r.kept = picks.map((p) => ({ name: p.name, host: p.host, url: p.url, ...(p.rating !== undefined ? { rating: p.rating } : {}), ...(p.reviews !== undefined ? { reviews: p.reviews } : {}), source: sourceLine(p) }));
+    r.kept = picks.map((p) => ({
+      name: p.name, host: p.host, url: p.url, ...(p.rating !== undefined ? { rating: p.rating } : {}), ...(p.reviews !== undefined ? { reviews: p.reviews } : {}), source: sourceLine(p),
+      ...(p.img ? { img: p.img, imgFrom: p.imgFrom } : {}),
+      // "add ramen": what they asked for; a dinner poll: what the place's name or its line says it is
+      emoji: a.mode === "add" ? emojiOf("🍽️", a.food, p.name) : emojiOf("🍽️", p.name, p.text),
+    }));
     r.ms.total = Date.now() - t0;
     await ctx.runMutation(internal.tavily.land, {
       mode: a.mode, spaceId: a.spaceId, widgetId: a.widgetId, writeId: a.writeId, ...(a.pendingId ? { pendingId: a.pendingId } : {}), ...(a.dealId ? { dealId: a.dealId } : {}),
@@ -411,7 +456,7 @@ export const optionsOf = internalQuery({
 
 /* ── landing: through the door, as the AI's edit ───────────────────────── */
 
-const mark = (k: Receipt["kept"][number]): WebMark => ({ url: k.url, host: k.host, ...(k.rating !== undefined ? { rating: k.rating } : {}), ...(k.reviews !== undefined ? { reviews: k.reviews } : {}) });
+const mark = (k: Receipt["kept"][number]): WebMark => ({ url: k.url, host: k.host, ...(k.rating !== undefined ? { rating: k.rating } : {}), ...(k.reviews !== undefined ? { reviews: k.reviews } : {}), ...(k.img ? { img: k.img } : {}), ...(k.emoji ? { emoji: k.emoji } : {}) });
 const landV = {
   mode: v.union(v.literal("poll"), v.literal("add")),
   spaceId: v.id("spaces"),
@@ -549,5 +594,503 @@ export const sweepWeb = internalMutation({
       if (!keep.some((o) => o.id === vote.optionId)) await ctx.db.delete(vote._id);
     await ctx.db.patch(widgetId, { data: { ...(w.data as object), options: keep } as Doc<"widgets">["data"] });
     return options.length - keep.length;
+  },
+});
+
+/* ── the post vs the page: a pasted link, read (TV2a) ──────────────────────
+ * Someone pastes a link on the board (src/live/useLiveHandlers.ts, the paste
+ * entry point; Firecrawl's link card is the fallback when this is off). Two
+ * cards land at once, reading: a plan card (a countdown with `read`) and a
+ * who's in. Then the chain, one 9 s cap:
+ *   Tavily extract of the pasted page (query-focused) → code names the venue
+ *   and its town → Tavily search for the venue's own site → Tavily extract of
+ *   it, same query → code parses the parking fee for Saturday from each.
+ * The venue's own domain outranks social and review sites by a code rule
+ * (`ownSite`). The card shows the site's figure; `the post said …` only when
+ * both parsed Saturday parking for the same venue and season and they differ.
+ * No model writes a name or a number; code picks the cards and the title.
+ */
+
+const READ_Q = "parking price hours Saturday admission";
+const READ_CAP_MS = 9000;
+const SOCIAL = ["instagram", "tiktok", "facebook", "fb", "yelp", "twitter", "x", "threads", "youtube", "youtu", "pinterest", "reddit", "tripadvisor", "wikipedia", "google", "linktr", "eventbrite", "groupon", "timeout", "patch", "sfgate", "mercurynews"];
+const DAY_RE = "(mon(?:day)?s?|tue(?:s(?:day)?)?s?|wed(?:nesday)?s?|thu(?:r(?:s(?:day)?)?)?s?|fri(?:day)?s?|sat(?:urday)?s?|sun(?:day)?s?)";
+const DAY_IX: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+const SPAN = new RegExp(`\\b${DAY_RE}(?:\\s*(-|–|—|to|through|thru|&|and|/)\\s*${DAY_RE})?\\b|\\b(weekends?|daily|every ?day)\\b`, "gi");
+const AMOUNT = /\$\s?(\d{1,3}(?:\.\d{2})?)|\bfree\b/gi;
+
+export type Fee = { days: number[]; amount: number; cash: boolean; line: string };
+const dayOf = (w: string) => DAY_IX[w.toLowerCase().slice(0, 3)];
+
+/** "Mon–Thu" → 1..4, "Sat/Sun" → 6,0, "weekends" → 6,0, "daily" → all. */
+function daysOf(m: RegExpMatchArray): number[] {
+  if (m[4]) return /week/i.test(m[4]) ? [6, 0] : [0, 1, 2, 3, 4, 5, 6];
+  const a = dayOf(m[1]);
+  if (!m[3]) return [a];
+  const b = dayOf(m[3]);
+  if (/^(&|and|\/)$/i.test(m[2])) return [a, b];
+  const out = [a];
+  for (let d = a; d !== b; ) out.push((d = (d + 1) % 7));
+  return out;
+}
+
+/** Code, not the model: each "<item> … <days> … $N" a page states, paired in reading order. */
+export function feesIn(text: string, item = "parking"): Fee[] {
+  const out: Fee[] = [];
+  const clean = text.replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
+  for (const m of clean.matchAll(new RegExp(`\\b${item}\\b`, "gi"))) {
+    // from the start of its sentence, over the lines that continue it ("$30 cash only Fridays")
+    const start = Math.max(clean.lastIndexOf("\n", m.index!) + 1, clean.lastIndexOf(". ", m.index!) + 2, 0);
+    const lines = clean.slice(start, m.index! + 260).split(/\n/);
+    let passage = lines[0];
+    for (const l of lines.slice(1)) {
+      if (!/^\s*(\$|free\b|\(|(mon|tue|wed|thu|fri|sat|sun))/i.test(l)) break;
+      passage += ` ${l}`;
+    }
+    passage = passage.split(/\[\.\.\.\]|(?<=\.)\s+(?=[A-Z][a-z]+ (?!through|thru))/)[0];
+    const cash = /\bcash\b/i.test(passage);
+    const tokens = [
+      ...[...passage.matchAll(SPAN)].map((t) => ({ at: t.index!, days: daysOf(t) })),
+      ...[...passage.matchAll(AMOUNT)].map((t) => ({ at: t.index!, amount: t[1] ? Number(t[1]) : 0 })),
+    ].sort((x, y) => x.at - y.at);
+    let days: number[] | null = null;
+    let amount: number | null = null;
+    for (const t of tokens) {
+      if ("days" in t) {
+        if (amount !== null) out.push({ days: t.days, amount, cash: cash && amount > 0, line: passage.replace(/\s+/g, " ").trim().slice(0, 160) }), (amount = null);
+        else days = t.days;
+      } else if (days) {
+        out.push({ days, amount: t.amount, cash: cash && t.amount > 0, line: passage.replace(/\s+/g, " ").trim().slice(0, 160) });
+        days = null;
+      } else amount = t.amount;
+    }
+  }
+  return out;
+}
+
+/** One figure for one day, or none when the page gives two different ones. */
+export function feeOn(fees: Fee[], day: number): Fee | null {
+  const on = fees.filter((f) => f.days.includes(day));
+  if (!on.length || on.some((f) => f.amount !== on[0].amount)) return null;
+  return { ...on[0], cash: on.some((f) => f.cash) };
+}
+
+const NOT_A_NAME = /^(this|the|open|hours?|park pass|take|adding|hi|log|reply|video|photo|more|sign|follow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december)\b/i;
+const CATEGORY = /\s+(pumpkin patch|apple orchard|corn maze|christmas tree farm|farm stand|winery|brewery|restaurant|cafe|café|bakery|museum|zoo|park|festival)$/i;
+
+/** The venue a post is about: the first capitalised name in its words (not an address, a day, a month or a heading). */
+export function venueIn(text: string): string | null {
+  const head = text.replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").slice(0, 1200);
+  const word = "[A-Z][\\p{L}'’.-]*";
+  for (const m of head.matchAll(new RegExp(`${word}(?:[ \\t]+(?:${word}|&|of|the|and)){1,5}`, "gu"))) {
+    const name = m[0].replace(/\s+(of|the|and|&)$/i, "").replace(/\s+\d{4}$/, "").trim();
+    if (name.split(/\s+/).length < 2 || NOT_A_NAME.test(name) || /\b(Ave|St|Blvd|Rd|Road|Street|Hwy|Lane|Dr)\b/.test(name)) continue;
+    if (/^[^,\n]{0,40},\s*[A-Z]{2}\b/.test(head.slice(m.index!))) continue; // "Morgan Hill, CA" is the town
+    return name;
+  }
+  return null;
+}
+
+/** "225 Laguna Ave, Morgan Hill, CA 95037" → Morgan Hill; else "in Morgan Hill". */
+export function townIn(text: string): string | null {
+  const m = text.match(/,\s*([A-Z][a-z]+(?:\s[A-Z][a-z]+){0,2}),\s*(?:CA|California|[A-Z]{2})\b/) ?? text.match(/\b(?:in|join us in)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)(?=[\s!.,])/);
+  return m?.[1] ?? null;
+}
+
+/** The venue's own site: not social or a review site, and its domain carries the venue's name. */
+export function ownSite(url: string, venue: string) {
+  const host = (() => {
+    try {
+      return new URL(url).host.replace(/^www\./, "");
+    } catch {
+      return "";
+    }
+  })();
+  const base = host.split(".").slice(-2, -1)[0] ?? "";
+  if (!host || SOCIAL.includes(base)) return false;
+  // every word of the name (its first four letters), so "Spina Farms" is not spinabifidaassociation.org
+  const flat = host.replace(/[^a-z0-9]/g, "");
+  const words = venue.replace(CATEGORY, "").toLowerCase().split(/\s+/).map((w) => w.replace(/[^a-z0-9]/g, "")).filter((w) => w.length >= 3);
+  return words.length > 0 && words.every((w) => flat.includes(w.slice(0, 4)));
+}
+
+const yearsIn = (s: string) => [...s.matchAll(/\b(20\d\d)\b/g)].map((m) => Number(m[1]));
+const nounOf = (venue: string) => {
+  const w = venue.replace(CATEGORY, "").split(/\s+/).at(-1)?.toLowerCase().replace(/s$/, "") ?? "";
+  return ["farm", "winery", "brewery", "museum", "zoo", "orchard", "ranch", "garden", "park", "cafe", "bakery"].includes(w) ? w : null;
+};
+const hostName = (url: string) => {
+  try {
+    return new URL(url).host.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+};
+
+export type LinkReceipt = {
+  mode: "link";
+  line: string;
+  url: string;
+  /** a voice ask (planPlace): the sentence; the post was found by search, not pasted */
+  asked?: string;
+  status: string;
+  venue?: string;
+  town?: string;
+  query?: string;
+  day: string;
+  reads: { role: "post" | "site"; url: string; host: string; ms: number; credits?: number; said?: string; fee?: number; cash?: boolean }[];
+  search?: { ms: number; credits?: number; picked?: string; skipped: { host: string; why: string }[] };
+  ms: { total: number };
+  credits: { extract?: number; search?: number };
+  pickedBy: string;
+  shown: string;
+  struck?: string;
+  why?: string;
+  /** the plan card's picture: the first photo on the venue's own page, and that page; else only the emoji */
+  img?: { url: string; from: string };
+  emoji?: string;
+  landed?: string;
+};
+
+const readCard = { plan: { w: 250, h: 236 }, who: { w: 200, h: 236 } };
+
+/** The paste: two cards land reading, then the chain runs. `{ ok: false }` = off here; the screen makes a Firecrawl link card. */
+export const readLink = mutation({
+  args: { spaceId: v.id("spaces"), url: v.string(), plan: v.object({ x: v.number(), y: v.number() }), who: v.object({ x: v.number(), y: v.number() }), today: v.string() },
+  returns: v.union(v.object({ ok: v.literal(true), planId: v.id("widgets"), whoId: v.id("widgets") }), v.object({ ok: v.literal(false), why: v.string() })),
+  handler: async (ctx, a) => {
+    if (!lookupOn()) return { ok: false as const, why: "off" };
+    const me = await requireSeat(ctx, a.spaceId);
+    let url: URL;
+    try {
+      url = new URL(a.url.trim().includes("://") ? a.url.trim() : `https://${a.url.trim()}`);
+    } catch {
+      return { ok: false as const, why: "not a link" };
+    }
+    if (url.protocol !== "https:" && url.protocol !== "http:") return { ok: false as const, why: "not a link" };
+    if (!(await rateLimiter.limit(ctx, "tavilyRoomDay", { key: a.spaceId })).ok) return { ok: false as const, why: "today's limit" };
+    const host = url.host.replace(/^www\./, "");
+    const now = Date.now();
+    const z = 6;
+    const planId = await ctx.db.insert("widgets", {
+      spaceId: a.spaceId, type: "countdown", ...a.plan, ...readCard.plan, z, rotate: -1, createdBy: me.userId, createdAt: now,
+      data: { event: host, tone: "butter", read: { url: url.toString(), host, at: now, step: "post" } },
+    });
+    const whoId = await ctx.db.insert("widgets", {
+      spaceId: a.spaceId, type: "rsvp", ...a.who, ...readCard.who, z, rotate: 1.2, createdBy: me.userId, createdAt: now,
+      data: { title: "who's in?", responses: [{ name: me.name, status: "yes", userId: me.userId }], waitingOn: [], bringPending: true },
+    });
+    await widgetsCounter.inc(ctx);
+    await widgetsCounter.inc(ctx);
+    await touchSpace(ctx, a.spaceId, now);
+    const line = `reading ${host} · then the venue's own page`;
+    const writeId = await log(ctx, { kind: "edit", spaceId: a.spaceId, widgetId: planId, by: { name: me.name, userId: me.userId }, fields: [], text: line }, "lookup", "reading the link");
+    await ctx.db.patch(writeId, { kind: "lookup" });
+    await ctx.scheduler.runAfter(0, internal.tavily.readRun, { spaceId: a.spaceId, planId, whoId, writeId, url: url.toString(), today: a.today, line });
+    return { ok: true as const, planId, whoId };
+  },
+});
+
+/* ── the ask: "let's do Spina Farms pumpkin patch on Saturday" (TV2d) ─────────
+ * The orb's plan verb (lib/deck/verbs.ts `planAsk`): the same two cards land at once, then Tavily searches the
+ * place twice in parallel (the web for its own site; instagram / tiktok / facebook for posts about it), one extract
+ * reads the site and the top two posts with the parking query, and the same compare as the paste runs in code.
+ * A post that disagrees with the site is the struck line ("a post said $20"); one that agrees, or none, and the
+ * card shows the site's figure alone. No model writes a name or a number. */
+const POST_DOMAINS = ["instagram.com", "tiktok.com", "facebook.com"];
+/** A post or a video, not a profile page. */
+const isPost = (url: string) => /instagram\.com\/(reel|p|tv)\/|tiktok\.com\/@[^/]+\/video\/|facebook\.com\/.+\/(videos|posts|reel)\/|facebook\.com\/(reel|watch)\b/i.test(url);
+
+export const planPlace = mutation({
+  args: { spaceId: v.id("spaces"), said: v.string(), place: v.string(), day: v.number(), plan: v.object({ x: v.number(), y: v.number() }), who: v.object({ x: v.number(), y: v.number() }), today: v.string() },
+  returns: v.union(v.object({ ok: v.literal(true), planId: v.id("widgets"), whoId: v.id("widgets") }), v.object({ ok: v.literal(false), why: v.string() })),
+  handler: async (ctx, a) => {
+    if (!lookupOn()) return { ok: false as const, why: "off" };
+    const me = await requireSeat(ctx, a.spaceId);
+    const place = a.place.replace(/\s+/g, " ").trim().slice(0, 80);
+    if (place.length < 3 || !Number.isInteger(a.day) || a.day < 0 || a.day > 6) return { ok: false as const, why: "no place" };
+    if (!(await rateLimiter.limit(ctx, "tavilyRoomDay", { key: a.spaceId })).ok) return { ok: false as const, why: "today's limit" };
+    const now = Date.now();
+    const z = 6;
+    const venue = place.replace(CATEGORY, "");
+    const planId = await ctx.db.insert("widgets", {
+      spaceId: a.spaceId, type: "countdown", ...a.plan, ...readCard.plan, z, rotate: -1, createdBy: me.userId, createdAt: now,
+      data: { event: venue, tone: "butter", read: { url: "", host: "the web", at: now, step: "post", via: "voice", said: a.said.slice(0, 160), venue, emoji: emojiOf("📍", place) } },
+    });
+    const whoId = await ctx.db.insert("widgets", {
+      spaceId: a.spaceId, type: "rsvp", ...a.who, ...readCard.who, z, rotate: 1.2, createdBy: me.userId, createdAt: now,
+      data: { title: "who's in?", responses: [{ name: me.name, status: "yes", userId: me.userId }], waitingOn: [], bringPending: true },
+    });
+    await widgetsCounter.inc(ctx);
+    await widgetsCounter.inc(ctx);
+    await touchSpace(ctx, a.spaceId, now);
+    const line = `searching for ${venue} · a post about it and its own page`;
+    const writeId = await log(ctx, { kind: "edit", spaceId: a.spaceId, widgetId: planId, by: { name: me.name, userId: me.userId }, fields: [], text: line }, "lookup", "searching the place");
+    await ctx.db.patch(writeId, { kind: "lookup" });
+    await ctx.scheduler.runAfter(0, internal.tavily.planRun, { planId, whoId, writeId, said: a.said, place, day: a.day, today: a.today, line });
+    return { ok: true as const, planId, whoId };
+  },
+});
+
+export const planRun = internalAction({
+  args: { planId: v.id("widgets"), whoId: v.id("widgets"), writeId: v.id("aiWrites"), said: v.string(), place: v.string(), day: v.number(), today: v.string(), line: v.string() },
+  returns: v.null(),
+  handler: async (ctx, a) => {
+    const t0 = Date.now();
+    const left = () => READ_CAP_MS - (Date.now() - t0);
+    const venue = a.place.replace(CATEGORY, "");
+    const first = venue.toLowerCase().split(/\s+/)[0];
+    const r: LinkReceipt = { mode: "link", line: a.line, url: "", asked: a.said, status: "ok", venue: a.place, day: DAY_NAMES[a.day].slice(0, 3).toLowerCase(), reads: [], ms: { total: 0 }, credits: {}, pickedBy: "code", shown: "" };
+    const credit = (j: Record<string, unknown>) => (j.usage as { credits?: number } | undefined)?.credits ?? 0;
+    const results = (j: Record<string, unknown>) => (j.results as { raw_content?: string; title?: string; url?: string; images?: Img[] }[] | undefined) ?? [];
+    r.emoji = emojiOf("📍", a.place);
+    let postFee: Fee | null = null, postUrl: string | null = null, postText = "";
+    let siteFee: Fee | null = null, siteUrl: string | null = null, siteText = "";
+    try {
+      // 1 · two searches at once: the web for its own site (the name alone ranks it first), the posts about its parking
+      r.query = `${a.place} · ${a.place} parking (posts)`;
+      const [web, social] = await Promise.all([
+        post("search", { query: a.place, search_depth: "basic", max_results: 8, include_usage: true }, left() - 3500),
+        post("search", { query: `${a.place} parking`, search_depth: "basic", max_results: 8, include_domains: POST_DOMAINS, include_usage: true }, left() - 3500),
+      ]);
+      r.credits.search = credit(web.json) + credit(social.json);
+      const hits = (web.json.results as Hit[] | undefined) ?? [];
+      const posts = (social.json.results as Hit[] | undefined) ?? [];
+      const skipped: { host: string; why: string }[] = [];
+      const pick = hits.find((h) => {
+        if (ownSite(h.url, venue)) return true;
+        skipped.push({ host: hostName(h.url), why: SOCIAL.includes(hostOf(h.url)) ? "social or a review site" : "not the venue's domain" });
+        return false;
+      });
+      // the top two posts that name the place (a post or a video, not a profile page)
+      const kept = posts.filter((h) => isPost(h.url) && `${h.title} ${h.content}`.toLowerCase().includes(first)).slice(0, 2);
+      for (const h of posts) if (!kept.includes(h)) skipped.push({ host: hostName(h.url), why: isPost(h.url) ? (kept.length >= 2 ? "past the top two posts" : "doesn't name the place") : "a profile, not a post" });
+      r.search = { ms: Math.max(web.ms, social.ms), credits: r.credits.search, picked: pick?.url, skipped: skipped.slice(0, 8) };
+      if (!web.ok && !social.ok) throw new Error(web.error ?? "search failed");
+      r.town = [pick?.content, ...hits.map((h) => h.content), ...kept.map((h) => h.content)].map((t) => (t ? townIn(t) : null)).find(Boolean) ?? undefined;
+      await ctx.runMutation(internal.tavily.readStep, { planId: a.planId, patch: JSON.stringify({ step: "site", ...(r.town ? { town: r.town } : {}) }) });
+      if (!pick && !kept.length) throw new Error("no site of its own and no post about it");
+      if (left() < 800) throw new Error("out of time before the reads");
+      // 2 · the site and the posts read at once, the same parking query as the paste; a slow post never holds the site
+      const [es, ep] = await Promise.all([
+        pick ? post("extract", { urls: [pick.url], query: READ_Q, chunks_per_source: 3, include_usage: true, include_images: true }, left()) : null,
+        kept.length ? post("extract", { urls: kept.map((h) => h.url), query: READ_Q, chunks_per_source: 3, include_usage: true }, Math.min(5000, left())) : null,
+      ]);
+      r.credits.extract = (es ? credit(es.json) : 0) + (ep ? credit(ep.json) : 0);
+      const got = [...(es ? results(es.json) : []), ...(ep ? results(ep.json) : [])];
+      const e = { ok: (es?.ok ?? true) && (ep?.ok ?? true), ms: Math.max(es?.ms ?? 0, ep?.ms ?? 0), error: es?.error ?? ep?.error };
+      const bare = (u: string) => u.replace(/^https?:\/\/(www\.)?/, "").replace(/[?#].*$/, "").replace(/\/$/, "");
+      const textAt = (url: string) => got.find((x) => bare(x.url ?? "") === bare(url));
+      if (pick) {
+        const g = textAt(pick.url);
+        siteText = g ? `${g.title ?? ""}\n${g.raw_content ?? ""}` : "";
+        siteFee = feeOn(feesIn(g?.raw_content ?? ""), a.day);
+        siteUrl = pick.url;
+        const img = photoOf(g?.images);
+        if (img) r.img = { url: img, from: pick.url };
+        r.emoji = emojiOf(r.emoji ?? "📍", g?.title, a.place);
+        r.reads.push({ role: "site", url: pick.url, host: hostName(pick.url), ms: es?.ms ?? 0, said: siteFee?.line, ...(siteFee ? { fee: siteFee.amount, cash: siteFee.cash } : {}) });
+      } else r.status = "no site of its own in the results";
+      // the post: one that disagrees with the site (the struck line), else the first that gave a figure
+      const read = kept.map((h) => {
+        const raw = textAt(h.url)?.raw_content ?? "";
+        const fee = raw.toLowerCase().includes(first) ? feeOn(feesIn(raw), a.day) : null;
+        r.reads.push({ role: "post", url: h.url, host: hostName(h.url), ms: ep?.ms ?? 0, said: fee?.line ?? (raw ? undefined : ep?.error ?? "couldn't read it"), ...(fee ? { fee: fee.amount, cash: fee.cash } : {}) });
+        return { url: h.url, raw, fee };
+      });
+      const chosen = read.find((x) => x.fee && siteFee && x.fee.amount !== siteFee.amount) ?? read.find((x) => x.fee);
+      if (chosen) ({ fee: postFee, url: postUrl, raw: postText } = chosen);
+      if (!e.ok) r.status = e.error ?? "the reads failed";
+    } catch (err) {
+      r.status = String(err instanceof Error ? err.message : err).slice(0, 120);
+    }
+    if (r.town === undefined) r.town = townIn(siteText) ?? townIn(postText) ?? undefined;
+    await settleRead(ctx, a, r, { postFee, postUrl, postText, siteFee, siteUrl, siteText, day: a.day, found: true }, t0);
+    return null;
+  },
+});
+
+/** The next Saturday on or after today (YYYY-MM-DD). */
+function nextDay(today: string, day: number) {
+  const [y, m, d] = today.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  t.setUTCDate(t.getUTCDate() + ((day - t.getUTCDay() + 7) % 7));
+  return t.toISOString().slice(0, 10);
+}
+
+export const readRun = internalAction({
+  args: { spaceId: v.id("spaces"), planId: v.id("widgets"), whoId: v.id("widgets"), writeId: v.id("aiWrites"), url: v.string(), today: v.string(), line: v.string() },
+  returns: v.null(),
+  handler: async (ctx, a) => {
+    const t0 = Date.now();
+    const left = () => READ_CAP_MS - (Date.now() - t0);
+    const SAT = 6;
+    const r: LinkReceipt = { mode: "link", line: a.line, url: a.url, status: "ok", day: "sat", reads: [], ms: { total: 0 }, credits: {}, pickedBy: "code", shown: "" };
+    const credit = (j: Record<string, unknown>) => (j.usage as { credits?: number } | undefined)?.credits;
+    const textOf = (j: Record<string, unknown>) => ((j.results as { raw_content?: string; title?: string; url?: string; images?: string[] }[] | undefined) ?? []);
+    let postFee: Fee | null = null;
+    let siteFee: Fee | null = null;
+    let siteUrl: string | null = null;
+    let postText = "";
+    let siteText = "";
+    try {
+      // 1 · the pasted page
+      const own = !SOCIAL.includes(hostOf(a.url));
+      const e1 = await post("extract", { urls: [a.url], query: READ_Q, chunks_per_source: 3, include_usage: true, ...(own ? { include_images: true } : {}) }, left());
+      const got1 = textOf(e1.json)[0];
+      postText = got1?.raw_content ?? "";
+      r.credits.extract = (credit(e1.json) ?? 0);
+      if (!e1.ok || !postText) throw new Error(e1.error ?? "couldn't read the link");
+      postFee = feeOn(feesIn(postText), SAT);
+      r.venue = (own ? got1?.title?.split(/\s+[-|–·]\s+/)[0]?.trim() : null) || venueIn(postText) || undefined;
+      r.town = townIn(postText) ?? undefined;
+      r.reads.push({ role: own ? "site" : "post", url: a.url, host: hostName(a.url), ms: e1.ms, credits: credit(e1.json), said: postFee?.line, ...(postFee ? { fee: postFee.amount, cash: postFee.cash } : {}) });
+      if (!r.venue) throw new Error("no venue named on the page");
+      // what kind of place, from what the post says (code's table): the card's tile while the site is read
+      r.emoji = emojiOf("📍", [r.venue, got1?.title, postText.slice(0, 1500)].join(" "));
+      await ctx.runMutation(internal.tavily.readStep, { planId: a.planId, patch: JSON.stringify({ step: "site", venue: r.venue, emoji: r.emoji, ...(r.town ? { town: r.town } : {}) }) });
+      if (own) {
+        // the pasted page is the venue's own: one source, no post to compare
+        siteFee = postFee;
+        siteUrl = a.url;
+        siteText = postText;
+        postFee = null;
+        const img = photoOf(got1?.images);
+        if (img) r.img = { url: img, from: a.url };
+      } else if (left() > 2500) {
+        // 2 · the venue's own site, found by search; social and review sites never count as it
+        r.query = `${r.venue}${r.town ? ` ${r.town}` : ""}`;
+        const s = await post("search", { query: r.query, search_depth: "basic", max_results: 6, include_usage: true }, left() - 1200);
+        r.credits.search = credit(s.json);
+        const hits = (s.json.results as Hit[] | undefined) ?? [];
+        const skipped: { host: string; why: string }[] = [];
+        const pick = hits.find((h) => {
+          if (ownSite(h.url, r.venue!)) return true;
+          skipped.push({ host: hostName(h.url), why: SOCIAL.includes(hostOf(h.url)) ? "social or a review site" : "not the venue's domain" });
+          return false;
+        });
+        r.search = { ms: s.ms, credits: credit(s.json), picked: pick?.url, skipped: skipped.slice(0, 6) };
+        if (pick && left() > 600) {
+          const more = hits.filter((h) => h !== pick && hostName(h.url) === hostName(pick.url)).slice(0, 1).map((h) => h.url);
+          const e2 = await post("extract", { urls: [pick.url, ...more], query: READ_Q, chunks_per_source: 3, include_usage: true, include_images: true }, left());
+          r.credits.extract = (r.credits.extract ?? 0) + (credit(e2.json) ?? 0);
+          siteText = textOf(e2.json).map((x) => `${x.title ?? ""}\n${x.raw_content ?? ""}`).join("\n\n");
+          siteFee = feeOn(textOf(e2.json).flatMap((x) => feesIn(x.raw_content ?? "")), SAT);
+          siteUrl = pick.url;
+          const pageImg = textOf(e2.json).map((x) => ({ from: x.url ?? pick.url, url: photoOf(x.images) })).find((x) => x.url);
+          if (pageImg?.url) r.img = { url: pageImg.url, from: pageImg.from };
+          r.emoji = emojiOf(r.emoji ?? "📍", [textOf(e2.json)[0]?.title, r.venue, postText.slice(0, 1500)].join(" "));
+          r.reads.push({ role: "site", url: pick.url, host: hostName(pick.url), ms: e2.ms, credits: credit(e2.json), said: siteFee?.line, ...(siteFee ? { fee: siteFee.amount, cash: siteFee.cash } : {}) });
+          if (!e2.ok) r.status = e2.error ?? "the site didn't read";
+        } else if (!pick) r.status = "no site of its own in the results";
+      } else r.status = "out of time before the site";
+    } catch (e) {
+      r.status = String(e instanceof Error ? e.message : e).slice(0, 120);
+    }
+    await settleRead(ctx, a, r, { postFee, postUrl: a.url, postText, siteFee, siteUrl, siteText, day: SAT, found: false }, t0);
+    return null;
+  },
+});
+
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/**
+ * The compare and the landing, one for the paste and the voice ask. The guards: same venue (its name on the site),
+ * same season (no other year named), same day (that day parsed on both). `found`: the post came from a search,
+ * not a paste ("a post said", not "the post said").
+ */
+async function settleRead(
+  ctx: ActionCtx,
+  a: { planId: Id<"widgets">; whoId: Id<"widgets">; writeId: Id<"aiWrites">; today: string },
+  r: LinkReceipt,
+  p: { postFee: Fee | null; postUrl: string | null; postText: string; siteFee: Fee | null; siteUrl: string | null; siteText: string; day: number; found: boolean },
+  t0: number,
+) {
+  const { postFee, siteFee, siteUrl, postText, siteText } = p;
+  const dayName = DAY_NAMES[p.day];
+  const dayShort = dayName.slice(0, 3).toLowerCase();
+  const year = Number(a.today.slice(0, 4));
+  const venueOk = !!r.venue && !!siteText && siteText.toLowerCase().includes(r.venue.toLowerCase().replace(CATEGORY, "").split(/\s+/)[0]);
+  const seasonOk = [postText, siteText].every((t) => !yearsIn(t).length || yearsIn(t).includes(year));
+  const noun = r.venue ? nounOf(r.venue) : null;
+  const label = noun ? `the ${noun}'s site` : "their site";
+  const postLabel = p.found ? "a post" : "the post";
+  const fee = siteFee ?? postFee;
+  const fromSite = !!siteFee;
+  const struck = fromSite && postFee && venueOk && seasonOk && postFee.amount !== siteFee!.amount ? postFee.amount : undefined;
+  r.why = struck !== undefined ? `both parsed ${dayName} parking for ${r.venue}; they differ, the ${noun ?? "venue"}'s own page wins` : postFee && siteFee ? (postFee.amount === siteFee.amount ? "both agree" : !venueOk ? "the site didn't name the venue: no compare" : "another season named: no compare") : siteFee ? `only the site gave ${dayName} parking` : postFee ? `only the post gave ${dayName} parking` : `neither page gave ${dayName} parking`;
+  const money = (n: number) => (n === 0 ? "free" : `$${n}`);
+  r.shown = fee ? `parking ${money(fee.amount)}${fee.cash ? " cash" : ""} ${dayName.slice(0, 3)} · ${fromSite ? label : postLabel}` : "";
+  if (struck !== undefined) r.struck = `${postLabel} said ${money(struck)}`;
+  r.ms.total = Date.now() - t0;
+  const read = {
+    step: "done",
+    ...(r.venue ? { venue: r.venue.replace(CATEGORY, "") } : {}),
+    ...(r.town ? { town: r.town } : {}),
+    day: dayShort,
+    ...(fee ? { fee: { item: "parking", amount: fee.amount, cash: fee.cash } } : {}),
+    ...(fee ? { source: fromSite && siteUrl ? { label, url: siteUrl, host: hostName(siteUrl) } : { label: postLabel, url: p.postUrl ?? "", host: hostName(p.postUrl ?? "") } } : {}),
+    ...(struck !== undefined ? { post: { amount: struck, url: p.postUrl ?? "" } } : {}),
+    ...(!fee ? { note: r.venue ? "no parking price on either page" : "nothing to plan from this page" } : {}),
+    ...(r.img ? { img: r.img.url } : {}),
+    ...(r.emoji ? { emoji: r.emoji } : {}),
+    ms: r.ms.total,
+  };
+  const bring = fee && fee.amount > 0 ? (fee.cash ? `bring $${fee.amount} cash` : `parking $${fee.amount}`) : undefined;
+  await ctx.runMutation(internal.tavily.readLand, { planId: a.planId, whoId: a.whoId, writeId: a.writeId, patch: JSON.stringify(read), event: r.venue ? `${r.venue.replace(CATEGORY, "")}${r.town ? ` · ${r.town}` : ""}` : "", targetDate: nextDay(a.today, p.day), whoTitle: r.venue ? `who's in · ${dayShort}` : "", ...(bring ? { bring } : {}), receipt: JSON.stringify(r) });
+}
+
+export const readStep = internalMutation({
+  args: { planId: v.id("widgets"), patch: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { planId, patch }) => {
+    const w = await ctx.db.get(planId);
+    const read = (w?.data as { read?: object } | undefined)?.read;
+    if (!w || !read) return null;
+    await ctx.db.patch(planId, { data: { ...(w.data as object), read: { ...read, ...(JSON.parse(patch) as object) } } as Doc<"widgets">["data"] });
+    return null;
+  },
+});
+
+export const readLand = internalMutation({
+  args: { planId: v.id("widgets"), whoId: v.id("widgets"), writeId: v.id("aiWrites"), patch: v.string(), event: v.string(), targetDate: v.string(), whoTitle: v.string(), bring: v.optional(v.string()), receipt: v.string() },
+  returns: v.null(),
+  handler: async (ctx, a) => {
+    const r = JSON.parse(a.receipt) as LinkReceipt;
+    const plan = await ctx.db.get(a.planId);
+    const landed: string[] = [];
+    if (plan) {
+      const d = plan.data as { read?: object; event?: string };
+      await writeWidgetData(ctx, plan, { ...d, ...(a.event ? { event: a.event } : {}), targetDate: a.targetDate, read: { ...(d.read ?? {}), ...(JSON.parse(a.patch) as object) } } as Doc<"widgets">["data"]);
+      landed.push(r.shown ? `plan: ${a.event} · ${r.shown}${r.struck ? ` (struck: ${r.struck})` : ""}` : `plan: ${a.event || "the link"}`);
+    }
+    const who = await ctx.db.get(a.whoId);
+    if (who) {
+      const d = who.data as Record<string, unknown>;
+      const { bringPending: _, ...rest } = d;
+      await writeWidgetData(ctx, who, { ...rest, ...(a.whoTitle ? { title: a.whoTitle } : {}), ...(a.bring ? { bring: a.bring } : {}) } as Doc<"widgets">["data"]);
+      if (a.bring) landed.push(`who's in: ${a.bring}`);
+    }
+    r.landed = landed.join(" · ") || "the cards were deleted";
+    const row = await ctx.db.get(a.writeId);
+    if (row) await ctx.db.patch(row._id, { text: r.shown ? `${a.event} · ${r.shown}` : row.text, outcome: JSON.stringify({ state: "replaced", ms: Date.now() - row.at, on: "the web", why: "the web answered", receipt: r }) });
+    return null;
+  },
+});
+
+/** Test cleanup (dev lane): delete the cards one paste made, by id. */
+export const sweepRead = internalMutation({
+  args: { ids: v.array(v.id("widgets")) },
+  returns: v.number(),
+  handler: async (ctx, { ids }) => {
+    let n = 0;
+    for (const id of ids) {
+      const w = await ctx.db.get(id);
+      if (!w) continue;
+      await ctx.db.delete(id);
+      await widgetsCounter.dec(ctx);
+      n++;
+    }
+    return n;
   },
 });

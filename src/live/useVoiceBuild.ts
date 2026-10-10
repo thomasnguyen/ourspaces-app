@@ -36,7 +36,7 @@ import { takeAskOutcome, type AskOutcome } from "../lib/voiceStage";
 import { dateIn, listIn, missingNeeds, needsOf } from "../lib/deck/needs";
 import { guessCards } from "../lib/deck/guess";
 import { shortlistDeck } from "../lib/deck/shortlist";
-import { answerFor, cardAnswer, goFor, mineFor, routeVerb, type Answer, type MineAct, type Verb, type VerbPick } from "../lib/deck/verbs";
+import { answerFor, cardAnswer, goFor, mineFor, planAsk, routeVerb, type Answer, type MineAct, type PlanAsk, type Verb, type VerbPick } from "../lib/deck/verbs";
 import type { VoiceEnd, VoiceHooks } from "../lib/voice";
 import { applyEdit, editFor, type Choice, type EditOp } from "../lib/deck/edits";
 import { askLine } from "../lib/choiceVote";
@@ -685,6 +685,8 @@ export type VerbHooks = {
   /** Resolves when a write that had to wait lands, is dropped, expires or is cancelled. */
   settled?: (writeId: string) => Promise<WaitOutcome>;
   today?: () => string;
+  /** "let's do <a named place> on <day>": the plan card + who's in land at once, then the web reads the place (live, lanes only; convex/tavily.ts planPlace). */
+  plan?: (said: string, ask: PlanAsk) => Promise<{ ok: true; planId: string } | { ok: false; why: string }>;
 };
 
 /** Where no room hands in a game starter (a room without games). */
@@ -857,6 +859,8 @@ export function useVoiceBuild({
         show(s, [skeletonWidget("checkin", { id: `${DRAFT}${s.key}-0`, ctx: skelCtx("checkin"), said: s.text }).widget]);
         return;
       }
+      // A named place on a day (the plan verb): the web makes its cards, no skeleton from the deck.
+      if (s.verb?.verb === "plan") return;
       // Once the model has written into the skeleton, only the model changes it.
       if (s.fromModel || s.reopened || s.pointed || s.matching) return;
       // A sure decide fills in when the words named nothing. It beats the
@@ -896,7 +900,7 @@ export function useVoiceBuild({
   /** A call's answer so far → the card, tentatively (while talking, or the final call's fields before its card closes). */
   const fill = useCallback(
     (s: Session, sp: Spec) => {
-      if (session.current !== s || s.reopened || s.pointed || s.matching) return;
+      if (session.current !== s || s.reopened || s.pointed || s.matching || s.verb?.verb === "plan") return;
       if (s.ended ? s.final !== sp : sp.seq < s.shownSeq) return;
       let card: CardId;
       let settings: Record<string, unknown>;
@@ -1283,7 +1287,7 @@ export function useVoiceBuild({
       s.trace.words.push({ text, ms: Math.round(performance.now() - s.t0) });
       // The router (code, 0 ms): another verb than make shows no skeleton and sends no fill.
       const vh = room.current.verbs;
-      s.verb = vh ? routeVerb(text, { people: vh.people(), me: vh.me().name, selected: Boolean(room.current.selectedId?.()) }) : null;
+      s.verb = vh ? routeVerb(text, { people: vh.people(), me: vh.me().name, selected: Boolean(room.current.selectedId?.()), place: Boolean(vh.plan) }) : null;
       // An edit while talking: the card as it would be, on this stage only (nothing is sent until the pause).
       if (vh && s.verb?.verb === "edit") {
         const plan = editFor(text, vh.widgets(), room.current.selectedId?.() ?? null, { today: vh.today?.() ?? new Date().toISOString().slice(0, 10) }, vh.frameOf);
@@ -1341,6 +1345,8 @@ export function useVoiceBuild({
     if (!s || s.reopened) return false;
     // "catch me up", "let's play most likely to": whole as said, even on a hanging word
     if (s.verb?.sure && (s.verb.verb === "recap" || s.verb.verb === "game")) return true;
+    // "let's do Spina Farms pumpkin patch on Saturday": a place and a day make a whole ask
+    if (s.verb?.verb === "plan" && planAsk(text, room.current.verbs?.people() ?? [])) return true;
     // an edit whose words already make a whole change on a card ("add ramen to the dinner poll")
     const vh = room.current.verbs;
     if (vh && s.verb?.sure && s.verb.verb === "edit")
@@ -1572,7 +1578,7 @@ export function useVoiceBuild({
   const routeAt = async (s: Session, said: string, end: VoiceEnd, round: number): Promise<boolean> => {
     const vh = room.current.verbs!;
     const me = vh.me();
-    const pick = routeVerb(said, { people: vh.people(), me: me.name, selected: Boolean(room.current.selectedId?.()) });
+    const pick = routeVerb(said, { people: vh.people(), me: me.name, selected: Boolean(room.current.selectedId?.()), place: Boolean(vh.plan) });
     s.verb = pick;
     s.trace.verb = { verb: pick.verb, by: "code", why: pick.why };
     if (pick.verb === "make") return false;
@@ -1624,6 +1630,26 @@ export function useVoiceBuild({
     };
 
     switch (pick.verb) {
+      case "plan": {
+        // A named place on a day: two cards land at once, the web fills them (convex/tavily.ts planPlace)
+        const ask = planAsk(said, vh.people());
+        const asMake = (why: string) => {
+          s.verb = { verb: "make", sure: true, why };
+          s.trace.verb = { ...s.trace.verb!, verb: "make", why };
+          return false;
+        };
+        if (!ask || !vh.plan) return asMake(ask ? "no lookup here: a card from the deck" : "no place and day in the words: a card from the deck");
+        const out = await vh.plan(said, ask).catch((e: unknown) => ({ ok: false as const, why: String(e).slice(0, 80) }));
+        if (stale()) return true;
+        if (!out.ok) {
+          if (out.why === "off" || out.why === "no place") return asMake(`the lookup said ${out.why}: a card from the deck`);
+          say(s, { verb: "plan", text: out.why === "today's limit" ? "the web lookups are resting until tomorrow" : `couldn't look that up · ${out.why}`, by: "code" });
+          return true;
+        }
+        s.trace.verb = { ...s.trace.verb!, why: `${pick.why}: ${ask.place}, day ${ask.day}` };
+        say(s, { verb: "plan", text: `on the board · searching for ${ask.place}`, by: "code" });
+        return true;
+      }
       case "recap":
         say(s, { verb: "recap", text: "catching you up", by: "code" });
         vh.recap(said);

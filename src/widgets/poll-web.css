@@ -5,18 +5,34 @@
    sticker drops to its own line first, then the words wrap. */
 .poll-option-label:has(.poll-web) {
   display: grid;
-  gap: 2px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 2px;
   overflow: visible;
   white-space: normal;
 }
 
+/* the place's picture leads the row (./webPic.tsx): no taller than the row's two lines */
+.poll-web-pic {
+  --web-pic: 26px;
+  grid-row: 1 / span 2;
+}
+
+.poll-web-name,
+.poll-web {
+  grid-column: 2;
+}
+
 .poll-web-name {
   display: block;
+  align-self: end;
   line-height: 1.05;
   overflow-wrap: anywhere;
 }
 
 .poll-web {
+  align-self: start;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -59,11 +75,17 @@
   color: var(--poll-fill);
 }
 
-/* a web row is two lines: its own padding, no minimum */
+/* a web row is two lines: its own padding, no minimum. The row's empty columns (no "you", no faces, no count yet)
+   cost no gap here, so the picture fits and the line beside it keeps its sticker */
 .poll-row-base:has(.poll-web),
 .poll-row-fill:has(.poll-web) {
   min-height: 0;
   padding-block: 5px;
+  column-gap: 0;
+}
+
+:is(.poll-row-base, .poll-row-fill):has(.poll-web) > :not(:first-child) {
+  margin-left: 7px;
 }
 
 /* five or more choices, or one the web added: tighter rows so they all sit on the card */
@@ -97,6 +119,10 @@
 
 .widget-poll:has(.poll-options li:nth-child(7)) :is(.poll-row-base, .poll-row-fill):has(.poll-web) {
   padding-block: 4px;
+}
+
+.widget-poll:has(.poll-options li:nth-child(7)) .poll-web-pic {
+  --web-pic: 24px;
 }
 
 /* the web's rows arrive: pop, 40 ms apart (the asked poll's three; nothing already on the poll moves) */

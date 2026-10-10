@@ -338,6 +338,7 @@ export function KnowObject({ line, ctx, i }: { line: KnowLine; ctx: KnowsCtx; i:
       <button
         type="button"
         className="knows-fact"
+        data-testid={`room-knows-fact-${line.key}`}
         disabled={!line.src.length}
         onClick={(e) => ctx.onVisit(line, e.currentTarget)}
         title={line.src.length ? "see the card it came from" : undefined}

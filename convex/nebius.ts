@@ -3,12 +3,16 @@ import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { chatTarget, type AiJob } from "./ai";
 import { decideFiling } from "./inboxRouting";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import type { LanguageModelV4 } from "@ai-sdk/provider";
 
 /**
- * Nebius Token Factory: NVIDIA Nemotron behind an OpenAI-compatible API.
- * When NEBIUS_API_KEY is set, convex/ai.ts routes every chat feature here
- * (its NEMOTRON_BY_JOB table picks the model per feature); streamChat below
- * is the streaming client for the voice hot path.
+ * Nebius Token Factory: NVIDIA Nemotron behind the standard chat-completions
+ * API (the AI SDK's generic compatible client is only the transport).
+ * convex/ai.ts routes every chat feature here (its NEMOTRON_BY_JOB table
+ * picks the model per feature);
+ * nemotronLanguageModel below is the AI SDK model the agent component uses,
+ * and streamChat is the streaming client for the voice hot path.
  *
  * Thinking is on by default for every Nemotron model here, and a capped
  * answer then spends all its tokens reasoning. `chat_template_kwargs:
@@ -37,6 +41,20 @@ export const NEMOTRON = {
   ultra: "nvidia/Nemotron-3-Ultra-550b-a55b",
 } as const;
 export type NemotronModel = keyof typeof NEMOTRON;
+
+/** Nemotron as an AI SDK model (the ask-the-space agent). Structured outputs
+ * on, so generateObject sends a real json_schema; thinking off in the body
+ * unless asked for. Builds without touching the network. */
+export function nemotronLanguageModel(model: string, apiKey: string, thinking: boolean): LanguageModelV4 {
+  return createOpenAICompatible({
+    baseURL: NEBIUS_BASE_URL,
+    name: "nebius",
+    apiKey,
+    supportsStructuredOutputs: true,
+    transformRequestBody: (body) =>
+      thinking ? body : { ...body, chat_template_kwargs: { enable_thinking: false } },
+  })(model);
+}
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 

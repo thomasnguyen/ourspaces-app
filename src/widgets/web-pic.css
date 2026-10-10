@@ -1,0 +1,44 @@
+/* The web's picture (./webPic.tsx): a fixed rounded box. The emoji sits on a soft tile of the row's own ink;
+   the photo covers it, fading in on the house curve, so nothing moves when it loads. */
+.web-pic {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  overflow: hidden;
+  width: var(--web-pic, 26px);
+  height: var(--web-pic, 26px);
+  border-radius: calc(var(--web-pic, 26px) * 0.27);
+  background: color-mix(in oklab, currentColor 13%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, currentColor 22%, transparent);
+}
+
+.web-pic-emoji {
+  font-size: calc(var(--web-pic, 26px) * 0.6);
+  line-height: 1;
+  font-style: normal;
+}
+
+.web-pic img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  scale: 1.06;
+  transition:
+    opacity var(--dur-base) var(--ease-glide),
+    scale var(--dur-arrive) var(--ease-glide);
+}
+
+.web-pic img.is-loaded {
+  opacity: 1;
+  scale: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .web-pic img {
+    transition: none;
+  }
+}

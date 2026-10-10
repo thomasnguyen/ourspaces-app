@@ -12,8 +12,8 @@ import { isEditSaid } from "./edits";
 import { guessCards } from "./guess";
 import type { RoomFacts } from "./resolve";
 
-export type Verb = "make" | "answer" | "recap" | "mine" | "go" | "game" | "edit";
-export const VERBS: Verb[] = ["make", "answer", "recap", "mine", "go", "game", "edit"];
+export type Verb = "make" | "answer" | "recap" | "mine" | "go" | "game" | "edit" | "plan";
+export const VERBS: Verb[] = ["make", "answer", "recap", "mine", "go", "game", "edit", "plan"];
 
 export type VerbPick = {
   verb: Verb;
@@ -59,16 +59,53 @@ const MAKE_Q =
 const ANSWER_Q =
   /\b(did we|have we|hasn'?t|haven'?t|didn'?t|paid|owes?|how much|how many|winning|ahead|behind|leading|when'?s|when is|when does|what'?s the|what is the|who said|away|anyone|left|still|decided|decide|picked|landed|what are we doing|where are we|what time)\b/;
 
+/* ---------- Plan a named place (TV2d: convex/tavily.ts planPlace) ---------- */
+
+/** "let's do Spina Farms pumpkin patch on Saturday", "plan Spina Farms on Sunday": a named place, on a day. */
+const PLAN_LEAD = /^(?:(?:hey|ok|okay|so|um|uh|yeah|alright),?\s+)*(?:(?:let'?s|let us|we should|can we)\s+(?:do|go to|hit|check out|try)|(?:let'?s\s+)?plan)\s+/i;
+const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const PLAN_DAY = /\s+(?:on|this|next|for|,)?\s*(sunday|monday|tuesday|wednesday|thursday|friday|saturday|weekend)\b.*$/i;
+/** Plans that aren't a place to look up: those stay cards from the deck. */
+const NOT_PLACE = /\b(birthday|bday|party|dinner|lunch|brunch|breakfast|drinks|night|game|movie|poll|list|checklist|chores|trip|countdown|rsvp|wheel|challenge|something|it|that|this)\b/i;
+
+export type PlanAsk = { place: string; day: number };
+/** The place as said (its capitals kept) and the day (a weekend = Saturday); null when the words aren't one. */
+export function planAsk(said: string, people: string[] = []): PlanAsk | null {
+  const t = said.replace(/[’‘]/g, "'").replace(/[?.!]+\s*$/, "").replace(/\s+/g, " ").trim();
+  const lead = PLAN_LEAD.exec(t);
+  if (!lead) return null;
+  const rest = t.slice(lead[0].length);
+  const day = PLAN_DAY.exec(rest);
+  if (!day) return null;
+  const place = rest.slice(0, day.index).replace(/^(the|a|an)\s+(?=[A-Z])/, "").trim();
+  if (!placeOk(place, people)) return null;
+  return { place, day: /weekend/i.test(day[1]) ? 6 : WEEKDAYS.indexOf(day[1].toLowerCase()) };
+}
+/** A proper name (a capital, not a person in the room), not a card or an occasion. */
+function placeOk(place: string, people: string[]) {
+  if (!/\b[A-Z][a-z]/.test(place) || NOT_PLACE.test(place) || place.split(" ").length > 6) return false;
+  return !people.some((p) => new RegExp(`\\b${p}\\b`, "i").test(place));
+}
+/** While talking: the lead and a named place so far (no skeleton over the board for it). */
+const planSoFar = (said: string, people: string[]) => {
+  const lead = PLAN_LEAD.exec(said.replace(/[’‘]/g, "'").trim());
+  if (!lead) return false;
+  const rest = said.trim().slice(lead[0].length).replace(PLAN_DAY, "");
+  return placeOk(rest.replace(/^(the|a|an)\s+(?=[A-Z])/, ""), people);
+};
+
 /** The people named in the words, other than the speaker. */
 const othersNamed = (t: string, people: string[], me: string) =>
   people.filter((p) => p.toLowerCase() !== me.toLowerCase() && new RegExp(`\\b${p.toLowerCase()}\\b`).test(t));
 
 /** Code's verb for these words (0 ms). */
-export function routeVerb(said: string, ctx: { people: string[]; me: string; selected?: boolean }): VerbPick {
+export function routeVerb(said: string, ctx: { people: string[]; me: string; selected?: boolean; place?: boolean }): VerbPick {
   const t = clean(said);
   if (!t) return { verb: "make", sure: false, why: "no words" };
   if (RECAP.test(t)) return { verb: "recap", sure: true, why: `"${RECAP.exec(t)![0]}"` };
   if (GAME.test(t)) return { verb: "game", sure: true, why: `"${GAME.exec(t)![0]}"` };
+  // A named place on a day: the web looks it up (only where the room hands in the lookup)
+  if (ctx.place && planSoFar(said, ctx.people)) return { verb: "plan", sure: true, why: "a named place: the web looks it up" };
   // Do my part for somebody else: put maya down, jules is in, vote matcha for sam
   for (const name of othersNamed(t, ctx.people, ctx.me)) {
     const n = name.toLowerCase();

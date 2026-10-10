@@ -6,7 +6,7 @@ import { completeJson } from "./ai";
 import { rateLimiter } from "./rateLimits";
 import { ActionCache } from "@convex-dev/action-cache";
 
-/** OpenAI as a structured decider (never a chatbot UI): an article becomes
+/** Nemotron (Lightning, see convex/ai.ts) as a structured decider (never a chatbot UI): an article becomes
  * two short conversation starters the group answers as threads. */
 
 const questionsValidator = v.array(v.object({ id: v.string(), text: v.string() }));
@@ -28,7 +28,7 @@ function canned(seed: string) {
   ];
 }
 
-async function askOpenAi(title: string, description: string) {
+async function askNemotron(title: string, description: string) {
   const parsed = await completeJson({
     job: "questions",
     temperature: 0.9,
@@ -39,7 +39,7 @@ async function askOpenAi(title: string, description: string) {
       "answerable even by friends who only skimmed the article.",
     user: `Article: ${title}\n\n${description}`.slice(0, 1200),
   }).catch((error) => {
-    console.error("questions.askOpenAi failed:", error);
+    console.error("questions.askNemotron failed:", error);
     return null;
   });
   if (!parsed) return null;
@@ -60,7 +60,7 @@ export const generateQuestions = internalAction({
   args: { title: v.string(), description: v.string() },
   returns: questionsValidator,
   handler: async (_ctx, { title, description }) =>
-    (await askOpenAi(title, description).catch(() => null)) ?? canned(title),
+    (await askNemotron(title, description).catch(() => null)) ?? canned(title),
 });
 
 // action-cache: the same link gets re-saved across spaces (or re-edited
