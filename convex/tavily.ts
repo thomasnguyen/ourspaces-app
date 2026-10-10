@@ -41,7 +41,7 @@ import type { Told } from "../src/lib/roomKnows";
  */
 
 /** The deployments the lookup runs on (the key alone isn't enough: prod joins on Thomas's word). */
-const LANES = ["dusty-condor-648"];
+const LANES = ["dusty-condor-648", "necessary-cobra-892"]; // dev + prod; the key decides the rest
 export const lookupOn = () => !!env.TAVILY_API_KEY?.trim() && LANES.some((name) => env.CONVEX_CLOUD_URL.includes(name));
 
 const CAP_MS = 6000;
