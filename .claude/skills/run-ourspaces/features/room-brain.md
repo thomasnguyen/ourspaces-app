@@ -21,6 +21,7 @@ take:
   cross: open real 30fps 130f | 4 scroll room-knows-line[data-key=payer:Jules] | 15 click room-knows-line[data-key=payer:Jules] room-knows-forget | 80 click room-knows-restore
   tell: draft real 30fps 90f | 15 click room-knows-tell-send
   visit: open real 30fps 120f | 15 click room-knows-fact-day:Saturday
+  back: open real 30fps 75f | 15 click room-knows-close
 ---
 # What this space knows (the room's brain, as a page)
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { knowsHash, normalSpaceHash, spacePageFromHash } from "../lib/routes";
 import { panToWidget } from "../lib/recapBoard";
@@ -59,6 +59,11 @@ const TITLES: Record<KnowSection, string> = {
 
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/* The other side wears its own wall so you can tell you turned the board over
+   (room-knows.css .knows-side-*): "ink" near-black with the room colour as
+   the accent, "paper" warm cream, "deep" the room colour in shadow. */
+const KNOWS_SIDE: "ink" | "paper" | "deep" = "paper";
+
 /* The turn-over: board and page are two sides of one room, so going between
    them flips the room (a view transition on the room's <main>, both sides
    live). While a flip is running the page doesn't play its own way out. */
@@ -72,11 +77,12 @@ function turnRoom(room: HTMLElement | null, hash: string) {
     return;
   }
   flipping = true;
-  document.documentElement.classList.add("is-knows-flip");
+  // In: the page drops into place. Back: it lifts away (room-knows.css).
+  document.documentElement.classList.add("is-knows-flip", hash.endsWith("/knows") ? "is-knows-flip-in" : "is-knows-flip-back");
   room.style.setProperty("view-transition-name", "knows-room");
   const done = () => {
     flipping = false;
-    document.documentElement.classList.remove("is-knows-flip");
+    document.documentElement.classList.remove("is-knows-flip", "is-knows-flip-in", "is-knows-flip-back");
     room.style.removeProperty("view-transition-name");
   };
   try {
@@ -163,6 +169,12 @@ export function RoomKnowsPage({
   }, [leaving]);
   const [draft, setDraft] = useState("");
   const root = useRef<HTMLDivElement>(null);
+  // The room colour, read off the board behind, for the page to use as its accent.
+  useLayoutEffect(() => {
+    const el = root.current;
+    const wall = el?.parentElement ? getComputedStyle(el.parentElement).backgroundColor : "";
+    if (el && wall && wall !== "rgba(0, 0, 0, 0)") el.style.setProperty("--knows-room", wall);
+  });
   const narrow = typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
   if (page !== "knows" && !leaving) return null;
 
@@ -238,7 +250,7 @@ export function RoomKnowsPage({
     </p>
   );
   return (
-    <div ref={root} className={`room-knows ${leaving ? "is-leaving" : "is-open"}`} data-testid="room-knows" data-fixture={fixture || undefined}>
+    <div ref={root} className={`room-knows knows-side-${KNOWS_SIDE} ${leaving ? "is-leaving" : "is-open"}`} data-testid="room-knows" data-fixture={fixture || undefined}>
       <div className="knows-scroll">
         <button type="button" className="knows-back" data-testid="room-knows-close" onClick={back}>
           <span aria-hidden="true">←</span> back to the board

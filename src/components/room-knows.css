@@ -13,7 +13,38 @@
   background-color: var(--knows-wall, inherit);
   /* flat and full-strength: on this side the paper and ink carry the detail */
   background-image: none;
-  color: var(--space-heading-color, var(--color-ink));
+  color: var(--knows-ink, var(--space-heading-color, var(--color-ink)));
+}
+
+/* The other side's wall (KNOWS_SIDE in RoomKnows.tsx picks one). It must not
+   read as the board: the room colour (--knows-room, read off the board) only
+   comes back as an accent. */
+.room-knows.knows-side-ink {
+  --knows-wall: #141117;
+  --knows-ink: #fffaf7;
+  --knows-accent: var(--knows-room, var(--space-accent));
+}
+
+.room-knows.knows-side-paper {
+  --knows-wall: #f3ead9;
+  --knows-ink: var(--color-ink);
+  --knows-accent: color-mix(in srgb, var(--knows-room, var(--space-accent)) 80%, black);
+}
+
+.room-knows.knows-side-deep {
+  --knows-wall: color-mix(in srgb, var(--knows-room, var(--space-accent)) 34%, #0c0a0f);
+  --knows-ink: #fffaf7;
+  --knows-accent: var(--knows-room, var(--space-accent));
+}
+
+.room-knows h1 {
+  color: var(--knows-accent, inherit);
+}
+
+/* on a dark wall the black pills need an edge to stay pills */
+.knows-side-ink :is(.knows-back, .knows-tell),
+.knows-side-deep :is(.knows-back, .knows-tell) {
+  outline: 1.5px solid rgb(255 250 247 / 0.32);
 }
 
 /* A line being followed to its card: the page lifts away around it. */
@@ -29,7 +60,10 @@
   }
 }
 
-/* The turn-over: the room is a card with two sides (turnRoom). */
+/* Board ⇄ page (turnRoom): one quiet move, one layer moving over a still
+   one, so there is no double image and no dip to the dark backdrop between
+   them. In: the page fades in on top of the board as it drops into place.
+   Back: the page fades and lifts away off the board, which waits underneath. */
 html.is-knows-flip::view-transition-old(root),
 html.is-knows-flip::view-transition-new(root) {
   animation: none;
@@ -46,23 +80,37 @@ html.is-knows-flip::view-transition-new(root) {
 ::view-transition-old(knows-room),
 ::view-transition-new(knows-room) {
   mix-blend-mode: normal;
-  backface-visibility: hidden;
-  animation: knows-flip-away var(--dur-hero) var(--ease-glide) both;
+  animation: none;
 }
 
-::view-transition-new(knows-room) {
-  animation-name: knows-flip-here;
+html.is-knows-flip-in::view-transition-new(knows-room) {
+  /* opaque fast (the board shows through for as little as possible), settles slower */
+  animation:
+    knows-side-fade var(--dur-quick) var(--ease-glide) both,
+    knows-side-drop var(--dur-arrive) var(--ease-glide) both;
 }
 
-@keyframes knows-flip-away {
+html.is-knows-flip-back::view-transition-old(knows-room) {
+  z-index: 1;
+  animation: knows-side-lift var(--dur-base) var(--ease-glide) both;
+}
+
+@keyframes knows-side-lift {
   to {
-    transform: perspective(2400px) rotateY(-180deg);
+    opacity: 0;
+    translate: 0 -8px;
   }
 }
 
-@keyframes knows-flip-here {
+@keyframes knows-side-fade {
   from {
-    transform: perspective(2400px) rotateY(180deg);
+    opacity: 0;
+  }
+}
+
+@keyframes knows-side-drop {
+  from {
+    translate: 0 -14px;
   }
 }
 
@@ -74,6 +122,9 @@ html.is-knows-flip::view-transition-new(root) {
 }
 
 .knows-back {
+  /* .knows-head pulls itself up over this row (margin-top: -34px); keep the button on top or the title's padding eats the click. */
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 8px;
