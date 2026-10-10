@@ -102,12 +102,15 @@ export const RECIPES = [
       const at = new Date(`${reveal.slice(0, 10)}T12:00:00Z`);
       const when = `${WEEKDAYS[at.getUTCDay()]} 9:00`;
       const stake = s.stake?.trim();
+      // past four people the check-in and the standings get a row each, and the deal steps down under them
+      const more = Math.max(0, ctx.people.length - 4);
+      const grow = more * 61;
       return [
-        { key: "frame", card: "frame", settings: { title: `${title} till ${WEEKDAYS[at.getUTCDay()]}`, subtitle: COUNT[ctx.people.length] ?? `${ctx.people.length} of us` }, at: { x: 0, y: 0 }, size: { w: 1266, h: 650 }, z: 2, batch: 0 },
+        { key: "frame", card: "frame", settings: { title: `${title} till ${WEEKDAYS[at.getUTCDay()]}`, subtitle: COUNT[ctx.people.length] ?? `${ctx.people.length} of us` }, at: { x: 0, y: 0 }, size: { w: 1266, h: 650 + grow }, z: 2, batch: 0 },
         { key: "signup", card: "signup", settings: { title: "who's in" }, at: { x: 1054, y: 48 }, size: { w: 190, h: 250 }, z: 6, rotate: -1.5, batch: 0 },
-        { key: "checkin", card: "checkin", settings: { title, unit, kind: "number", days }, at: { x: 24, y: 62 }, size: { w: 600, h: 420 }, z: 7, rotate: -0.6, batch: 1 },
-        { key: "standings", card: "standings", settings: { title: "standings", ...(stake ? { stake } : {}) }, at: { x: 658, y: 56 }, size: { w: 372, h: 430 }, z: 7, rotate: 1, batch: 2 },
-        { key: "deal", card: "note", settings: { label: "the deal", text: stake ? `${stake}. log before bed or it didn't happen.` : `one number a day. log before bed or it didn't happen. most ${unit} by ${when} wins.` }, at: { x: 24, y: 504 }, size: { w: 400, h: 128 }, z: 6, rotate: -1, batch: 3 },
+        { key: "checkin", card: "checkin", settings: { title, unit, kind: "number", days }, at: { x: 24, y: 62 }, size: { w: 600, h: 420 + grow }, z: 7, rotate: -0.6, batch: 1 },
+        { key: "standings", card: "standings", settings: { title: "standings", ...(stake ? { stake } : {}) }, at: { x: 658, y: 56 }, size: { w: 372, h: 430 + more * 36 }, z: 7, rotate: 1, batch: 2 },
+        { key: "deal", card: "note", settings: { label: "the deal", text: stake ? `${stake}. log before bed or it didn't happen.` : `one number a day. log before bed or it didn't happen. most ${unit} by ${when} wins.` }, at: { x: 24, y: 504 + grow }, size: { w: 400, h: 128 }, z: 6, rotate: -1, batch: 3 },
         { key: "reveal", card: "countdown", settings: { event: `the reveal · ${when}`, date: reveal.slice(0, 10) }, at: { x: 1058, y: 320 }, size: { w: 182, h: 262 }, z: 6, rotate: 2, batch: 4 },
       ];
     },

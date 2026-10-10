@@ -433,6 +433,20 @@ function measure(scroller: HTMLElement | null) {
   const reachX = (scroller.scrollWidth - scroller.scrollLeft - (c.left - s.left)) / scale;
   const reachY = (scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop + (dockTop - DOCK_ROOM - c.top)) / scale;
   const bounds = { x: 0, y: 0, w: Math.max(canvas.offsetWidth, reachX), h: Math.max(view.y + view.h, reachY) };
+  /* The phone column (phone-board.css) stacks the cards: where they sit on screen isn't where they sit on
+     the board, so a phone places by each card's stored box (its left/top/size), as a desk opening the room
+     sees it, and the cluster lands in a clear spot of the board, not over the cards the column moved. */
+  if (getComputedStyle(canvas).display === "flex") {
+    const px = (v: string) => parseFloat(v) || 0;
+    const desk = { x: 0, y: 0, w: px(canvas.style.minWidth) || 1640, h: px(canvas.style.minHeight) || 1080 };
+    const stored = Array.from(canvas.querySelectorAll<HTMLElement>("[data-widget-id], [data-frame-id]"), (el) => {
+      const frame = !!el.dataset.frameId;
+      const pad = frame ? FRAME_PAD : 0;
+      const st = el.style;
+      return { id: el.dataset.widgetId ?? el.dataset.frameId ?? "", x: px(st.left) - pad, y: px(st.top) - pad, w: px(st.width) + pad * 2, h: px(st.height || st.minHeight) + pad * 2 };
+    }).filter((b) => b.id && !b.id.startsWith(DRAFT) && b.w > 0);
+    return { canvas, scroller, scale, view: { x: 0, y: 0, w: Math.min(desk.w, 1440), h: Math.min(desk.h, 900) }, screen, board: stored, bounds: desk };
+  }
   return { canvas, scroller, scale, view, screen, board, bounds };
 }
 type Measured = NonNullable<ReturnType<typeof measure>>;

@@ -192,6 +192,14 @@ export type StandingLine = {
 export function lineFor(row: StandingRow, rows: StandingRow[], data: CheckInData, day: number, viewer?: StandingRow): StandingLine {
   const name = row.name.toLowerCase();
   const done = data.kind === "done";
+  // every day is in: the line is where they finished, nobody has anything left to log
+  if (day >= data.days) {
+    const above = rows[row.rank - 2];
+    const every = row.streak >= data.days ? " · every day" : "";
+    if (!above) return { text: rows[1] ? `first, ${row.total - rows[1].total} up on ${rows[1].name.toLowerCase()}${every}` : `all ${data.days} days${every}` };
+    if (row.rank === rows.length) return { text: `last place${every}` };
+    return { text: `${above.total - row.total} behind ${above.name.toLowerCase()}${every}` };
+  }
   if (viewer && same(row.name, viewer.name)) {
     const above = rows[row.rank - 2];
     const below = rows[row.rank];

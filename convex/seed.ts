@@ -1,4 +1,4 @@
-import { internalMutation, type MutationCtx } from "./_generated/server";
+import { internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { COUPLE_WIDGETS, CREW_WIDGETS, SPACES_BY_ID, type Widget } from "../src/data/spaces";
@@ -6,7 +6,10 @@ import { getGlobalThread, getThreadsForSpace } from "../src/data/chat";
 import { retireCutSpaceRows, memberCounts } from "./spaces";
 import { pollTallies } from "./votes";
 import { messagesCounter, spacesCounter, widgetsCounter } from "./stats";
-import type { CountdownData, ItineraryData, LinkCardData, WidgetData } from "./widgetData";
+import { widgetDataValidator, type CountdownData, type ItineraryData, type LinkCardData, type WidgetData } from "./widgetData";
+import { expandRecipe } from "../src/lib/deck/recipes";
+import { applyCard } from "../src/lib/deck/apply";
+import { revealOf } from "../src/lib/deck/catalog";
 import { FAMILY_CHALLENGE_IDS, familyWidgetsOn } from "../src/data/family";
 import { internal } from "./_generated/api";
 import { asPrompt, dealLikely, HOUSE_PROMPTS, likelyFacts, type LikelyFact } from "../src/lib/games/facts";
@@ -797,9 +800,11 @@ const houseIds = v.object({
  * `hero: true` leaves the challenge corner off so the voice ask builds it.
  */
 export const seedHouse = internalMutation({
-  args: { today: v.optional(v.string()), hero: v.optional(v.boolean()), prev: v.optional(houseIds) },
+  /* faces: a real photo per person, by name ({ Thomas: <storage id> }), stored by convex/faces.ts store
+     (.context/house/faces.sh). Written onto the seeded member row; left as it is when not passed. */
+  args: { today: v.optional(v.string()), hero: v.optional(v.boolean()), prev: v.optional(houseIds), faces: v.optional(v.record(v.string(), v.id("_storage"))) },
   returns: v.object({ ids: houseIds, removed: v.number(), cards: v.number() }),
-  handler: async (ctx, { today, hero, prev }) => {
+  handler: async (ctx, { today, hero, prev, faces }) => {
     const now = Date.now();
     const day = today && /^\d{4}-\d{2}-\d{2}$/.test(today) ? today : new Date(now).toISOString().slice(0, 10);
     let space = prev?.spaceId ? await ctx.db.get(prev.spaceId) : null;
@@ -823,11 +828,13 @@ export const seedHouse = internalMutation({
       const userId = seedUserId(HOUSE_SLUG, p.name);
       const kept = prev?.members.length ? await Promise.all(prev.members.map((id) => ctx.db.get(id))) : [];
       const row = kept.find((m) => m && m.spaceId === spaceId && m.userId === userId);
+      const face = faces?.[p.name] ? ((await ctx.storage.getUrl(faces[p.name])) ?? undefined) : undefined;
       if (row) {
+        if (face && row.avatarUrl !== face) await ctx.db.patch(row._id, { avatarUrl: face });
         members.push(row._id);
         continue;
       }
-      const id = await ctx.db.insert("members", { spaceId, userId, name: p.name, color: p.color, lastSeen: now });
+      const id = await ctx.db.insert("members", { spaceId, userId, name: p.name, color: p.color, lastSeen: now, ...(face ? { avatarUrl: face } : {}) });
       await memberCounts.insert(ctx, (await ctx.db.get(id))!);
       members.push(id);
     }
@@ -928,21 +935,21 @@ export const houseCity = internalMutation({
  * go through the public mutations from the phones. An open game is returned as it is. Cleanup: games:sweep by id.
  */
 export const houseGame = internalMutation({
-  args: { starter: v.optional(v.string()) },
+  args: { starter: v.optional(v.string()), slug: v.optional(v.string()) }, // slug: another seeded room (the-crew); default our house
   returns: v.object({ gameId: v.id("games"), fresh: v.boolean(), prompts: v.array(v.string()) }),
-  handler: async (ctx, { starter = "Holly" }) => {
-    const space = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", HOUSE_SLUG)).unique();
-    if (!space) throw new Error(`no ${HOUSE_SLUG}: run seed:seedHouse first`);
+  handler: async (ctx, { starter = "Holly", slug = HOUSE_SLUG }) => {
+    const space = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", slug)).unique();
+    if (!space) throw new Error(`no ${slug}: run seed:seedHouse first`);
     const spaceId = space._id;
     const on = await ctx.db.query("games").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).order("desc").take(5);
     const open = on.find((g) => g.phase !== "done" && g.kind !== "jigsaw");
     if (open) return { gameId: open._id, fresh: false, prompts: [] };
     const key = starter.trim().toLowerCase();
     const seats = (await ctx.db.query("members").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).take(500)).filter(
-      (m) => m.name.trim().toLowerCase() === key && m.userId !== seedUserId(HOUSE_SLUG, starter),
+      (m) => m.name.trim().toLowerCase() === key && m.userId !== seedUserId(slug, starter),
     );
     const me = seats.sort((a, b) => b.lastSeen - a.lastSeen)[0];
-    if (!me) throw new Error(`no phone seat for ${starter} in ${HOUSE_SLUG}: open the phone first`);
+    if (!me) throw new Error(`no phone seat for ${starter} in ${slug}: open the phone first`);
     const row = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
     const brief = row ? (JSON.parse(row.facts) as { knows?: Pick<RoomKnows, "people" | "lines">; told?: RoomKnows["told"]; forgot?: RoomKnows["forgot"] }) : {};
     const people = (brief.knows?.people ?? HOUSE_PEOPLE).filter((p) => p.name.trim().toLowerCase() !== key);
@@ -959,5 +966,393 @@ export const houseGame = internalMutation({
     await ctx.scheduler.runAfter(0, internal.games.word, { gameId });
     await ctx.scheduler.runAfter(180_000, internal.games.tick, { gameId, phase: "expire", n: 0 });
     return { gameId, fresh: true, prompts: all.map((f) => f.template.text) };
+  },
+});
+
+/* ── the crew: the friends' room on the dev lane, the room the video is shot in ──
+   Thomas, Holly and four friends (the tour fixture's names until the real ones are in: `members`
+   swaps them in one run). The lived-in side comes from the crew fixture (the group photo, the
+   memories wall, the inside jokes, the daily question, the tahoe IOUs); the week is the house's
+   story: a push-up challenge on day 5 of 6 (Holly hasn't logged today; forty puts her first), a
+   dinner poll without ramen, game night friday with three yeses. Not a tour room: no demo strip. */
+const CREW_SLUG = "the-crew";
+const CREW_DEFAULT_FRIENDS = ["Maya", "Jules", "Sam", "Kenji"];
+const CREW_COLORS = ["#3f70ff", "#e9369d", "#7c5cff", "#ff7a3d", "#13b8a6", "#d9a400", "#5b8c2a", "#b04fc4"];
+const CREW_CANVAS = { w: 1660, h: 1540 };
+const CREW_PHONE_SEATS = ["thomas", "holly"];
+
+/** Thomas, Holly, then the friends: `members` (first names, any order) with the fixture's names filling any gap. */
+function crewPeople(members?: string[]) {
+  const named = (members ?? []).map((m) => m.trim()).filter(Boolean);
+  const isUs = (m: string) => ["thomas", "holly"].includes(m.toLowerCase());
+  const friends = [...named.filter((m) => !isUs(m)), ...CREW_DEFAULT_FRIENDS].filter((m, i, a) => a.findIndex((x) => x.toLowerCase() === m.toLowerCase()) === i).slice(0, 4);
+  return ["Thomas", "Holly", ...friends].map((name, i) => ({ name, color: CREW_COLORS[i] }));
+}
+
+/** The crew's lived-in board; the challenge is writeCrewChallenge's (the ask's own cards). */
+function crewWidgetsOn(people: { name: string; color: string }[]): Widget[] {
+  const yes = (name: string) => ({ name, status: "yes" as const });
+  const [T, H, A, B, C, D] = people.map((p) => p.name); // A..D: the friends (Maya, Jules, Sam, Kenji by default)
+  const lc = (s: string) => s.toLowerCase();
+  const photo = (file: string, caption: string, date: string, by: string, rotate: number, focus: string) => ({
+    caption, date, rotate, by, src: `/photos/crew/${file}.jpg`, thumbnailSrc: `/photos/thumbs/crew/${file}.jpg`, focus,
+  });
+  return [
+    /* dinner saturday, answered: two yeses, a no, one nobody's heard from (first, so the brief's @coming lists it) */
+    { id: "crew-dinner-rsvp", type: "rsvp", x: 380, y: 1210, w: 230, h: 250, z: 3, rotate: 0.8, data: { title: "dinner saturday · 7", responses: [yes(H), yes(T), { name: B, status: "no" as const }], waitingOn: [C] } },
+
+    // ── the left column: the crew's own stuff ──
+    { id: "crew-photo", type: "media", x: 32, y: 48, w: 300, h: 220, z: 4, rotate: -2, data: { caption: `friday at ${lc(A)}'s`, date: "jun 14", src: "/photos/crew/friday-at-mayas.jpg", thumbnailSrc: "/photos/thumbs/crew/friday-at-mayas.jpg" } },
+    {
+      id: "crew-memories", type: "photoWall", x: 32, y: 292, w: 300, h: 200, z: 4,
+      data: {
+        title: "recent memories", tone: "blush",
+        photos: [
+          photo("roof-dusk", "roof dusk", "aug 29", B, 2, "center 52%"),
+          photo("pizza-night", "pizza night", "fri", H, -3, "center 48%"),
+          photo("tahoe-sunrise", "tahoe sunrise", "feb 18", D, 4, "center 65%"),
+          photo("paint-night", "paint night", "jul 20", T, -5, "center 50%"),
+          photo("rio-socks", `${lc(C)} in socks`, "mar 2", A, -5, "center 35%"),
+          photo("camera-roll", "things we left behind", "sun", A, -1, "center 50%"),
+        ],
+      },
+    },
+    { id: "crew-joke", type: "note", x: 32, y: 516, w: 280, h: 150, z: 2, rotate: -2, data: { text: `remember when ${lc(C)} got locked out in socks`, author: H, tone: "warm" } },
+    { id: "crew-jokes", type: "jokeRegistry", x: 32, y: 690, w: 300, h: 148, z: 2, data: { title: "inside joke hall of fame", jokes: [{ text: `${lc(C)} in socks incident`, votes: 12 }, { text: `${lc(B)}'s 6pm energy`, votes: 8 }, { text: `${lc(D)}'s tahoe voice`, votes: 6 }] } },
+    { id: "crew-quote", type: "quote", x: 40, y: 866, w: 270, h: 120, z: 3, rotate: 1.5, data: { text: "we don't cancel, we reschedule emotionally", author: B, week: "week 41" } },
+    { id: "crew-sticker-glad", type: "sticker", x: 228, y: 196, w: 104, h: 140, z: 12, rotate: -5, data: { stickerId: "glad-ur-here" } },
+
+    // the challenge corner (x 356 to the right edge, y 16 to 836) stays clear: crewChallenge fills it, or the ask does
+
+    // ── this week ──
+    { id: "crew-frame-week", type: "frame", x: 356, y: 860, w: 1266, h: 630, z: 0, data: { title: "this week", subtitle: "dinner, games, the usual" } },
+    {
+      id: "crew-dinner", type: "poll", x: 380, y: 922, w: 270, h: 230, z: 4, rotate: -1.2,
+      data: {
+        question: "dinner saturday?", tone: "sky",
+        options: [
+          { id: "a", label: "pho", votes: 2, total: 6, voters: [A, D] },
+          { id: "b", label: "tacos", votes: 1, total: 6, voters: [T] },
+          { id: "c", label: "thai curry", votes: 1, total: 6, voters: [H] },
+          { id: "d", label: "pizza", votes: 1, total: 6, voters: [C] },
+        ],
+      },
+    },
+    { id: "crew-game-night", type: "rsvp", x: 680, y: 916, w: 230, h: 260, z: 3, rotate: 1.2, data: { title: "game night · friday", responses: [yes(H), yes(A), yes(B)], waitingOn: [T] } },
+    {
+      id: "crew-daily-q", type: "dailyQ", x: 940, y: 922, w: 290, h: 238, z: 3,
+      data: {
+        question: "what's your current comfort show?", tone: "butter", streak: 12, waitingOn: [C, D],
+        answers: [{ name: A, text: "the bear", reactions: { "😂": [B] } }, { name: B, text: "survivor (again)" }, { name: H, text: "bluey, unironically" }, { name: T, text: "avatar" }],
+        history: [{ day: "yesterday", question: "most likely to be late to their own party?", topAnswer: { name: C, text: `${lc(D)}. not even a debate` }, count: 6 }],
+      },
+    },
+    {
+      id: "crew-places", type: "linkShelf", x: 1260, y: 916, w: 330, h: 230, z: 3, rotate: -1,
+      data: {
+        title: "the usual spots", tone: "butter",
+        links: [
+          { label: "the pho place (maps)", url: "maps.google.com", by: A },
+          { label: "the taco truck (maps)", url: "maps.google.com", by: T },
+          { label: "thai on the corner (maps)", url: "maps.google.com", by: H },
+          { label: `${lc(C)}'s pizza place (maps)`, url: "maps.google.com", by: C },
+        ],
+      },
+    },
+    { id: "crew-playlist", type: "playlist", x: 650, y: 1220, w: 290, h: 176, z: 3, rotate: -1, data: { title: "now playing", stationId: "indiepop", playedBy: B, playing: false, vibes: [A, C, D] } },
+    {
+      id: "crew-ious", type: "expenseSplit", x: 980, y: 1200, w: 250, h: 220, z: 3, rotate: 1,
+      data: { title: "tahoe trip IOUs", total: 847, splits: [{ name: A, owes: 0, paid: 320 }, { name: B, owes: 42, paid: 0 }, { name: C, owes: 18, paid: 180 }, { name: D, owes: 0, paid: 347 }] },
+    },
+    { id: "crew-sticker-since", type: "sticker", x: 1500, y: 1210, w: 105, h: 160, z: 12, rotate: 4, data: { stickerId: "since-19" } },
+  ];
+}
+
+/** Two things the room was told (the lookup's city; the dinner fact), Thomas's and Holly's. A rebuild keeps told facts. */
+async function tellCrew(ctx: MutationCtx, spaceId: Id<"spaces">, people: { name: string; color: string }[]) {
+  const row = await ctx.db.query("briefs").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).unique();
+  const facts = row ? (JSON.parse(row.facts) as { told?: RoomKnows["told"] }) : {};
+  const want = [
+    { id: "t-crew-city", text: "we're in San Jose, CA", by: people[0].name, color: people[0].color },
+    { id: "t-crew-veg", text: `${people[3].name} is vegetarian`, by: people[1].name, color: people[1].color },
+  ];
+  const kept = (facts.told ?? []).filter((t) => !want.some((w) => w.id === t.id));
+  const told = [...kept, ...want.map((w) => ({ ...w, at: Date.now() }))];
+  if (row) await ctx.db.patch(row._id, { facts: JSON.stringify({ ...facts, told }) });
+  else await ctx.db.insert("briefs", { spaceId, text: "", facts: JSON.stringify({ told }), at: 0 });
+}
+
+/**
+ * Resets the crew to its designed state (.context/crew/seed.sh). `prev` is what the last run made
+ * (.context/crew/ids.json): those cards and poll votes go by id, the board is written again, the room is
+ * kept. `members`: first names; Thomas and Holly are always in, the rest replace the fixture's four in
+ * order (a new name gets a new seeded member; the old one stays a member, off the cards).
+ * `hero: true` leaves the challenge corner off so the voice ask builds it. `faces`: as seedHouse.
+ */
+export const seedCrew = internalMutation({
+  args: {
+    today: v.optional(v.string()), hero: v.optional(v.boolean()), prev: v.optional(houseIds),
+    members: v.optional(v.array(v.string())), faces: v.optional(v.record(v.string(), v.id("_storage"))),
+  },
+  returns: v.object({ ids: houseIds, removed: v.number(), cards: v.number(), people: v.array(v.string()) }),
+  handler: async (ctx, { today, hero, prev, members: names, faces }) => {
+    const now = Date.now();
+    const day = today && /^\d{4}-\d{2}-\d{2}$/.test(today) ? today : new Date(now).toISOString().slice(0, 10);
+    const people = crewPeople(names);
+    let space = prev?.spaceId ? await ctx.db.get(prev.spaceId) : null;
+    const bySlug = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", CREW_SLUG)).unique();
+    if (bySlug && bySlug._id !== space?._id) throw new Error(`${CREW_SLUG} exists but isn't in the ids file: not ours to reset`);
+    if (!space) {
+      const spaceId = await ctx.db.insert("spaces", {
+        name: "the crew", type: "ongoing", icon: "✦", color: "#ff8a75", slug: CREW_SLUG, tagline: "where our friends plan stuff",
+        canvasW: CREW_CANVAS.w, canvasH: CREW_CANVAS.h, createdAt: now, lastActivityAt: now,
+      });
+      await spacesCounter.inc(ctx);
+      space = (await ctx.db.get(spaceId))!;
+    } else {
+      await ctx.db.patch(space._id, { lastActivityAt: now, canvasW: CREW_CANVAS.w, canvasH: CREW_CANVAS.h });
+    }
+    const spaceId = space._id;
+
+    const members: Id<"members">[] = [];
+    const kept = prev?.members.length ? await Promise.all(prev.members.map((id) => ctx.db.get(id))) : [];
+    for (const p of people) {
+      const userId = seedUserId(CREW_SLUG, p.name);
+      const row = kept.find((m) => m && m.spaceId === spaceId && m.userId === userId);
+      const face = faces?.[p.name] ? ((await ctx.storage.getUrl(faces[p.name])) ?? undefined) : undefined;
+      if (row) {
+        if (face && row.avatarUrl !== face) await ctx.db.patch(row._id, { avatarUrl: face });
+        members.push(row._id);
+        continue;
+      }
+      const id = await ctx.db.insert("members", { spaceId, userId, name: p.name, color: p.color, lastSeen: now, ...(face ? { avatarUrl: face } : {}) });
+      await memberCounts.insert(ctx, (await ctx.db.get(id))!);
+      members.push(id);
+    }
+    // a member an earlier run made and this one doesn't name stays in the ids (ours), off the cards
+    for (const m of kept) if (m && m.spaceId === spaceId && !members.includes(m._id)) members.push(m._id);
+
+    let removed = 0;
+    for (const id of prev?.votes ?? []) {
+      const vote = await ctx.db.get(id);
+      if (!vote) continue;
+      await ctx.db.delete(id);
+      await pollTallies.delete(ctx, vote);
+    }
+    for (const id of prev?.widgets ?? []) {
+      const w = await ctx.db.get(id);
+      if (!w || w.spaceId !== spaceId) continue;
+      await ctx.db.delete(id);
+      await widgetsCounter.dec(ctx);
+      removed++;
+    }
+
+    const designed = crewWidgetsOn(people);
+    const { onPhone, seat } = await crewSeats(ctx, spaceId, people);
+    const createdBy = seedUserId(CREW_SLUG, "Thomas");
+    const ids = new Map<string, Id<"widgets">>();
+    const votes: Id<"votes">[] = [];
+    for (const w of designed) {
+      const data = stampSeats(w.type, w.data, seat) ?? w.data;
+      const id = await ctx.db.insert("widgets", {
+        spaceId, type: w.type, x: w.x, y: w.y, w: w.w, h: w.h, z: w.z, rotate: w.rotate,
+        data: convexSafe(data) as WidgetData, createdBy, createdAt: now,
+      });
+      await widgetsCounter.inc(ctx);
+      ids.set(w.id, id);
+      if (w.type !== "poll") continue;
+      for (const option of (w.data.options as { id: string; voters: string[] }[]) ?? []) {
+        for (const voter of option.voters) {
+          const voteId = await ctx.db.insert("votes", { widgetId: id, userId: onPhone(voter) ?? seedUserId(CREW_SLUG, voter), optionId: option.id });
+          await pollTallies.insert(ctx, (await ctx.db.get(voteId))!);
+          votes.push(voteId);
+        }
+      }
+    }
+    // the challenge as the ask builds it, on day 5 of 6 (crewChallenge); hero leaves its corner clear
+    const made = hero ? [] : (await writeCrewChallenge(ctx, spaceId, day, "day5", people, [])).ids;
+    await tellCrew(ctx, spaceId, people);
+    await ctx.scheduler.runAfter(0, internal.roomBrief.refresh, { spaceId });
+    return { ids: { spaceId, members, widgets: [...ids.values(), ...made], votes }, removed, cards: ids.size + made.length, people: people.map((p) => p.name) };
+  },
+});
+
+/** Who a crew card's row belongs to: a phone that walked in owns its person's rows (seedHouse explains why);
+    nobody on a phone yet, Thomas and Holly stay claimable by the first log, the friends keep their seeded seats. */
+async function crewSeats(ctx: MutationCtx, spaceId: Id<"spaces">, people: { name: string }[]) {
+  const joined = new Map<string, Doc<"members">>();
+  for (const m of await ctx.db.query("members").withIndex("by_space", (q) => q.eq("spaceId", spaceId)).take(500)) {
+    const key = m.name.trim().toLowerCase();
+    if (m.userId.startsWith("seed:") || !people.some((p) => p.name.toLowerCase() === key)) continue;
+    const had = joined.get(key);
+    if (!had || had.lastSeen < m.lastSeen) joined.set(key, m);
+  }
+  const onPhone = (name: string) => joined.get(name.trim().toLowerCase())?.userId;
+  const seat = (name: string) => onPhone(name) ?? (CREW_PHONE_SEATS.includes(name.toLowerCase()) ? null : seedUserId(CREW_SLUG, name));
+  return { onPhone, seat };
+}
+
+/* ── the crew's push-up challenge, for filming (.context/fixtures/reset.mjs the-crew:day5 | the-crew:reveal) ──
+   The cards are the ask's own: the challenge recipe (src/lib/deck/recipes.ts) through applyCard, at the spot
+   the ask lands on the cleared corner. A fast-forward edits the cards it's handed (the hero take's, or an
+   earlier run's) in place, dates and counts only, and makes any that are missing. */
+const CREW_CHALLENGE_AT = { x: 368, y: 32 }; // where Holly's ask landed on the cleared corner (Oct 10)
+const CREW_STAKE = "last place hosts the next one";
+type Stage = "day5" | "reveal";
+/** Logs by person (crewPeople order: Thomas, Holly, then the four friends). day5: Holly hasn't logged today;
+    her forty puts her first. reveal: every day in, the forty kept, Holly first and the fourth friend last. */
+function crewLogs(stage: Stage, names: string[]): Record<string, (number | null)[]> {
+  const [T, H, A, B, C, D] = names;
+  const day5: Record<string, (number | null)[]> = { [A]: [36, 38, 30, 34, 32], [T]: [30, 32, 35, 33, 35], [H]: [30, 32, 34, 35, null], [C]: [25, 28, 30, 26, 31], [B]: [20, 25, null, 28, 30], [D]: [15, 20, 22, null, 18] };
+  if (stage === "day5") return day5;
+  const last: Record<string, number> = { [A]: 35, [T]: 36, [H]: 40, [C]: 30, [B]: 28, [D]: 20 };
+  return Object.fromEntries(Object.entries(day5).map(([n, l]) => [n, [...l.slice(0, 4), n === H ? 40 : l[4], last[n]]]));
+}
+
+async function writeCrewChallenge(
+  ctx: MutationCtx, spaceId: Id<"spaces">, today: string, stage: Stage, people: { name: string; color: string }[], handed: Id<"widgets">[],
+) {
+  const iso = (n: number) => new Date(Date.parse(`${today}T12:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+  // day5: today is day 5 of 6; reveal: the six days are done and the reveal was this morning at 9
+  const start = stage === "day5" ? iso(-4) : iso(-6);
+  const revealAt = revealOf(start, 6);
+  const wd = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date(`${revealAt.slice(0, 10)}T12:00:00Z`).getUTCDay()];
+  const names = people.map((p) => p.name);
+  const { seat } = await crewSeats(ctx, spaceId, people);
+  const parts = expandRecipe("challenge", { activity: "push-ups", unit: "push-ups", days: 6, stake: CREW_STAKE }, { by: "Holly", people: names, today: start, colors: Object.fromEntries(people.map((p) => [p.name, p.color])) });
+
+  // the handed cards that are still on this board, one per part (by card type)
+  const KEY: Record<string, string> = { frame: "frame", rsvp: "signup", checkIn: "checkin", standings: "standings", note: "deal", countdown: "reveal" };
+  const have = new Map<string, Doc<"widgets">>();
+  for (const id of handed) {
+    const w = await ctx.db.get(id);
+    if (w && w.spaceId === spaceId && KEY[w.type] && !have.has(KEY[w.type])) have.set(KEY[w.type], w);
+  }
+  const frame = have.get("frame");
+  const origin = frame ? { x: frame.x, y: frame.y } : CREW_CHALLENGE_AT;
+  const old = (key: string) => (have.get(key)?.data ?? {}) as Record<string, unknown>;
+  const title = String(old("checkin").title ?? "push-ups");
+  const colorOf = new Map(((old("checkin").people as { name: string; color: string }[] | undefined) ?? []).map((p) => [p.name, p.color]));
+  // rows in the order the ask wrote them (its people come from the room brief), the room's order for a new card
+  const order = [...colorOf.keys()].filter((n) => names.includes(n));
+  const rows = [...order, ...names.filter((n) => !order.includes(n))];
+
+  // what the stage says on each card; everything else stays as the ask wrote it
+  const stageOf = (key: string, built: Record<string, unknown>, checkinId?: string): Record<string, unknown> => {
+    const base = { ...built, ...old(key) };
+    if (key === "frame") return { ...base, title: `${title} till ${wd}`, subtitle: "the six of us" };
+    if (key === "signup") return { ...base, responses: rows.map((name) => ({ name, status: "yes" })), waitingOn: [] };
+    if (key === "checkin") return { ...base, start, days: 6, revealAt, people: rows.map((name) => ({ name, color: colorOf.get(name) ?? people.find((p) => p.name === name)!.color })), logs: crewLogs(stage, names) };
+    if (key === "standings") return { ...base, title: "standings", stake: `${CREW_STAKE}.`, ...(checkinId ? { source: checkinId } : {}) };
+    if (key === "deal") return { ...base, kicker: "the deal", text: `${CREW_STAKE}. log before bed or it didn't happen.` };
+    if (key === "reveal") return { ...base, event: `the reveal · ${wd} 9:00`, targetDate: revealAt.slice(0, 10), startDate: start };
+    return base;
+  };
+
+  const ids = new Map<string, Id<"widgets">>();
+  const made: Id<"widgets">[] = [];
+  let patched = 0;
+  const now = Date.now();
+  for (const part of [...parts].sort((a, b) => (a.key === "standings" ? 1 : 0) - (b.key === "standings" ? 1 : 0))) {
+    const applied = applyCard({ card: part.card, settings: part.settings }, { by: "Holly", people: names, today: start });
+    if (!applied.ok) throw new Error(`challenge ${part.key}: ${applied.reason}`);
+    const raw = stageOf(part.key, applied.widget.data as Record<string, unknown>, ids.get("checkin"));
+    const data = convexSafe(stampSeats(applied.widget.type, raw, seat) ?? raw) as WidgetData;
+    const kept = have.get(part.key);
+    if (kept) {
+      await ctx.db.patch(kept._id, { data });
+      ids.set(part.key, kept._id);
+      patched++;
+      continue;
+    }
+    const id = await ctx.db.insert("widgets", {
+      spaceId, type: applied.widget.type, x: origin.x + part.at.x, y: origin.y + part.at.y, w: part.size.w, h: Math.max(part.size.h, applied.widget.h),
+      z: part.z ?? 6, ...(part.rotate !== undefined ? { rotate: part.rotate } : {}), data, createdBy: seedUserId(CREW_SLUG, "Holly"), createdAt: now,
+    });
+    await widgetsCounter.inc(ctx);
+    ids.set(part.key, id);
+    made.push(id);
+  }
+  return { ids: [...ids.values()], made, patched };
+}
+
+/**
+ * The crew's challenge on day 5 of 6 or at the reveal, on the cards in `challenge` (the hero take's, or an
+ * earlier run's: .context/fixtures/the-crew.json). Edits those in place, makes the ones that are missing.
+ * Returns every challenge card's id (keep them: the next stage edits the same cards).
+ */
+export const crewChallenge = internalMutation({
+  args: { stage: v.union(v.literal("day5"), v.literal("reveal")), today: v.optional(v.string()), challenge: v.optional(v.array(v.id("widgets"))), members: v.optional(v.array(v.string())) },
+  returns: v.object({ ids: v.array(v.id("widgets")), made: v.array(v.id("widgets")), patched: v.number() }),
+  handler: async (ctx, { stage, today, challenge, members }) => {
+    const space = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", CREW_SLUG)).unique();
+    if (!space) throw new Error(`no ${CREW_SLUG}: run seed:seedCrew first`);
+    const day = today && /^\d{4}-\d{2}-\d{2}$/.test(today) ? today : new Date().toISOString().slice(0, 10);
+    const out = await writeCrewChallenge(ctx, space._id, day, stage, crewPeople(members), challenge ?? []);
+    await ctx.db.patch(space._id, { lastActivityAt: Date.now() });
+    await ctx.scheduler.runAfter(0, internal.roomBrief.refresh, { spaceId: space._id });
+    return out;
+  },
+});
+
+/* ── a room's board, for the reset lever (.context/fixtures/reset.mjs): what it prints, and the tour rooms' snapshot ── */
+const boardCard = v.object({
+  id: v.string(), type: v.string(), x: v.number(), y: v.number(), w: v.number(), h: v.number(), z: v.number(),
+  rotate: v.optional(v.number()), data: widgetDataValidator, createdBy: v.string(),
+});
+
+/** Every card in the room, and the members named like a seat (Thomas, Holly): seeded or a phone, newest first. */
+export const boardOf = internalQuery({
+  args: { slug: v.string(), seats: v.optional(v.array(v.string())) },
+  returns: v.object({
+    spaceId: v.id("spaces"),
+    cards: v.array(boardCard),
+    seats: v.array(v.object({ name: v.string(), userId: v.string(), lastSeen: v.number() })),
+  }),
+  handler: async (ctx, { slug, seats = ["Thomas", "Holly"] }) => {
+    const space = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", slug)).unique();
+    if (!space) throw new Error(`no ${slug}`);
+    const rows = await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", space._id)).take(400);
+    const want = new Set(seats.map((s) => s.toLowerCase()));
+    const members = (await ctx.db.query("members").withIndex("by_space", (q) => q.eq("spaceId", space._id)).take(500))
+      .filter((m) => want.has(m.name.trim().toLowerCase()))
+      .sort((a, b) => b.lastSeen - a.lastSeen);
+    return {
+      spaceId: space._id,
+      cards: rows.map((w) => ({ id: w._id, type: w.type, x: w.x, y: w.y, w: w.w, h: w.h, z: w.z, ...(w.rotate !== undefined ? { rotate: w.rotate } : {}), data: w.data, createdBy: w.createdBy })),
+      seats: members.map((m) => ({ name: m.name, userId: m.userId, lastSeen: m.lastSeen })),
+    };
+  },
+});
+
+/**
+ * A tour room back to its snapshot (couple:tour, league:tour): each card returns to its snapshot place and data
+ * on its own id, a card that's gone is made again (its new id comes back so the snapshot can learn it). Nothing
+ * is deleted: a card on the board that isn't in the snapshot comes back in `extra`, left where it is (10a).
+ */
+export const restoreCards = internalMutation({
+  args: { slug: v.string(), cards: v.array(boardCard) },
+  returns: v.object({ restored: v.number(), remade: v.array(v.object({ was: v.string(), id: v.id("widgets") })), extra: v.array(v.string()) }),
+  handler: async (ctx, { slug, cards }) => {
+    const space = await ctx.db.query("spaces").withIndex("by_slug", (q) => q.eq("slug", slug)).unique();
+    if (!space) throw new Error(`no ${slug}`);
+    let restored = 0;
+    const remade: { was: string; id: Id<"widgets"> }[] = [];
+    for (const c of cards) {
+      const { id: was, ...row } = c;
+      const id = ctx.db.normalizeId("widgets", was);
+      const live = id && (await ctx.db.get(id));
+      if (live && live.spaceId === space._id) {
+        await ctx.db.patch(live._id, { x: row.x, y: row.y, w: row.w, h: row.h, z: row.z, rotate: row.rotate, data: row.data });
+        restored++;
+        continue;
+      }
+      const made = await ctx.db.insert("widgets", { ...row, spaceId: space._id, createdAt: Date.now() });
+      await widgetsCounter.inc(ctx);
+      remade.push({ was, id: made });
+    }
+    const known = new Set([...cards.map((c) => c.id), ...remade.map((r) => r.id as string)]);
+    const extra = (await ctx.db.query("widgets").withIndex("by_space", (q) => q.eq("spaceId", space._id)).take(400)).map((w) => w._id as string).filter((id) => !known.has(id));
+    return { restored, remade, extra };
   },
 });

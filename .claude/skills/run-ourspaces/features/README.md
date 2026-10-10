@@ -28,6 +28,7 @@ plus the wide beats table over the stage.
 | [hot-seat](hot-seat.md) | crew, house, couple | lobby · round · reveal · slider · done · keepsake · seat-* (Maya's view) · other · house · two (+ takes: reveal · seat, and -phone) |
 | [room-brain](room-brain.md) | crew, house, couple, family | door · open · visit · forget · told · empty · live |
 | [family](family.md) | the family | board · logged · final · knows |
+| [fixtures](fixtures.md) | crew, house, couple, league (dev lane) | reset any room to a filming fixture (`reset.mjs the-crew:before\|day5\|reveal`, `our-house:dinner\|hero`, `couple:tour`, `league:tour`); states: crew · house · couple · league |
 | [check-in](check-in.md) | family board | open · logging · logged · mina · final |
 | [standings](standings.md) | family board | locked · open · unlocked · final |
 | [right-of-way](right-of-way.md) | crew | held · ghost · land · knows (mock, scripted holder) · liveknows (lane) + the two-browser take |
