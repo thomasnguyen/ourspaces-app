@@ -9958,6 +9958,13 @@
   translate: 0 0;
 }
 
+/* a phone take (?take=1): a tap on a poll or a row is the shot, not drag · zoom · edit · delete */
+@media (max-width: 560px) {
+  html[data-take] .widget-management {
+    display: none;
+  }
+}
+
 .widget-management button {
   display: inline-flex;
   min-height: 44px;
@@ -16645,9 +16652,17 @@
     width: 72px;
   }
 
+  /* title first: three columns as on desktop (a fourth, for an index no row draws, put the title in a 22px
+     slot, "t…", and stretched copy across the row); copy stays a small trailing pill */
   .widget-link-shelf .link-shelf-row {
-    grid-template-columns: 16px 22px minmax(0, 1fr) auto;
-    gap: 5px;
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding-block: 6px 8px;
+  }
+
+  .link-copy-button {
+    font-size: 11px;
+    padding: 6px 12px;
   }
 
   .link-shelf-index {

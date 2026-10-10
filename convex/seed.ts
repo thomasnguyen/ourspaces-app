@@ -978,7 +978,9 @@ export const houseGame = internalMutation({
 const CREW_SLUG = "the-crew";
 const CREW_DEFAULT_FRIENDS = ["Maya", "Jules", "Sam", "Kenji"];
 const CREW_COLORS = ["#3f70ff", "#e9369d", "#7c5cff", "#ff7a3d", "#13b8a6", "#d9a400", "#5b8c2a", "#b04fc4"];
-const CREW_CANVAS = { w: 1660, h: 1540 };
+/** 1660 for the room itself, then a strip right of the challenge corner for the games corner (game card +
+    scoreboard, 724 x 560, anchored there by lib/games/place.ts GAME_CORNERS); the-crew is in LIVE_GAME_ROOMS. */
+const CREW_CANVAS = { w: 2440, h: 1540 };
 const CREW_PHONE_SEATS = ["thomas", "holly"];
 
 /** Thomas, Holly, then the friends: `members` (first names, any order) with the fixture's names filling any gap. */
@@ -1306,6 +1308,7 @@ export const boardOf = internalQuery({
   args: { slug: v.string(), seats: v.optional(v.array(v.string())) },
   returns: v.object({
     spaceId: v.id("spaces"),
+    canvas: v.object({ w: v.number(), h: v.number() }),
     cards: v.array(boardCard),
     seats: v.array(v.object({ name: v.string(), userId: v.string(), lastSeen: v.number() })),
   }),
@@ -1319,6 +1322,7 @@ export const boardOf = internalQuery({
       .sort((a, b) => b.lastSeen - a.lastSeen);
     return {
       spaceId: space._id,
+      canvas: { w: space.canvasW ?? 1640, h: space.canvasH ?? 1080 },
       cards: rows.map((w) => ({ id: w._id, type: w.type, x: w.x, y: w.y, w: w.w, h: w.h, z: w.z, ...(w.rotate !== undefined ? { rotate: w.rotate } : {}), data: w.data, createdBy: w.createdBy })),
       seats: members.map((m) => ({ name: m.name, userId: m.userId, lastSeen: m.lastSeen })),
     };

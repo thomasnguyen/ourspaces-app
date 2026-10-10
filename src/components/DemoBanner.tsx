@@ -20,6 +20,9 @@ function recording(): boolean {
   return [window.location.search, hashQuery].some((q) => new URLSearchParams(q).get("take") === "1");
 }
 
+/* a take marks the page so CSS can drop what the camera shouldn't see (the card bar on a phone tap, index.css) */
+if (typeof document !== "undefined" && recording()) document.documentElement.dataset.take = "1";
+
 function useOnTour(): boolean {
   const [tour, setTour] = useState(onTour);
   useEffect(() => {
