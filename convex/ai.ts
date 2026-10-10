@@ -3,7 +3,7 @@ import { NEBIUS_BASE_URL, NEMOTRON, nebiusKey, nemotronLanguageModel, type Nemot
 
 /**
  * Model routing for the whole app: every chat call is NVIDIA Nemotron on
- * Nebius Token Factory. The job names the feature, NEMOTRON_BY_JOB below
+ * Nebius Token Factory (api.tokenfactory.nebius.com). The job names the feature, NEMOTRON_BY_JOB below
  * picks the model and whether it thinks, and convex/nebius.ts owns the
  * endpoint, the key (NEBIUS_API_KEY) and the streaming client the voice hot
  * path uses. Without the key there is no chat target: completeJson returns
