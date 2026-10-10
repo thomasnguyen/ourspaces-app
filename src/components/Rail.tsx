@@ -59,6 +59,7 @@ const EXAMPLE_COUNT = 4;
 const SPACE_COVERS: Record<string, string> = {
   crew: "/assets/the-crew-snapshot-thumb.webp",
   couple: "/assets/space-covers/us-two.png",
+  family: "/assets/space-covers/the-family.png",
   house: "/assets/space-covers/the-house.png",
   league: "/assets/space-covers/game-day.png",
 };
