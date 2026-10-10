@@ -33,5 +33,7 @@ scoreboard points or Convex yet.
 
 **State URLs:** `?flappy=open` opens the sheet at once; `?flappy=auto` opens it and flies itself through the gaps (for takes and to see the perched birds).
 
+**The crew (live, dev lane):** the-crew's games corner sits right of the challenge (`src/lib/games/place.ts` GAME_CORNERS), scoreboard first: `https://dev--ourspaces-app.netlify.app/?enter=1&take=1&as=Thomas#/space/the-crew` after `reset.mjs the-crew:day5`; the take is `ROOM=the-crew take.mjs flappy`.
+
 **Code:** `src/components/games/Flappy.tsx` (+ `flappy.css` `.fl-*`), pill
 mounted in `Scoreboard.tsx`'s footer. Physics on a fixed 1/120 s step.
