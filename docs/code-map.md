@@ -335,7 +335,7 @@ shared by App.tsx mock drops and the arrival lab so the beat can't drift) ·
 **data/** — `buildroom.ts` (47 seeded links, dropped one at a time — `RAW`
 entries expand into `BUILD_ROOM_LINKS` with jitter-staggered `droppedAt`;
 covers are deliberately absent, rows render a flat monogram tile) · `types.ts` (`Widget`/`Space`) · `spaces.ts` (seeded spaces: crew,
-couple, house, league, family) · `family.ts` + `family.css` (the family room: members, widgets, the week, its phone column; mock only) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes.ts` ·
+couple, house, league, family) · `family.ts` + `family.css` (the family room: members, widgets, the week, its phone column; mock only) · `components/phone-board.css` (V25: every room's phone column under 800px: cards stacked full width in `Canvas.tsx` `phoneColumn` reading order, frames as labels, the header pills fading with the title, `--space-header-h` measured by `SpaceHeader` for the top clearance; family.css / house.css / the build room's block are the per-room predecessors) · `chat.ts` (mock threads) · `recap.ts` · `spaceThemes.ts` ·
 `templates.ts` (`WIDGET_CATALOG`) · `stickers.ts` (stable sticker ids → die-cut
 character art, dimensions, tilt) · `avatars.ts` · `crew.ts`
 

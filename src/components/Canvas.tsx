@@ -24,6 +24,7 @@ import { MemberFace } from "./MemberFace";
 import type { BuildRoomFeed, RoundtableReply } from "../widgets/buildroom";
 import { widgetIsInsideFrame } from "../lib/frameMembership";
 import { WidgetCard } from "./WidgetCard";
+import "./phone-board.css";
 import type { RsvpStatus, PlaylistTune } from "../widgets/extras";
 import type {
   CozyColorIdentity,
@@ -68,6 +69,30 @@ type CanvasCursor = {
     stacks the cards in DOM order): each frame, then its cards (the challenge
     first), so a voice-built group lands in the column where it sits on the
     board, not at the end. Stacking on the board is by z, so this changes nothing there. */
+/* our house stacks the same way on a phone (src/data/house.css). */
+const PHONE_COLUMN_ROOMS = new Set(["family", "our-house"]);
+/* every room stacks on a phone (phone-board.css, the same 800px query); a frame
+   with nothing in it is a label over nothing there, so the column leaves it out */
+function phoneColumn(widgets: Widget[]): Widget[] {
+  /* a card belongs to the first frame around its centre (readingOrder's frameOf); a frame
+     that owns no card (empty, or a duplicate drawn over another) would be a label over nothing */
+  const frames = widgets.filter((w) => w.type === "frame");
+  const owner = (w: Widget) =>
+    frames.find((f) => w.x + w.w / 2 >= f.x && w.x + w.w / 2 <= f.x + f.w && w.y + w.h / 2 >= f.y && w.y + w.h / 2 <= f.y + f.h);
+  const owning = new Set(widgets.filter((w) => w.type !== "frame").map(owner).filter(Boolean));
+  return readingOrder(widgets).filter((w) => w.type !== "frame" || owning.has(w));
+}
+const PHONE_QUERY = "(max-width: 800px)";
+function usePhone() {
+  const [phone, setPhone] = useState(() => typeof window !== "undefined" && window.matchMedia(PHONE_QUERY).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(PHONE_QUERY);
+    const onChange = () => setPhone(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return phone;
+}
 function readingOrder(widgets: Widget[]): Widget[] {
   const frames = widgets.filter((w) => w.type === "frame");
   const frameOf = (w: Widget) =>
@@ -405,8 +430,9 @@ export function Canvas({
     ) ?? null;
   const focusedWidgetId =
     focusedTargetKind === "widget" ? focusedTargetId : "";
+  const phone = usePhone();
   const widgetCards = useMemo(
-    () => (spaceId === "family" ? readingOrder(widgets) : widgets).map((widget) => (
+    () => (phone ? phoneColumn(widgets) : PHONE_COLUMN_ROOMS.has(spaceId ?? "") ? readingOrder(widgets) : widgets).map((widget) => (
       <WidgetCard
         key={widget.id}
         widget={widget}
@@ -525,6 +551,7 @@ export function Canvas({
       selectedWidgetId,
       spaceId,
       widgets,
+      phone,
     ],
   );
 
@@ -643,6 +670,17 @@ export function SpaceHeader({
   const [mailCopied, setMailCopied] = useState(false);
   const [invitePosition, setInvitePosition] = useState({ top: 120, right: 28 });
   const inviteButtonRef = useRef<HTMLButtonElement>(null);
+  /* phone-board.css starts the column under the header, whatever height this room's name and handles came to */
+  const headerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const set = () => el.parentElement?.style.setProperty("--space-header-h", `${Math.round(el.getBoundingClientRect().height)}px`);
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    set();
+    return () => ro.disconnect();
+  }, []);
   const invitePopoverRef = useRef<HTMLElement>(null);
   const inviteUrlInputRef = useRef<HTMLInputElement>(null);
   const copyResetTimeout = useRef<number | null>(null);
@@ -812,7 +850,7 @@ export function SpaceHeader({
           (link previews, search snippets, crawlers) drop <header> as
           boilerplate, which silently hid "N here now" from every reader that
           isn't a browser. Styling is class-based, so the tag is free to change. */}
-      <div className={`space-header ${entering ? "is-entering" : ""}`}>
+      <div ref={headerRef} className={`space-header ${entering ? "is-entering" : ""}`}>
         <div className="space-title-block">
           <div className="space-meta">
             <span className="space-kind">{kind}</span>

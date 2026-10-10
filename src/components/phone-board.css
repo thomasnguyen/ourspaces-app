@@ -1,0 +1,92 @@
+/* PHONE BOARD (V21/V25, Oct 10): on a phone every room is one column of the
+   same cards, in the board's reading order (Canvas.tsx readingOrder, gated by
+   the same 800px query). The desk board is a wide canvas; seen through a phone
+   it was cards cut at the right edge, neighbours peeking in, the header pills
+   and the dock painted over cards. Here the cards stack full width, frames
+   become their labels, the cards that are words size to their words, and the
+   chrome keeps clear: the header scrolls away with the title, the column ends
+   above the orb and the strip. family.css / house.css / the build room's block
+   did this per room; this is the house rule for all of them. Desktop never
+   sees any of it. */
+@media (max-width: 800px) {
+  /* --space-header-h is measured by SpaceHeader (Canvas.tsx): the board
+     starts under whatever the header turned out to be in this room */
+  .paper-bg .space-scroll {
+    padding: calc(var(--space-header-h, 170px) + 14px) 16px 204px;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+  .paper-bg .space-scroll::-webkit-scrollbar { display: none; }
+
+  .paper-bg .space-canvas {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    /* a landing chip or cursor still at board coordinates must not scroll the
+       phone sideways; the clip keeps the card shadows, the padding the gutter */
+    overflow-x: clip;
+    /* a held card's frame and tab sit outside the card by a few px: keep them in the clip */
+    overflow-clip-margin: 14px;
+    box-sizing: border-box;
+    isolation: isolate;
+    background-image: none;
+  }
+
+  .paper-bg .widget-group {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    transform: none;
+    rotate: 0deg;
+  }
+  /* stickers are desk decoration */
+  .paper-bg .widget-group:has(.widget-sticker) { display: none; }
+
+  /* a frame is its label: a row above its cards, no mat, no stitched edge */
+  .paper-bg .widget-frame-group { height: 26px !important; margin-top: 12px; }
+  .paper-bg .widget-frame { display: block; height: 0 !important; overflow: visible; background: none; }
+  .paper-bg .widget-frame svg { display: none; }
+  .paper-bg .frame-label { left: 0; top: 0; }
+  .paper-bg .space-canvas > .widget-frame-group:first-child { margin-top: 0; }
+
+  /* cards that are words size to their words; size containers (countdown,
+     who's-in, split, the wall) keep their footprint, they have no content height */
+  .paper-bg .widget-group:has(.widget-checkin, .widget-standings, .widget-paper-note, .widget-sticky,
+    .widget-torn-note, .widget-quote, .widget-decision, .widget-link-shelf, .widget-joke-registry,
+    .widget-daily-q, .widget-letter) { height: auto !important; }
+  .paper-bg .widget-checkin,
+  .paper-bg .widget-standings { height: auto !important; }
+  /* a photo is its picture and caption; the stored footprint let it paint over the next row */
+  .paper-bg .widget-group:has(.widget-photo) { height: auto !important; }
+  /* who's-in measures its width only, so the card is as tall as the people on it */
+  .paper-bg .widget-group:has(> .widget-group-body > .widget-rsvp) { height: auto !important; }
+  .paper-bg .widget-group-body > .widget-rsvp { container-type: inline-size; height: auto !important; min-height: 0; }
+  /* the generic column needs no per-room spacer above the first row (house.css) */
+  .paper-bg[data-space-id="our-house"] .space-canvas::before,
+  .paper-bg[data-space-id="our-house"] .space-canvas::after { height: 0; }
+
+  /* the header: the one-line explainer is for crawlers, not a phone; the
+     side pills (here now, add, invite) sink away with the title instead of
+     riding on top of the cards */
+  .paper-bg .space-what { display: none; }
+  .paper-bg .space-header-side {
+    --side-fade: var(--header-scroll-fade, 0);
+    opacity: calc(1 - var(--side-fade));
+    translate: 0 calc(var(--side-fade) * -18px);
+    transition: opacity var(--dur-quick) linear, translate var(--dur-quick) var(--ease-glide);
+  }
+  .paper-bg.is-canvas-away .space-header-side { pointer-events: none; }
+
+  /* the comment chip hangs off a card's foot into the next row; the thread
+     dock it opens is already off on phones */
+  .paper-bg .widget-comment-chip { display: none; }
+
+  /* bottom chrome: the about pill and the board's status pill sat on the
+     cards above the dock and under the strip */
+  .paper-bg .app-about-link,
+  .paper-bg .space-live-strip { display: none; }
+}

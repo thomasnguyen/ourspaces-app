@@ -56,11 +56,14 @@ function OnlineDot({ spaceId }: { spaceId: string }) {
  * rule under them (no label) and everything below is what a person makes. */
 const EXAMPLE_COUNT = 4;
 
+/** The build room and the house stay real rooms (links, voice) but leave the dock. */
+const OFF_DOCK = new Set(["buildroom", "house"]);
+const DOCK = SPACES.filter((space) => !OFF_DOCK.has(space.id));
+
 const SPACE_COVERS: Record<string, string> = {
   crew: "/assets/the-crew-snapshot-thumb.webp",
   couple: "/assets/space-covers/us-two.png",
   family: "/assets/space-covers/the-family.png",
-  house: "/assets/space-covers/the-house.png",
   league: "/assets/space-covers/game-day.png",
 };
 
@@ -169,7 +172,7 @@ export function Rail({
       </a>
 
       <div className="space-list">
-        {SPACES.map((space, i) => {
+        {DOCK.map((space, i) => {
           const active = space.id === activeId;
           const displaySpace = active
             ? { ...space, ...activeSpaceOverride }
@@ -232,12 +235,12 @@ export function Rail({
         <YoursGroup
           activeId={activeId}
           onSelectSpace={onSelectSpace}
-          offset={SPACES.length}
+          offset={DOCK.length}
         />
 
         <div
           className="space-link-wrap"
-          style={{ "--i": SPACES.length + 1 } as CSSProperties}
+          style={{ "--i": DOCK.length + 1 } as CSSProperties}
         >
           <button
             type="button"
@@ -255,7 +258,7 @@ export function Rail({
       {self && (
         <div
           className="space-link-wrap rail-you-wrap"
-          style={{ "--i": SPACES.length + 2 } as CSSProperties}
+          style={{ "--i": DOCK.length + 2 } as CSSProperties}
         >
           <button
             type="button"
