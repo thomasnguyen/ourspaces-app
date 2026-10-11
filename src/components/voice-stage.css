@@ -1747,3 +1747,204 @@ body.voice-stage-up .voice-found-pulse {
 .voice-two-ask-slip {
   margin-top: 18px;
 }
+
+/* ================= one continuous motion (V-smooth, Oct 10) =================
+   Thomas: "the voice stage stutters". Nothing on the stage reflows while you
+   talk or while it builds: the card's own moves are FLIPped in VoiceStage.tsx
+   (StageCard), the group grows out of the card it already shows, and what
+   would change layout here changes a transform instead. */
+
+/* the pill's words change in place; each pip comes up when the card knows its parts */
+.voice-two-kind b {
+  animation: voice-label-in calc(var(--dur-base) * var(--slow)) var(--ease-glide) backwards;
+}
+
+@keyframes voice-label-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+.voice-two-parts i {
+  animation: voice-pip-in calc(var(--dur-arrive) * var(--slow)) var(--ease-pop) calc((80ms + var(--i, 0) * 30ms) * var(--slow)) backwards;
+}
+
+@keyframes voice-pip-in {
+  from {
+    opacity: 0;
+    scale: 0.2;
+  }
+}
+
+/* "from the room" hangs under the card and takes no layout: the card doesn't move when it lands */
+.voice-two-card {
+  position: relative;
+}
+
+.voice-two-sources {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 18px;
+  white-space: nowrap;
+}
+
+/* the group: the card it grew from stays put, the frame fills in behind it,
+   the rest gather round on the house pop (never dealt from the orb again) */
+.voice-two-cluster-card {
+  animation: voice-group-in calc(var(--dur-arrive) * var(--slow)) var(--ease-pop) calc((140ms + var(--i) * 70ms) * var(--slow)) backwards;
+}
+
+.voice-two-cluster-card[data-type="frame"] {
+  animation: voice-stage-fade calc(var(--dur-stage) * var(--slow)) var(--ease-glide) backwards;
+}
+
+.voice-two-cluster-card[data-lead] {
+  animation: none;
+}
+
+@keyframes voice-group-in {
+  from {
+    opacity: 0;
+    scale: 0.88;
+    translate: 0 14px;
+  }
+}
+
+.voice-two-cluster {
+  animation: voice-group-edge calc(var(--dur-stage) * var(--slow)) var(--ease-glide) backwards;
+}
+
+@keyframes voice-group-edge {
+  from {
+    outline-color: transparent;
+    box-shadow: 0 0 0 transparent;
+  }
+}
+
+/* lighter to paint: the marching ring repaints on its own layer, not the card's */
+.voice-two-ring {
+  will-change: transform;
+}
+
+/* words and arriving parts move on opacity + translate only (no animated blur) */
+@keyframes voice-word-in {
+  from {
+    opacity: 0.35;
+    translate: 0 0.22em;
+  }
+}
+
+@keyframes voice-ask-in {
+  from {
+    opacity: 0;
+    translate: -14px 0;
+  }
+}
+
+/* letting go: the room comes back over the whole flight (the stage is gone when the card lands,
+   500 ms), held a beat while the card starts to move, not spent in the first frames as glide does */
+.voice-stage.is-two[data-phase="closing"]::before {
+  animation: voice-stage-letgo calc(var(--dur-stage) * var(--slow)) linear forwards;
+}
+
+@keyframes voice-stage-letgo {
+  25% {
+    opacity: 0.86;
+  }
+
+  60% {
+    opacity: 0.38;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  /* the orb gives the card room by scale, not size: its slot keeps its box and
+     what sits under it rises by the same amount on a transform, so nothing reflows */
+  .voice-stage.is-two,
+  .voice-stage.is-two:not([data-build="waiting"]) {
+    --stage-ball: min(25vh, 50vw);
+    --orb-give: calc(var(--stage-ball) * -0.28);
+  }
+
+  .voice-stage.is-two .voice-stage-orb {
+    transform-origin: 50% 0;
+    transition: scale calc(var(--dur-stage) * var(--slow)) var(--ease-glide);
+  }
+
+  .voice-stage.is-two:not([data-build="waiting"]) .voice-stage-orb {
+    scale: 0.72;
+  }
+
+  .voice-stage.is-two .voice-two-bar > .voice-stage-status,
+  .voice-two-left > .voice-stage-wave-wrap,
+  .voice-two-left > .voice-two-say,
+  .voice-two-right {
+    transition: transform calc(var(--dur-stage) * var(--slow)) var(--ease-glide);
+  }
+
+  .voice-stage.is-two:not([data-build="waiting"]) .voice-two-bar > .voice-stage-status,
+  .voice-stage.is-two:not([data-build="waiting"]) .voice-two-left > .voice-stage-wave-wrap,
+  .voice-stage.is-two:not([data-build="waiting"]) .voice-two-left > .voice-two-say,
+  .voice-stage.is-two:not([data-build="waiting"]) .voice-two-right {
+    transform: translateY(var(--orb-give));
+  }
+
+  /* two lines held open (the cue sticker's padding included), and the card hangs from
+     the words, not centred in what is left, so a taller card grows down, never jumps */
+  .voice-two-words {
+    min-height: 2.3em;
+  }
+
+  .voice-two-right {
+    align-content: start;
+    place-items: start center;
+    padding-top: 8px;
+  }
+
+  .voice-two-sources {
+    right: 0;
+    justify-content: center;
+  }
+
+  /* the card comes up into its place, not from half a screen below */
+  .voice-two-fly {
+    animation: voice-card-rise calc(var(--dur-stage) * var(--slow)) var(--ease-glide) backwards;
+  }
+
+  @keyframes voice-card-rise {
+    from {
+      opacity: 0;
+      scale: 0.94;
+      translate: 0 56px;
+    }
+  }
+
+  .voice-stage.is-two[data-phase="closing"] .voice-two-fly {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-two-kind b,
+  .voice-two-parts i,
+  .voice-two-cluster-card,
+  .voice-two-cluster {
+    animation: none;
+  }
+
+  .voice-stage.is-two .voice-stage-orb,
+  .voice-two-right {
+    transition: none;
+  }
+}
+
+/* the group's card is the card that was already on the stage: its rows don't play their entrance again */
+.voice-two-cluster-card[data-lead] .widget-group * {
+  animation: none;
+}

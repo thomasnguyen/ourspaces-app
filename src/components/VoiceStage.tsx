@@ -114,6 +114,9 @@ const boxOf = (el: Element): Box => {
 function fly(host: HTMLElement, from: () => Box, to: () => Box, ms: number, o: { grow: (t: number) => number; press?: number }, done: () => void) {
   host.style.transform = "";
   const home = boxOf(host);
+  // the stage may hold the orb's slot scaled (a phone gives the card room by shrinking it): the
+  // host's translate is in its own, scaled, pixels
+  const zoom = home.w / (host.offsetWidth || home.w) || 1;
   const started = performance.now();
   const press = o.press ?? 0;
   let raf = 0;
@@ -153,7 +156,7 @@ function fly(host: HTMLElement, from: () => Box, to: () => Box, ms: number, o: {
     }
     last = { x, y };
     const k = w / home.w;
-    host.style.transform = `translate(${x - home.x}px, ${y - home.y}px) rotate(${angle}rad) scale(${k * stretch}, ${k / Math.sqrt(stretch)}) rotate(${-angle}rad)`;
+    host.style.transform = `translate(${(x - home.x) / zoom}px, ${(y - home.y) / zoom}px) rotate(${angle}rad) scale(${k * stretch}, ${k / Math.sqrt(stretch)}) rotate(${-angle}rad)`;
     if (p < 1) raf = requestAnimationFrame(frame);
     else done();
   };
@@ -327,8 +330,8 @@ function useArrivals(root: RefObject<HTMLElement | null>, key: number) {
         quiet
           ? [{ opacity: 0 }, { opacity: 1 }]
           : [
-              { opacity: 0, translate: "0 0.5em", filter: "blur(5px)" },
-              { opacity: 1, translate: "0 0", filter: "blur(0px)" },
+              { opacity: 0, translate: "0 0.5em" },
+              { opacity: 1, translate: "0 0" },
             ],
         { duration: beat("partArrive"), easing: GLIDE },
       );
@@ -362,6 +365,18 @@ function useArrivals(root: RefObject<HTMLElement | null>, key: number) {
   }, [root, key]);
 }
 
+type Pos = { x: number; y: number };
+/** Where layout put an element (offsets, so a running transform doesn't count). */
+function layoutPos(el: HTMLElement): Pos {
+  let x = 0;
+  let y = 0;
+  for (let n: HTMLElement | null = el; n; n = n.offsetParent as HTMLElement | null) {
+    x += n.offsetLeft;
+    y += n.offsetTop;
+  }
+  return { x, y };
+}
+
 /** The room in the hash, for the widget's own lookups. */
 const spaceInHash = () => /#\/space\/([^/?]+)/.exec(window.location.hash)?.[1] ?? "crew";
 
@@ -377,7 +392,7 @@ function stageScale(w: number, h: number) {
 /** A recipe's group on the stage: the frame and each card in it at its own
     spot, each one arriving as it is written (the same order every screen
     gets them in). Fits the right half. */
-function StageCluster({ cluster }: { cluster: NonNullable<StageBuild["cluster"]> }) {
+function StageCluster({ cluster, lead }: { cluster: NonNullable<StageBuild["cluster"]>; lead?: string }) {
   const { box, cards } = cluster;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -389,7 +404,7 @@ function StageCluster({ cluster }: { cluster: NonNullable<StageBuild["cluster"]>
     <div className="voice-two-card-body voice-two-cluster" data-testid="voice-stage-cluster" data-cards={cards.length} style={{ zoom: scale, width: box.w, height: box.h }}>
       {cluster.thread && cards.length > 1 && <Thread a={{ ...cards[0], x: cards[0].x - box.x, y: cards[0].y - box.y }} b={{ ...cards[1], x: cards[1].x - box.x, y: cards[1].y - box.y }} tag={cluster.thread} />}
       {cards.map((w, i) => (
-        <div key={w.id} className="voice-two-cluster-card" data-type={w.type} style={{ "--i": i } as CSSProperties}>
+        <div key={w.id} className="voice-two-cluster-card" data-type={w.type} data-lead={w.id === lead ? "" : undefined} style={{ "--i": i } as CSSProperties}>
           <WidgetCard widget={{ ...w, x: w.x - box.x, y: w.y - box.y, z: w.type === "frame" ? 0 : 2 + i }} spaceId={spaceInHash()} canvasScale={scale} />
         </div>
       ))}
@@ -487,6 +502,47 @@ function StageCard({
     el.style.setProperty("--deal-x", `${o.left + o.width / 2 - (frame.left + el.offsetLeft + el.offsetWidth / 2)}px`);
     el.style.setProperty("--deal-y", `${o.top + o.height / 2 - (frame.top + el.offsetTop + el.offsetHeight / 2)}px`);
   }, [fly]);
+  // One continuous card. Layout may move the card or its pill (a sources line, a group taking the
+  // gap beside the words); each move is FLIPped from where it was, so nothing snaps. When the
+  // recipe's group arrives, the card on the stage becomes that group's card: the group starts
+  // scaled so its card sits exactly where the skeleton was, and settles into place around it.
+  const head = useRef<HTMLElement>(null);
+  const flip = useRef<{ group: boolean; body: DOMRect | null; fly: Pos; head: Pos } | null>(null);
+  useLayoutEffect(() => {
+    const el = fly.current;
+    const h = head.current;
+    if (!el || !h) return;
+    const group = Boolean(build.cluster);
+    const now = { fly: layoutPos(el), head: layoutPos(h) };
+    const was = flip.current;
+    if (was && !still() && el.closest('[data-phase="open"]')) {
+      const slow = voiceSlow();
+      const shift = (target: HTMLElement, from: Pos, to: Pos) => {
+        const dx = from.x - to.x;
+        const dy = from.y - to.y;
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+        target.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0px, 0px)" }], { duration: 360 * slow, easing: GLIDE, composite: "add" });
+      };
+      const lead = group && !was.group && was.body ? el.querySelector<HTMLElement>(".voice-two-cluster-card[data-lead] > .widget-group") : null;
+      if (lead && was.body) {
+        const a = was.body;
+        const b = lead.getBoundingClientRect();
+        const f = el.getBoundingClientRect();
+        const s = a.width / b.width;
+        const tx = a.left - f.left - s * (b.left - f.left);
+        const ty = a.top - f.top - s * (b.top - f.top);
+        el.animate(
+          [
+            { transform: `translate(${tx}px, ${ty}px) scale(${s})`, transformOrigin: "0 0" },
+            { transform: "translate(0px, 0px) scale(1)", transformOrigin: "0 0" },
+          ],
+          { duration: 500 * slow, easing: GLIDE },
+        );
+      } else shift(el, was.fly, now.fly);
+      shift(h, was.head, now.head);
+    }
+    flip.current = { group, body: group ? null : (body.current?.querySelector(".widget-group")?.getBoundingClientRect() ?? null), ...now };
+  });
   // while it asks, the field it asks about is the empty one (whatever a guess put there)
   const widget =
     reveal.widget && asking && question
@@ -498,6 +554,7 @@ function StageCard({
   const whole = build.complete && reveal.all;
   // a cluster of one reads as its card ("poll"), never "1 cards, linked"
   const linkedCount = build.cluster ? build.cluster.cards.filter((w) => w.type !== "frame").length : 0;
+  const label = linkedCount > 1 ? `${linkedCount} cards, linked` : (build.kind ?? "card");
   // the room's facts in this card, once the parts they filled are on screen
   const sources = build.parts.some((p) => p.room && p.id in reveal.at) ? build.sources : [];
   return (
@@ -509,12 +566,14 @@ function StageCard({
       data-state={edit ? "edit" : found ? "found" : whole ? "complete" : asking ? "asking" : "skeleton"}
       data-asking-field={asking && question ? question.field : undefined}
     >
-      <header className="voice-two-kind">
-        <b>{linkedCount > 1 ? `${linkedCount} cards, linked` : (build.kind ?? "card")}</b>
+      <header className="voice-two-kind" ref={head}>
+        {/* the pill's words change in place (check-in → 5 cards, linked): keyed, so the new words ease in */}
+        <b key={linkedCount > 1 ? "group" : label}>{label}</b>
         <span className="voice-two-parts" data-testid="voice-stage-parts">
-          {build.parts.map((p) => (
+          {build.parts.map((p, i) => (
             <i
               key={p.id}
+              style={{ "--i": i } as CSSProperties}
               data-testid={`voice-stage-part-${p.id}`}
               data-part={p.id}
               data-status={p.status}
@@ -546,7 +605,7 @@ function StageCard({
           <rect x="1.5" y="1.5" rx="28" />
         </svg>
         {build.cluster ? (
-          <StageCluster cluster={build.cluster} />
+          <StageCluster cluster={build.cluster} lead={build.widget?.id} />
         ) : (
           <div className="voice-two-card-body" ref={body} style={{ zoom: scale }}>
             <WidgetCard widget={{ ...widget, x: 0, y: 0, z: 1, rotate: 0 }} spaceId={spaceInHash()} canvasScale={scale} />
@@ -1044,6 +1103,10 @@ export function useVoiceStage(voice: Voice, seat: RefObject<HTMLElement | null>)
         stopOrb = fly(host, () => from, () => seatBox(seat.current!), beat("orbHome"), { grow: glide }, land);
       }
       const b = buildRef.current;
+      // a FLIP still settling would hold the card's transform against the flight's
+      card.current?.getAnimations().forEach((a) => {
+        if (!(a instanceof CSSAnimation)) a.finish();
+      });
       let stopCard = () => {};
       if (card.current && onto) {
         // the build's camera is already on its way to the card that is there; the stage's card melts into it

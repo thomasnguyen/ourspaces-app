@@ -186,3 +186,15 @@ linked"; the frame and the check-in arrive on one beat, the rest gather; on
 the board the group lands as one thing and each card settles in turn
 (`flyCard`). `?timing=table` is the wide beats table; `?timing=0` hides
 every dev readout.
+
+**One continuous motion (Oct 10).** Nothing on the stage reflows while you
+talk or while it builds. A recipe writes its frame before the card the ask
+is about; the adapter keeps the skeleton on the stage until the group holds
+that card (`voiceStage.ts`, `lead`/`held`), and the group then grows out of it:
+`StageCard` FLIPs the fly box so the group's card (`[data-lead]`) starts
+exactly where the skeleton was, and the frame and the other cards gather
+round. Any other layout move of the card or its pill is FLIPped too
+(composite add). On a phone the orb gives the card room by `scale` (its slot
+keeps its box) and what is under it rises on a transform; `fly()` divides by
+that scale. The sources line hangs under the card (absolute). The room
+comes back over the whole closing flight (`voice-stage-letgo`).

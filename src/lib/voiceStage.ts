@@ -150,8 +150,9 @@ const watchers = new Set<() => void>();
 export function feedVoiceStage(feed: StageFeed) {
   // a recipe's group: a frame and the cards inside it, one more each time a part is written
   const frame = feed.drafts.length > 1 ? feed.drafts.find((d) => d.type === "frame") : undefined;
-  const draft = (frame ? feed.drafts.find((d) => d.type === "checkIn") : feed.drafts[0]) ?? feed.drafts[0] ?? null;
-  const draftKey = draft ? Number(/^voice-draft-(\d+)-/.exec(draft.id)?.[1]) : NaN;
+  const lead = frame ? feed.drafts.find((d) => d.type === "checkIn") : feed.drafts[0];
+  const anyDraft = lead ?? feed.drafts[0] ?? null;
+  const draftKey = anyDraft ? Number(/^voice-draft-(\d+)-/.exec(anyDraft.id)?.[1]) : NaN;
   const key = Number.isFinite(draftKey) ? draftKey : (feed.reply?.traceKey ?? feed.edit?.traceKey ?? feed.found?.traceKey ?? feed.landed?.traceKey ?? feed.receipt?.key ?? (feed.shell ? feed.traces[0]?.key : undefined));
   let next: StageBuild | null = null;
   if (key !== undefined) {
@@ -162,7 +163,10 @@ export function feedVoiceStage(feed: StageFeed) {
     const editHere = feed.edit?.traceKey === key ? feed.edit : null;
     const there = editHere ? editHere.widget : foundHere ? (boardWidget?.(foundHere.widgetId) ?? null) : null;
     // the draft is dropped once its synced copy is on the board: keep showing the last one
-    const widget = there ?? draft ?? same?.widget ?? null;
+    // a recipe writes its frame (and a card or two) before the card the ask is about: the stage keeps
+    // the skeleton it had until the group holds it, so the card never leaves the stage (no empty frame)
+    const held = same?.widget && same.widget.type !== "frame" ? same.widget : null;
+    const widget = there ?? lead ?? held ?? anyDraft ?? null;
     const kind = widget ? (CATALOG.find((c) => c.type === widget.type)?.id ?? null) : null;
     const trace = feed.traces.find((t) => t.key === key);
     const placed = feed.landed?.traceKey === key ? { widgetId: feed.landed.widgetId, host: feed.landed.host } : null;
@@ -185,7 +189,7 @@ export function feedVoiceStage(feed: StageFeed) {
     }
     // a flow (W2): two cards and the thread between them, in the footprint code placed them in
     const flowBox = !frame ? (feed.drafts.find((d) => d.data.flowBox)?.data.flowBox as { x: number; y: number; w: number; h: number } | undefined) : undefined;
-    const cluster = frame
+    const cluster = frame && (lead || !held)
       ? { box: { x: frame.x, y: frame.y, w: frame.w, h: frame.h }, cards: feed.drafts }
       : flowBox
         ? { box: flowBox, cards: feed.drafts, thread: String(feed.drafts[0].data.flowTag ?? "linked") }
