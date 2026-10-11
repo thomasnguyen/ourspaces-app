@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { LOCKS, seeState } from "../lib/answerToSee";
 import type { Widget } from "../data/types";
 import { MemberFace } from "../components/MemberFace";
@@ -305,6 +305,9 @@ export function CheckInWidget({ widget, style }: { widget: Widget; style: Style 
   );
 }
 
+/** The whole reveal, peel to the leader's stamp (keep in step with challenge.css "the reveal"). */
+const REVEAL_MS = 3400;
+
 export function StandingsWidget({ widget, style }: { widget: Widget; style: Style }) {
   const { widgets } = useContext(BoardLinkContext);
   const settings = readStandings(widget.data);
@@ -327,6 +330,16 @@ export function StandingsWidget({ widget, style }: { widget: Widget; style: Styl
     setWasLocked(locked);
     if (wasLocked && !locked) setJustOpened(true);
   }
+  /* the sequence (challenge.css "the reveal"): the sticker peels, the slips turn last place first,
+     a hold, the leader. When it's over the card drops back to its plain open render. */
+  useEffect(() => {
+    if (!justOpened) return;
+    const t = window.setTimeout(() => setJustOpened(false), REVEAL_MS);
+    return () => window.clearTimeout(t);
+  }, [justOpened]);
+  /* the sticker keeps the words it had while it peels off */
+  const lockNote = useRef("");
+  if (locked) lockNote.current = viewer ? `${inToday} of ${data.people.length} have logged today. you haven't.` : "only the people in it can look";
 
   const open = (value?: number) => {
     window.dispatchEvent(new CustomEvent<OpenLog>(OPEN_LOG, { detail: { source: settings.source, value } }));
@@ -356,7 +369,7 @@ export function StandingsWidget({ widget, style }: { widget: Widget; style: Styl
       {!source ? (
         <p className="st-empty" data-testid="standings-waiting">waiting on a check-in</p>
       ) : (
-        <ol className="st-rows">
+        <ol className="st-rows" style={{ "--count": rows.length } as Style}>
           {rows.map((row, i) => {
             const line = locked ? null : lineFor(row, rows, data, Math.max(day, 0), you);
             const isYou = row.name === viewer && !locked;
@@ -384,7 +397,12 @@ export function StandingsWidget({ widget, style }: { widget: Widget; style: Styl
                   <span className="st-face">
                     <MemberFace name={row.name} color={row.color} size="md" />
                     <b className="st-name">{row.name.toLowerCase()}{isYou ? <i>you</i> : null}</b>
-                    <strong className="st-total">{row.total.toLocaleString("en-US")}</strong>
+                    {justOpened && row.total < 10000 ? (
+                      /* counts up as the slip lands: a registered integer on the CSS animation clock */
+                      <strong className="st-total st-count" style={{ "--to": row.total, "--d": String(row.total).length } as Style} aria-label={String(row.total)} />
+                    ) : (
+                      <strong className="st-total">{row.total.toLocaleString("en-US")}</strong>
+                    )}
                     <span className="st-line">
                       <small>{line?.text}</small>
                       {line?.beat && today >= 0 && !final ? (
@@ -402,14 +420,10 @@ export function StandingsWidget({ widget, style }: { widget: Widget; style: Styl
         </ol>
       )}
 
-      {locked && source ? (
-        <div className="st-lock" data-testid="standings-lock">
+      {(locked || justOpened) && source ? (
+        <div className={`st-lock${locked ? "" : " is-peeling"}`} data-testid={locked ? "standings-lock" : undefined}>
           <strong>log yours to see</strong>
-          <small>
-            {viewer
-              ? `${inToday} of ${data.people.length} have logged today. you haven't.`
-              : "only the people in it can look"}
-          </small>
+          <small>{lockNote.current}</small>
           {viewer ? (
             <button type="button" className="st-lock-go" data-testid="standings-log" onClick={() => open()}>
               log today →

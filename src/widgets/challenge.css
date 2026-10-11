@@ -708,38 +708,141 @@
   grid-area: 1 / 1;
 }
 
+/* ── the reveal: one sequence, about 2.9 s (REVEAL_MS in challenge.tsx holds the class a little longer).
+   0 ms the sticker peels off · 360 ms the slips turn, last place first, 1.1 s spread over however many
+   rows · a held breath · 1760 ms the leader turns on snap, lifts, and the 1 stamps in · the gap pill.
+   Each total counts up as its slip lands. Transform and opacity only (and the count). ── */
+.widget-standings.is-revealing {
+  --st-peel: 360ms;
+  --st-lead: 1760ms;
+}
+
+/* --count sits on the list, so the step resolves there */
+.is-revealing .st-rows {
+  --st-step: calc(1100ms / max(var(--count) - 1, 1));
+}
+
+.is-revealing .st-row {
+  --st-at: calc(var(--st-peel) + var(--n) * var(--st-step));
+  position: relative;
+  z-index: var(--n);
+}
+
+.is-revealing .st-row.is-first {
+  --st-at: var(--st-lead);
+}
+
+.is-revealing .st-slot {
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  animation:
+    st-turn 680ms var(--ease-pop) var(--st-at) both,
+    st-lift 680ms var(--ease-glide) var(--st-at) both;
+}
+
+.is-revealing .st-face {
+  backface-visibility: hidden;
+}
+
+/* the slip it was: the slip's other side */
 .st-back-under {
   rotate: none;
-  animation: st-under-out 1ms linear both;
-  animation-delay: calc(var(--n) * 150ms + 80ms + var(--dur-stage));
-}
-
-@keyframes st-under-out {
-  to { visibility: hidden; }
-}
-
-/* the flip, last place first, the leader last */
-.is-revealing .st-face {
-  transform-origin: 50% 0;
+  transform: rotateX(180deg);
   backface-visibility: hidden;
-  animation: st-flip var(--dur-stage) var(--ease-pop) both;
-  animation-delay: calc(var(--n) * 150ms + 80ms);
 }
 
-.is-revealing .st-row.is-first .st-face {
-  animation-timing-function: var(--ease-snap);
+@keyframes st-turn {
+  from {
+    transform: perspective(620px) rotateX(-180deg);
+    rotate: calc((var(--i) - 1.5) * 0.7deg);
+  }
+  to {
+    transform: perspective(620px) rotateX(0deg);
+    rotate: 0deg;
+  }
+}
+
+@keyframes st-lift {
+  0% { scale: 1; }
+  45% { scale: 1.06; }
+  100% { scale: 1; }
+}
+
+/* the leader: the face-down slip rises in the held breath, turns on snap, lands big */
+.is-revealing .st-row.is-first .st-slot {
+  animation:
+    st-ready 760ms var(--ease-glide) calc(var(--st-lead) - 460ms) both,
+    st-turn 860ms var(--ease-snap) var(--st-lead) both,
+    st-land 1000ms var(--ease-glide) var(--st-lead) both;
+}
+
+@keyframes st-ready {
+  0% { translate: 0 0; }
+  55% { translate: 0 -6px; }
+  100% { translate: 0 0; }
+}
+
+@keyframes st-land {
+  0% { scale: 1.03; }
+  40% { scale: 1.1; }
+  100% { scale: 1; }
+}
+
+/* the 1 stamps in once the leader's face is up */
+.is-revealing .st-row.is-first .st-rank {
+  animation: st-stamp 520ms var(--ease-snap) calc(var(--st-lead) + 380ms) both;
+}
+
+@keyframes st-stamp {
+  from { opacity: 0; scale: 2.2; rotate: -20deg; }
+  to { opacity: 1; scale: 1; rotate: 0deg; }
+}
+
+/* the sticker peels up off the corner and goes */
+.st-lock.is-peeling {
+  pointer-events: none;
+  z-index: 20;
+  transform-origin: 92% 8%;
+  animation: st-peel 520ms var(--ease-glide) both;
+}
+
+@keyframes st-peel {
+  0% { transform: none; opacity: 1; }
+  30% { transform: perspective(700px) translateY(-8px) rotateX(14deg) rotate(-4deg) scale(1.05); opacity: 1; }
+  75% { opacity: 0; }
+  100% { transform: perspective(700px) translateY(-90px) rotateX(38deg) rotate(-14deg) scale(0.94); opacity: 0; }
+}
+
+/* each total counts up as its slip lands */
+@property --st-num {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
+}
+
+.st-count {
+  min-width: calc(var(--d) * 1ch);
+  text-align: right;
+  counter-reset: st-num var(--st-num);
+  animation: st-count 760ms var(--ease-glide) calc(var(--st-at) + 200ms) both;
+}
+
+.st-row.is-first .st-count {
+  animation-duration: 1000ms;
+}
+
+.st-count::after {
+  content: counter(st-num);
+}
+
+@keyframes st-count {
+  from { --st-num: 0; }
+  to { --st-num: var(--to); }
 }
 
 .is-revealing .st-gap {
   animation: ci-logger-in var(--dur-arrive) var(--ease-pop) both;
-  animation-delay: 620ms;
-}
-
-@keyframes st-flip {
-  0% { transform: rotateX(-88deg); background: var(--ink); }
-  40% { background: var(--ink); }
-  41% { background: var(--c); }
-  100% { transform: rotateX(0deg); background: var(--c); }
+  animation-delay: calc(var(--st-lead) + 820ms);
 }
 
 .st-stake {
@@ -768,9 +871,15 @@
   .ci-cell-today.is-stamped,
   .ci-logger,
   .ci-draft,
-  .is-revealing .st-face,
+  .is-revealing .st-slot,
+  .is-revealing .st-row.is-first .st-slot,
+  .is-revealing .st-row.is-first .st-rank,
+  .st-lock.is-peeling,
+  .st-count,
   .is-revealing .st-gap {
     animation: none;
   }
-  .st-back-under { display: none; }
+  .st-back-under,
+  .st-lock.is-peeling { display: none; }
+  .st-count { counter-reset: st-num var(--to); }
 }

@@ -18,7 +18,10 @@ Until you've logged today the slips lie **face down**: four black slips,
 ranks 1–4 beside them, and a tilted black sticker on top, `log yours to
 see` · "3 of 4 have logged today. you haven't." · a lime `log today →`
 that opens the check-in's logger. The moment your number lands the slips
-flip, last place first and the leader last: each a strip in its person's
+turn over, last place first and the leader last (the reveal, about 2.6 s: the
+sticker peels up off its corner, each slip turns in 3D and its total counts up
+as it lands, a held breath, then the leader turns on the snap curve, lifts,
+and the lime 1 stamps in before the gap pill arrives): each a strip in its person's
 colour with a face, the total set big, and one line that invites a move
 instead of reporting one ("dev did 40 today" + a black `beat 40 →` pill;
 "19 more and you pass casey" + `log 59 →`; "5 for 5 · hasn't missed a
@@ -55,6 +58,13 @@ is `standings-row` with `data-person`.
 **Code:** `src/widgets/challenge.tsx` (`StandingsWidget`; reads its source
 out of `BoardLinkContext.widgets`; `OPEN_LOG` window event to the
 check-in) + `challenge.css` (`.st-back` face down, `st-flip`).
+
+**Reveal timing** lives in one block in `challenge.css` ("the reveal"):
+`--st-peel` 360ms, `--st-step` = 1.1 s spread over the rows (`--count` on
+the list), `--st-lead` 1760ms; `REVEAL_MS` (3400) in `challenge.tsx` then
+drops `is-revealing` and the card renders plain. Totals count on the CSS
+clock (`@property --st-num`, `counter()`), so frame-by-frame capture holds.
+The `revealAt` minute plays the same sequence for anyone still face down.
 
 **Gotchas:** the flip only plays when the lock opens under you; a load
 that is already open (`?challenge=logged`) shows the rows straight away.
