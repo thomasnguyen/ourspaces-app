@@ -2040,7 +2040,7 @@ export function LiveSpacePage({
     () => ({ ...voiceBuild.voice, start: () => { setRecapOpen(false); voiceBuild.voice.start?.(); } }),
     [voiceBuild.voice],
   );
-  const canvasWidgets = useMemo(() => voiceBuild.withDrafts(withGhosts([...adaptedWidgets, ...gameWidgets], ghosts, leases)), [voiceBuild.withDrafts, adaptedWidgets, gameWidgets, ghosts, leases]);
+  const canvasWidgets = useMemo(() => voiceBuild.withDrafts(withGhosts([...adaptedWidgets, ...gameWidgets], ghosts, leases, identity.userId)), [voiceBuild.withDrafts, adaptedWidgets, gameWidgets, ghosts, leases, identity.userId]);
   /* The header always needs a number to print, so an unloaded count reads as
      quiet rather than falling through to the seeded roster. The strip can
      stay silent until the real one lands, so it gets the raw value. */

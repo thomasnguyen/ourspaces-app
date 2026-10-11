@@ -116,14 +116,15 @@ const opOf = (g: RowGhost) => parse<{ kind: string; op?: EditOp; today?: string 
 /**
  * Cards with a waiting edit, drawn with the change in (the changed part is
  * then dashed by `RowGhosts`). Not for removals (the row stays, struck) and
- * not while the holder is typing in that card (their field is theirs).
+ * not on the screen of someone typing in that card (their field is theirs;
+ * everyone else sees the row waiting).
  */
-export function withGhosts<T extends Card>(cards: T[], ghosts: RowGhost[], leases: RowLease[]): T[] {
+export function withGhosts<T extends Card>(cards: T[], ghosts: RowGhost[], leases: RowLease[], me?: string): T[] {
   if (!ghosts.length) return cards;
   return cards.map((c) => {
     const g = ghosts.find((x) => x.thing === c.id);
     const w = g && opOf(g);
-    if (!g || !w?.op || REMOVES.has(w.op.op) || leases.some((l) => l.thing === c.id && l.kind === "type")) return c;
+    if (!g || !w?.op || REMOVES.has(w.op.op) || leases.some((l) => l.thing === c.id && l.kind === "type" && (me === undefined || l.userId === me))) return c;
     const r = applyEdit(c, w.op, { today: w.today ?? "" });
     return r.ok ? { ...c, data: r.data as T["data"] } : c;
   });
