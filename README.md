@@ -75,8 +75,8 @@ code decides.**
 - A change that would undo a vote or a claim **asks the people who made it**.
 - Whoever asked can undo an AI change with one tap.
 
-<p align="center"><img src=".github/readme/loop-waits.webp" width="900" alt="Two phones: Holly holds the dinner poll while Thomas adds ramen"></p>
-<p align="center"><sub>Two phones: Holly holds the dinner poll; Thomas's "add ramen" waits on her, fills in from the web, and lands when she lets go.</sub></p>
+<p align="center"><img src=".github/readme/loop-waits.webp" width="900" alt="Holly holds the dinner poll on her phone while Thomas adds ramen from his laptop"></p>
+<p align="center"><sub>Holly is typing in the dinner poll on her phone; Thomas's "add ramen" from his laptop waits on her, fills in from the web, and lands when she lets go.</sub></p>
 
 **Why not just ask the model?** 162 situations labelled by hand, 64 of them
 from our recorded test sessions. Of the 155 clear ones, 107 would change
