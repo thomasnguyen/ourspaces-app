@@ -130,6 +130,122 @@ Oct 10): Nemotron on Token Factory behind every chat call, the voice orb and
 card deck, Right of Way, the family room, games, Tavily lookups and the pilot
 counting query.
 
+## For the technical reader
+
+<details>
+<summary><b>How one ask runs, function by function</b></summary>
+
+| Step | Where | What happens |
+|---|---|---|
+| 1. Listen | `src/lib/voice.ts` `useVoice` | Browser speech recognition; a pause of `PAUSE_MS` (650 ms) ends the ask |
+| 2. Wake | `voiceBuild.warm` → `pingTokenFactory` (`convex/nebius.ts`) | Fired when listening starts, so the first call isn't cold |
+| 3. Guess while talking | `src/live/useVoiceBuild.ts` `words` → `guessCard`, `existingFor` | Code shows the card's empty skeleton and checks whether that card is already on the board |
+| 4. Early fill (speculative) | `maybeFire` → action `voiceBuild.deal` with `spec: true` | A model call on the words so far; at most `SPEC_MAX_CALLS` (6) per ask, `SPEC_IN_FLIGHT` (2) at once |
+| 5. Decide (only when the words don't name one card, or the card may already exist) | action `voiceBuild.decide` → `chooseLetter` | Ultra answers one token (`max_tokens: 1`, `logprobs`, `top_logprobs: 20`): which card, is it on the board, which verb |
+| 6. Spend check | `internal.guard.voice` (`convex/guard.ts`) | Before any model call: the day's dollar ceiling, then the per-seat and per-room limits |
+| 7. Final fill | `pickFinal`, else `voiceBuild.deal` with `spec: false` | Reuses an early call made on the exact final words; otherwise fires one more |
+| 8. Model call | `streamChat` (`convex/nebius.ts`) | Streamed, `temperature: 0`, `chat_template_kwargs: { enable_thinking: false }` |
+| 9. Parse | `parseDeal` (`src/lib/deck/prompt.ts`), `parseDealResolved` (`promptV2.ts`) | One JSON line per card, parsed as each line closes |
+| 10. Pointers to names | `resolveCard` (`src/lib/deck/resolve.ts`) | `@coming(...)` and the other pointers become real names, dates and places |
+| 11. Check and place | `applyCard` (`src/lib/deck/apply.ts`), `placeCards` (`place.ts`) | Settings checked against the card's schema; a free spot on the board |
+| 12. Write | mutation `voiceBuild.commit` → `rightOfWay` (`convex/rightOfWay.ts`) | The gate, then `ctx.db.insert("widgets")`; `noteCommitted` schedules the Tavily lookup after the card exists |
+| 13. Sync | `spaces.getSpaceWithWidgets` | A reactive query: every screen in the room gets the card |
+
+- **Models** (`NEMOTRON` in `convex/nebius.ts`): `deal` runs `FAST` = Lightning, `max_tokens` 220, on a plain ask; `BRAIN` = Ultra, 300, when the ask points at the group's facts. `decide` and spoken answers run on Ultra. Other jobs are in `NEMOTRON_BY_JOB` (`convex/ai.ts`): recap, ask and mail on Ultra with thinking off; questions on Lightning; the weekly digest on Super with thinking on.
+- **Output format:** the voice path uses no `response_format` and no tool calling. The prompt asks for one `{"card":"<id>","settings":{...}}` per line, and code parses each line as it streams in. `completeJson` in `convex/ai.ts` uses `response_format: { type: "json_object" }` for the jobs off the voice path.
+- **What is thrown away:** every early call carries a `seq`. An answer older than the one on screen is ignored (`sp.seq < s.shownSeq`); nothing is aborted. Early calls are logged in the `deals` table and never write a card. Only `commit` writes, and only for the final words.
+- **"One exists":** `existingFor` (`src/lib/deck/existing.ts`) and the board question in `decide` (accepted at `DECIDE_BAR` 0.8). `pointAt` moves the view to the card, and nothing is written.
+
+</details>
+
+<details>
+<summary><b>The deck: what the model can pick, what code fills</b></summary>
+
+- **19 cards** in `CATALOG` (`src/lib/deck/catalog.ts`): poll, checklist, countdown, rsvp, wheel, note, question, availability, split, itinerary, messages, jokes, quote, decision, clocks, photos, checkin, standings, radio. Two more (`frame`, `signup`, in `INTERNAL`) are placed by code only.
+- **Recipes** (`RECIPES`, `src/lib/deck/recipes.ts`): `challenge`, `dinner`, `hangout`, `cabin`, `potluck`. One line from the model, several linked cards from `expandRecipe`; the push-up challenge is `challenge`.
+- **The model fills** the card id and its `settings` (title, options, items, a date) and nothing else. `deckPrompt()` shows only the cards on the ask's shortlist (`shortlist.ts`).
+- **Code fills** everything else. `checkSettings` (`schema.ts`) applies defaults, clamps values and drops bad fields; `applyCard` makes the id and size; `placeCards` finds the spot; the author comes from the caller's seat (`seatOf`, `convex/seat.ts`), never from the model.
+- **Pointers.** On the Ultra path the model writes pointers in place of names: 14 kinds in `TOKENS` (`resolve.ts`), among them `@coming(title)` (who said yes on that RSVP), `@everyone-but(...)`, `@payer`, `@leader(poll)`, `@date(title, -2d)`, `@headcount`. `resolveCard` expands them from the room's facts (`buildBrief`, `convex/roomBrief.ts`). An unknown pointer is left out, with a note; a known one with no fact behind it falls back (`coming` → the people not marked away). So a name a pointer produces is always a real member's.
+
+</details>
+
+<details>
+<summary><b>Right of Way: the lease table and the gate</b></summary>
+
+- **`leases`** (`convex/tables/rightOfWay.ts`): `spaceId`, `thing` (a card id or a puzzle piece), `kind`, `userId`, `name`, `color`, `since`, `until`, `letGoAt`, `settleAt`; index `by_thing` on `[spaceId, thing]`. The client renews a hold every `RENEW_EVERY_MS` (1 s, `src/live/useHolds.ts`). A hold lasts `RENEW_MS` (3 s, `convex/leases.ts`) past its last renewal, then `GRACE_MS` (1.5 s) after typing or a vote, `DRAG_GRACE_MS` (0.6 s) after a drag. The scheduled `leases.settle` ends it.
+- **The gate** is a pure function, `rightOfWay(write, leases)` in `src/lib/rightOfWay.ts`: no clock, database or model. `convex/rightOfWay.ts` calls it inside the mutation that commits the write, so nothing changes between the check and the commit. Four verdicts:
+  - `go`: committed now.
+  - `wait`: stored in `pending` and shown as a ghost on every screen. When the lease settles, `landWaiting` runs the gate again and replays the write. If the card changed meanwhile, the write is `"dropped"` and the card says so. A wait expires after `WAIT_MS` (30 s).
+  - `ask`: it would override votes, claims, RSVPs, payments, check-ins or a hand-set date, so it becomes a vote of those people (`choiceVotes`).
+  - `never`: the last puzzle piece, or a new card on a held spot (that card is placed elsewhere).
+- **The log:** every AI write is a row in `aiWrites` with its outcome. Whoever asked can take one back (`rightOfWay.cancel`).
+- **The 162 situations** are public in [`eval/right-of-way/`](eval/right-of-way/). There are 45 from the gate's own cases, 64 recorded from our two-browser sessions and 53 adversarial ones, plus 18 appended later as batch `r4`. All were labelled by hand and frozen with a hash before either arm ran (`scenarios.mjs` → `scenarios.json`). `node eval/right-of-way/replay.mjs` runs the shipping gate on all 180 in under a second with no network; `--model ultra-think` scores the cached model answers in `answers/`; `--live` asks Token Factory again.
+
+</details>
+
+<details>
+<summary><b>Data model and sync</b></summary>
+
+- **34 tables:** 28 in `convex/tables/` (rooms, mail, voice, rightOfWay, games) plus the six Convex Auth tables (`users` is ours).
+
+| Table | Indexes | Holds |
+|---|---|---|
+| `spaces` | `by_name`, `by_slug`, `by_inbox`, `by_owner` | A group's room |
+| `members` | `by_space`, `by_space_user`, `by_user` | Who is in which room |
+| `widgets` | `by_space`, `by_space_and_type`, vector `by_embedding` | Every card |
+| `votes` | `by_widget`, `by_widget_user`, `by_user` | Poll votes |
+| `leases` · `pending` | `by_thing` | Hands on cards; AI writes waiting on them |
+| `choiceVotes` | `by_widget`, `by_space` | "Ask the people who chose" votes |
+| `aiWrites` | `by_space` | Every AI write and its outcome |
+| `deals` | `by_space` | Every voice model call, early ones included |
+
+- **Functions:** 255 exported from `convex/*.ts`: 45 queries, 65 mutations, 10 actions, 1 HTTP action (`streaming.streamAsk`), and 134 internal ones.
+  - **Reactive queries:** `spaces.getSpaceWithWidgets` (the board), `rightOfWay.room` (halos and ghosts), `roomPresence.onlineForSpace` (who's here).
+  - **Actions:** the Token Factory calls (`voiceBuild.deal`, `decide`).
+  - **Scheduled:** `leases.settle` at a hold's end, `rightOfWay.expire`, `tavily.lookup` after a card commits, `games.tick`, and six crons in `convex/crons.ts` (room briefs every 10 minutes, the daily catch-up, the weekly digest).
+  - **HTTP** (`convex/http.ts`): `/api/ask-stream`, `/api/agentmail/webhook`, the auth routes.
+- **18 components, each with a job:**
+  - `presence`: the who's-here count.
+  - `agentMail` (local, `convex/components/agentMail`): every space's inbox, and sign-in codes.
+  - `firecrawl`: a dropped link becomes a card.
+  - `rateLimiter`: the limits below.
+  - `shardedCounter`: the day's spend and the live totals.
+  - `aggregate` ×2: `pollTallies`, `memberCounts`.
+  - `actionRetrier` and `actionCache`: Firecrawl retries and caching.
+  - `workpool`: the daily recap fan-out.
+  - `workflow`: the weekly digest.
+  - `batchWorker`: refreshes stale link cards.
+  - `agent`: "ask the space" threads.
+  - `rag`: search for those answers.
+  - `persistentTextStreaming`: streamed answers.
+  - `migrations`.
+  - `staticHosting`: serves the site.
+  - `authWellKnown`: OIDC discovery.
+- **Limits** (`convex/rateLimits.ts`):
+  - **Deployment:** `SPEND_CEILING_USD = 0.5` per UTC day, estimated as tokens × `PRICE_PER_M`. `guard.voice` and `modelDoor` check it before every model call; past it, the orb says so and code-only answers keep working.
+  - **Per seat:** `voicePerson` (50 a minute, burst 60).
+  - **Per room per day:** `voiceRoomDay` (300 calls) and `tavilyRoomDay` (40).
+  - **Per person:** the Firecrawl limits.
+  - **A seat is proven by the session:** `seatOf` reads the caller's `members` row and ignores any name the client sends.
+- **Embeddings:** `convex/rag.ts` uses `openai/text-embedding-3-small` through the Convex AI Gateway, the one model call not on Nemotron.
+
+</details>
+
+<details>
+<summary><b>How the numbers were measured</b></summary>
+
+| Number | How | Speech or direct call |
+|---|---|---|
+| 610 ms / 878 ms, p90 657 / 978 | Run V1 (Oct 5): 12 plain asks on the dev deployment, last word to card on the asker's screen and on a second browser. A re-run after games went in (G5): 618 / 883 | Scripted speech through the real voice path, two browsers |
+| 0.03 cents a plain ask | V1: tokens × list price for every call the ask made, discarded early calls included ($0.0003) | Same runs |
+| 436 ms (313 ms) | Latency spike (Oct 5): Lightning, prompt v2, thinking off. p50 to the first complete card over 50 requests from a laptop; 313 ms over 10 calls inside a Convex action | Direct model calls |
+| Ultra 15 of 15 (Lightning 6 of 15) | Same spike: 15 multi-card chain asks per model, prompt v1, right cards per ask | Direct model calls |
+| 38 of 38 | Run R1 (Oct 5): two browsers on the dev deployment. One holds a card (drag, typing, vote) while the other asks to change it; a subscription logged every committed version (0 changed while held) | Scripted speech |
+| 0 of 107 / 29 of 107 | Run R3 (Oct 5): the 162 situations, 155 clear. 0 = the gate (5 on its blind run, 0 after the fixes listed in the eval README) and Ultra with thinking on; 29 = Ultra with thinking off. The gate runs in-process; the models at temperature 0, one call each, no retries. Every figure in [`eval/right-of-way/results.json`](eval/right-of-way/results.json) | Direct model calls; the gate is code |
+| 203 commits | `git rev-list --count --since=2026-10-03 --until=2026-10-11 HEAD` (319 through Sep 21) | — |
+
+</details>
+
 ## Stack and run
 
 Every chat model call is Nemotron on Token Factory (`convex/nebius.ts`; search
