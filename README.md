@@ -7,8 +7,9 @@ orb, say what you need, and the card lands on your screen 610 ms after your
 last word (878 ms on everyone else's), filled in by **NVIDIA Nemotron on
 Nebius Token Factory**. Then it's a normal card anyone can vote on, claim or drag.
 
-**Live:** https://ourspaces.io · **Built for** the Nebius × NVIDIA Global AI
-Hackathon · **By** Thomas Nguyen (build) and Holly Tran (design)
+**Live:** https://ourspaces.io · **Video:** https://youtu.be/A4gXhmU9Eeo ·
+**Built for** the Nebius × NVIDIA Global AI Hackathon · **By** Thomas Nguyen
+(build) and Holly Tran (design)
 
 <p align="center"><picture><source srcset="https://raw.githubusercontent.com/thomasnguyen/ourspaces-app/main/.github/readme/loop-challenge.avif" type="image/avif"><img src=".github/readme/loop-challenge.webp" width="900" alt="One sentence and six linked cards land on the family's board"></picture></p>
 <p align="center"><sub>"Set up a push-up challenge for the four of us": six linked cards on every screen 1.6 s after the last word.</sub></p>
