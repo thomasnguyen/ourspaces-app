@@ -214,7 +214,7 @@ function AboutOverview() {
 
       <footer className="about-footer about-wrap">
         <div className="about-footer-invite"><h2>There’s room for you.</h2><a className="about-button" href="#/space/crew">come on in <span>↗</span></a></div>
-        <div className="about-footer-meta"><a className="about-brand" href="#/about"><img src="/assets/ourspace-mark.png" alt="" /><span>ourspaces</span></a><span>group chats forget. spaces remember.</span><a href={REPO_URL} target="_blank" rel="noreferrer">made in the open ↗</a></div>
+        <div className="about-footer-meta"><a className="about-brand" href="#/about"><img src="/assets/ourspace-mark.png" alt="" /><span>ourspaces</span></a><span>group chats forget. spaces remember.</span><a href={REPO_URL} target="_blank" rel="noreferrer">made in the open ↗</a><a href="https://nebiusglobalaihackathon.devpost.com/" target="_blank" rel="noreferrer">built for the Nebius × NVIDIA hackathon ↗</a></div>
       </footer>
     </main>
   );
@@ -224,7 +224,7 @@ export default About;
 
 // These pages document this app's integrations. Examples are local and never
 // invoke an outside service; source links point to the implementation.
-type VendorId = "convex" | "openai" | "agentmail" | "firecrawl";
+type VendorId = "convex" | "nemotron" | "agentmail" | "firecrawl";
 type VendorDetail = [title: string, description: string, source: string];
 type VendorStory = {
   id: VendorId;
@@ -271,29 +271,29 @@ const VENDORS: VendorStory[] = [
     ],
   },
   {
-    id: "openai", name: "OpenAI", color: "league", role: "the room’s sense of context",
-    headline: ["Good stuff in.", "Right place found."],
-    intro: "The room reads what arrived alongside what’s already on the board. OpenAI models help turn that context into a useful decision—and a little explanation you can see.",
+    id: "nemotron", name: "Nemotron on Nebius Token Factory", color: "league", role: "the room’s model",
+    headline: ["You say it.", "The card lands."],
+    intro: "Tap the orb and say what you need. NVIDIA Nemotron on Nebius Token Factory fills the card while you are still talking; code places it, checks whose hand is on it, and puts it on every screen.",
     example: "Illustrated decisions. Choose a message to see where it belongs.",
     room: "crew", roomLabel: "see the crew’s canvas",
-    journeyTitle: "Follow one receipt.",
+    journeyTitle: "Follow one ask.",
     journey: [
-      ["Read what came in.", "The email’s subject, body, and parsed attachment text form the input.", "convex/inboxRouting.ts"],
-      ["Look around the room.", "An inventory describes the existing expenses, itineraries, frames, and countdowns.", "convex/inboxRouting.ts"],
-      ["Choose a destination.", "The model returns a JSON decision: update an expense or itinerary, create one, leave mail unfiled, or discard spam.", "convex/inboxRouting.ts"],
-      ["Leave the reason with it.", "Convex saves the change and its because sentence. The arrival and the object show what happened.", "convex/inbox.ts"],
+      ["You start talking.", "A model call fires before your last word. If you keep going it is thrown away and fired again, so the answer is usually back before you stop.", "convex/voiceBuild.ts"],
+      ["Nemotron fills the card.", "Lightning for plain asks, Ultra when the ask needs the group’s facts. It returns fields and pointers like “the people who are coming”, never a name.", "convex/nebius.ts"],
+      ["Code turns pointers into people.", "The real names and dates come from the board, so the model cannot invent one. Code picks the kind of card and where it goes.", "convex/voiceBuild.ts"],
+      ["The gate checks the write.", "If someone is holding the card, the change waits as a ghost with their name on it and lands when they let go.", "convex/rightOfWay.ts"],
     ],
     capabilities: [
-      ["It reads against your actual plans.", "A payment for a past trip belongs with that trip’s expenses. A future reservation belongs in an itinerary. The mail router includes the current board inventory so the decision has somewhere concrete to land.", "convex/inboxRouting.ts"],
-      ["The explanation stays on the object.", "The same decision includes a short because sentence. It appears with the mail arrival and on the resulting letter, expense, or itinerary, so the group can understand the change.", "src/components/MailArrival.tsx"],
-      ["The room can catch you up.", "The recap and weekly digest use board snapshots to compose short updates. Follow-up questions use a persistent agent thread and context retrieved from the room.", "convex/recap.ts"],
-      ["Uncertainty has a place, too.", "When the router cannot make a useful decision, mail can remain as an unfiled envelope. The model chooses from a small set of actions; app functions own the actual writes.", "convex/inbox.ts"],
+      ["It starts before you finish.", "About three calls per ask, and the card is on your screen 610 ms after your last word, on everyone else’s at 878 ms. A plain ask costs 0.03 cents, discarded calls included.", "convex/voiceBuild.ts"],
+      ["Three sizes, one job each.", "Lightning answers plain asks with a first card in 436 ms. Ultra takes the asks that need the group’s facts and the multi-card ones: 15 of 15 right on the chains Lightning got 6 of. Super sets up games and writes the weekly email, where nobody waits.", "convex/nebius.ts"],
+      ["It reads against what the room knows.", "Each space keeps a page of facts with their sources. The model gets pointers to the ones that matter for this ask, and anyone can cross one out.", "convex/voiceBuild.ts"],
+      ["Mail and links land in the right place.", "The same model files what arrives against what is already on the board and leaves a short because sentence on the object.", "convex/inboxRouting.ts"],
     ],
     technical: [
-      ["One model-routing module", "convex/ai.ts sends every model call through the Convex AI Gateway, which the deployment authenticates to with a short-lived credential minted inside the running action, so this app carries no model API key of its own. A Cloudflare proxy and a direct OpenAI key remain as fallbacks selected by configuration, not by automatic failover after an error.", "convex/ai.ts"],
-      ["JSON decisions, with app-owned writes", "completeJson asks the gateway for a JSON object, and falls back to prompt-directed JSON on the Cloudflare proxy path, whose model rejects the field. Callers interpret the fields; the expense and itinerary mutations check the target’s room and type before updating it.", "convex/inboxRouting.ts"],
-      ["Embeddings and memory", "text-embedding-3-small runs through the same gateway at 1536 dimensions, the size the vector indexes were built for. The RAG component indexes widget summaries and recent messages in a namespace for each space, then retrieves context for a follow-up.", "convex/rag.ts"],
-      ["A bounded job for the agent", "The follow-up agent is instructed to answer briefly from the supplied context and cite a real object when useful. It has no canvas-writing role. Mail filing follows the separate structured-decision path.", "convex/agent.ts"],
+      ["One client, thinking off", "convex/nebius.ts talks to Token Factory’s OpenAI-compatible endpoint. Live asks send chat_template_kwargs.enable_thinking=false: with thinking on, Lightning spent its whole token budget reasoning and returned no card.", "convex/nebius.ts"],
+      ["JSON the app checks", "The model returns a typed card from the deck’s schema. Code validates it, picks the action and the kind of card, and owns every write.", "src/lib/deck/schema.ts"],
+      ["A gate, not a guideline", "A lease table records whose hand is on a card. In test, 38 of 38 AI changes to a held card waited; asking Ultra to judge the same 107 risky writes cost 3,063 ms each with thinking on, and let 29 through with it off.", "convex/rightOfWay.ts"],
+      ["Embeddings, the one exception", "Search embeddings stay on text-embedding-3-small through the Convex AI Gateway, because Token Factory’s embedding model cannot read the 1536-dimension vectors the rooms are indexed with. A daily ceiling of $0.50 caps the deployment’s spend.", "convex/rag.ts"],
     ],
   },
   {
@@ -375,7 +375,7 @@ function VendorExample({ vendor }: { vendor: VendorStory }) {
         <div className="vendor-connection"><span /> one shared canvas <span /></div>
         <button className="vendor-example-button" onClick={() => setChoice(choice + 1)}>{choice % 2 ? "put it back" : "move the note"} <span>↗</span></button>
       </>}
-      {vendor.id === "openai" && <>
+      {vendor.id === "nemotron" && <>
         <div className="vendor-example-tabs">{DECISION_EXAMPLES.map((item, i) => <button key={item.kind} className={choice === i ? "is-selected" : ""} onClick={() => setChoice(i)}>{item.kind}</button>)}</div>
         <div className="vendor-message-input"><span>✉</span><p>{decision.input}</p></div>
         <span className="vendor-down-arrow">↓</span>

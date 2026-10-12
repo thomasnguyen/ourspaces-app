@@ -704,7 +704,7 @@ Backward-looking history lives in `hackathon.md`.
   opens its vendor page, and no console errors. `npm run build` passes.
 
 - **Vendor stories (2026-09-13):** the four vendor names on About now open
-  `#/about/convex`, `#/about/openai`, `#/about/agentmail`, and
+  `#/about/convex`, `#/about/nemotron`, `#/about/agentmail`, and
   `#/about/firecrawl`. Each has an interactive, explicitly illustrative
   example; a four-step workflow; implementation-backed capability details;
   expandable technical notes with source links; and a direct room link.

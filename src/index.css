@@ -25387,21 +25387,21 @@
 .vendor-logo img { display: block; height: auto; max-width: none; flex-shrink: 0; }
 .vendor-logo-text { font: 800 22px/1.1 "Bricolage Grotesque", system-ui; letter-spacing: -0.01em; }
 .vendor-logo-convex img { width: 235px; margin-left: -30px; }
-.vendor-logo-openai img { width: 225px; margin-left: -34px; }
+.vendor-logo-nemotron img { width: 225px; margin-left: -34px; }
 .vendor-logo-agentmail img { width: 180px; }
 .vendor-logo-firecrawl img { width: 166px; }
 .vendor-identity { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
 .vendor-identity .vendor-credit { color: var(--about-muted); font-size: 12px; font-weight: 400; }
 @media (max-width: 1100px) and (min-width: 801px), (max-width: 420px) {
   .vendor-logo-convex img { width: 190px; margin-left: -24px; }
-  .vendor-logo-openai img { width: 178px; margin-left: -27px; }
+  .vendor-logo-nemotron img { width: 178px; margin-left: -27px; }
   .vendor-logo-agentmail img { width: 140px; }
   .vendor-logo-firecrawl img { width: 132px; }
 }
 @media (max-width: 360px) {
   .vendor-logo { height: 54px; }
   .vendor-logo-convex img { width: 169px; margin-left: -22px; }
-  .vendor-logo-openai img { width: 159px; margin-left: -24px; }
+  .vendor-logo-nemotron img { width: 159px; margin-left: -24px; }
   .vendor-logo-agentmail img { width: 124px; }
   .vendor-logo-firecrawl img { width: 118px; }
 }
