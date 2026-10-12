@@ -23,7 +23,8 @@ Hackathon · **By** Thomas Nguyen (build) and Holly Tran (design)
 | "Set up a push-up challenge for the four of us" | Six linked cards: who's in, a check-in grid, face-down standings, the deal, a countdown |
 | "Add a poll for cake flavor" (one exists) | Nothing new; it takes you to that poll |
 
-<p align="center"><img src=".github/readme/loop-journey-1.webp" width="900" alt="'Plan dinner Saturday' builds a poll and a who's-in card"></p>
+<p align="center"><img src=".github/readme/loop-crew-thread.webp" width="900" alt="The crew's board: the view zooms into the saved links card and opens its thread"></p>
+<p align="center"><sub>Then it's the group's board: zoom into any card, and each one has its own thread.</sub></p>
 
 ## How one ask works
 
