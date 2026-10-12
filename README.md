@@ -33,7 +33,9 @@ picks the cards for a bigger ask. Code picks the action, places the card,
 checks the write, and turns pointers like "the people who are coming" into
 real names, so the model can't invent one.
 
-![One ask in five steps: listen, start early, fill, check, sync](.github/readme/15-architecture.jpg)
+![Same ask, same prompt: Nemotron Lightning had the poll on the board at 394 ms, gpt-6.1-sol sent its first token at 5,349 ms](.github/readme/16-before-after.jpg)
+
+![One ask in five steps: listen while you talk, start early, fill, check, sync, with the measured times](.github/readme/15-architecture.jpg)
 
 | Model, on Token Factory | Job | Measured |
 |---|---|---|
