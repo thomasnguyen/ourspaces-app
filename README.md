@@ -127,10 +127,12 @@ buys is 3 s and a model call on every write. Two browsers on the deployed app:
 
 ## What changed
 
-OurSpaces began Aug 26, 2026 as our Convex All Gas hackathon entry (shared
-spaces with live widgets, 319 commits through Sep 21; it won there on Oct 2),
-its AI on OpenAI through the Convex AI Gateway. Since Oct 3 (203 commits by
-Oct 10): Nemotron on Token Factory behind every chat call, the voice orb and
+New during the Nebius × NVIDIA submission period: the first commit (ccd8480)
+landed Aug 26, 2026 at 10:09 pm PT, after the period opened that morning. The
+first version (shared spaces with live widgets, 319 commits through Sep 21) was
+also our Convex All Gas hackathon entry, which won on Oct 2; its AI ran on
+OpenAI through the Convex AI Gateway. Since Oct 3 (215 of the repo's 534
+commits): Nemotron on Token Factory behind every chat call, the voice orb and
 card deck, Right of Way, the family room, games, Tavily lookups and the pilot
 counting query.
 
