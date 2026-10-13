@@ -1,6 +1,6 @@
 # OurSpaces
 
-> Say "poll for Saturday" and it's on your friends' screens. The AI never cuts in.
+> Say "poll for Saturday" and the poll is on your friends’ page. The AI never cuts in.
 
 A shared board for your group that builds itself when you talk to it. Tap the
 orb, say what you need, and the card lands on your screen 610 ms after your
@@ -12,7 +12,7 @@ Nebius Token Factory**. Then it's a normal card anyone can vote on, claim or dra
 (build) and Holly Tran (design)
 
 <p align="center"><picture><source srcset="https://raw.githubusercontent.com/thomasnguyen/ourspaces-app/main/.github/readme/loop-challenge.avif" type="image/avif"><img src=".github/readme/loop-challenge.webp" width="900" alt="One sentence and six linked cards land on the family's board"></picture></p>
-<p align="center"><sub>"Set up a push-up challenge for the four of us": six linked cards on every screen 1.6 s after the last word.</sub></p>
+<p align="center"><sub>"Set up a push-up challenge for the four of us": the first card lands under a second after the last word (990 ms), all six by 1.6 s.</sub></p>
 
 ## What you can say
 
